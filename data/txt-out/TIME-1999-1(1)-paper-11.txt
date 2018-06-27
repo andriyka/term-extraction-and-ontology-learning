@@ -1,0 +1,393 @@
+Study and Comparison of Schema Versioning and Database Conversion Techniques for Bi-temporal Databases Han-Chieh Wei and Ramez Elmasri Department of Computer Science and Engineering The University of Texas at Arlington {wei, elmasri}@cse.uta.edu Basically, the difference between schema evolution and schema versioning is that schema evolution only keeps the current schema and corresponding data, whereas schema versioning preserves versions of schema and data during the evolution.
+Most current database systems are categorized as snapshot databases, where there exists only one version of a schema and database at any time.
+Therefore, whenever a schema is changed, the new schema becomes the current schema and thus the old schema is obsolete and will not be kept.
+The legacy data that followed the old schema become inconsistent and must be converted to the new schema.
+The problem of schema evolution is that the application programs written against the old schema and affected by the schema changes may need to be modified or at least need to be recompiled.
+Obviously this is very time consuming.
+Another problem of this technique is that some applications, such as banking, auditing, medical records, and reservation systems require not only current but also past or even future information.
+These problems give rise to the approach of schema versioning.
+Basically, whenever the schema is changed, a new schema is created and defined as a new version of the schema.
+Accordingly, the new version of data is converted from the old data to be consistent with the new schema.
+Both the legacy schema and data are still stored in the catalog and databases system as old versions.
+As a result, the legacy data is preserved and also the applications defined on the old schema need not be rewritten nor recompiled.
+However, the concepts of time and history are still not included in this approach.
+In another words, the schema changes can only apply to the current version.
+Changes to the past or plans for the future schema still can not be captured.
+Bi-temporal databases [18,19], incorporating both transaction time and valid time, can fulfill the requirements of schema versioning not only because they allow the users or application programs to access temporal information but also because they allow retroactive and proactive updates.
+Therefore, if the database schema is stored in a bi-temporal catalog, it can provide the most  Abstract Schema evolution and schema versioning are two techniques used for managing database evolution.
+Schema evolution keeps only the current version of a schema and database after applying schema changes.
+Schema versioning creates new schema versions and converts the corresponding data while preserving the old schema versions and data.
+To provide the most generality, bi-temporal databases can be used to realized schema versioning, since they allow both retroactive and proactive updates to the schema and database.
+In this paper we first study two proposed database conversion approaches for supporting schema evolution and schema versioning: single table version approach and multiple table version approach.
+We then propose the partial table version approach to solve the problems encountered in these approaches when applied to bi-temporal databases.
+1.
+Introduction Database and software applications usually evolve over time.
+This is due to several reasons, such as changes to the modeled reality, the application requirements, or the design specifications.
+Hence, a database schema is also subject to change even after careful design.
+In [17], quantitative measurements in an actual commercial relational database application are described, which show that changes to the database schema are not only unavoidable but also a significant maintenance concern during and after the process of system design.
+It consumes a lot of time and effort to convert the database and application programs whenever such changes occur.
+As a result, a mechanism to manage schema changes and maintain the database consistency after these changes would be a valuable addition to database management systems.
+Schema evolution [1,9,11,12,13,15,22,23] and schema versioning [4,7,14] are two of the most discussed techniques for managing database evolution in current database systems.
+1  flexibility for database schema evolution.
+However, there is a cost tradeoff between the flexibility of retroactive and proactive schema changes and the cost of implementing these mechanisms.
+The complexity is high because changes not only affect the current versions of data but also the past and even the futute versions which makes the database conversion much more complicated than for conventional snapshot databases.
+Currently, there are two main appraoches to convert the database structure after applying schema changes in temporal relational databases: single table version (or complete table) [3,4] (STV) and multiple table version [4] (MTV).
+Most previous research [14] discusses versioning for transaction-time only databases.
+In [4], bi-temporal database versioning is studied but they only consider the simple cases, especially for the multiple table version approach.
+Also there is also no space analysis for the database conversion process for these two approaches.
+In this paper we will fully explore the effect of schema changes involving both retroactive and proactive updates in bi-temporal relational databases by comparing these two approaches.
+We focus on two basic schema update operations, attribute addition and attribute deletion since these two operations affect the storage space and table structure.
+Other operations can be executed using sequences of these two operations.
+Algorithms for schema update and database conversion are also defined for these two operations.
+The problems and complexity of the two approaches are also discussed.
+We then propose a compromise approach, partial multiple table versioning (PMTV), which not only will solve the problems associated with the previous two approaches but also can largely reduce the complexity.
+In the next section, we briefly describe bi-temporal databases and the data model used for our presentation in this paper.
+The approaches of single table version and multiple table version are discussed in sections 3 and 4.
+An example is then given to show the problems and complexity.
+The approach of partial multiple table versioning that we propose is presented in section 5.
+The comparison with the previous two approaches is given in section 6.
+Section 7 concludes this paper.
+2  valid-time dimension which records the history of the information in the real world.
+Any error corrections and plan changes can be made by modifying the values of temporal data and/or the timestamps.
+However, after the modification, the previous values will not be retained and thus the database cannot rollback to the state before the change.
+Transaction-time databases incorporate only the transaction-time dimension which records the history of the database activities.
+It is impossible to make changes to past information.
+Any changes can only apply to the current data versions.
+Bi-temporal databases incorporate both transaction-time and valid-time dimensions.
+Although this leads to greater complexity, it allows the generality of both retroactive and proactive changes.
+We now briefly define the bi-temporal data model adopted in this paper: A bi-temporal relation schema R is defined as follows, R = < ID, A1, A2, ... , An, VS, VE, TS, TE >, in which { A1, A2, ... , An } is the union of the time-varying and fixed-value attributes.
+Attribute ID is a system generated entity identifier which has the same value for all versions of a particular entity.
+Time in this model is assumed to be discrete and described as consecutive nonnegative integers.
+Accordingly, time attributes [VS, VE], and [TS, TE] are atomic-valued timestamped attributes containing a starting and ending valid-time point and a starting and ending transaction-time point, repectively.
+The domain of transaction-end time includes a time variable UC (Until Change) [18] and the domain of valid-end time includes time variable now [2].
+The validtime interval1 [VS, VE] consisting of valid-time points associated with each tuple means the entity version in the tuple is valid in the modeled reality from VS to VE.
+The transaction-time interval [TS, TE] associated with each tuple defines when the tuple is logically existing in the database.
+The tuples that have UC as the value of transaction-end time (TE) represent the current versions of an entity.
+If the value of valid-end time of some current version of an entity is the time variable now, these current entity versions are valid currently and also are valid in the future until some change occurs.
+A tuple is logically deleted by replacing the value of transaction-end time UC with the current time.
+If a tuple is modified, the tuple version will first be logically deleted and then a new version is inserted with the new attribute values and with UC as the value of TE.
+An example of a bi-temporal database is shown in Figure 1.
+This is a bi-temporal catalog for maintaining schema information concerning the database relations and attributes.
+Such a bi-temporal catalog needs to be created  Temporal databases  Temporal databases store current information, as well as past information and even information about the future events which are planned to occur.
+To serve the requirements of storing and retrieving temporal data, two time dimensions are usually incorporated in the database: transaction time and valid time.
+Depending on the time dimensions the database supports, temporal databases can be categorized as valid-time (or historical) databases, transaction-time (or rollback) databases, and bi-temporal databases [6].
+Valid-time databases incorporate only the  1  This concept of a fixed time interval is now called a time period in SQL.
+2  to maintain the history of schema changes and to be able to update the schema both retroactively and proactively.
+Figure 1a is defined for single table version approach, and Figures 1b and 1c are defined for multiple table version and partial multiple table version approaches respectively.
+Employee ID Name Salary Position VS VE TS TE t1 1 John 30k P1 10 30 10 20 t2 1 John 30k P1 10 20 20 UC t3 1 John 35k P2 20 50 20 35 t4 1 John 35k P2 20 30 35 UC t5 1 John 40k P3 30 65 35 40 t6 1 John 40k P3 30 60 40 UC t7 1 John 45k P4 60 80 40 UC Figure 2.The state of the Employee relation at 40.
+The tuples with '*' are the current versions.
+(a) Relation ID  Name  VS  VE  TS  TE  Attribute ID  Name Domain  Rel  VS  VE  TS  TE  TS  TE  Attribute ID Name Domain Rel Rel_Version VS VE  TS  TE  (c) Relation ID  Name Attrbute_of  VS  VE  TS  TE  Attribute ID  Name  Domain  Rel  VS  VE  TS  * * * time  Assume that the following three schema changes are applied to the relation Employee: SC1: At time 50, a new time-varying attribute Bonus is added to Employee, which is valid from time 25 to 65, and John's bonus is recorded as 5% and is valid during [25,65].
+SC2: At time 60 another time varying attribute Phone is added to Employee, which is valid during [15,55], and the value of Phone for employee John is 3334567 with valid-time interval [15,55].
+SC3: At time 70, attribute Salary is dropped from Employee from time 15 to 50.
+(b) Relation ID Name Version Derived_From VS VE  *  TE  Figure 1.
+(a) Catalog relations for single table version approach.
+(b) Catalog relations for multiple table version approach.
+(c) Catalog relations for partial multiple table version approach.
+3  Single Table Version approach  In single table version, each table has only one version throughout the lifetime of the database.
+This idea is proposed in [11] as complete schemata, which follows the idea of complete table in [3].
+A complete schema consists of tables defined over the union of attributes that have ever been defined for them, each with the least general domain which can include all the domains' values.
+In cases where a general domain cannot be used, it is necessary to duplicate the attribute with enough domains to hold all necessary values.
+For instance, if attributes are added to a relation or the domain size of the attributes is enlarged, the table needs to allocate more space to accomodate the new attribute or the change of the domain.
+However, if attributes are dropped, the dropped attribute will still be retained in the database since in append-only temporal databases data will never be deleted.
+Therefore the record size, and hence the table size for this approach will only grow but never shrinks.
+After the schema update operation SC1, which adds a Bonus attribute, is applied at time 50.
+The state of the catalog (which also consists of bi-temporal tables) is shown in Figure 3.
+Although a full discussion of catalog implementation is outside the scope of this paper, we would like to briefly discuss the relationship between catalog and database.
+The catalog itself can be considered a bitemporal database2 to provide the full generality of schema changes.
+The bi-temporal database must be changed to conform to the schema changes as stored in the catalog.
+If both catalog and database are bi-temporal, the consistency between them can be maintained since both will allow retroactive and proactive changes.
+For the remainder of the paper, we will concentrate only on the database changes (not the catalog).
+In this paper we will use the following example to explain and compare the three versioning techniques.
+For simplicity, the example only shows the versions of one entity in the relation.
+Example 1 Assumes that the bi-temporal relation Employee is created at time 10 with valid-time interval [10, now] and with the attributes employee ID, name, salary, and position.
+Figure 2 shows the current state of the relation at time 40, for the versions of Employee 'John'.
+Relation_catalog ID 1  2  Although in many cases, a transaction-time database may be sufficient for the catalog implementation.
+3  Name Employee  VS 10  VE now  TS 10  TE UC  Bonus is assigned.
+Attribute_catalog ID 1 2 3 4 5  Name ID Name Salary Position Bonus  Domain string string real string real  Rel_ID 1 1 1 1 1  VS 10 10 10 10 25  VE now now now now 65  TS 10 10 10 10 50  Employee ID Name Salary Position Bonus 1 John 30k P1 null 1 John 30k P1 null 1 John 35k P2 null 1 John 35k P2 null 1 John 40k P3 null 1 John 40k P3 null 1 John 45k P4 null 1 John 35k P2 null 1 John 35k P2 5% 1 John 40k P3 5% 1 John 45k P4 5% 1 John 45k P4 Null 1 John 30k P1 null 1 John 30k P1 null 1 John 35k P2 null 1 John 35k P2 5% 1 John 40k P3 5% 1 John 40k P3 5%  TE UC UC UC UC UC  Figure 3.
+The catalog status at time 50 after the attribute Bonus is added  The new Bonus attribute has a default value 5% which is valid from time 25 to 65.
+However, before time 50 there is no value for Bonus, so the unknown value null must be assigned, as shown in Figure 4(a).
+In Figure 1, we notice that three of the four current entity versions of employee 1 have their valid-time interval overlap with the valid-time interval [25,65] of the 5% value of Bonus.
+For the entity versions whose valid-time intervals partially overlap (P) with [25,65] (namely t4 with [20,30] and t7 with[60,80]), two new tuples need to be derived from each version: these are t8 and t9 from t4, and t11 and t12 from t7.
+For the entity versions whose valid-time is included (I) in [25,65] (namely t6 with [30,60]), one new tuple needs to derived from each version: this is t10 from t6.
+The newly derived tuples are inserted as shown in Figure 4(b).
+The transaction-end time of the overlapped versions is changed from UC to the time when the new attribute value is assigned, which is time 50.
+To continue the example, the effect of applying schema change operation SC2 (adding a Phone attribute) is shown in Figure 5.
+There are 2 current entity versions whose valid-time intervals are partially overlapping, and two others fully included in the valid-time interval of SC2.
+Therefore, six new tuples need to be inserted.
+As in SC1, the transaction-end time of the overlapping versions needs to be changed to the current time, which is 60 in this example.
+t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12  Employee ID Name 1 John 1 John 1 John 1 John 1 John 1 John 1 John 1 1 1 1 1  John John John John John  Salary Position Bonus VS 30k P1 null 10 30k P1 null 10 35k P2 null 20 35k P2 null 20 40k P3 null 30 40k P3 null 30 45k P4 null 60 Part (a) 35k P2 null 20 35k P2 5% 25 40k P3 5% 30 45k P4 5% 60 45k P4 null 65 Part (b)  VE 30 20 50 30 65 60 80  TS TE 10 20 20 UC 20 35 35 UC 50 P 35 40 40 UC 50 I 40 UC 50 P  25 30 60 65 80  50 50 50 50 50  Phone null null null null null null null null null null null null null 3334567 3334567 3334567 3334567 null  VS 10 10 20 20 30 30 60 20 25 30 60 65 10 15 20 25 30 55  VE 30 20 50 30 65 60 80 25 30 60 65 80 15 20 25 30 55 60  TS 10 20 20 35 35 40 40 50 50 50 50 50 60 60 60 60 60 60  TE 20 UC 60 35 50 40 50 50 UC 60 UC 60 UC 60 UC UC UC UC UC UC UC UC  P  I I P  Figure 5.
+The state of Employee relation after time 60.
+The effect of SC3 is shown in Figure 6.
+As the figure shows, five more tuples are inserted after the change as there are 3 fully including and 1 partially overlapped current versions.
+Employee ID 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1  UC UC UC UC UC  Name John John John John John John John John John John John John John John John John John John John John John John John  Salary Position Bonus 30k P1 Null 30k P1 Null 35k P2 Null 35k P2 Null 40k P3 Null 40k P3 Null 45k P4 Null 35k P2 Null 35k P2 5% 40k P3 5% 45k P4 5% 45k P4 Null 30k P1 null 30k P1 null 35k P2 null 35k P2 5% 40k P3 5% 40k P3 5% null P1 null null P2 null null P2 5% null P3 5% 40k P3 5%  Phone Null Null Null Null Null Null Null Null Null Null Null Null null 3334567 3334567 3334567 3334567 null 3334567 3334567 3334567 3334567 null  VS 10 10 20 20 30 30 60 20 25 30 60 65 10 15 20 25 30 55 15 20 25 30 50  VE 30 20 50 30 65 60 80 25 30 60 65 80 15 20 25 30 55 60 20 25 30 50 55  TS 10 20 20 35 35 40 40 50 50 50 50 50 60 60 60 60 60 60 70 70 70 70 70  TE 20 60 35 50 40 50 50 60 60 60 UC UC UC UC 70 UC 70 UC 70 UC 70 UC UC UC UC UC UC  I I I P  Figure 6.
+The state of Employee relation after time 70.
+There are three problems that need to be addessed if the single table version approach is adopted: space overhead, search overhead, and database availability.
+The problem of space overhead results from excessive data duplication and null values whenever the database is converted to conform to the schema change.
+Data duplication is a common problem in temporal databases if  Figure 4.
+The state of relation Employee at time 50 after the value of Bonus is assigned.
+Part (a) shows the relation state before the attribute value is assigned.
+Part (b) shows the new inserted tuples after value for attribute  4  the relation is not in temporal normal form [10], i.e., the attributes in a relation do not change their values synchronously.
+This is the case here, since every time an attribute is added to or dropped from the relation, all the current entity versions whose valid-time interval overlaps with the valid-time interval of the schema change have most of their attributes duplicated.
+As shown in the examples, the information of employee's ID, name, and position are duplicated in all the newly inserted tuples.
+In a database with thousands of records, this situation causes a large amount of duplication.
+This problem not only wastes storage space but also makes the temporal JOIN operation [5,16,20,21] more complicated.
+Another space overhead for this approach is the space of null values in the old tuple versions after the schema change of attribute addition, as shown in Figures 4 and 5(b).
+Again, if there are thousands of records in the relation at the time of attribute addition, it will introduce a large quantity of null values.
+This will not only waste space at the storage level but also lead to the problems with understanding the meaning of the attributes and with specifying JOIN operation at the logical level.
+Moreover, nulls can have multiple conflicting interpretations: 1.
+The attribute is valid but its value is unknown.
+2.
+The attribute is valid and its value is known but not recorded yet.
+3.
+The attribute is invalid.
+In the case of the example, the third interpretation of null above is the correct one.
+Searching for current versions of entities that must be changed because of a schema change can be expensive.
+These are the versions whose valid time overlaps with the valid time of the schema change.
+As a result, in the single table version approach, every time an attribute is added to or dropped from a relation, all current versions need to be checked to see if their valid time interval overlaps with the schema change.
+According to [17]'s measurement, the number of attributes in the commercial application used for their experiment increased 274% in only 18 months.
+For temporal databases, which usually contain a large amount of data, the search time will be a large overhead.
+In addition to the space and time overhead, database availability is another concern.
+When a new attribute is added or the type domain of an attribute is generalized, part of (or even the whole) database will not be available for a period of time due to the process of database requires augmentation and conversion, which reorganization of the storage space.
+created table.
+For conventational nontemporal databases or transaction-time databases, since schema updates can only be applied to the current schema version, the implementation of multiple table version is less complicated than for bi-temporal databases, where schema and database both can be updated retroactively and proactively.
+We use the following two figures, 7 and 8, to illustrate the difference between bi-temporal and transaction time databases for this problem.
+V0  V1  V2  V3  Transaction time 0  10  20  30  40  50  60  70  Figure 7.
+Multiple versioning in the transaction-time relation Employee  Transaction Time  For transaction-time databases3, as shown in Figure 7, there always exists only one current schema version at any time point.
+Any schema change will create only one new version which is derived from the current version.
+However, in a bi-temporal database, at a certain time point, there may exist more than one current version defined for different valid-time intervals, as illustrated by the following example.
+70  V4  V0  V5  V2  V1  V0  V1  V0  S C3 60  V0  V3  V2  S C2 V0  50  V0  V1 S C1  40  30  20  V0  10  10  20  30  40  50  60  70  80  Valid Time  Figure 8.
+Multiple versioning in the bi-temporal relation Employee  In Figure 8, we see that version V0 of the relation Employee is defined at (transaction) time 10 and is valid from time 10 to now.
+At time 50, SC1 is executed.
+Since there is only one current version, V0, that overlaps  4.
+Multiple table version 3  We assume that the schema versions in nontemporal databases are identified by the transaction time when they are defined, and thus can also be categorized as transaction-time databases.
+In multiple table version, every time a relation schema is changed, it creates a new table version.
+Data inserted to the relation after the change will be stored in the newly  5  create new table version Rcur by adding Ax to Rv with valid lifespan Ivy; Ivsc = Ivsc - Ivy; v = v - 1; AddAttribute(Ax, v, Ivsc); // recursive call to older versions  [25,65], only one new version V1 is created.
+Now at time 50 after SC1, we have two current table versions, version V0 which is valid during [10,25] and [65,now], and version V1 which is valid during [25,65].
+At time 60, SC2 is executed.
+However, since the effective time of SC2 is from 15 to 55, it overlaps with both versions V0 and V1.
+Two new versions, V2 and V3, need to be created where V2 is derived from V1 and V3 is derived from V0.
+SC3 is executed at time 70 and it affects versions V2 and V3.
+Therefore, two new versions V5 and V4 are derived from source versions V2 and V3 respectively.
+We will call table version Vi a source to a later table version Vj if Vj is derived from Vi because of overlapping valid time intervals.
+After new table versions are created, the current entity versions in the source table whose valid-time interval overlaps with the schema change need to be copied into the newly created table along with the value of the new attribute (if the schema change is attribute addition).
+To illustrate the problems that may occur, we first give the algorithms for new table version creation and data insertion to the newly created table versions for both attribute addition and attribute deletion.
+After the vew table versions are created, data in the source table versions need to be converted to the newly created table versions with the value of the new added attribute Ax.
+Inserting tuples in the newly created table versions For each newly created table version Rnew,v after adding the new attribute Ax 1.
+Identify the source table version Rv from which Rnew,i is derived.
+2.
+In Rv, find a set of current versions Si for each entity i, Si = {Vi,1, Vi,2, ... , Vi,n}.
+3.
+For each entity, compare the valid-time interval, Ii,k, of each current entity versions Vi,k in Si with Ivsc.
+If Ii,k [?]
+Ivsc = [VT1,VT2] then insert Vi,k as a new tuple into table version Rnew,v along with the new attribute value ax,i, valid-time interval [VT1,VT2], transaction starttime t', and transaction end-time UC.
+Figures 8 and 9 show the newly created table versions and data converted from the source versions after SC1 and SC2 are executed.
+In Figure 9, after SC1, version V1 is created, the data are converted from the current entity versions marked with '*' in table version V0.
+Versions V2 and V3 are created after SC2 is executed.
+Version V2 is derived from V1 and its data is converted from entity versions marked with '+' in table version V1.
+Version V3 is derived from V0 and its data is converted from entity versions marked with ' ' in table version V0.
+Attribute addition At time t, a new attribute Ax is added to table R with value ax,i for entity i.
+The valid lifespan of the schema change is Ivsc.
+Create new table versions The parameters: v : table version number.
+Ivsc : a temporal element which is the valid lifespan of the schema change.
+Ivv : a temporal element which is the valid lifespan of table version Rv.
+cur : latest table version number.
+(a) Employee_V0 (Valid lifspan: Iv0 = [10,now])  v = cur; AddAttribute(Ax, v, Ivsc) // compare Ivv with Ivsc if Ivv [?]
+Ivsc // Ivsc included in Ivv then cur = cur + 1; create new table version Rcur by adding Ax to Rv with valid lifespan Ivsc;  ID 1 1 1 1 1 1 1  Name Salary Position John 30k P1 John 30k P1 John 35k P2 John 35k P2 John 40k P3 John 40k P3 John 45k P4  VS 10 10 20 20 30 30 60  VE 30 20 50 30 65 60 80  TS 10 20 20 35 35 40 40  TE 20 UC 35 UC 40 UC UC   *    * *  (b) Employee_V1 (Valid lifspan: Iv1 = [25,65])  else if Ivv [?]
+Ivsc = [?]
+then v = v -1; AddAttribute(Ax, v, Ivsc); // recursive call to the older versions else if Ivv [?]
+Ivsc = Ivy // Ivy is temporal element of the intersection then cur = cur + 1;  ID 1 1 1  Name Salary Position Bonus John 35k P2 5% John 40k P3 5% John 45k P4 5%  VS 25 30 60  VE 30 60 65  TS 50 50 50  TE UC UC UC  (c) Employee_V2 ( Valid lifespan Iv2= {[25,55]} ) ID 1 1  6  Name Salary Position Bonus Phone VS VE TS TE John 35k P2 5% 3334567 25 30 60 UC John 40k P3 5% 3334567 30 55 60 UC  + +  Figures 8 and 10 show the newly created table versions and data converted from the source versions after SC3 is executed.
+In Figure 10, versions V4 and V5 are created after SC3 is executed .
+Version V4 is derived from V3 and its data is converted from entity versions marked with ' ' in table version V4.
+Version V5 is derived from V2 and its data is converted from entity versions marked with '*' in table version V2.
+Employee_V3 ( Valid lifespan Iv3= {[15,25]} ) ID Name Salary Position Phone VS 1 John 30k P1 3334567 15 1 John 35k P2 3334567 20  VE 20 25  TS 60 60  TE UC UC  Figure 9.
+(a) The original table.
+(b) After SC1.
+(c) After SC2.
+Attribute deletion At t, attribute Ax is dropped from relation R during Ivsc.
+(a)Employee_V2 ( Valid lifespan I v2= {[25,55]} ) ID Name Salary Position Bonus Phone VS VE 1 John 35k P2 5% 3334567 25 30 1 John 40k P3 5% 3334567 30 55 1 John 40k P3 5% 3334567 50 55  Create new table versions Find a list of table versions LR in which all the versions include attribute Ax.
+The list is ordered by the version number in descending order.
+TS TE 60 UC 70 * 60 UC 70 * 70 UC  Employee_V3 ( Valid lifespan Iv3= {[15,25]} ) ID Name Salary Position Phone VS VE TS TE 1 John 30k P1 3334567 15 20 60 UC 70 1 John 35k P2 3334567 20 25 60 UC 70  DropAttribute(Ax, Ivsc, LR) The first version Ri in LR has valid lifespan Ivi; // compare Ivi with Ivsc if Ivi [?]
+Ivsc // Ivsc included in Ivv then cur = cur + 1; create new table version Rcur by dropping Ax from Ri with valid lifespan Ivsc; else if Ivi [?]
+Ivsc = [?]
+then LR = LR - Ri; DropAttribute (Ax, Ivsc, LR); // recursive call to older versions //Ivy is the temporal element else if Ivi [?]
+Ivsc = Ivy of the intersection then cur = cur + 1; create new table version Rcur by dropping Ax from Ri with vlaid lifespan Ivy; Ivsc = Ivsc - Ivy; LR = LR - Ri; // recursive call DropAttribute (Ax, Ivsc, LR); to older versions     (b)Employee_V4 ( Valid lifespan I v4= {[15,25]} ) ID Name Position Phone VS VE TS TE 1 John P1 3334567 15 20 70 UC 1 John P2 3334567 20 25 70 UC Employee_V5 ( Valid lifespan I v5= {[25,50]} ) ID Name Position Bonus Phone VS VE TS TE 1 John P2 5% 3334567 25 30 70 UC 1 John P3 5% 3334567 30 50 70 UC  Figure 10.
+(a) The table versions before SC3.
+(b) After SC3.
+From the algorithms and the example above, we can see that the MTV approach does not have the problems of null value and database availability as in the approach of STV.
+However, there are still some problem with this approach: data duplication, multischema queries [4], and mandatory version creation.
+Although the MTV approach does not introduce null values, it still has the problem of data duplication.
+As we can see from the example, if the current entity versions in the source table versions have valid-time interval that overlaps with the schema change, the unchanged attributes need to be duplicated and inserted into the new table versions.
+The MTV resolves the problem of database reorganization in STV resulting from attribute addition by creating new table versions.
+However, the trade-off is the number of table versions.
+As shown in Figure 8, in bitemporal databases, the schema modification is not limited to the latest table version as in the transaction-time databases.
+Therefore, the number of newly created versions may be more than one depending on the validtime interval of the schema change.
+As the number of table versions increases, more temporal JOIN operations will be needed to process queries.
+For example, suppose that at time t, an attribute A is added to table R and the  Inserting tuples in the newly created table versions For each newly created table version Rnew,i after dropping the attribute Ax 1.
+Identify the source table version Rv from which Rnew,i is derived.
+2.
+In Rv, find a set of current versions Si for each entity i, Si = {Vi,1, Vi,2, ... , Vi,n}.
+// insert tuples to new table versions 3.
+For each entity, compare Ii,k, the valid-time interval of each current entity version in Si, with Ivsc.
+If Ii,k [?]
+Ivsc = [VT1,VT2] then insert Vi,k as a new tuple into table version Rnew,v with valid-time interval [VT1,VT2], transaction start-time t, transaction end-time UC, and without the dropped attribute Ax.
+7  effect of this schema change creates three new table versions of R at time t. Later if a query requires a join operation between table R and S through attribute A as of time t. Then table S needs to be joined with three different table versions of R. Another concern is querying the entity's history.
+The system has to access all the different table versions to get the information.
+As a result, the output of the query includes different tuple types which makes it difficult to use by applications.
+This is called the problem of multischema queries [4].
+Another problem of the MTV approach is mandatory version creation.
+Let us consider the schema change SC1.
+In SC1, the valid lifespan of the newly added attribute Bonus is from time 25 to 65.
+At time 45, a new table version V1 is created with attribute Bonus.
+However, if the current time becomes 66, the attribute Bonus is not valid any more.
+A new table version must be created at this time to maintain the system consistency.
+This extra work must either be done by the user or by specifying appropriate triggers.
+Applying this approach to the example given in Section 2 after SC1 and SC2 are executed, the results are shown in Figure 11.
+Employee ID Name Salary 1 John 30k 1 John 30k 1 John 35k 1 John 35k 1 John 40k 1 John 40k 1 John 45k  Position P1 P1 P2 P2 P3 P3 P4  VS 10 10 20 20 30 30 60  VE 30 20 50 30 65 60 80  TS 10 20 20 35 35 40 40  TE 20 UC 35 UC 40 UC UC  (a) Original Employee relation Emp_Bonus ID Bonus VS 1 5% 25  VE 65  TS 50  TE UC  (b) New created relation for attribute Bonus after SC1 Emp_Phone ID Phone VS 1 3334567 15  VE 55  TS 60  TE UC  (c) New created relation for attribute Phone after SC2  5.
+Partial multiple table version Relation_catalog ID Name Attrbute_of VS 1 Employee null 10 2 Emp_Bonus 1 25 3 Emp_Phone 1 15  From the example and discussion in the previous sections, we notice that the complexity of the schema change is highly dependent on the current state of the database.
+In this section, we propose the partial multiple table version (PMTV) approach which can make the updates independent from the current state of the database and thus can largely reduce the complexity and also solve the problems with STV and MTV.
+For the schema change of attribute addition, instead of enlarging the record size required for the extra storage as in STV or creating a new table version as in MTV, PMTV create a bi-temporal relation with only the new attribute, plus the key attribute (ID) of the relation being modified4.
+The complete relation can be later reconstructed by applying the temporal NATURAL JOIN operation5 [20,21].
+Techniques for efficient execution of this operation are discussed in [20,21], but they apply to validtime only databases.
+For our application, in fact, the type of join needed is more like a TEMPORAL OUTER JOIN.
+We are currently working on efficient techniques for this join for bi-temporal databases, since this is crucial to the partial multiple table version technique.
+Suppose at time t, attribute Ax is added to relation R with valid-time interval [vt1,vt2].
+A new relation R_Ax is created.
+Following the data model defined in section 2, we have the following schema: R = < ID, A1, A2, ... , An, VS, VE, TS, TE > R_Ax = < ID, Ax, VS, VE, TS, TE >  VE now 65 55  TS 10 50 60  TE UC UC UC  (d) The state of Relation catalog after SC1 and SC2 Figure 11.Applying SC1 and SC2 using partial multiple table version.
+For the schema change of attribute deletion, there are two different cases: the dropped attribute is in the original relation or it was added later.
+1.
+If the dropped attribute Ax is in the original table R, then the process is the same as single table version approach.
+2.
+If Ax is an attribute that was added later, then apply the process for single table version approach for table R_Ax only.
+2.1 In table R_Ax, for each entity i, find a set of current versions Si where Si = {Vi,1, Vi,2, ... , Vi,n} 2.2 For each entity i, compare Ivsc with Ii,k, the validtime interval of each current entity version in Si If Ii,k [?]
+Ivsc = Ivy then insert Vi,k into R_Ax with valid-time interval Ivsc-Ivy; TS = t; TE = UC; change TE of Vi,k from UC to t;  4  This is similar to the technique of vertical fragmentation in distributed database systems.
+5 This has also been called temporal intersection join.
+8  The following figure shows the result of SC3: Employee ID Name Salary Position 1 John 30k P1 1 John 30k P1 1 John 35k P2 1 John 35k P2 1 John 40k P3 1 John 40k P3 1 John 45k P4 1 John 30k P1 1 John null P1 1 John null P2 1 John null P3 1 John 40k P3  VS 10 10 20 20 30 30 60 10 15 20 30 50  VE 30 20 50 30 65 60 80 15 20 30 50 60  discuss the space complexity of adding attributes.
+The following are the definitions of the parameters:  TS TE 10 20 20 UC 70 P 20 35 35 UC I 35 40 40 UC 70 P 40 UC 70 70 UC 70 UC 70 UC 70 UC 70 UC  Parameters Sa : average attribute size.
+Ivsc : a temporal element which is the valid lifespan of the schema change.
+Na : number of attributes in original relation R. Ntp : number of tuples in table R before any schema changes.
+Ne : average number of distinct entities in relation R. NO : average number of current versions of all the entities whose valid-time intervals overlap with Ivsc.
+where NO = NP + NF NP : average number of current versions of all the entities whose valid-time intervals partially overlap with Ivsc.
+NF : average number of current versions of all the entities whose valid-time intervals included in Ivsc.
+Nadd: the number of attribute addition operations.
+Now if the schema is changed again at time 75 that the attribute Bonus is dropped from time 30 to 60.
+The result will be: Employee_Bonus ID Bonus VS 1 5% 25 1 5% 25 1 5% 60 Employee_Phone ID Phone VS 1 3334567 15  VE 65 30 65  VE 55  TS TE 50 UC 75 75 UC 75 UC  TS 60  P  Assumptions 1.
+For the approach of MTV, we use the worst case scenario when computing the number of newly created table versions.
+That is, the valid-time interval of the next schema change covers the valid time of the previous schema change, as shown in the following figure:  TE UC  Transaction Time  As we can see from the example, for the schema change of attribute addition, there is no space needed for null values and data duplication.
+Searching for the current versions of entities and the valid timespan of their versions is not necessary.
+Therefore, this approach largely reduces the space and time complexity.
+Futhermore, the problems of database reorganization in the single table version approach and the mandatory version creation in the multiple table version approach do not exist in this approach.
+For the schema change of attribute deletion, although in one case the process of database conversion is the same as in the STV approach except that it may be applied to smaller tables.
+However, most of the attribute change are attribute addition according to [17]'s measurements.
+If the attribute to be deleted was an added attribute, as in the example above, it is much simpler than the other two approaches.
+70  60  V7  50  V9  V8  V 10  SC4 V4  40  V6  V5  SC3 V3  30  V2  S C2 V1 S C1  20  V0  10  6.
+Comparison of three approaches 10  In this section, we compare the space complexity of the three versioning approaches.
+Because of the space limitation, we define the cost formulas and only show the results based on the given example.
+From the discussion in the previous sections, we can see that the database conversion for schema changes of attribute addition and attribute deletion is nearly the same.
+Here we only  2.
+9  20  30  40  50  60  70  80  Valid Time  Therefore, a new schema change creates one more table version than the number of table versions created from the previous schema change.
+Since the three approaches were compared using the same example, the value of NO (number of overlapped entity versions) is the same in STV and MTV.
+For MTV, we assume the newly created entity  versions are evenly distributed into each of the newly created table versions.
+Sdup = Sa* 4 * (2*2 + 1)*1 + Sa* 5 * (2*2 + 2)*1 =50Sa SSTV = 69Sa SMTV = Sa*( (4+1) * (2+1) * 1 )+Sa*[ ( 4+1 ) * 2 * 1 ] + Sa*[ ( 4+2 ) * 2 * 1 ] = 37Sa SPMTV = 2 * [ (Sa * 2) * 1 ] = 4Sa  Single Table Version approach From Section 3, the space required for attribute addition by STV is the space for the null values Snull and for the duplicated attributes Sdup.
+For this example, there is a factor of 17 difference between the approaches of STV and PMTV.
+Since the space required for the PMTV approach is independent from the number of the attributes, tuples, entities, and the overlapping entity versions.
+If we have real a bi-temporal database with reasonable number of entities, tuples, and overlapped entity versions, the difference obviously will become much larger.
+Let us consider another simple example: A relation R originally has 5 attributes with average size of 8 bytes, and 15 tuples including 3 entities, i.e., Na = 5, Sa = 8, Ntp = 15, and Ne = 3.
+If later 7 attributes are added to R, Nadd = 7, and we assume NP and NF are both equal to 2.
+From the result, we found 40 times difference between STV and PMTV and 30 times difference between MTV and PMTV.
+= Snull + Sdup SSTV  Snull = ( Sa * Ntp )  // the space for null after the first attribute addition // the space for null after the 2nd attribute addition + Sa * [ Ntp + (2NP + NF) * Ne ] + Sa * [ Ntp + ( 2NP + NF)* Ne + (2NP + NF) * Ne ] +...  =Sa * ( Nadd * Ntp + (2NP + NF) * Ne *  Nadd - 1 i )  [?]
+i=0  Sdup = Sa * Na * ( 2NP + NF ) * Ne + Sa * ( Na + 1 ) * ( 2NP + NF ) * Ne + Sa * ( Na + 2 ) * ( 2NP + NF ) * Ne +... Nadd -1   i * ( 2 NP + NF )* Ne = Sa*  Nadd * Na +  i=0   SSTV = Snull + Sdup  [?]
+[  ]  = 8 * ( 7 * 15 + ( 2*2 + 2 ) * 3 *  i=0  8*(7*5+ = 3864 + 8064 [?]
+12KB  = Sa*      i    j =1  8*  i    [?]
+[?]
+(5 + j)* i *3 4  j =1  [?]
+9KB    NO * Ne  i   [?]
+[?]
+( N + j ) * a     i =1  7  SMTV =  N = Sa * ( Na + 1)* ( NO* Ne) + Sa*[( Na + 1) + ( Na + 2) ]* O * Ne + 2 i  [?]
+i ) * ( (2*2 + 2 ) * 3)  i=0  From Section 4, the space required for attribute addition by MTV is for the overlapped data version duplicated in the new table versions.
+Nadd  [?
+]i ) +  6  Multiple Table Version approach  SMTV  6  SPMTV = 7 * ( 8 * 2 ) * 3 [?]
+0.3KB  Partial Multiple Table Verison approach  7  From Section 5, the space required for attribute addition by PMTV is only the size of two attributes for each entity.
+Conclusion  In this paper, we present the study of two schema versioning approaches in a bi-temporal database environment, single table version and multiple table version.
+In most of the current literature, only transaction time is considered on schema versioning.
+The research that discusses schema versioning involving both transaction time and valid time does not consider some of the more complex problems concerning schema version creation and database conversion.
+We first discuss the problems associated with these two approaches when  SPMTV = Nadd * [ ( Sa * 2 ) * Ne ] Now we can compare the space cost for these three approaches based on the given example: Na is 4, Ntp is 7, Ne is 1, and Nadd is 2.
+We also have NP for SC1 is 2 and NF is 1, and NP and NF for SC2 are both equal to 2.
+Snull = Sa * 7 + Sa * ( 7 + (2*2 + 1) * 1 ) = 19Sa  10  applied to bi-temporal databases, then propose a third approach, partial multiple table version, which makes the database conversion much simpler and does not have the problems found in the previous two approaches.
+Furthermore, we also specify formulas to analyze and compare the space cost for the three approaches.
+For our proposed partial multiple table version approach, when a new attribute is added, it creates a new bi-temporal relation with only the new attribute, plus the key attribute of the relation being modified.
+This way, no null values will be introduced, no searching for the overlapped current versions is needed, no database restructuring and data duplication is required, and no extra effort is needed for the problem of mandatory version creation.
+In addition, from section 6, compared with the two previous approaches, the space cost has been largely reduced.
+We are currently analyzing the costs of various types of temporal queries when applied to the three methods discussed here.
+[11] J. F. Roddick.
+Dynamically Changing Schemas within Database Models.
+Australian Computer Journal, pages 105-109, 1991.
+[12] J. F. Roddick.
+Schema Evolution in Database Systems - An Annotated Bibliography.
+Technical Report No.
+CIS92-004, School of Computer and Information Science, University of South Australia, 1992.
+[13] J. F. Roddick.
+SQL/SE - A Query Language Extension for Databases Supporting Schema Evolution.
+SIGMOD RECORD, pages 10-16, Sep. 1992.
+[14] J. F. Roddick.
+A survey of schema versioning issues for database systems.
+Information and Software Technology, 37(7), 1995.
+[15] M. R. Scalas, A. Cappelli, and C. De Castro.
+A Model for Schema evolution in Temporal Relational Databases.
+In Proceedings of 1993 CompEuro, Computers in Design, Manufacturing, and Production, pages 223 - 231, May 1993.
+[16] A. Segev.
+Join Processing and Optimization in Temporal Relational Databases.
+Chapter 15 of Temporal Databases: Theory, Design, and Implementation, Benjamin/Cummings, 1993.
+[17] D. Sjoberg.
+Quantifying schema evolution.
+Information and Software Technology, 35(1):35 - 44, 1993.
+[18] R. T. Snodgrass.
+The Temporal Query Language TQuel.
+ACM Transactions on Database Systems, pages 247 - 298, June 1987.
+[19] R. T. Snodgrass, editor.
+The TSQL2 Temporal Query Language, chapter 10.
+Kluwer Academic Publishers, 1995.
+[20] M. D. Soo, R. T. Snodgrass and C. S. Jensen.
+Efficient Evaluation of the Valid-Time Natural Join.
+In Proceedings of the 10th International Conference on Data Engineering, IEEE, 1994.
+[21] D. Son and R. Elamsri.
+Efficient Temporal Join Processing Using Time Index.
+In Proceedings of the 8th International Conference on Scientific and Statistical Database Management, pages 252 - 261, June 18 - 20, 1996.
+[22] M. Tresch and M. H. Scholl.
+Schema transformation without database reorganization.
+SIGMOD RECORD, 22(1):21 - 27, 1993.
+[23] R. Zicari.
+A framework for schema updates in an objectoriented database system.
+In Proceedings of the 7th International Conference on Data Engineering, pages 2 - 13, April 1991.
+References [1] J. Banerjee, H-T Chou, H. J. Kim , and H.F. Korth.
+Semantics and Implementation of Schema Evolution in SIGMOD RECORD, Object-oriented databases.
+16(3):311-322, 1987.
+[2] J. Clifford, C. Dyreson, T. Isakowitz, C. S. Jensen, and R.T. Snodgrass.
+On the Semantics of "now" in Databases.
+ACM Transactions on Database Systems, 22(2):171 - 214, June 1997.
+[3] J. Clifford and D.S.
+Warren.
+Formal Semantics for Time in Databases.
+ACM Transactions on Database Systems, pages 214-254, 1983.
+[4] Christina DeCastro, Fabio Grandi, and Maria Rita Scalas.
+Schema Versioning for Multitemporal Relational Databases.
+Information Systems, pages 249-290, July 1997.
+[5] H. Gunadhi and A. Segev.
+Query Processing Algorithms for Temporal Intersection Joins.
+In Proceedings of 7th International Conference on Data Engineering, IEEE, 1991.
+[6] C. Jensen et al.
+A consensus glossary of temporal database concepts.
+SIGMOD RECORD, 23(1):52-64, 1994.
+[7] W. Kim and H-T Chou.
+Versions of schema for objectoriented databases.
+In Proceedings of the 14th International Conference on Very Large Databases, pages 148-159, 1988.
+[8] B. S. Lerner and A. N. Habermann.
+Beyond schema evolution to database reorganization.
+SIGPLAN Notices, 25(10):67 - 76, 1990.
+[9] N.G.
+Martin, S. B. Navathe, and R. Ahmed.
+Dealing with Schema Anomalies in History Databases.
+In Proceedings of the 13th International Conference on VLDB, 1987.
+[10] S. B. Navathe and R. Ahmed.
+A Temporal Relation Model and a Query Langue.
+Information Sciences, pages 147-175, 1989.
+11

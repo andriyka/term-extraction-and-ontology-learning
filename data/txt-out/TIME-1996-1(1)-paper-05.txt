@@ -1,0 +1,267 @@
+Temporal Resolution: A Breadth-First Search Approach Clare Dixon Department of Computing Manchester Metropolitan University Manchester M1 5GD United Kingdom C.Dixon@doc.mmu.ac.uk  Abstract  An approach to applying clausal resolution, a proof method for classical logics suited to mechanisation, to temporal logics has been developed by Fisher.
+The method involves translation to a normal form, classical style resolution within states and temporal resolution between states.
+The method consists of only one temporal resolution rule and is therefore particularly suitable as the basis of an automated temporal resolution theorem prover.
+As the application of this temporal resolution rule is the most costly part of the method, involving search amongst graphs, it is on this area we focus.
+A breadth-rst search approach to the application of this rule is presented and shown to be correct.
+Analysis of its operation is carried out and test results for its comparison to a previously developed depth-rst style algorithm given.
+1 Introduction  Temporal logics have been used extensively for the specication and verication of properties of concurrent systems, see for example 18, 19, 15, 11, 3, 21, 2, 14].
+Important computational properties such as liveness, deadlock and mutual exclusion can be expressed easily and simply in temporal logic making it useful for specication.
+Verifying that a temporal logic specication satises a temporal property usually requires some form of theorem proving.
+Model checking approaches have been the most popular, particularly based on tableau 25] or automata 23].
+However, standard model checking approaches are limited as only nite state problems can be handled and, even then the number of states required soon becomes large due to the combinatorial explosion.
+Alternatively one can adopt a resolution based approach 22] which is is not limited to nite state problems and has a signicant body of work on heuristics to control search (see This work was supported partially by an EPSRC PhD Studentship and partially by EPSRC Research Grant GR/K57282  standard texts such as 6] for example).
+Decision procedures based on resolution have been developed for temporal logics in 5, 24, 1], however in many cases they are unsuitable for implementation either because they only deal with a small number of the temporal operators or because of problems with proof direction due to the large numbers of resolution rules that may be applied.
+In this paper we present a breadth-rst search style algorithm which enables practical implementation of the resolution method for temporal logics developed by Fisher 9].
+The resolution procedure is characterised by translation to a normal form, the application of a classical style resolution rule to derive contradictions that occur at the same points in time (termed step resolution), together with a new resolution rule, which derives contradictions over time (termed temporal resolution).
+This paper is structured as follows.
+In x2, a description of the propositional temporal logic used and the normal form required for the temporal resolution method is given.
+An outline of this temporal resolution method is given in x3, while the BreadthFirst Search algorithm to implement the temporal resolution step is described in x4.
+The output of the Breadth-First Search algorithm is examined in x5, results comparing it with a previously described algorithm and conclusions are drawn in x6.
+2 A linear temporal logic  Here we summarise the syntax and semantics of the logic used and describe the normal form required for the resolution method.
+2.1 Syntax and semantics  The logic used in this report is Propositional Temporal Logic (PTL), in which we use a linear, discrete model of time with nite past and innite future.
+PTL may be viewed as a classical propositional logic augmented with both future-time and past-time tempo-  ral operators.
+Future-time temporal operators include `}' (sometime in the future ), ` ' (always in the future ), ` g' (in the next moment in time ), ` U ' (until ), ` W ' (unless or weak until ), each with a corresponding past-time operator.
+Since our temporal models assume a nite past, for convenience, two last-time operators are used namely ` v' (weak last) and ` bcdef' (strong last).
+When evaluated at any point other than the beginning of time, both bcdefA and vA are true if and only if A was true at the previous moment.
+However, for any formula A, bcdefA is false, when interpreted at the beginning of time, while vA is true at that point.
+Particularly, vfalse is only true when interpreted at the beginning of time.
+The weak lasttime operator may be dened in terms of the strong last operator as follows  A:  v  :A:  f e d bc  Models for PTL consist of a sequence of states, representing moments in time, i.e.,   = s0 fi s1 fi s2 fi s3 fi : : : Here, each state, si , contains those propositions satised in the ith moment in time.
+As formulae in PTL  are interpreted at a particular moment, the satisfaction of a formula f is denoted by (fi i) j= f where  is the model and i is the state index at which the temporal statement is to be interpreted.
+For any well-formed formula f , model  and state index i, then either (fi i) j= f or (fi i) 6j= f .
+For example, a proposition symbol, `p', is satised in model  and at state index i if, and only if, p is one of the propositions in state si , i.e., (fi i) j= p i p 2 si : The semantics of the temporal connectives used in the normal form or the resolution rule are dened as follows (fi i) j= vA i i = 0 or (fi i ; 1) j= A (fi i) j= bcdefA i i > 0 and (fi i ; 1) j= A (fi i) j= }A i there exists a j > i s.t.
+(fi j ) j= A (fi i) j= A i for all j > i then (fi j ) j= A (fi i) j= A U B i there exists a k > i s.t.
+(fi k) j= B and for all i 6 j < k then (fi j ) j= A (fi i) j= A W B i (fi i) j= A U B or (fi i) j= A: The full syntax and semantics of PTL will not be presented here, but can be found in 9].
+2.2 A normal form for PTL  Formulae in PTL can be transformed to a normal form, Separated Normal Form (SNF), which is the basis of the resolution method used in this paper.
+SNF was introduced rst in 9] and has been extended to rst-order temporal logic in 10].
+While the translation from an arbitrary temporal formula to SNF will not be described here, we note that such a transformation preserves satisability and so any contradiction generated from the formula in SNF implies a contradiction in the original formula.
+Formulae in SNF are of the general form  ^ Ri i  where each Ri is known as a rule and must be one of the following forms.
+false  v  f e d bc  ^g ka  a=1  false  v  f e d bc  ^g ka  a=1  ) ) ) )  _r lb  (an initial  _ lb  (a global  b=1 r  b=1  }l }l  {rule) {rule)  (an initial }{rule) (a global }{rule)  Here ka , lb , and l are literals.
+The outer ` ' operator, that surrounds the conjunction of rules is usually omitted.
+Similarly, for convenience the conjunction is dropped and we consider just the set of rules Ri .
+We note a variant on SNF called merged-SNF (SNFm ) 9] used for combining rules by applying the following transformation.
+A B f(A ^ B ) e d bc f e d bc  f e d bc  ) ) )  F G F ^G  The right hand side of the rule generated may have to be further translated into Disjunctive Normal Form (DNF), if either F or G are disjunctive, to maintain the general SNF rule structure.
+3 The resolution procedure  Here we present a review of the temporal resolution method 9].
+The clausal temporal resolution method consists of repeated applications of both `step' and `temporal' resolution on sets of formulae in SNF, together with various simplication steps.
+3.1 Step resolution  `Step' resolution consists of the application of standard classical resolution rule to formulae representing constraints at a particular moment in time, together with simplication rules for transferring contradictions within states to constraints on previous states.
+Simplication and subsumption rules are also applied.
+Pairs of initial {rules, or global {rules, may be resolved using the following (step resolution) rule where L1 and L2 are both last-time formulae.
+L1 ) L2 ) (L1 ^ L2 ) )  A_r B _ :r A_B  Once a contradiction within a state is found using step resolution, the following rule can be used to generate extra global constraints.
+P  f e d bc  true  v  false  ) ) :P  This rule states that if, by satisfying P in the last moment in time a contradiction is produced, then P must never be satised in any moment in time.
+The new constraint therefore represents :P (though it must rst be translated into SNF before being added to the rule-set).
+The step resolution process terminates when either no new resolvents are derived, or false is derived in the form of one of the following rules.
+false true  v  f e d bc  ) )  false false  3.2 Temporal resolution During temporal resolution the aim is to resolve a }{rule, LQ ) }l, where L may be either of the last-  time operators, with a set of rules that together imply :l, for example a set of rules that together have the eect of bcdefA ) :l. However the interaction between the ` g' and ` ' operators in PTL makes the denition of such a rule non-trivial and further the translation from PTL to SNF will have removed all but the outer level of {operators.
+So, resolution will be between a }{rule and a set of rules that together imply an {formula which will contradict the }{ rule.
+Thus, given a set of rules in SNF, then for every rule of the form LQ ) }l temporal resolution may be applied between this }{rule and a set of global {rules, which taken together force :l always to be satised.
+The temporal resolution rule is given by the following  A0 ::: fA e d bc n LQ f e d bc  true  v  ) ) )  )  F0 ::: Fn }l n ^ :Ai :Q _ n i ^ ( :Ai ) W l =0  LQ )  with side conditions for all 0   i   n and  8> < >:  i=0  ` `  Fi ) :l _n Fi ) Aj j =0  9> = >	  where the side conditions ensure that the set of rules fA ) F together imply e d bc :l. In particular the i i rst side condition ensures that each rule, bcdefAi ) Fi , makes :l true now if bcdefAi is satised.
+The second side condition ensures that the right hand side of each rule, fA ) F , means that the left hand side of one of e d bc i i the rules in the set will be satised.
+So once the left hand side of one of these rules is satised, i.e.
+if Ai is satised for some i in the last moment in time, then :l will hold now and the left hand side of another rule will also be satised.
+Thus at the next moment in time again :l holds and the left hand side of another rule is satised and so on.
+So if any of the Ai are satised then :l will be always be satised, i.e., f e d bc  _n Ak )  k=0  :l:  Such a set of rules are known as a loop in :l.  3.3 The temporal resolution algorithm  Given any temporal formula  to be shown unsatisable the following steps are performed.
+1.
+Translate  into a set of SNF rules s .
+2.
+Perform step resolution (including simplication and subsumption) until either (a) false is derived - terminate noting  unsatisable or (b) no new resolvents are generated - continue at step 3.
+3.
+Select an eventuality from the right hand side of a }{rule within s , for example }l. Search for loops in :l and generate the resolvents.
+4.
+If any new formulae have been generated, translate the resolvents into SNF add them to the ruleset and go to step 2, otherwise continue to step 5.
+5.
+Terminate declaring  satisable.
+Completeness of the resolution procedure has been shown in 16].
+3.4 Loop search  As it is the application of the temporal resolution rule, i.e.
+the search for a set of rules that together imply :l, assuming we are resolving with }l, that is the most dicult part of the problem it is on this we concentrate in the rest of the paper.
+Dierent approaches to detecting such loops have been described in 7] and in particular a depth-rst search style algorithm was outlined in 8].
+With this algorithm, rules are used as edges in a graph and nodes represent the left hand sides of rules.
+The Depth-First Search algorithm uses SNFm rules to try build a path of nodes, where every path leads back into the set of nodes already explored.
+The SNFm rules are applied one at a time in a depth-rst manner, as several SNFm rules may be used to expand from a particular node, backtracking when a dead end is reached.
+The rules governing expansion from a node ensure that the desired looping occurs and, assuming we are resolving with }l, that the required literal :l, is obtained.
+In the next section we give an alternative, BreadthFirst Search algorithm, for detecting loops together with an example of its use.
+4 Breadth-First Search  Using the Breadth-First Search Algorithm, rules are only selected for use if they will generate the required literal at the next moment in time and their right hand side implies the previous node.
+The algorithm operates on SNF rules, only combining them into SNFm when required.
+With Breadth-First Search all possible rules (but avoiding the duplication of information) are used to expand the graph, rather than just selecting one rule.
+The graph constructed using this approach is a sequence of nodes that are labelled with formulae in Disjunctive Normal Form.
+This represents the left hand sides of rules used to expand the previous node which have been disjoined and simplied.
+If we build a new node that is equivalent to the previous one, using this approach, then we have detected a loop.
+However if we cannot create a new node then we terminate without having found a loop.
+4.1 Breadth-First Search Algorithm For each rule of the form LQ ) }l carry out the  following.
+1.
+Search for all the rules of the form bcdefXk ) :l, for k = 0 to b (called start rules), disjoin the left hand sides and make the top node H0 equivalent to this, i.e.
+H0 ,  _b Xk :  k=0  Simplify H0 .
+If ` H0 , true we terminate having found a loop.
+2.
+Given node Hi , build node Hi+1 for i = 0fi 1fi : : : by looking for rules or combinations of rules of the form bcdefAj ) Bj , for j = 0 to m where ` Bj ) Hi and ` Aj ) H0 .
+Disjoin the left hand sides so that  Hi+1 ,  _m Aj  j =0  and simplify as previously.
+3.
+Repeat (2) until (a) ` Hi , true.
+We terminate having found a Breadth-First loop and return true.
+(b) ` Hi , Hi+1 .
+We terminate having found a Breadth-First loop and return the DNF formula Hi .
+(c) The new node is empty.
+We terminate without having found a loop.
+Algorithms to limit the number of rule combinations required have also been developed and are given in 7].
+Input to the Breadth-First Search will be a set of SNF rules and these algorithms show how to test whether rules can be used as they are for node expansion, require combination only with start rules, or must be combined with other rules.
+Similarly, when rules are combined together an algorithm is given to make the number of combinations required as few as possible.
+Nodes (in DNF) are kept in their simplest form by carrying out simplication and subsumption.
+4.2 Example  Breadth-First Search is used to detect the loop in the set of rules given below.
+Assume we are trying to resolve with the rule LQ ) }l where L is either of the last-time operators, and the set of global -rules is fe e d bc 1: bcdefa ) :l 5: ) e f e d c b f e d c b 2: b ) :l 6: (a ^ e) ) a fb e d bc 3: bcdefc ) :l 7: ) b f e d bc f e d bc 4: d ) :l 8: c ) b  To create a new node Hi , we examine each rule in turn, disjoining the conjunction of literals on the left hand side of the new node if the rule satises the criteria given.
+The new node is then simplied where necessary.
+1.
+The rules 1{4 have :l on their right hand side.
+We disjoin their left hand sides and simplify (although in this case no simplication is necessary) to give the top node  H0 = a _ b _ c _ d: 2.
+To build the next node, H1 , we see that rules 6, 7 and 8 satisfy the expansion criteria in step (2) of the Breadth-First Search Algorithm (i.e.
+the right hand side and the literals on the left hand side of each rule implies H0 ) but rule 5 does not.
+Note if we combine rule 5 with any of the other rules to produce an SNFm rule that satises the expansion criteria, its left hand side will be removed through simplication.
+So we disjoin the literals on their left hand sides of rules 6, 7 and 8 to obtain node  H1 = (a ^ e) _ b _ c: 3.
+Rules 7 and 8 satisfy the expansion criteria and so do rules 5 and 6 when combined together to give the rule bcdef(a ^ e) ) a ^ e: Thus node H2 becomes H2 = (a ^ e) _ b _ c: As H2 , H1 we terminate having detected a loop.
+The Breadth-First loop we have found is (a ^ e) _ b _ c. The graph constructed using Breadth-First Search for this set of rules is shown in Figure 1.
+4.3 Resolvents  W  The Breadth-First Search algorithm returns a DNF formula i Di that means (assuming we are resolving with LQ ) }l) if this formula is satised in the previous moment in time then :l always holds, i.e.
+f e d bc  _ Di ) i  :l:  Rather than try reconstruct a set of rules with which to apply the temporal resolution rule we use the output from Breadth-First Search directly (as if each disjunct were the left hand side of a rule).
+In the previous example the loop output was (a ^ e) _ b _ c and the resolvents obtained are  true  v  ) :Q _ :((a ^ e) _ b _ c) LQ ) :((a ^ e) _ b _ c) W l  and must be further translated into SNF.
+4.4 The main processing cycle  The Breadth-First search procedure nds all loops (see x5) for a particular eventuality.
+Each time round the main processing loop an eventuality is taken with which to resolve.
+Termination, declaring the formula satisable is only allowed if no more new loops may be found (and step resolution produces no new rules).
+Given Li , for i = 1 to n, loops detected previously we can ensure that a new loop L provides no new information by checking whether n _ L ) Li : i=1  This is because any new resolvents produced from L will be subsumed by those already generated from loops Li .
+4.5 Correctness issues H0 H1  a_b_c_d (  a ^ e) _ b _ c  Figure 1 Breadth-First Search Example  Soundness, completeness and termination of the Breadth-First Search algorithm are proved in 7].
+5 Breadth-First Search loops  The two main characteristics of loops output by the Breadth-First Search are that all loops are detected for an eventuality and that paths into the loop are also detected.
+These are described below and compared with the output of the Depth-First Search algorithm.
+Finally we consider the memory implications for Breadth-First Search.
+5.1 Detection of all the loops The Breadth-First Algorithm nds all the loops for a particular }{rule.
+Considering the example given in x4.2 it is clear that the three SNFm rules,  M1 M2 M3  (a ^ e)  f e d bc  b fc e d bc  f e d bc  ) ) )  (a ^ e ^ :l) (b ^ :l) (b ^ :l)  satisfy the criteria for a loop together (and in any combination of subsets of these three rules where if rule M 3 occurs then rule M 2 also occurs).
+We could combine these SNFm rules further to give other SNFm rules for example combining rule M 1 and M 2 we obtain  M4  (a ^ b ^ e)  f e d bc  )  (a ^ b ^ e ^ :l):  Performing Breadth-First Search we return the formula (a ^ e) _ b _ c as shown previously (because of simplication we will never return (a ^ e) _ b _ c _ (a ^ b ^ e) for example).
+However performing a Depth-First Search we detect loops one at a time i.e.
+we would only ever return a loop relating to either rule M 1 or rule M 2 or rule M 4.
+5.2 The lead into the loop  Breadth-First Search nds disjuncts representing rules that are never detected in Depth-First Search.
+An example of this is the disjunct c representing the use of the SNFm rule bcdefc ) (b ^ :l): This rule represents the path into the loop (there are no rules that make this rule `re').
+Both systems are still complete but having found the Depth-First loop bcdefb ) (b ^:l)fi for example, we will have to carry out further applications of the step resolution rule to generate rules equivalent to the complete set of resolvents from BreadthFirst Search.
+5.3 Memory considerations  Usually a disadvantage of breadth-rst search algorithms is the amount of memory required to construct the search space.
+The Breadth-First Search Algorithm described here does attempt to use all the rules or combinations of rules to construct the next node so, in the worst case, memory requirements may be a problem.
+However, such problems are avoided in many cases for the following reasons.
+Firstly, the BreadthFirst Search Algorithm only requires the storage of the top node, H0 , and the last node constructed, Hi , to enable the construction of node Hi+1 and to test for termination.
+The full search space constructed between these two points is not required and therefore after the construction of node Hi+1 , and failure of the termination test, the memory required for the  storage of node Hi may be released.
+Secondly each node constructed is a DNF formula kept in its simplest form so any redundant information is removed from the node.
+Finally, although the number of rules in which we search for loops may be large, containing many propositions, typically, the loops will relate to only a few of these rules containing a subset of the total number of propositions.
+6 Results and conclusions  Results comparing the Breadth-First Search Algorithm with a previous loop search algorithm are given and conclusions are then drawn.
+6.1 Results  A prototype implementation performing the temporal resolution method has been built.
+Two dierent loop search programs have been provided|one for Breadth-First Search, the other for the DepthFirst Search algorithm.
+The programs are written in SICStus Prolog 4] running under UNIX and timings have been carried out on a SPARCstation 1 using compiled Prolog code.
+The test data is a set of valid temporal formulae taken from 13] chosen as it is a reasonably sized collection of small problems to be proved valid.
+An example of the type of formula being shown valid (we actually shown the negation is unsatisable) is  }w1 ^ }w2 ) }(w1 ^ }w2 ) _ }(w2 ^ }w1 ): We note that, although not presented in the results given here, larger examples have also been tackled, for example Peterson's Algorithm 17, 20].
+The full set of results, including timings for each eventuality and example, are given in 7] however, due to space restrictions, we only present a summary of the data here.
+Table 1 shows the number of times the total loop search for Depth-First Search (DFS) was less than or equal to, or greater than that for Breadth-First Search (BFS), for each eventuality and example.
+The gures in brackets are the values as percentages.
+Values are given for the full data set and for those examples where at least one of the times is greater than 60 and then 100 milliseconds.
+By considering these categories we hope to eliminate inaccuracies from very low timings.
+The gures in Table 1 indicate that BreadthFirst Search performs better in signicantly more examples than Depth-First Search.
+The increase in the percentage of examples where Breadth-First Search is quicker than Depth-First Search as we move from the examples with (at least one) time over 60 milliseconds to (at least one) time over 100 milliseconds suggests  Subset of Data DFS 6 BFS BFS < DFS (i) Full data set 20 (40 %) 30 (60 %) (ii) Time > 60 10 (37 %) 17 (63 %) (iii) Time > 100 6 (27 %) 16 (73 %)  Table 1 Summary of Comparative Timings that Breadth-First Search performs better on larger examples.
+Further, the raw data shows that timings for Depth-First Search have a larger range of values than Breadth-First Search.
+This is what we would expect from depth-rst search style algorithms because if the correct search path is chosen rst the solution can be detected more quickly than breadth-rst search type algorithms.
+However, if a large amount of time is spent exploring fruitless paths then the overall time may be far greater than that for Breadth-First Search.
+Table 2 shows the same data displayed in columns representing the number of calls made by each example to the Depth-First Search algorithm, i.e.
+how many times we have had to search for a loop using DepthFirst Search for each example.
+Recall that BreadthFirst Search nds all loops for an eventuality where as Depth-First Search nd them one at a time.
+The rst row in the table gives the total number of examples for the respective number of calls.
+The second and third rows give the number and percentage, respectively, of these examples where the time for detecting the loop with Breadth-First Search was less than the total time spent in loop search by Depth-First Search.
+The column headed 3 has been omitted as there were no examples that required 3 calls to the Depth-First Search Algorithm.
+1 2 4 5 Total 25 22 2 1 BFS < DFS (No.)
+13 14 2 1 BFS < DFS (%) 52% 64% 100% 100%  Table 2 Summary by Number of Calls The table indicates that for this set of examples the more calls to the loop nding section that Depth-First Search makes the more likely it is that it is quicker to do a Breadth-First Search than a Depth-First Search.
+If we take the greater number of calls to the DepthFirst loop nding program as an indication of the size of the example, then this matches the observation that  was made previously that Breadth-First Search performs better on larger examples.
+6.2 Conclusions  A Breadth-First Search algorithm for implementing Fisher's temporal resolution method has been described and given.
+Output from this algorithm is analysed and compared with a previously described depthrst approach.
+An prototype implementation has been produced and run on a variety of valid temporal formulae.
+Test results suggest that breadth-rst search does perform better than this alternative on larger examples.
+Although we have only considered the propositional version of the logic it may be possible to extend the resolution method to rst-order temporal logic (and even to other temporal logics).
+Indeed a rst-order version of the normal form exists 10].
+However, as full rst-order temporal logic is undecidable 12] we must rst consider subsets to which the resolution method can successfully be applied.
+The suitability of Fisher's temporal resolution method to mechanisation, the algorithms developed for the temporal resolution step and prototype implementation together means that temporal resolution provides a viable option for automated temporal theorem proving.
+6.3 Acknowledgements  Thanks to my supervisors Professor Howard Barringer and Dr. Michael Fisher for their guidance and encouragement during this work.
+Thanks also to Graham Gough for many helpful comments and advice.
+References  1] M. Abadi and Z.
+Manna.
+Nonclausal Deduction in First-Order Temporal Logic.
+ACM Journal, 37(2):279{317, April 1990.
+2] H. Barringer.
+Using Temporal Logic in the Compositional Specication of Concurrent Systems.
+In A. P. Galton, editor, Temporal Logics and their Applications, chapter 2, pages 53{90.
+Academic Press Inc. Limited, London, December 1987.
+3] H. Barringer, R. Kuiper, and A. Pnueli.
+Now You May Compose Temporal Logic Specications.
+In Proceedings of the Sixteenth ACM Symposium on the Theory of Computing, 1984.
+4] M. Carlsson and J.
+Widen.
+SICStus Prolog User's Manual.
+Swedish Institute of Computer Science, Kista, Sweden, September 1991.
+5] A. Cavalli and L. Fari~nas del Cerro.
+A Decision Method for Linear Temporal Logic.
+In R. E.  Shostak, editor, Proceedings of the 7th International Conference on Automated Deduction, volume 170 of Lecture Notes in Computer Science, pages 113{127.
+Springer-Verlag, 1984.
+6] C. L. Chang and R. C. T. Lee.
+Symbolic Logic and Mechanical Theorem Proving.
+Academic Press, 1973.
+7] C. Dixon.
+Strategies for Temporal Resolution.
+PhD thesis, Department of Computer Science, University of Manchester, 1995.
+8] C. Dixon, M. Fisher, and H. Barringer.
+A GraphBased Approach to Resolution in Temporal Logic.
+In D. M. Gabbay and H. J. Ohlbach, editors, Temporal Logic, First International Conference, ICTL '94, Proceedings, volume 827 of Lecture Notes in Articial Intelligence, Bonn, Germany, July 1994.
+Springer-Verlag.
+9] M. Fisher.
+A Resolution Method for Temporal Logic.
+In Proceedings of the Twelfth International Joint Conference on Articial Intelligence (IJCAI), Sydney, Australia, August 1991.
+Morgan Kaufman.
+10] M. Fisher.
+A Normal Form for First-Order Temporal Formulae.
+In Proceedings of Eleventh International Conference on Automated Deduction (CADE), volume 607 of Lecture Notes in Computer Science, Saratoga Springs, New York, June 1992.
+Springer-Verlag.
+11] B. T. Hailpern.
+Verifying Concurrent Processes Using Temporal Logic, volume 129 of Lecture Notes in Computer Science.
+Springer-Verlag, 1982.
+12] W. Hussak.
+Decidability in Temporal Presburger Arithmetic.
+Master's thesis, Department of Computer Science, University of Manchester, February 1987.
+13] Z.
+Manna and A. Pnueli.
+Verication of Concurrent Programs: The Temporal Framework.
+In Robert S. Boyer and J. Strother Moore, editors, The Correctness Problem in Computer Science, pages 215{273.
+Academic Press, London, 1981.
+14] Z.
+Manna and A. Pnueli.
+The Temporal Logic of Reactive and Concurrent Systems: Specication.
+Springer-Verlag, New York, 1992.
+15] S. Owicki and L. Lamport.
+Proving Liveness Properties of Concurrent Programs.
+ACM Transactions on Programming Languages and Systems, 4(3):455{495, July 1982.
+16] M. Peim.
+Propositional Temporal Resolution Over Labelled Transition Systems.
+Unpublished Technical Note, Department of Computer Science, University of Manchester, 1994.
+17] G. L. Peterson.
+Myths about the Mutual Exclusion Problem.
+Information Processing Letters, 12(3):115{116, 1981.
+18] A. Pnueli.
+The Temporal Logic of Programs.
+In Proceedings of the Eighteenth Symposium on the Foundations of Computer Science, Providence, November 1977.
+19] A. Pnueli.
+The Temporal Semantics of Concurrent Programs.
+Theoretical Computer Science, 13:45{60, 1981.
+20] A. Pnueli.
+In Transition From Global to Modular Temporal Reasoning about Programs.
+In Krysztof Apt, editor, Logics and Models of Concurrent Systems, pages 123{144, La Colle-surLoup, France, October 1984.
+NATO, SpringerVerlag.
+21] A. Pnueli.
+Applications of Temporal Logic to the Specication and Verication of Reactive Systems: A Survey of Current Trends.
+In J.W.
+de Bakker, W. P. de Roever, and G. Rozenberg, editors, Current Trends in Concurrency, volume 224 of Lecture Notes in Computer Science.
+Springer-Verlag, August 1986.
+22] J.
+A. Robinson.
+A Machine{Oriented Logic Based on the Resolution Principle.
+ACM Journal, 12(1):23{41, January 1965.
+23] M. Y. Vardi and P. Wolper.
+An AutomataTheoretic Approach to Automatic Program Verication.
+In Proceedings IEEE Symposium on Logic in Computer Science, pages 332{344, Cambridge, 1986.
+24] G. Venkatesh.
+A Decision Method for Temporal Logic based on Resolution.
+Lecture Notes in Computer Science, 206:272{289, 1986.
+25] P. Wolper.
+The Tableau Method for Temporal Logic: An overview.
+Logique et Analyse, 110{ 111:119{136, June-Sept 1985.

@@ -1,0 +1,348 @@
+An Approach to Model and Query Event-Based Temporal Data Elisa Bertino, Elena Ferrari Dipartimento di Scienze dellaInformazione UniversitaE degli Studi di Milano - Italy fbertino,ferrarie g@dsi.unimi.it Giovanna Guerrini Dipartimento di Informatica e Scienze dellaInformazione UniversitaE degli Studi di Genova - Italy guerrini@disi.unige.it  Abstract Temporal database systems support all functions related to the management of large amounts of constantly changing data.
+However, current temporal database systems support a flat view of the history of data changes, in that all the changes are considered equally relevant and are, therefore, all stored in the database.
+However, many applications, such as monitoring and planning applications, call for more flexibility.
+Monitoring applications, in particular, may require that the history of a data item is stored only whenever a certain event occurs.
+For other applications the history of data changes may be less important than the event causing the changes.
+In this paper we propose an event-based temporal object model which allows to keep track of selected values within the history of a data object attribute.
+The portions, within the history of a data object, which are actually stored into the database are identified by relating them to events.
+In the paper, besides defining the data model, we investigate the problem of querying a database with incomplete temporal information.
+1 Introduction A temporal database [13] typically stores the entire history of data over time, rather than storing only current data as conventional databases.
+Some models support, in addition, static attributes [3], that is, attributes for which the changes in time are not meaningful with respect to the given application domain and, thus, need not to be stored.
+Such approach avoids storing irrelevant old values of attributes [12].
+There are, however, many applications, such as monitoring and planning applications, for which it would be useful to selectively record values of data objects, that is,  to store the past values of data objects only whenever certain situations occur or certain conditions are met.
+Monitoring applications may require that whenever a certain event occurs on a certain data object, the history of the data object (or of some of the objectas attributes) is recorded in the database from that moment on.
+Consider as an example the price of a stock; a monitoring application could need to record all the price variations of the stock only when the price of the stock increases over a given amount.
+Similar examples can be found in the medical application domain, where for example the temperature variations for a patient need only to be recorded when the temperature becomes higher than 36C degrees.
+Planning applications may require to keep the history of a data object after certain modifications on the object have been performed, in order to subsequently analyze the consequences of the modifications.
+Object-oriented database systems supporting object evolution may also require a selective recording of object histories [5].
+For example, it could be meaningful to store the value of the salary of an employee when he is promoted to a manager, or when he retires, or when he works in a certain division or on a certain project.
+As pointed out by Dean and McDermott in [9], time can be seen as a map, where not all instants or time intervals are equally relevant.
+Some instants or time intervals may be more important than others, as they indicate relevant application events.
+Current temporal DBMSs do not provide support for event-based temporal histories.
+One possibility would be supporting such histories through application programs on top of a temporal DBMS.
+Such an approach, however, has many drawbacks.
+The applications would have to be in charge of detecting events and determining when an old value of a data item must be kept or must be purged.
+As with integrity constraints, relying on application programs makes it difficult, if at all possible, the specification of events and  the management of event-based temporal histories.
+Versioning mechanisms suffer from the same drawbacks because it is up to the users or applications to explicitly require the creation of a new version of a given data object.
+Therefore, no information is kept into the database concerning events that caused the new version to be created (unless some specific code for doing so is added to all application software).
+A relevant issue in a data model supporting selective temporal histories is related to queries.
+Only queries accessing attributes at time instants in which a value for that attribute is stored can be exactly solved.
+The other queries can be rejected, or alternately, can be approximated by using an appropriate approximation method.
+Such issue, however, has not been so far addressed.
+In this paper we develop an event-based temporal object data model by extending the T Chimera temporal object model [2] with the possibility of selectively storing the past values of object attributes by associating with attributes snapshot conditions, expressed in a rich event language.
+When the snapshot condition associated with an attribute occurs, the history of the attribute is updated by inserting the current value of the attribute.
+The notion of snapshot condition and its use in event-based temporal histories has been first proposed in [3].
+However, in [3] a very simple language for expressing snapshot conditions was considered.
+In this paper, we consider a powerful event language, allowing to combine database operations, conditions on the database, temporal and periodic events by means of several operators.
+Our event specification language has almost the same expressive power of the event specification language Snoop [8].
+The main difference is that we provide a more powerful formalism to express periodic time, since in our language expressions with level 2 periodicity can be specified, like Each working day between 9 a.m. and 12 a.m.
+Besides defining the data model, we address the issue of queries, which was not dealt with in [3].
+We consider temporal attribute accesses requiring the value of a certain attribute for an object at a specified time, and we investigate conditions ensuring that the access can be exactly solved.
+For accesses that cannot be exactly solved, we introduce the notion of approximate query, to supply a value obtained through an approximation method.
+Moreover, we show how our event language support meta-queries, that is, queries to retrieve all the objects or attributes whose changes have been recorded because of an arbitrary event occurrence.
+This is a relevant issue since often knowing the event which has changed the state of an object is more important than the change itself.
+Work on this direction has been carried on in the context of relational databases [10].
+However, to our knowledge, we are the first addressing these issues in the context of the object-oriented model.
+The remainder of this paper is organized as follows.
+Section 2 introduces the event specification language.
+Section  3 deals with event containment.
+Section 4 presents the data model, whereas Section 5 deals with queries.
+Finally, Section 6 concludes the paper and outlines future work.
+The event language syntax and semantics are reported in Appendix A.
+2 Event Language In this section we give an informal description of the language we provide to specify events.
+The formal syntax and semantics are reported in Appendix A.
+The language supports the specification of two main categories of events: basic events and composite events, built by applying a set of predefined event constructors to basic or composite events.
+Basic events are of two main types: database events and temporal events.
+Database events denote database operations such as the migration of an object from a class to another or the increase of an attribute value up to a given threshold.
+Database events can be either instantaneous (i.e., they last only one instant), or persistent (i.e., they last over a time period).
+For instance, migrate is an instantaneous event, whereas (salary > 60K) is a persistent event, since it lasts from the first instant on which the salary exceeds 60K till the first instant on which the salary becomes again lesser than 60K.
+We use the term starting time to denote the instant on which an event begins to occur.
+Similarly, the ending time of an event is the time on which the event finishes.
+We use the notation mm/dd/yy:hh:mm:ss to represent time instants.
+For example, the notation 1/1/94:08 represents 8 a.m. on 1/1/94.
+When 1/1/94 is used as a minimum, it denotes the first instant of the first day of January 1994, while, as a maximum, it denotes the last instant of 1/1/94.
+Note moreover that an event can occur more than one time during the database history.
+Example 2.1 Consider the event (salary > 60K) and suppose that salary = 30K during the period [1/1/94,1/1/95].
+Suppose that on 1/2/95 the salary increases up to 70K and remains unchanged till 1/1/96 when it assumes the value 20K.
+Suppose moreover that the salary remains unchanged till 4/1/96 when it is set equal to 80K.
+Therefore the event (salary > 60K) occurs from the first instant of 1/2/95 to the last instant of 12/31/95 and from the first instant of 4/1/96 up to now.
+The first instants of 1/2/95 and 4/1/96 represent the starting times of the event (salary > 60K), whereas the last instant of 12/31/95 represents the ending time of the event.
+Temporal events can be either absolute, as the first hour of a specific day, periodic, as each working-day between 9 a.m. and 12 a.m., or relative, as five hours after the salary  of a given employee has been modified.
+To represent periodic time we adopt the symbolic formalism proposed by Niezette and Stevenne in [11], based on the notions of calendar and periodic expression.
+We postulate the existence of a set of predefined calendars containing at least the calendars Hours, Days, Weeks, Months, and Years, and we consider Hours as our finest granularity calendar.
+Calendars are combined to represent more general sets of periodic intervals, not necessarily contiguous, as, for instance, the set of Mondays or the set of The third hours of the first day of each month.
+These complex sets of periodic intervals are represented by means of periodic expressions.
+Table 1 illustrates a set of periodic expressions and their meaning.
+More details can be found in [11].
+Moreover, the language provides a set of event constructors from which complex events can be defined.
+A first set of constructors, called event modifiers, consists of a number of unary operators that transform an arbitrary event into one or more related events.
+We support four different types of event modifiers.
+Let E be an event, begin(E ) and end(E ) occur on the starting and ending times of E , respectively; begin on(E ) occurs from the first occurrence of E up to now, whereas end on(E ) occurs from the first time E ends up to now.
+Example 2.2 With reference to Example 2.1, begin(salary > 60K) occurs on 1/2/95 and 4/1/96, end(salary > 80K) occurs on 12/31/95, begin on(salary > 60K) occurs from 1/2/95 up to now, whereas end on(salary > 60K) occurs from 12/31/95 up to now.
+Additionally, the language provides the following constructors (in the following, E1 and E2 denotes two events):      Disjunction.
+E1 OR E2 occurs when E1 or E2 occurs; Conjunction.
+E2 occur;  E1 AND E2 occurs when both E1 and  Sequence.
+This constructor conditions the occurrence of an event to the temporal relations occurring between the starting times of two arbitrary events.
+We provide four different forms of the sequence constructor: sequence(E1 ; E2 ,tmin ,tmax ), which occurs on the starting time of E2 , provided that the ending time of E1 occurs tmax tmin instants before the starting time of E2 ;1 sequence(E1 ; E2 ,tmin ,null) which occurs at the starting time of E2 , provided that the ending time of E1 occurs at least tmin instants before the starting time of E2 ; sequence(E1; E2 ,null,tmax) which  1 Note that, as a particular case, sequence(E1 ; E2 ,0,0) occurs on the starting time of E2 , provided that the starting time of E2 is immediately after the ending time of E1 .
+occurs at the starting time of E2 , provided that the ending time of E1 occurs no more than tmax instants before the starting time of E2 ; sequence(E1 ; E2 ,*) which occurs on the starting time of E2 , provided that E1 has already occurred.
+    Occurrence.
+This constructor relates the occurrence of an event to the multiple occurrences of another event in a set of time intervals bound by the starting/ending times of two arbitrary events.
+There are two variants of the occurrence constructor: happen(E1 ; n; E2 ; E3 ) occurs on the starting time of the n-th occurrence of event E1 in the closed interval determined by the starting time of E2 and the ending time of E3 ; happen(E1 ; ; E2 ; E3 ) occurs on the starting time of any occurrence of event E1 in the closed interval determined by the starting time of E2 and the ending time of E3 .
+Non-occurrence.
+This constructor relates the occurrence of an event to the non occurrence of another event in a set of time intervals bound by the starting/ending times of two arbitrary events.
+There are two variants of the non-occurrence constructor: not happen(E1 ; n; E2 ; E3 ) occurs on the ending time of E3 provided that the number of occurrences of E1 in the closed interval determined by the starting time of E2 and the ending time of E3 is lesser than n; not happen(E1; ; E2 ; E3 ) occurs on the ending time of E3 provided that E1 does not occur in the closed interval determined by the starting time of E2 and the ending time of E3 .
+In the following, E denotes the set of events that can be expressed in our language.
+Example 2.3 The following are events in E : generalize: it occurs each time an object in the database migrates to a superclass; salary > 60K AND status =aapart timeaa: it occurs each time the salary of a part time employee is greater than 60K; ([1/1/94,1],Mondays): it occurs each Monday from 1/1/94; happen(increase(salary), 5, status = aapart timeaa, status = aafull timeaa): it occurs if the salary of an employee has increased 5 times during the period he was a part time employee.
+3 Containment between Events In this section we investigate the property of event containment, which will be useful for characterizing a number of conditions in our temporal data model.
+Intuitively, given  periodic expression Weeks + 2,6 .Days Months + 20.Days Years + 7.Months 3.Months Weeks + 2,: : :,6 .Days + 10.Hours  f g f   g   3.Hours  meaning Mondays and Fridays The twentieth day of every month (Pay-days) Summer-time Each Working day between 9 a.m. and 12 a.m.  Table 1.
+Example of periodic expressions two events E and E 0 , E is contained in E 0 if each time E occurs, E 0 occurs too.
+To formally define the notion of containment, we need first to introduce some preliminary notations.
+We model the database as an history  db history = h[t0 ; t1 ); db0 i ?
+!E1 h[t1 ; t2 ); db1 i ?
+!E2 : : : : : : ?
+!En h[tn ; now]; dbn i where, ti , i = 1; : : : ; n, is a time instant, Ei , i = 1; : : : ; n, is an update event which arose at time ti and now denotes the current time.
+The db history models that the database has evolved from its initial state db0 through a sequence of states dbi and each transition arises because of an update event Ei .
+Moreover, we make use of a function f : E  T IME 2 !
+ftrue ; false g that, given an event E 2 E and a time instant t, returns true if E occurs on t; it returns false otherwise.
+This function, modeling event semantics, is specified in Appendix A.
+Definition 3.1 Let E and E 0 be two events in E .
+E is contained in E 0 , denoted as E  E 0 , if and only if 8db history: ft j f (E; t) = trueg  ft0 j f (E 0 ; t0 ) = trueg.
+Example 3.1 The following are examples of containment relationships between events:   f[1/1/94,1/1/95],[1/1/96,1/2/97]g  f[1/1/93,1/2/97]g;  salary > 60K AND status = aapart timeaa  salary > 60K  salary > 20K.
+An algorithm to test containment between events in E  has been developed.
+4 Data Model The temporal data model we propose allows to selectively keep track of data modifications.
+The idea is to associate a snapshot condition, expressed in the language introduced in Section 2, with an attribute, so that the history of the attribute is updated whenever the snapshot condition is  2 The set T IME = f0; 1; : : : ; nowg is our temporal domain.
+true.
+The data model we propose here extends the objectoriented temporal data model T Chimera [2] with the possibility of associating snapshot conditions with attributes.
+However, the idea of selectively keeping track of modifications to data is highly independent from T Chimera and can be applied to any object-oriented or relational temporal data model.
+In the following, we denote with OI a set of object identifiers, with CI a set of class identifiers (i.e., class names), with AN a set of attribute names, and with V the set of T Chimera legal values.
+T Chimera supports the notion of type.
+A finite set of basic predefined types is provided by the language, containing in addition to the usual (nontemporal) types, a time type whose domain is the set T IME = f0,1,: : :,nowg and which represents transaction time.
+T Chimera also supports structured types such as sets, lists and records, and allows the use of class names in the definition of structured types.
+Finally, temporal types are supported: for each type T , a corresponding temporal type, temporal(T ), is defined.
+Instances of type temporal(T ) are partial functions from instances of type time to instances of type T .
+Temporal types can be used in the definition of structured types.
+In our data model, attributes have temporal types as domains and their values are thus partial functions from T IME to the set of legal values for the attribute.3 Throughout the paper we represent the value of a temporal attribute of type temporal(T ) as a set of pairs fh1 ; v1 i; : : : ; hn ; vn ig, where v1 ; : : : ; vn 2 V are legal values for type T , and 1 ; : : : ; n 2 T IME  T IME are time intervals such that the attribute assumes the value vi for each time instant in i , i = 1; : : : ; n. Moreover, given the value v of a temporal attribute and a time instant t, v (t) denotes the value taken by function v on input t, according to the usual notation for function application.
+A snapshot condition in E can be associated with each attribute, specifying the conditions upon which the attribute value is stored.
+If no snapshot condition is associated with an attribute, the entire history of attribute changes is recorded in the database.
+Given a class c 2 CI , A(c) denotes the set of attributes of instances of that class, whereas dom(a; c) and "(a; c) denote the domain and the snapshot condition  3 Actually, T Chimera supports temporal, static and immutable attributes.
+In this paper we only consider temporal attributes.
+of attribute a in class c, respectively.
+Example 4.1 Class employee and its subclass manager are examples of T Chimera classes:  A(employee) = fname, salary, status, division, manager,  g  w hours ,  dom(name,employee) = temporal(string), dom(salary,employee) = temporal(integer), dom(status,employee) = temporal(string), dom(division,employee) = temporal(string), dom(manager,employee) = temporal(manager), dom(w hours,employee) = temporal(integer), "(salary,employee) = (create,1, Pay-Days), "(manager,employee)= sequence(decrease(salary), increase(w hours),*)  A(manager) = A(employee)[fdependents, official carg, dom(dependents,manager) = temporal(set-of(employee)),  dom(official car,manager) = temporal(string) "(dependents,manager) = count(dependents)  5, "(official car,manager) = update(salary) The value of attribute salary is recorded the twentieth day of every month (i.e., the apay-daya) starting from the time of the object creation; the history of attribute manager is updated only upon a salary reduction followed by an increase of the working hours.
+Manager dependents are recorded only when the dependents are more than five, whereas manager official car is recorded only whenever the manager salary is updated.
+For all the other attributes, the entire history of changes is maintained.
+For a proper redefinition of attributes in subclasses, we impose that: (i) the domain of an attribute in a subclass is refined in a subtype of the domain in the superclass; (ii) the snapshot condition associated with an attribute in a subclass must contain the snapshot condition associated with the attribute in the superclass.
+These conditions, formally stated by the following rule, ensure the substitutability of the subclass instances with respect to the superclass.
+Rule 4.1 Let c1 and c2 2 CI such that c2 is a subclass of c1 .
+Then, 8a 2 A(c1 ), the following conditions must be satisfied: i) dom(a; c2 ) T dom(a; c1 ); ii) "(a; c1 )  "(a; c2 ), where T denotes the subtype relationship [2].
+An object o is characterized by an object identifier i, a lifespan and a record value which represents its state, as formally stated by the following definition.
+Definition 4.1 An object o is a 3-tuple (i; lifespan; v ), where i 2 OI is the oid of o; lifespan 2 (T IME  T IME ) is the lifespan of o; v 2 V is a record value (a1 : v1 ; : : : ; an : vn ), where a1 ; : : : ; an 2 AN are the names of the attributes of o, and v1 ; : : : ; vn 2 V are their corresponding values.
+Example 4.2 Consider the classes of Example 4.1, and suppose that i1 ; : : : ;i7 2 OI .
+Objects o1 and o2 specified as follows are examples of T Chimera objects :4  i =i1 lifespan = [1/1/97,now] v = f(name: fh[1/1/97,now],aAlan Smithaig), (salary: fh1/20/97,20Ki; h2/20/97,15000ig), (status: fh[1/1/97,now],afull-timeaig), (division: fh[1/1/97,1/31/97],aDisksai; h[2/1/97,now],aPrintersaig), (manager: fh3/1/97,i4 ig), (w hours: fh[1/1/97,2/28/97],38 i; h[3/1/97,now],40ig)g i = i4 lifespan = [2/1/97,now] v = f(name: fh[2/1/97,now], aMary Doleaig), (salary: fh2/20/97,30Kig), (status: fh[2/1/97,now],afull-timeaig), (division: fh[2/1/97,now],aPrintersaig), (w hours: fh[2/1/97,now],35 ig), (dependents: fh[2/15/97,now], fi1 , i3 , : : :, i7 gig)g  Note that, no value for attributes manager and official car is recorded in object o2 , since there does not exist an instant in which the corresponding snapshot conditions are verified.
+In order to ensure object consistency, we require that for each attribute of an object, a value is stored for each instant satisfying the associated snapshot condition.
+This requirement is formalized by the following rule.
+Rule 4.2 Let o be an object, and let c be the class to which o belongs at time t. Then, 8a 2 A(c) the following condition must be satisfied: o:v:a(t) is defined , f ("(a; c); t) =  true:  Moreover, the value must be of the appropriate type, as usually in data models.
+5 Queries Because in our model, only selected portions in an attributeas history can be recorded, a query could be issued requiring the value of the attribute at a time belonging to a non-recorded portion.
+An important question concerns which accesses can be exactly answered and how to provide a value also for the time instants for which no value exists in the database.
+In this section we address such issues.
+For the sake of simplicity we do not introduce a complete query language.
+Rather, we focus on temporal attribute accesses, which are the basis of any object-oriented query language.
+We consider temporal attribute accesses of the form o:a # E , where o is an object reference (e.g.
+4 In the example, by abuse of notation, we use t to denote the interval  [t; t].
+a variable) denoting an object of a given class c (e.g.
+the type of the variable), a is an attribute of class c, and E is a temporal specification, that is, an expression specified in the event language introduced in Section 2.
+Note that other languages could have been considered as well, but we refer to the event language both for the sake of uniformity and because it is convenient for expressing meta-queries.5 However, we restrict ourselves to event expressions denoting single time instants, though temporal attribute accesses involving time intervals could be easily handled [4].
+We do not consider them here since they complicate the discussion without bringing in any relevant issue.
+Thus, we consider the subset of events introduced in Section 2 which occur on specific time instants (that is, instantaneous events).
+This means that we only consider event expressions E such that ft j f (E; t) = trueg is a singleton set ftg.
+Given an event E , let tE denote this unique time instant.
+Finally, note that, as a particular case, E can be a time instant t (i.e., the time of the attribute access can be explicitly denoted).
+Example 5.1 Given a variable X of type employee, X.salary#1/1/94:08 is an example of temporal attribute access requiring the value of attribute salary of the employee object denoted by variable X at 8 a.m. on 1/1/94.
+A further example of temporal attribute access is X.salary # end(salary > 80K).
+Referring to the db history of Example 2.1, the above temporal attribute access is equivalent to the access X.salary # 12/31/95.
+5.1 Exact Queries: Static Conditions In this subsection we consider a temporal attribute access o:a # E and we deal with the problem of (statically) deciding whether the value of attribute a of the object denoted by o is available at the time denoted by E .
+Intuitively, an attribute access o:a # E can be exactly solved, that is, a value for attribute a of object o at time tE is available, if the snapshot condition of attribute a in the class of o, is true at time tE .
+The value denoted by o:a # E , if available, is the non-temporal value o:v:a(tE ), that is, the value of the (partial) function o:v:a on tE .
+Thus, given an object reference o of type c and an attribute a of class c, the attribute access o:a # E denotes an available value, and, thus, can be exactly answered, if and only if f ("(a; c); tE ) = true.
+Example 5.2 Consider the objects of Example 4.2.
+Let X be a variable of type employee and Y be a variable of type manager, denoting object o1 and o2 , respectively.
+The attribute accesses X.name # 2/1/97, X.salary # 1/20/97, X.manager # 3/1/97, Y.salary # 2/20/97 and Y.dependents # 2/16/97 can be exactly answered and they denote the values Alan Smith,  5 We will elaborate on this in Subsection 5.3.
+20K, i4 , 30K, and fi1 ,i3 ; : : :,i7 g, respectively.
+By contrast, the attribute access X.salary # 1/21/97 cannot be exactly answered since the event (create,1,PayDays) did not occur on 1/21/97.
+If the value of attribute a for object o at the time denoted by E is not available, the query could be rejected, or could be approximated.
+Query approximation will be dealt with in the following subsection.
+However, a user can explicitly require that the query must be exactly answered.
+Determining whether a query cannot be exactly answered, without executing the query, would avoid many unnecessary database accesses.
+It is however not always possible to statically detect whether an attribute access can be exactly solved.
+For instance, if "(a; c) is a database event (either an update event or a value event) and E is a time instant t we cannot decide at query compile-time whether f ("(a; c); t) is true, since this decision depends on the specific db history .
+Example 5.3 Given the database event salary > 60K and the time instant 1/1/94:08 we cannot decide, independently from the db history , whether f (salary > 60K,1/1/94:08) = true.
+More precisely, we can ensure that an attribute access  o:a # E can be exactly answered, if E is contained6 in the snapshot condition associated with a, that is, if E  "(a; c).
+In this case, indeed, by definition of event expression containment, for each db history : tE 2 ft j f ("(a; c)) = trueg.
+Example 5.4 The temporal attribute access X.salary # begin(salary > 60K) can be exactly answered in a database where the snapshot condition salary > 60K is associated with attribute salary in class employee since begin(salary > 60K)  salary > 60K.
+5.2 Approximate Queries: Approximation Methods In this subsection we deal with attribute accesses that cannot be exactly solved, that is, accesses of the form o:a # E when the value of attribute a of the object denoted by o is not available at time tE .
+This can be a common situation in our model, since we allow a partial recording of attribute temporal histories.
+When the value at a given instant is not available, different options can be taken with respect to which value should be returned.
+The most intuitive and easy solution is to return a null value.
+However, several situations can be devised in which it could be more appropriate to return an approximate value.
+For instance, suppose that a user requests the salary of a given employee  6 Containment between events has been discussed in Subsection 3.  wavg() = v  v = [(o:a # t; last())  (t ?
+time(o:a # t; last()))+ (o:a # t; next())  (time(o:a # t; next()) ?
+t)]= (time(o:a # t; next()) ?
+time(o:a # t; last())): Figure 1.
+Example of approximation method  at time t and suppose that the salary is recorded in the database once a month.
+If no salary amount is stored at time t, it is reasonable to return the latest stored value for the salary attribute.
+This is equivalent to assume that the value of the salary attribute persists in time until a new value is explicitly stored in the database [6].
+Other alternatives could be returning the next explicitly given value, or the average of the last and the next explicitly given values.
+More sophisticated approximation methods can be adopted, such as returning the average of the last n values.
+We therefore allow an approximate value to be returned for queries that cannot be exactly solved.
+This is achieved by assuming the existence of a pre-defined set AM of approximation methods which can be used in a query.
+Such methods define how to derive implicit information from that explicitly stored.
+Approximation methods are functions that given an instant t and an attribute a of type T return a value of type T representing the value to be returned as the value of a at time t, when the value of a at time t is not available.
+This value is computed by appropriately combining the available values for attribute a.
+We assume that AM contains at least the method last() which given an instant t and an attribute a returns the more recent value among those stored before time t, the method next() which returns the first value for a, if any, stored after time t, and the method avg() which returns the average of the values returned by last() and next().
+Attribute accesses for which an approximate value should be returned are called approximate attribute accesses and are formally defined as follows.
+Definition 5.1 An approximate attribute access is a pair (o:a # E ,app), where o is an object reference of type c, a is an attribute of class c, E is a temporal specification, and app is an element of AM.
+Example 5.5 Suppose that the value of attribute salary is 60K on 12/30/93 and 80K on 2/1/94.
+Suppose moreover that no other value for attribute salary is recorded in the period [12/30/93,2/1/94].
+Then the answer to (X.salary#1/1/94:08,last()) is 60K, the answer to (X.salary#1/1/94:08,next()) is 80K, whereas the answer to (X.salary#1/1/94:08,avg ()) is 70K.
+Note moreover that user-defined approximation methods can be specified as well, in addition to methods provided by the system.
+User-defined approximation methods are used  to specify ad-hoc approximation methods for certain attributes and accesses.
+Though several languages could be used to express them, we consider approximation methods expressed in a deductive style, that is, through rules which may contain in their bodies temporal attribute accesses and the predefined approximation methods last(), next() and avg().
+Example 5.6 The approximation method wavg () illustrated in Figure 1 computes a weighted average of the values returned by approximation methods last() and next().
+It makes use of a function time that, applied to an approximate access, returns the time instant at which the access is approximated.
+Approximation methods which can appear in an approximate attribute access depend on the type of the attribute.
+Approximation methods denoting aggregate functions, such as avg (), make sense only when they apply to numerical values, such as an integer or a real; in the case of nonnumerical values, such as object identifiers, or for structured values containing non-numerical components, approximation methods that can be applied are those returning one of the stored values for the attribute, like for instance last() and next().
+Moreover, approximation methods also depend on the semantics of the attribute.
+For instance, it is reasonable to associate with attribute status of Example 4.1 the approximation method last(), since the status of an employee could be reasonably assumed to be the last status recorded, whereas the approximation method wavg () of Example 5.6 could reasonably be associated with attribute salary of Example 4.1, if we assume that the salary of an employee can be approximated by a linear function.
+5.3 Meta-queries In the above subsections we have dealt with queries requiring the value of an attribute at a given time instant.
+However, our language also support meta-queries.
+A metaquery contains conditions on event occurrences.
+In particular, we support two different types of meta-queries: 1.
+Attribute meta-queries that, given an event and an object, return all the attributes of the object whose temporal histories have been updated because of the event occurrence.
+2.
+Object meta-queries that, given an event, retrieve all objects whose state has been modified because of the event occurrence.
+Note that two different interpretations are possible for the above meta-queries.
+Consider an attribute meta-query on an event E .
+Under a strong interpretation, the query retrieves only the attributes of the specified object with E as snapshot condition.
+Under a weak interpretation the query retrieves all the object attributes whose associated snapshot condition contains E and such that there exists at least an instant, among the ones for which a value for the attribute is stored, in which E occurs.
+A similar distinction applies to object meta-queries.
+Example 5.7 Consider object o2 of Example 4.2, and the attribute meta-query requiring all the attributes of o2 whose temporal histories have been recorded because of the occurrence of the event count(dependents)  6.
+Under a strong interpretation, the query does not return any value, since there is no attribute of object o2 with count(dependents)  6 as snapshot condition.
+By contrast, under a weak interpretation the query returns the attribute dependents, since the snapshot condition count(dependents)  5, associated with attribute dependents, contains the event specified in the query, and 8t 2 [2/15/97,now] f (count(dependents)6,t) = true.
+Finally, if the event associated with the meta-query is count(dependents)  8, no attribute is returned under both the weak and the strong interpretation.
+In what follows the weak interpretation is always assumed.
+However, the treatment can be easily extended to the strong interpretation.
+The notion of meta-query is formalized by the following definitions.
+Definition 5.2 Let o be an object of type c, and let E be an event.
+The attribute meta-query o jj E jj returns all the attributes a 2 A(c) which satisfy the following conditions: i) E  "(a; c); ii) 9t such that f (E; t) = true.
+Definition 5.3 Let o be an object, and let E be an event.
+The object meta-query jj E jj returns all the objects o such that o jj E jj6= ;.
+Example 5.8 Consider the objects of Example 4.2 and suppose that they are the only objects in the database.
+jj  o1 sequence(decrease(salary),increase(w hours),*)  jj  = manager, o2 count(dependents) count(dependents) 5 = o2 .
+jj   jj   6 jj = dependents,  jj  6 Conclusions and Future Work In this paper we have presented an event-based temporal object data model which allows to record selected portions within the history of an object attribute.
+The portions which are actually stored are identified by relating them to events.
+We have also investigated the problem of querying a database with incomplete temporal information.
+We plan to extend this work along several directions.
+First, we are currently developing a complete query language based on our data model.
+The language, defined as a temporal extension of the OQL language [7], will also support meta-queries.
+We also plan to extend the current model to support multiple temporal granularities and integrity constraints.
+Finally, implementation issues are being investigated; in particular, we are implementing the proposed model on top of the Ode active OODBMS, by extending with event-based selective attribute recording the existing prototype implementation of T Chimera [1].
+References [1] Bertino, E., Bevilacqua, M., Ferrari, E. and Guerrini, G. Approaches to Handling Temporal Data in ObjectOriented Databases.
+TR 192-97, Department of Computer Science, University of Milano, 1997.
+[2] Bertino, E., Ferrari, E. and Guerrini, G. A Formal Temporal Object-Oriented Data Model.
+In Proc.
+5th Intal Conf.
+on Extending Database Technology, pages 342a356, 1996.
+[3] Bertino, E., Ferrari, E. and Guerrini, G. T Chimera: A Temporal Object-Oriented Data Model.
+Theory and Practice of Object Systems, 3(2):103a125, 1997.
+[4] Bertino, E., Ferrari, E. and Guerrini, G. Navigational Accesses in a Temporal Object Model.
+IEEE Trans.
+on Knowledge and Data Engineering, to appear.
+[5] Bertino, E., Guerrini, G. and Rusca, L. Object Evolution in Object Databases.
+In Dynamic Worlds: From the Frame Problem to Knowledge Management.
+Kluwer, 1998, to appear.
+[6] Bettini, C., Wang, X.S., Bertino, E. and Jajodia, S. Semantic Assumptions and Query Evaluation in Temporal Databases.
+In Proc.
+of the ACM SIGMOD Conference, pages 257a268, 1995.
+[7] Cattel, R. The Object Database Standard: ODMG-93.
+Morgan-Kaufmann, 1996.
+[8] Chakravarthy, S., Krishnaprasad, V., Anwar, E. and Kim, S.K.
+Snoop: An Expressive Event Specification  heventi  hdb eventi hupdate eventi hupdate attr eventi hpath expri hvalue eventi hsimple value eventi hcomp opi hopi htemporal eventi htime speci hfreq speci  ::=  ::= ::= ::= ::= ::= ::=  ::= ::= ::=  ::= ::=  heventi AND heventi j heventi OR heventi j sequence(heventi, heventi,htime speci, htime speci) j sequence(heventi, heventi,h*i) j happen(heventi, hfreq speci, heventi, heventi) j not happen(heventi, hfreq speci, heventi, heventi) j begin onheventi j end onheventi j beginheventi j endheventi j hdb eventi j htemporal eventi hupdate eventi j hvalue eventi generalizej specializej createj delete j migrate j hupdate attr eventi j hmeth namei update(hpath expri) j increase(hpath expri) j decrease(hpath expri) hattr namei j hclass namei.hpath expri hsimple value eventi hcomp opi hsimple value eventi hvalue i j hpath expri j count(hsimple value eventi) j hsimple value eventi hopi hsimple value eventi > j < j  j  j = j 6= j 2 j 62 +j-j*j/j[j\jn hset of time instantsi j htime instanti j hset of time intervalsi j (htime intervali,hperiodic expri) j (heventi,heventi, hperiodic expri) j (heventi,htime instanti) htime instanti j null hnat numberi j * Figure 2.
+Event language syntax  Language for Active Databases.
+Data & Knowledge Engineering, 14:1a26, 1994.
+[9] Dean, T. L. and McDermott, D. V. Temporal Data Base Management.
+Artificial Intelligence, 32(1):1-55, April 1987.
+[10] Jensen, C.S.
+and Mark, L. Queries on Change in an Extended Relational Model.
+IEEE Trans.
+on Knowledge and Data Engineering, 4(2):192a200, April 1992.
+[11] Niezette, M. and Stevenne, J.
+An Efficient Symbolic Representation of Periodic Time.
+In 1st International Conference on Information and Knowledge Management, 1992.
+[12] Ozsoyoglu, G. and Snodgrass, R.T. Temporal and Real-Time Databases: a Survey.
+IEEE Trans.
+on Knowledge and Data Engineering, 7(4):513-532, August 1995.
+[13] Tsotras, V.J.
+and Kumar, A. Temporal Database Bibliography Update.
+SIGMOD-RECORD, 25, 1996.
+A Event Language Syntax and Semantics In the following we illustrate the syntax and semantics of our event language.
+A.1  Syntax  The syntax in BNF form of our event language is reported in Figure 2.
+Non terminal symbols hvaluei, hattr namei, and hclass namei represent elements of the domains V , AN , and CI , respectively.
+hmeth namei denotes a method name.
+Finally, non terminal symbols htime instanti, hset of time instantsi, hset of time intervalsi, and hnat numberi represent elements of the domains IN [ 1, 2IN[1 , 2IN[1IN[1 , and IN, respectively.
+A.2  Semantics  The semantics of events in E is given by their interpretation I () in first order logic and is reported in Table 2.
+In defining I () we make use of two functions start() and end(), that receive as input an event and return the starting and ending times of E , respectively.
+Formally, let E 2 E : start(E ) = ft j f (E; t) ^ :f (E; t ?
+1)g end(E ) = ft j f (E; t) ^ :f (E; t + 1)g7 Moreover, we make use of function card which computes the cardinality of a given set.
+P denotes a generic periodic expression.
+(P) denotes the set of time instants represented by P.8 In addition, in the semantics of value events, db j= E denotes that the value event E evaluates  7 Function f has been defined in Subsection 3.
+8 We refer to [11] for the formal definition of ().
+Event  E = update event,a E 6= increase, decrease E = value event E = increase(p)/decrease(p) E = t1 E = ft1 ; : : :, tn g E = f[t1 ,t2 ]; : : :, [tn ,tn+1 ]g E = ([t1 ,t2 ],P) E = (E1 ; E2 ,P) E = (E1 ; t ) E =begin(E1 ) E =end(E1 ) E =begin on(E1 ) E =end on(E1 ) E = E1 OR E2 E = E1 AND E2 E =sequence(E1; E2 ,tmin ,tmax) 0  E =sequence(E1; E2 ,tmin ,null) E =sequence(E1; E2 ,null,tmax) E =sequence(E1; E2 ,*) E =happen(E1 ; n; E2 ; E3 ) E =happen(E1 ; ; E2 ; E3 ) E =not happen(E1 ; n; E2 ; E3 ) E =not happen(E1 ; ; E2 ; E3 )  I () 8t(9t ; 9t (h[t ; t); dbi ?
+!E h[t; t ); db i 2 db history) !
+f (E; t)) 8t(9t ; 9t (h[t ; t ]; dbi 2 db history ^ db j= E ^ t 2 [t ; t ]) !
+f (E; t)) 8t(9t ; 9t ; 9E (h[t ; t); dbi ?
+!E h[t; t ); db i 2 db history) ^ E =update(p) ^hdb; db i j= E ) !
+f (E; t)) 8t(t = t1 !
+f (E; t)) 8t(t = t1 _ : : : _ t = tn !
+f (E; t)) 8t(t1  t  t2 _ : : : _ tn  t  tn+1 !
+f (E; t)) 8t(t1  t  t2 ^ t 2 (P) !
+f (E; t)) 8t(9t1 ; 8t (t1 2 start(E1 ) ^ t1  t ^ (t1  t < t !
+t 62 end(E2 ))^ ^(t1 < t  t !
+t 62 start(E1 )) ^ t 2 (P)) !
+f (E; t)) 8t(9t1 ; 8t (t1 2 start(E1 ) ^ t = t1 + t ^ (t1 < t  t !
+t 62 start(E1 )) !
+f (E; t)) 8t(9t1 (t1 2 start(E1 ) ^ t1 = t) !
+f (E; t)) 8t(9t1 (t1 2 end(E1 ) ^ t1 = t) !
+f (E; t)) 8t(9t1 (t1 2 start(E1 ) ^ t1  t) !
+f (E; t)) 8t(9t1 (t1 2 end(E1 ) ^ t1  t) !
+f (E; t)) 8t(f (E1 ; t) _ f (E2 ; t) !
+f (E; t)) 8t(f (E1 ; t) ^ f (E2 ; t) !
+f (E; t)) 8t(9t1 (8t (t1 2 end(E1 ) ^ t 2 start(E2 ) ^ t = t1 + tmax ?
+tmin ^ ^(t1  t < t !
+t 62 start(E2 )) ^ (t1 < t  t !
+t 62 end(E1 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 end(E1 ) ^ t 2 start(E2 ) ^ t1 + tmin  t^ ^(t1  t < t !
+t 62 start(E2 )) ^ (t1 < t  t !
+t 62 end(E1 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 end(E1 ) ^ t 2 start(E2 ) ^ t  t1 + tmax  t^ ^(t1  t < t !
+t 62 start(E2 )) ^ (t1 < t  t !
+t 62 end(E1 )))) !
+f (t; E )) 8t(9t1 8t (t1 2 end(E1 ) ^ t 2 start(E2 ) ^ t1 < t)^ ^(t1  t < t !
+t 62 start(E2 )) ^ (t1 < t  t !
+t 62 end(E1 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 start(E2 ) ^ t 2 start(E1 ) ^ t1  t^ card(ft j t 2 start(E1 ) ^ t1  t < tg) = n ?
+1 ^ (t1  t < t !
+t 62 end(E3 ))^ ^(t1 < t  t !
+t 62 start(E2 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 start(E2 ) ^ t 2 start(E1 ) ^ t1  t^ ^(t1  t < t !
+t 62 end(E3 )) ^ (t1 < t  t !
+t 62 start(E2 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 start(E2 ) ^ t 2 end(E3 ) ^ t1  t ^ ^card(ft j t 2 start(E1 ) ^ t1  t  tg) < n ^ (t1  t < t !
+t 62 end(E3 ))^ ^(t1 < t  t !
+t 62 start(E2 )))) !
+f (t; E )) 8t(9t1 (8t (t1 2 start(E2 ) ^ t 2 end(E3 ) ^ t1  t ^ (t1  t  t !
+t 62 start(E1 ))^ ^(t1  t < t !
+t 62 end(E3 )) ^ (t1 < t  t !
+t 62 start(E2 )))) !
+f (t; E )) Interpretation 0  00  0  0  00  0  0  00  00  0  00  0  0  0  0  00  00  0  0  0  0  0  0  0  0  00  00  0  00  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  a If E is a method invocation then f (E; t) is true whenever the method is being executed, that is, start(E ) denotes the time of method invocation, whereas  end(E ) denotes the time of return from method invocation.
+Table 2.
+Semantics of events to true on the database state db, whereas hdb; db0 i j= E denotes that E evaluates to true with respect to the state transition h[t1 ; t2 ); dbi ?
+!E h[t2 ; t3 ); db0 i.

@@ -1,0 +1,299 @@
+Towards a Theory of Movie Database Queries Bart Kuijpers University of Limburg (LUC) Department WNI B-3590 Diepenbeek, Belgium bart.kuijpers@luc.ac.be  Jan Paredaens University of Antwerp (UIA) Dept.
+of Math.
+& Computer Science Universiteitsplein 1 B-2610 Antwerpen, Belgium pareda@uia.ua.ac.be  Dirk Van Gucht Indiana University Computer Science Dept.
+Bloomington, IN 47405-4101, USA vgucht@cs.indiana.edu  Abstract We present a data model for movies and movie databases.
+A movie is considered to be a 2-dimensional semialgebraic figure that can change in time.
+We give a number of computability results concerning movies: it can be decided whether a frame of a movie is only a topologically transformation of another frame; a movie has a finite number of scenes and cuts and these can be effectively computed.
+Based on these computability results we define an SQLlike query language for movie databases.
+This query language supports most movie editing operations like cutting, pasting and selection of scenes.
+1.
+Introduction We present a data model for movies and movie databases.
+We consider a movie to be an infinite sequence of 2dimensional figures that evolve in time.
+Each figure consists of a possibly infinite number of points in the 2-dimensional plane.
+A recent and much acclaimed method for effectively representing infinite geometrical figures is provided by the constraint database model, that was introduced by Kanellakis, Kuper and Revesz in their 1990 seminal paper [10] (an overview of the area of constraint databases can be found in [13]).
+In this model, a 2-dimensional geometrical figure is finitely represented by means of a Boolean combination of polynomial equalities and inequalities.
+These involve polynomials with two real variables that represent the  spatial coordinates of a point in the plane.
+The set of points on the upper half of the unit circle, for instance, is in this context given by         fi    fi   In more mathematical terminology, these figures are called semi-algebraic sets and for an overview of their properties we refer to [3, 6].
+This way of representing fixed figures can easily be adapted to describe figures that change.
+Indeed, we can add a time dimension and consider geometrical objects in 3-dimensional space-time that are described by polynomial equalities and inequalities that also have a time variable fi.
+This gives us a data model for movies.
+Figure 1 gives an example of a movie, in particular a potential scene from Star Trek.
+In this short movie the starship Enterprise remains at a constant position in space and can therefore be described   fi    by formula  fifi   fi  fi     in which fi is lacking.
+A fired photon torpedo follows the dotted line (between the moments fi   and fi  fi) an then explodes (depicted as increasing dotted circles, between fi  fi and fi  ).
+At the bottom of Figure 1 three frames of the movie are shown: at fi  fi fi and .
+The complete movie can be described by the set     fi    fifi      	 fi 	   (      fi   	 fi 	 fi       	 fi   fi  fi  fi 	 )   The movie of Figure 1 can be used to illustrate a number of properties that all movies in this model have in common.
+       Figure 1.
+USS Enterprise firing a photon torpedo at a (cloaked) Klingon vessel.
+For instance, between fi  fi and fi   the movie frames change continuously and all frames (fi  fi 	 ) are, topologically seen, the same.
+We will call such a sequence of frames a scene of the movie.
+Moments in which the movie changes discontinuously are referred to as cuts in the movie.
+In the movie of Figure 1 there is, for instance, a cut at fi  fi: a point changes into an increasing circle.
+The movie of Figure 1 has five scenes and six cuts (start and end of the movie included).
+We remark that our notion of scene is finer that the cinematographic notion of scene.
+We will show that the number of cuts and scenes in a semi-algebraic movie is always finite and that a representation of them by means of polynomial constraints can be effectively computed.
+A key ingredient in this computation is a decision procedure for testing whether two movie frames can be topologically transformed into one another, i.e., whether they are homeomorphic.
+Although deciding whether two 2-dimensional semi-algebraic sets are homeomorphic is a result that belongs to the mathematical folklore, a written proof of it is not to be found in the mathematical literature [15, 18].
+We give a decision procedure and we also generalize it to parameterized frames: there is an algorithm that, given two movie frames that depend on time parameters fi	 and fi , produces a formula built with conjunction and disjunction from formulas of the form   fi  	 and fi    ( 	   constants and   fi ) that expresses, in function of fi 	 and fi , whether the frames are homeomorphic.
+Finally, we define an SQL-like language to query movie databases.
+This language is based on the above computability results and on a well-known language to query databases in the constraint model, namely the relational calculus augmented with polynomial inequalities [10, 16, 13].
+It follows from a result by Tarski that the latter language is also  effective [20] (although variables range over the real continuum).
+Our query language supports all basic movie editing operations like selecting scenes that satisfy some condition, composing several scenes into a movie, removing scenes, etc.
+It also allows for the manipulation of single scenes and even of single frames.
+This paper is organized as follows.
+In Section 2, we formally define the notion of movie, frame, scene and cut.
+Procedures to decide homeomorphism of frames and to compute the scenes and cuts of a movie are given in Section 3.
+In Section 4, we present a query language and discuss expressibility issues.
+2.
+Movies, Frames, Scenes and Cuts We denote the set of the real numbers by .
+In the following we will consider planar figures that change in time.
+A moving figure is described by means of an (often infinite)  , where and  represent set of tuples    fi in the spatial coordinates of a point in the 2-dimensional real and fi represents the time coordinate in .
+We first plane define the notion of a movie.
+Definition 2.1 A movie is a set       fi       	 fi 	 	     fi  where  and 	 are real algebraic numbers and where    fi is a formula built with the logical connectives    from atomic formulas of the form    fi  , with    fi a polynomial with real algebraic coefficients and real variables   fi.
+The numbers  and 	 are called the beginning and end of the movie respectively and are de and .
+noted by A movie database is a finite set of movies.
+   fi       A set    fi    fi       fi is a scene of  if  is a maximal open interval in fi   	 fi 	 	 such that  is continuous in each fi     .
+   A point fi  in which  is not continuous is called a cut   in .
+fi    fi    	  Figure 2.
+An example of a movie.
+Figure 2 depicts the movie    fi     fi 	 	  (  fi 	 fi     fi     fi  fi 	 	     fi      fi  fi  	) in the space  .
+This movie shows at its beginning (i.e., at fi   fi) a single point in the origin.
+Then it shows a disk whose radius increases and later decreases and ends in a point at moment fi  fi, followed by a circle whose radius increases, decreases, increases and then shrinks to a point.
+Finally, for   fi 	 	, this movie shows nothing.
+fi 	  Definition 2.2 Let  be the movie    fi     	 fi 	 	     fi and let  	 fi  	 	.
+The set        fi   is called the frame of the movie  at the moment fi  and is denoted by  Az .
+  For the movie of Figure 2, for instance, the frame  A 	 is the origin,   is the closed unit disk and   is the empty set.
+We can use this same example to illustrate the notion of a scene.
+For  fi  fi  fi, the movie of Figure 2 shows a disk on which is zoomed into and then zoomed out of.
+This continuous sequence of frames will be called a scene.
+Also for fi  fi  , we have a scene in which a circle is continuously deformed.
+Scenes are separated by cuts.
+In the following definition these concepts are formalized.
+The notion of continuity that we will give may seem rather involved.
+It corresponds, however to the intuitive notion of acontinuously changing,a as illustrated by the above example.
+   fi   	fi	 Definition 2.3 Let   	     fi be a movie and let  	 fi   	 	.
+  is continuous on the right in fi   if there exists an    and a continuous (in fi) series               fi  	 fi 	 fi    of homeomorphisms of such that  Az    for all fi  fi   fi   .
+is continuous on the left in fi   is defined similarly.
+And  is continuous in fi   if it is continuous both on the right and on the left in fi   .
+The movie of Figure 2 is continuous in every fi in the open intervals  fi fi, fi  and  	.
+These intervals therefore determine the three scenes of the movie.
+There are four cuts in the movie of Figure 2: in fi   fi, fi,  and 	.
+Remark that the beginning and the end of a movie are always cuts.
+3.
+Computability Results In this section, we present two computability results concerning movies.
+First, we show that it is decidable whether two (parameterized) frames are homeomorphic.
+Next, we will show that a movie has a finite number of scenes and cuts and that formulas describing them can be computed from the formula that defines the movie.
+A key lemma in this context is the following.
+Lemma 3.1 It is decidable whether two movie frames are isotopic1 , and also whether they are homeomorphic.
+Proof (sketch).
+Let  and  be two movie frames.
+ and  are homeomorphic if and only if  is isotopic to  or to a reflection of  (see, e.g., [7, 14, 19]).
+It therefore suffices to prove that it is decidable whether  is isotopic to  .
+The algorithm to decide isotopy first computes for   , respectively  the labeled planar graph embedding   as follows.
+The nodes of   are the asingular pointsa of  , i.e., the points that do not belong to the topological interior of  or the complement of  , nor to a topologically smooth border of  (see [12] for a formal definition) together with the lowest left most points on each closed curve of the topological border of  on which there is no singular point.
+As an illustration, we take the frame  shown in (a) of Figure 3.
+The singular points of  are  	   and  .
+The closed polygon in the right upper corner of  does not contain a singular point and has more than one most left point.
+Of these the lowest is picked:   .
+We remark that the singular points can be computed by means of a first-order formula in the theory of the real numbers.
+It was shown by Tarski that this theory is effective [20], and symbolic algorithms for the first-order theory of the reals [1, 5, 17] can effectively compute the nodes.
+The computation of the other nodes can be performed via a Cylindrical Algebraic Decomposition (CAD) [5] (see also [1]).
+1 Isotopic means homeomorphic by an orientation preserving homeomorphism.
+fi  fi    fifi fi   fi    fi  fi  fi fifi  A"      fi  fi  fi  (a)  (b)  Figure 3.
+A frame of a movie  (a) and its graph  (b).
+In the graph   (see (b) in Figure 3) these nodes are labeled with typed labels:   for nodes that belong to  and A  labels for nodes that do not belong to  .
+Next, the connected components of the intersection of  with the topological border of  minus the labeled points are computed.
+These form edges of   and are labeled with labels of type   .
+Similarly,  A  labels are given to the connected components of the border that does not belong to  .
+The topological border of a frame can be computed in the first-order theory of the reals.
+The computation of connected components of a frame is described in [4, 8, 9].
+Finally, the areas formed by the graph embedding are computed and labeled   , respectively A  depending on their containment in  .
+Let the sets of labeled nodes, edges and areas be called  ,  and  , respectively.
+From results in [11] it follows that  and  are isotopic if and only if there exist bijections 	   fi   , 	  fi   , and 	fi  fi   that map -labels to -labels and  -labels to  -labels and that preserve the clockwise occurrence of edges and areas around each of the labeled nodes.
+These conditions can be verified.
+It is there fore decidable whether two movie frames are isotopic.
+It should be remarked (details omitted) that it can be decided whether two frames  and  are isotopic in polynomial time (in the size of the polynomial constraint formulas that describe  and  ).
+Theorem 3.1 Let 	 and  be two movies.
+There is an algorithm that on input these two movies produces a formula AA" AAz fi	  fi  built with conjunction and disjunction from formulas of the form   fi  	 and fi    ( 	   constants and   fi ) that expresses, in function of fi 	 and fi , whether the two frames 	A" and Az are isotopic (the same is true for homeomorphic).
+Proof (sketch).
+Let  be the movie    fi     	 fi 	 	     fi Collins proves that from the formula  	 fi 	 	     fi a Cylindrical Algebraic Decomposition (CAD)  of    can be computed such that  each cell in  entirely belongs to  or to the complement of  [5] (see also [1]).
+ induces a CAD   of the  fiplane which in its turn induces a CAD   of the fi-axis.
+For the movie of Figure 2 this is illustrated in Figure 4.
+The cells of  are points, lines, curves, 2-dimensional surfaces and 3-dimensional areas that are built as stacks on the different cells of  .
+The cells of  are the (black and grey) dots, arcs and patches of white space in Figure 4 (compare with Figure 2).
+  consists of the grey dots on the fi-axis and the open intervals determined by them as shown in Figure 4.
+The cells of  are stacks built on these points and intervals.
+It can be easily shown that the movie  is continuous in each fi that belongs to one of the open intervals of   .
+So,  remains isotopic in these intervals.
+The only possible cuts of the movie are therefore the points of   (grey dots).
+The algorithm we seek could therefore work as follows.
+Compute, using Collinsas CAD algorithm, both for  	 and  the representatives of all the cells in the induced CAD  .
+Let these be 	        	 and 	          respectively.
+Decide, using Lemma 3.1, for each pair   in the set 	      	  	        , whether 	 is isotopic to  .
+If they are, and if  represents, letas say an interval   fi	  	 of the induced CAD of the fi-axis in  	 and if  represents, letas say a point   in the induced CAD of the fi-axis in  , then we add the conjunction   fi 	  	  fi    as a disjunct to the formula  AA" AAz fi	  fi .
+ To illustrate the previous theorem, we give  AA fi	  fi for the movie  of Figure 2:  (    A"       A"    A"   (    A"     A"  fi    Az     Az  fi    A"   fi          Az    A"  Az         Az     Az  fi  )  Az  fi  )  fi   Theorem 3.2 A movie has a finite number of scenes and cuts.
+Polynomial constraint formulas describing them can be effectively computed.
+   fi    Proof (sketch).
+Let  be the movie  	 fi 	 	     fi Consider again a CAD of ,     fi    	  Figure 4.
+The induced CADs  (black and grey) and  (grey only) for the movie of Figure 2. as in the proof of the previous theorem.
+From the proof of the previous theorem it is clear that there are only a finite number of cuts and scenes.
+The cuts are among the points of the induced CAD   .
+Not all these points must be cuts, however.
+For the example of Figures 2 and 4, the grey dots at fi   fi fi  and 	 are cuts.
+The one at fi  	, however, is not.
+For what concerns the computation of the scenes and cuts, we first compute the candidate points for cuts (namely, the points in  ).
+It remains to be tested whether  is continuous in these points.
+Let fi   be a point in  different from the beginning or end of .
+The test for continuity of  in fi  is two-fold: 1. test whether the frame  Az is isotopic to two frames Az A  and Az  in the neighboring intervals; 2. test for each   fi      (resp.
+ ) whether for each small enough    and each A   there exist a points Az   Az  and AzAz   AzAz  at distance at most A from    such that Az   Az  fi       (resp.
+ ) and AzAz  AzAz  fi        (resp.
+ ).
+The first test can be performed using the techniques outlined in Lemma 3.1.
+The second test can be expressed as a sentence in the first-order theory of the reals and is therefore effective [20].
+Condition 1 is clearly necessary for continuity.
+It is, however, not sufficient.
+At a cut, a frame can, for instance, just jump to a different location.
+This would not violate Condition 1.
+Condition 2 guarantees that there is not a jump.
+When it is decided which of the points of   are cuts, the computation of the scenes is straightforward.
+Collinsas algorithm produces polynomial constraint formulas for all the cells in a CAD.
+The scenes and cuts can therefore also be given by means of their defining polynomial   constraint formula.
+4.
+Querying Movie Databases In this section, we present an effective SQL-like language to query movie databases: SQL.
+This language is based on the computability results of the previous section and on a well-known query language for databases in the constraint databases model, namely the relational calculus augmented with polynomial constraints.
+First, we define Definition 4.1 A movie database query is a mapping that   maps every -tuple of movies to a movie.
+In the following, we will consider queries that have parameters 	      	 .
+The calculus: We will use the relational calculus augmented with polynomial constraints, the calculus for short, as an essential part of SQL.
+The calculus was introduced and studied in, e.g., [10, 16] (see also [13]).
+A calculus formula    	          	      	   is built from the atomic formulas    fi (  fi     ) and  	         ( a polynomial), the logical connectives    and the quantifiers  .
+The calculus formula               (                	   fi), for instance, defines the moments when there appears a circle (as a subset) in movie 	 .
+The language SQL: An elementary query in SQL is of the form  fi  	      fi          	 fi 	 	  ,  where  and 	 are real algebraic numbers and  is a condition that can be expressed by means of the usual logical  connectives and quantifiers, calculus expressions, other elementary SQL queries and the following primitives:    	     fi   	 fi 	 	     fi 	      	    , with  a calculus formula and  and  computable 2 functions that work on inputs 	      	  and  	      	  ( a natural number), respectively, and return natural numbers.
+This primitive returns the movie consisting of the scenes and cuts in the movie defined by  	 fi 	 	     fi 	      	  whose sequence numbers are  fi 	      	    	      	        	      	  	      	  (in that order and consecutive);          fi   	 fi 	 	     fi 	      	  , with  a calcuIt relus formula and  a natural number.
+turns the -th cut in the movie defined by  	 fi 	 	     fi 	      	 ; fi	     fi   	 fi 	 	  	   fi 	      	 A"     fi   	 fi 	 	     fi 	      	 Az , with 	 and  calculus formulas.
+It expresses the condition on fi 	 and fi that tells us when the two given frames are isotopic (as discussed in Theorem 3.1);    fi     fi   	 fi 	 	     fi 	      	  with  a calculus formula.
+Also     fi   	 fi 	 	     fi 	      	 , with  a calculus formula.
+They express the beginning and end of the movie defined by  	 fi 	 	     fi  	      	 .
+Furthermore, from elementary queries more complicated queries can be constructed by composition, which we denote by A.
+For two movies  	 and  , 	 A  is defined to be the movie consisting of  	 without its last frame, immediately followed by  .
+The result of an SQL query is a movie.
+The meaning of these queries is the obvious one and will be illustrated by the consequent examples.
+The function of the -part of an elementary query is to indicate which of the input movies are under consideration.
+It should be noted that some of these primitives are redundant and are only added for ease  of use.
+From the proof of Theorem 3.2 it follows that can be expressed in terms of .
+Finally, we remark that  fi	     Theorem 4.1 SQL queries are computable.
+2 This means computable on the polynomial constraint formulas that define the movies.
+Proof (sketch).
+Let  be a SQL query.
+Given the polynomial constraint formulas of the input movies  	      	 , we can, by Theorems 3.1 and 3.2 replace all the occur,  and  in  by conrences of crete constraint formulas.
+Also the beginning and end of movies can be computed (from a CAD, for instance).
+ and  can be reTherefore all occurrences of placed by concrete constraint formulas.
+This way we obtain a first-order formula over the reals, that can possibly contain quantifiers.
+From Tarskias quantifier elimination theorem it follows that these can be eliminated [20].
+This yields a polynomial constraint formula for the output of the query .
+The output is guaranteed to be a movie by the syntactic condition  	 fi 	 	 that appears in the 	  part of elementary SQL queries.
+   	    fi	  fi    We give some examples of SQL queries, that illustrate that all the basic movie editing operations can be performed in SQL: Example 1: aGive all the frames of the movie  	 that are homeomorphic to a circlea is expressible by the elementary query  fi  	      fi  	  fi 	  	 fi  fi 	  	   	   fi  fi	  !   !
+ fi 	.
+  Example 2: aGive all the scenes of the movie  	 of which all frames are homeomorphic to a circlea is a variation on the query of Example 1 and it is expressible by the elementary query  fi  	      fi  	  fi 	  	 fi  fi 	  	  	 	      fi  fi	  !   !
+ fi 	 	   ,   where  is the function that returns the number of scenes of the input movie and  is the identity function of the natural numbers.
+Example 3: aRemove scene 2 from movie  	 a is expressed by  fi  	      fi  	  fi 	  	 fi  fi 	  	  	 	     fi    fi  where  is the function that maps 1 to itself and all   to   fi.
+fi  Example 4: aGive me the first scene of movie  	 followed by the second scene of movie  followed by movie   a is a query that manipulates complete scenes.
+It can be expressed as the composition of the elementary queries given by the following three expressions:     fi  fi  	   	  fi  	   fi 	 	 fi fi 	 fi  fi 	  	 	  fi fi  	 	 fi fi   fi    fi  fi  	     fi 	   fi  	 fi  fi 	  	   fi   	   fi    fi    fi  fi  	   fi  	 fi  fi 	         fi  Example 5: A query of particular interest for the Star Trek movie of the Introduction: aGive all frames of  	 that contain a photon torpedo (i.e., an isolated point)a can be expressed as     fi  	  fi 	 	 fi  fi 	  	   	   fi        (	       fi       !
+ 	  ! fi        !
+          !
+   )  Example 6: The following query manipulates the frames of a scene.
+It also reverses a complete scene.
+aPlay movie  	 at double speed followed by the reversed play of movie  turned upside downa is expressed as the composition of the movies expressed by the following elementary queries  fi  	      fi  	  fi 	 	 fi  fi 	  	   	   fi  fi  	      fi      fi	     	 fi  fi          fi     fi  	  	 	  fi fi   fi  fi 	 	 fi fi  fi  fi  fi 	 	  fi fi  	 	  fi fi  Example 8: The next example manipulates complete scenes without touching their individual frames.
+aReturn the movie consisting of the scenes of movie  	 but played in reversed ordera is expressed by  fi  	     where the numbers fi and  stand for the constant functions to fi and .
+fi  	   Example 7: The next example manipulates one scene.
+aReturn the first half of the first scene of movie  	 a is expressed by     fi  	  fi 	  	 fi  fi 	  	   	 	       fi  where  is the function that maps  to      fi.
+Example 9: The last example returns a certain computable scene.
+aReturn the middle scene of movie  	 a is expressed by  fi  	      fi  	  fi 	  	 fi  fi 	  	   	 	  fi     fi  where  is the function that maps every natural number to   fi if the number of scenes is odd and to  if it is even.
+5.
+Discussion and conclusion We have presented a data model for movies and movie databases, in which a movie is considered to be a 2dimensional semi-algebraic figure that can change in time.
+We have given a number of computability results concerning movies: homeomorphism and isotopy of movie frames are decidable; a movie has a finite number of scenes and cuts and these can be effectively computed.
+Based on these computability results we have defined an SQL-like query language for movie databases.
+This query language supports most movie editing operations like cutting, pasting and selection of scenes.
+We remark that the presented model is very elementary and that it can be extended and made more suitable for practical applications in many ways.
+For instance, the movies that we consider here have frames that are purely black and white (even without variations of grey and certainly without colors).
+Movies have one single aimagea, whereas many  movies (e.g., cartoon movies) are multi-layered.
+The presented model can be extended to cope with this.
+Finally, we remark that our model cannot straightforwardly be applied to existing movies.
+The problem of converting cinematographic movies, for instance, into the proposed model is beyond the scope of this paper.
+We remark however that a number of 3D animation tools and virtual reality environments work with data that can be readily converted into the constraint model.
+3D Studio Max [21] and Virtual Reality Modeling Language (VRML) [2] are examples of such environments.
+Acknowledgements.
+The authors are grateful to Sofie Haesevoets for helpful comments and suggestions to improve the paper.
+References [1] D.S.
+Arnon.
+Geometric reasoning with logic and algebra.
+Artificial Intelligence, 37, pages 37a60, 1988.
+[2] G. Bell, A. Parisi, and M. Pesce.
+The Virtual Reality Modeling Language.
+www.vrml.org/VRLM1.0/vrml10c.html [3] J. Bochnak, M. Coste, and M.-F. Roy.
+G eEomeEtrie AlgeEbrique ReEelle.
+Springer-Verlag, 1987.
+[9] J. Heintz, M.-F. Roy, and P. SolernoE.
+Description of the Connected Components of a Semialgebraic Set in Single Exponential Time.
+Discrete and Computational Geometry, 6, pages 1a20, 1993.. [10] P.C.
+Kanellakis, G.M.
+Kuper, and P.Z.
+Revesz.
+Constraint query languages.
+Journal of Computer and System Sciences, 51(1), pages 26a52, August 1995.
+[11] B. Kuijpers, J. Paredaens, and J.
+Van den Bussche.
+Lossless Representation of Topological Spatial Data.
+In M. Egenhofer and J.
+Herring, editors, Advances in Spatial Databases, 4th International Symposium, SSDa95, volume 951 of Lecture Notes in Computer Science, pages 1a13, Springer-Verlag, 1995.
+[12] B. Kuijpers, J. Paredaens, and J.
+Van den Bussche.
+On topological elementary equivalence of spatial databases.
+In F. Afrati and Ph.
+Kolaitis, editors, 6th International Conference on Database Theory (ICDT a97), volume 1186 of Lecture Notes in Computer Science, pages 432a446, Springer-Verlag, 1997.
+[13] G. Kuper, L. Libkin, and J. Paredaens.
+Constraint databases.
+Springer-Verlag, 2000.
+[14] E.E.
+Moise.
+Geometric Topology in Dimensions 2 and 3, volume 47 of Graduate Texts in Mathematics.
+Springer-Verlag, 1977.
+[15] A. Nabutovsky.
+Personal communication.
+June 1997.
+[4] J.
+Canny, D. Grigoraev, and N.N.
+Vorobjov jr. Finding Connected Components of a Semialgebraic Set in Subexponential Time.
+Applicable Algebra in Engineering, Communication and Computing, 2, pages 217a238, 1992.
+[5] G.E.
+Collins.
+Quantifier elimination for real closed fields by cylindrical algebraic decomposition.
+In volume 33 of Lecture Notes in Computer Science, pages 134a183.
+Springer-Verlag, 1975.
+[6] M. Coste.
+Ensembles semi-algeEbriques.
+In G eEometrie AlgeEbrique ReEelle et Formes Quadratiques, volume 959 of Lecture Notes in Mathematics, pages 109a138.
+Springer-Verlag, 1982.
+[7] R.H. Cromwell and R.H. Fox.
+Introduction to Knot Theory, volume 57 of Graduate Texts in Mathematics.
+Springer-Verlag, 1977.
+[8] J. Heintz, T. Recio, and M.-F. Roy.
+Algorithms in Real Algebraic Geometry and Applications to Computational Geometry.
+DIMACS Series in Discrete Mathematics and Theoretical Computer Science, Volume 6, pages 137a163, 1991.
+[16] J. Paredaens, J.
+Van den Bussche, and D. Van Gucht.
+Towards a theory of spatial database queries.
+In Proceedings 13th ACM Symposium on Principles of Database Systems, pages 279a288.
+ACM Press, 1994.
+[17] J. Renegar.
+On the computational complexity and geometry of the first-order theory of the reals.
+Journal of Symbolic Computation, 13, pages 255a352, 1989.
+[18] M.-F. Roy.
+Personal communication.
+May 1997.
+[19] J. Stillwell.
+Classical Topology and Combinatorial Group Theory, volume 72 of Graduate Texts in Mathematics.
+Springer-Verlag, 1980.
+[20] A. Tarski.
+A Decision Method for Elementary Algebra and Geometry.
+University of California Press, 1951.
+[21] 3D Studio MAX.
+http://www.max3d.com/.

@@ -1,0 +1,405 @@
+A Calculus of Macro-Events: Progress Report  Iliano Cervesato  Angelo Montanari  Advanced Engineering and Sciences Division ITT Industries, Inc. Alexandria, VA 22303-1410, USA  Dipartimento di Matematica e Informatica Universita di Udine Via delle Scienze, 206 { 33100 Udine, Italy  iliano@itd.nrl.navy.mil  montana@dimi.uniud.it  plicit axioms to model interaction among concurrent actions, e.g.
+[4, 5, 13, 14, 18, 23, 26].
+If we also remove the assumption that actions are instantaneous, occurrences of actions may partially overlap which can inuence the outcome of the interacting actions [20].
+However, the ability of dealing with concurrent and/or temporally extended actions is not suAcient for many realistic applications.
+Modeling real-world domains may indeed require representing complex patterns of actions, which, besides sequentiality and concurrency, involve additional relations among actions, such as the occurrence of just one action in a given set, the iteration of occurrences of the same action or of a pattern of actions.
+The notion of process has been introduced to dene compound actions in terms of patterns of simpler actions.
+As an example, the action of dialing a ten-digit number can be dened as a set of ten basic actions in strict sequence.
+Foundational work on process modeling, which inspired research in many Computer Science areas, including knowledge representation, has been done by Hoare [15] and Milner [21].
+Limited contributions to (discrete) process modeling in the temporal representation and reasoning area have been proposed by Evans [12], Belegrinos and George [6], Lesperance et al.
+[17], and by Lin and Dean [19].
+In this paper, we present preliminary results on the denition of a Macro-Event Calculus, an extension of Kowalski and Sergot's Event Calculus, EC [16].
+Our proposal allows expressing basic forms of process interaction, including temporal delays between processes, sequential, simultaneous, and alternative occurrences of processes, and process iteration.
+This proposal builds on work by Chittaro and Montanari [10] on modeling discrete processes.
+The set of constructors of the current version of the Macro-Event Calculus is similar to the path expression operators of [3].
+Originally developed for modeling operating system behavior, path expressions have been successfully used in several areas of Computer Science.
+In this paper, we show how their formalization within the Event Calculus can be usefully  Abstract  The need of constraining the temporal relationships among sets of related events arises in several temporal reasoning tasks, including monitoring, plan validation, planning, and diagnosis.
+Process constructors provide an eective way of packaging up related events into individual conceptual chunks, called macro-events.
+In this paper, we present a rst attempt at dening a Calculus of Macro-Events that extends Kowalski and Sergot's Event Calculus with process constructors to express eects triggered by complex combinations of event occurrences.
+We apply this language to model the operations of a simple gas heater, and present a Prolog implementation.
+1  Introduction  Classical formalisms for reasoning about actions and change make the simplifying assumptions that (i) only one action can be performed at any given time (some formalisms actually allow simultaneous actions under the assumption that they do not inuence each other), and (ii) actions are instantaneous.
+When we remove the rst assumption, we must take into account that concurrent actions may interact.
+Interactions may lead both to synergistic results (their combined eect is more than the sum of their individual outcomes) and to interferences (their individual eects may be partially or totally canceled).
+For example [2], if one agent lifts one end of a piano, while another agent lifts the other end, then the entire piano is lifted o the oor; instead, if one agent pushes a door open, while the other is pushing it closed, the two actions cancel each other out.
+To handle these situations, many formalisms support ex The rst author is supporting the Formal Methods Section of the Naval Research Laboratory under contract N001496-D2024.
+The second author was partially supported by the MURST project Software Architectures and Languages to Coordinate Distributed Mobile Components.
+47  Form Approved OMB No.
+0704-0188  Report Documentation Page  Public reporting burden for the collection of information is estimated to average 1 hour per response, including the time for reviewing instructions, searching existing data sources, gathering and maintaining the data needed, and completing and reviewing the collection of information.
+Send comments regarding this burden estimate or any other aspect of this collection of information, including suggestions for reducing this burden, to Washington Headquarters Services, Directorate for Information Operations and Reports, 1215 Jefferson Davis Highway, Suite 1204, Arlington VA 22202-4302.
+Respondents should be aware that notwithstanding any other provision of law, no person shall be subject to a penalty for failing to comply with a collection of information if it does not display a currently valid OMB control number.
+1.
+REPORT DATE  3.
+DATES COVERED 2.
+REPORT TYPE  2000  00-00-2000 to 00-00-2000  4.
+TITLE AND SUBTITLE  5a.
+CONTRACT NUMBER  A Calculus of Macro-Events: Progress Report  5b.
+GRANT NUMBER 5c.
+PROGRAM ELEMENT NUMBER  6.
+AUTHOR(S)  5d.
+PROJECT NUMBER 5e.
+TASK NUMBER 5f.
+WORK UNIT NUMBER  7.
+PERFORMING ORGANIZATION NAME(S) AND ADDRESS(ES)  8.
+PERFORMING ORGANIZATION REPORT NUMBER  ITT Industries Inc,Advanced Engineering and Sciences Division,Alexandria,VA,22303-1410 9.
+SPONSORING/MONITORING AGENCY NAME(S) AND ADDRESS(ES)  10.
+SPONSOR/MONITORaS ACRONYM(S) 11.
+SPONSOR/MONITORaS REPORT NUMBER(S)  12.
+DISTRIBUTION/AVAILABILITY STATEMENT  Approved for public release; distribution unlimited 13.
+SUPPLEMENTARY NOTES  The original document contains color images.
+14.
+ABSTRACT 15.
+SUBJECT TERMS 16.
+SECURITY CLASSIFICATION OF:  17.
+LIMITATION OF ABSTRACT  a.
+REPORT  b. ABSTRACT  c. THIS PAGE  unclassified  unclassified  unclassified  18.
+NUMBER OF PAGES  19a.
+NAME OF RESPONSIBLE PERSON  12  Standard Form 298 (Rev.
+8-98) Prescribed by ANSI Std Z39-18  Safety disable  Lighter  Power  Desired Temperature  Gas Main  Figure 1.
+The Gas Heater: a Useras Perspective  system start up procedure, a switch (Power ) used to enable or disable system operation, a knob (Desired Temperature ) used to select the desired temperature for the environment where the gas heater is placed, a tap (Gas Main ) used to allow or prevent the supply of gas to the heater and a plug to supply electricity to the heater.
+The user typically starts up the system by: connecting the plug to a socket, opening the Gas Main tap, turning on the Power switch, pressing the Safety Disable button together with the Lighter button and keeping them pressed until he/she sees the pilot light turning on, releasing then the two buttons.
+When the pilot light is on, heating is automatically controlled by the system, which burns gas when the room temperature is lower than desired and keeps only the pilot light on otherwise (details below).
+employed to reason about complex events.
+Compared to other approaches to the formalization of processes in temporal reasoning, our proposal is characterized by a logical bias: we aim at developing a calculus that gives a logical meaning to constructs which are operational in nature.
+We reconcile the two views by providing a logic programming implementation of the Macro-Event Calculus.
+The paper is organized as follows: in Section 2, we describe the Gas Heater Problem, that we will use as our case study throughout this paper.
+In Section 3 we formalize versions of the Event Calculus that allow explicit time and event durations.
+In Section 4, we dene macro-events and extend our specication of EC to handle them.
+We give a Prolog implementation of these various calculi in Section 5, and outline directions of future work in Section 6.
+2  Looking inside the gas heater (Figure 2), six main components deserve attention.
+The Power Switch allows or prevents the supply of electrical power to the Thermostat and to the Lighter System.
+The Lighter System is devoted to producing sparks in order to light up the pilot light during the start up procedure.
+The Safety System prevents dangerous gas leaks into the environment: this thermo-mechanical device closes the Safety Valve when it is not heated by the pilot light and opens it when the pilot light is on.
+If the Safety Disable button is pressed, the Safety Valve allows gas to ow through the pipe connected to the pilot light (thus allowing, if needed, to ignite the pilot light with the Lighter ) but not through the pipe connected to the Thermostatic Valve.
+The Thermostat senses room  Case Study  We will illustrate the use of EC and of the proposed extensions by modeling some of the operations of a simple gas heater [10].
+We now give an informal description of this case study, and later formalize it as we introduce concepts and denitions.
+In [22], we have successfully applied a variant of the MacroEvent Calculus to a larger-scale example, the Dagstuhl Steam-Boiler problem [1].
+The gas heater presents to its user an interface (shown in Figure 1) consisting of two buttons (Safety Disable and Lighter ) which must be used during the 48  Lighter system  Safety system  Gas Main  Safety valve Thermostatic valve  Power switch  Thermostat  Figure 2.
+The Gas Heater: an Engineeras Perspective  temperature and opens the Thermostatic Valve if the temperature is one degree or less lower than the Desired Temperature preset by the user; it closes the valve when temperature is at least one degree higher than the Desired Temperature.
+When both the Safety Valve and the Thermostatic Valve are open, a huge quantity of gas is allowed to reach the main burner and be burnt, possibly ignited by the pilot light.
+3  time have the eect of initiating or terminating the validity of properties when given preconditions are met.
+The time-independent aspects of a situation are formalized by means of an ECT-structure.
+It alters the notion of PEC -structure given in [8] only by the addition of a temporal domain.
+Denition 3.1 (ECT-structure) A structure for the Event Calculus with Explicit Time (ECT-structure for short) is a quintuple H = (E; P; [ji; hj]; T ) such that:  Explicit Time and Event Duration  We will now introduce the avors of EC we will consider in this paper.
+In Section 3.1, we formalize EC with explicit time.
+In Section 3.2, we extend this model to admit non-instantaneous events.
+Finally, in Section 3.3, we apply these notions to our case study.
+  = fe1 ; : : : ; en g and P = fp1 ; : : : ; pm g are nite sets of event types and properties, respectively.
+Elements of 2P are called contexts and the properties in them are referred to as preconditions.
+E   [ji : P  2P !
+2E  While the original informal presentation of the Event Calculus [16] anchors the occurrence of instantaneous events to explicit time points, recent work on the formalization of EC [7, 8, 9] abstracted the time line and only considered events that are ordered relative to one another.
+We will extend this denition so to admit explicit time.
+We will operate on the formulation in [8], that embeds preconditions.
+The Event Calculus with Explicit Time and Instantaneous Events (ECT ) aims at modeling situations that consist of a set of events, whose occurrences over    and  hj] : P  2P !
+2E  are respectively the initiating and terminating map of H. For every property p 2 P , [pjC i and hpjC ] represent the set of events that initiate and terminate p, respectively, in case all preconditions in C hold at their occurrence time.
+3.1 Explicit Time  The temporal domain T is some ordered set (T; ).
+In our implementation, we used the natural numbers N with their usual ordering.
+The instance-specic part of a specication is captured through the following notion of time-structure : 49  Denition 3.2 (Time-structure) Given an ECT-structure H = (E; P; [ji; hj]; T ), a time-structure for H is a set T  E  T of event instances, where a pair (e; t) 2 T expresses the fact that an event of type e has occurred at time t.  3.2 Event Duration  Although thinking of events as instantaneous is a suAcient abstraction for some situations, in many cases the occurrence of an event happens over a period of time [24].
+Capturing this possibility enables ner models, as we can now reason about changes that take place while an event is in the process of occurring.
+In particular, we must revise our notion of precondition as it can now have at least two meanings: a property that should hold in order for an event to start happening, or a property that ought to be uninterruptedly valid during the entire duration of the occurrence of an event.
+In our formalization below, we will allow both options, keeping the name precondition for the former, and calling the latter constraint [10].
+Given the formalization of a situation in terms of an ECT -structure and a time-structure, ECT provides means to check whether a given property p is valid at a given point t in time [predicate holdsAt(p; t) below].
+This problem is easily reduced to the determination of the maximal validity intervals, abbreviated MVI, over which a given property holds [mvi(p; t1 ; t2 )]: a property p holds maximally over an interval [t1 ; t2 ] if i) t1  t2 , ii) an event e initiating p subject to preconditions C1 has occurred at t1 and all properties in C1 hold at t1 [initiate(p; t1 )], iii) dually, an event e terminating p subject to preconditions C2 has occurred at t2 and all property in C2 hold at t2 [terminate(p; t2 ], and iv) p is not initiated or terminated at any time point between t1 and t2 [:broken(p; t1 ; t2 )].
+Denition 3.4 (ECTD-structure) A structure for the Event Calculus with Event Duration (ECTD-structure for short) is a sextuple H = (E; P; [jji; hjj]; T; A ) such that:    Denition 3.3 (ECT-model) Let H = (E; P; [ji; hj]; T ) be a ECT-structure and T be a time-structure over H. We dene the following recursive predicates:  9t1 ; t2 2 T:  holdsAt(p; t)  i  mvi(p; t1 ; t2 )  i t1  t2  initiate(p; t)  i  mvi(p; t1 ; t2 )  t1   [jji: P  2P  2P !
+2E and hjj]: P  2P  2P !
+2E are respectively the initiating and terminating map of H. For every property p 2 P , [pjC jK i and hpjC jK ] represent the set of events that initiate and terminate p, respectively, in case all preconditions in C hold at the time they start occurring, and all constraints in K hold for the entire duration of their occurrence.
+ t  t2 ^  ^ initiate(p; t1 ) ^ terminate(p; t2 ) ^ :broken(p; t1 ; t2 )  terminate(p; t) i broken(p; t1 ; t2 ) i  and P are the sets of event types and properties, respectively.
+E  9e 2 E: 9C 2 2P : (e; t) 2 T ^ p 2 [ejC i ^ 8q 2 C: holdsAt(q; t) 9e 2 E: 9C 2 2P : (e; t) 2 T ^ p 2 hejC ] ^ 8q 2 C: holdsAt(q; t) 9t 2 T: t1  t ^ t  t2 ^ (initiate(p; t) _ terminate(p; t)).
+   T = (T; ; +; 0) is the temporal domain, where the ordered set (T; ) considered above is augmented with a monoid component (T; +; 0).
+: E !
+T is a duration function, that gives the duration of every event type.
+A  Observe that ECT -structures are degenerate ECTD structures where no constraints are present, and A (e) = 0 for every event e 2 E .
+We do not need to modify the denition of time-structure.
+In spite of the drastic changes in Denition 3.4 with respect to the notion of ECT -structure, the modications to the specication of how to check whether a property holds at a given time point are localized to the predicates initiate and terminate.
+Let us focus on the former: in order for initiate(p; t) to hold, there must be an event e with preconditions C and constraints K that initiates p. If e starts occurring at time t0 , it must be the case that t is the endpoint of the occurrence  The meta-predicates holdsAt, mvi, initiate, terminate and broken are mutually recursive in the above denition.
+In particular, an attempt at checking properties or computing MVIs by simply unfolding their denition is non-terminating in pathological situations [8].
+However, most ECT problems encountered in practice satisfy syntactic conditions ensuring the termination of this procedure.
+See [8] for a detailed discussion of these restrictions.
+The above denition can be directly transcribed in the programming language Prolog [25].
+The resulting code is given in Section 5.1.
+50  interval of e (i.e.
+t = t0 + A (e)).
+Moreover, every precondition in C must hold at its startpoint t0 , and every constraint in K must be valid without interruption throughout the interval [t0 ; t].
+Notice in particular that an event has eectively initated a property at the end of its occurrence interval.
+Similar considerations apply to the case of terminate.
+This is captured in the following denition, where the predicates holdsDuring and happens are accessory.
+3.3 Example a Part I  The rst phase of the representation of the gas heater in EC consists in the identication of the relevant types of events.
+We consider eleven types: eight of them represent possible actions of the user of the gas heater, i.e.
+open or close the Main Gas tap (gasOn, gasO), turn on or o the Power switch (powerOn, powerO), press or release the Safety Disable button (prDisable, relDisable), and press or release the Lighter button (prLighter, relLighter).
+In this simple model, we will not represent the action of setting the Thermostat to the desired temperature.
+Two other types of event represent the possible temperature changes in the environment as reported by a Thermometer (coolDown, warmUp).
+In order to represent the properties that are initially valid in the system [11], we add the ctitious event start which represent the beginning of time.
+A possible time structure T built using the above types of events is the following:  Denition 3.5 (ECTD-model) Let H = (E; P; [jji; hjj]; T; A) be a ECTDstructure and T be a time-structure over H. We modify Denition 3.3 by overriding the specication of initiate and terminate given there with the clauses below, and adding the predicates happens and holdsDuring.
+initiate(p; t)  i  9e 2 E: 9t0 ; d 2 T: 9C; K 2 2P : happens(e; t0 ; d) ^ t = t0 + d ^ p 2 [ejC jK i ^ 8q 2 C: holdsAt(q; t0 ) ^ 8q 2 K: holdsDuring(q; t0 ; t)  terminate(p; t)  (start; (coolDown; (gasOn; (powerOn; (prDisable; (prLighter; (relLighter;  i  9e 2 E: 9t0 ; d 2 T: 9C; K 2 2P : happens(e; t0 ; d) ^ t = t0 + d ^ p 2 hejC jK ] ^ 8q 2 C: holdsAt(q; t0 ) ^ 8q 2 K: holdsDuring(q; t0 ; t)  happens(e; t; d)  i (e; t) 2 H  holdsDuring(p; t1 ; t2 ) i  ^  d  0): 0): 1): 2): 3): 3): 5):  (relDisable; (warmUp; (coolDown; (warmUp; (powerO ; (gasO ; (coolDown;  6): 8): 10): 11): 18): 19): 25):  In this scenario, the user notices a drop in temperature (time 0) and takes all the actions needed in order to ignite the pilot light: she opens the Gas Main (time 1), switches the power on (time 2), and presses the Lighter and Safety Disable buttons simultaneously (time 3).
+She releases these buttons at time 5 and 6, respectively.
+Between time 8 and 11 the thermometer reports some temperature changes in the environment.
+At time 18 the user interrupts the supply of gas, and shortly after she turns the power o.
+Eventually, the rooms becomes cold again (time 25).
+The second step in the representation of the gas heater is the identication of the interesting properties that are initiated and terminated by events.
+We model this system by means of nine properties: whether gas is owing into the heater (gas), whether electrical power is supplied (power), whether the room is cold (cold), whether the thermostatic and the safety valves are open (thermoVOpen and safetyVOpen, respectively), whether the lighter system produces sparkles (sparkling), whether the pilot light is on (pilotOn), and whether gas is burning in the main combustion chamber (burning).
+Finally, it will be convenient to know when the pilot light is o (pilotO).
+These properties fall in three classes: properties ini-  = A (e)  9t0 ; t3 2 T: mvi(p; t0 ; t3 ) ^ t0  t1 ^ t2  t3 :  It is easy to verify that, whenever H corresponds to an ECT -structure, the denition reduces to Denition 3.1.
+It is interesting to observe that, in the absence of constraints, the Event Calculus with Event Duration can be compiled into the formalism presented in Section 3.1.
+Every lasting event e is translated into a pair of instantaneous events start e and end e, and a property occ e. Instances (e; t) are mapped to the instantaneous instances (start e; t) and (end e; t + A (e)).
+Finally, if p 2 [ejC ji, we get occ e 2 [start ejC i, moreover occ e 2 hend ej], nally p 2 [end eji.
+The termination map is processed analogously.
+The treatment of constraints is problematic because of the requirement that they ought not to be interrupted during the event's occurrence interval.
+Prolog code implementing Denition 3.5 is given in Section 5.2.
+51  events.
+We will address this shortcoming of ECTD by allowing the validity status of properties to be changed on the basis of the occurrence of structured conglomerations of events that we will call macro-events.
+In Section 4.1, we dene this notion and extend ECTD structures to accommodate it.
+It takes into account the cumulative eects of a set of related events, but for simplicity, excludes interference issues.
+In Section 4.2, we simultaneously address the problems of determining whether a macro-event has occurred, and extend the specication of validation of a property (Denition 3.5) to these entities.
+In Section 4.3, we complete the treatment of our case-study.
+tiated or terminated by the simple occurrence of an event; properties initiated or terminated by the occurrence of an event in a specic context; properties initiated or terminated by a combination of events.
+Properties gas, power, cold, and thermoVOpen fall in the rst class: they are unconditionally initiated and terminated by the events gasOn and gasO, powerOn and powerO, coolDown and warmUp, and coolDown and warmUp, respectively.
+This is captured in EC as follows: [gasjji [powerjji [coldjji [thermoVOpenjji hgasjj] hpowerjj] hcoldjj] hthermoVOpenjj]  = = = = = = = =  fgasOng; fpowerOng; fcoolDowng; fcoolDowng; fgasO g fpowerO g fwarmUpg fwarmUpg  4.1 Definition  In our current model, macro-events are obtained by considering sequential, alternative, parallel, or iterated occurrences of elementary events, or any combination of these constructions.
+The second class consists of the properties sparking and safetyVOpen.
+While the former simply requires that power be supplied when the lighter button is pressed, the latter has a more complex behavior.
+Consider rst how to terminate the property safetyVOpen: if the pilot light is o, releasing the safety button is suAcient to close the valve; however if this is not the case, the only way to shut the safety valve is by extinguishing the pilot light, which is achieved, as we will see, by interrupting the supply of gas.
+We have the following formalization: [sparkingjjpoweri [safetyVOpenjji hsparkingjj] hsafetyVOpenjjpilotOn] hsafetyVOpenjjpilotO]  = = = = =  Denition 4.1 (Macro-Events) Given a set of events E and a temporal domain T = (T; ; +; 0), macro-events, denoted with m possibly subscripted, are expressions dened by the following grammar: m  fprLighterg fprDisableg frelLigher; powerO g fgasO g frelDisableg  j j j j  e m1 ;D d m2 m1 + m2 m1 m2 m  jj  (Basic event) (Sequence with delay (Alternative) (Parallelism) (Iteration)  where d; D 2 T and d  D. Let macro-events over T .
+MT  d  to D)  be the set of the  This denition formalizes the core of the notion of process studied at length in [10, 22], which in turn extends the limited notion of macro-events (essentially delayed sequencing) presented in [12].
+The constructors we included in this language are based on the path expression operators of [3] and on the process calculi operators found in [15, 21].
+Observe that a number of useful constructs are easily expressible with the language in Denition 4.1.
+In particular sequencing with arbitrary delay (;), immediate sequencing (;;), non-empty iteration (+ ) and xed-length iteration (n ) are dened as follows in [22]:  The remaining properties pilotOn and pilotO, which records whether the pilot light is on or o, depends on constraints such as the availability of power and gas.
+However, they are initiated and terminated respectively by the simultaneous occurrence of two events (prDisabled and prLighter).
+Similar remarks apply to the property burning.
+The extensions to EC we devised so far are insuAcient to specify these situations.
+4  ::=  Event Calculus with Macro-Events  As we just saw, even when events with durations are available, EC does not lend itself to easily expressing situations where properties are initiated or terminated not by single events, but by the occurrence of multiple  m1 ; m2 m+ m1 ;; m2 mn  52  = = = =  m1 ;1 0 m2 m; m m1 ;00 m2 m; : : : ; m  (n times)  me(e; [t1 ; t2 ]; s; l) i (e; s) 2 T ^ l = A (e) ^ [s; s + l]  [t1 ; t2 ] me(m1 ;D m ; [ t ; t ] ; s; l ) i 9t01 ; t02 ; l1 ; l2 2 T: me(m1 ; [t1 ; t01 ]; s; l1 ) ^ me(m2 ; [t02 ; t2 ]; s2 ; l2 ) d 2 1 2 s + l1  t01  t02  s2 ^ s + l1 + d  s2  s + l1 + D l = s2 + l2 s me(m1 + m2 ; [t1 ; t2 ]; s; l) i me(m1 ; [t1 ; t2 ]; s; l) _ me(m2 ; [t1 ; t2 ]; s; l) me(m1 jj m2 ; [t1 ; t2 ]; s; l) i 9s1 ; l1 ; s2 ; l2 2 T: me(m1 ; [t1 ; t2 ]; s1 ; l1 ) ^ me(m2 ; [t1 ; t2 ]; s2 ; l2 ) s = min(s1 ; s2 ) ^ l = max(s1 + l1 ; s2 + l2 ) s me(m ; [t1 ; t2 ]; s; l) i 9l1 ; s2 ; l2 2 T: (s = t1 ^ l = 0) _ (me(m; [t1 ; t]; s; l1 ) ^ me(m ; [t; t2 ]; s2 ; l2 ) ^ s + l1  t  s2 ^ l = s2 + l2 s)  ^ ^ ^  Figure 3.
+Definition of me  Before giving the exact semantics of macro-events, we update our formalization of ECTD of Section 3.2 to accomodate these entities.
+The changes to the denition of ECTD -structure turn out to be very modest.
+4.2 Monitoring and Evaluation  me(m; [t1 ; t2 ]; s; l), which veries whether a macroevent m has occurred over the interval [t1 ; t2 ], and, if this is the case, computes its starting point s and duration l. These two arguments are necessary to correctly process the bounds of a delayed sequence of events.
+Given a MECTD -structure H = (E; P; M; [jji; hjj]; T; A) and a time structure T on H, this predicate is recursively dened in Figure 3, where we have promoted  to denote the sub-interval relation over T .
+Observe that me denes the semantics of the macroevent constructors presented in Denition 4.1.
+In the base case of the recursion, i.e.
+if m is an event e, we verify if an ocurrence of e has been recorded in the time-structure T .
+If so, we check that it takes place over a subinterval of [t1 ; t2 ].
+In the case of a sequence, we must make sure that the endpoint of the rst component and the starting time of the second are within the acceptable delay.
+Clearly, they must take place over sequentially disjoint intervals.
+In order to verify that an alternative macro-event has occurred, we look for the occurrence of either component.
+Parallel macroevents must have both occurred over the same interval.
+Observe that we do not require that the two branches mention distinct events; indeed m jj m is equivalent to m. Finally, iterated macro-events are essentially reduced to (possibly empty) sequences.
+Notice that we do not force any form of maximality: the empty iteration is always satised; its starting point is made to coincide with the beginning of the test interval, and it always has null duration.
+We check whether a given macro-event has occurred over some interval by using the above denition, while abstracting from the starting time and duration.
+The occurrence of a macro-event is not explicitely recorded, but must be determined on the basis of its denition and of the time-structure at hand.
+In order to do so, we dene the auxiliary predicate  Denition 4.3 (Monitoring Macro-Events) Let H be a MECTD-structure and T be a timestructure over H. We say that a macro-event m has occurred over an interval [t1 ; t2 ], written  Denition 4.2 (MECTD-structure) A structure for the Macro-Event Calculus (MECTD-structure for short) is a septuple H = (E; P; M; [jji; hjj]; T; A) which differs from the denition of ECTD-structure only by the following points:       M   MT  is a set of macro-events over T .
+The codomain of [jji and hjj] are redened to be 2M : indeed [jji : P  2P  2P !
+2M and hjj] : P  2P  2P !
+2M .
+This implies that properties can be started and ended by generic macro-events, not just plain events.
+We assume that the temporal domain (T; ) has a maximum element 1, and that (T; +; 0) is a group, with the inverse operation of +.
+Observe that we did not propagate the change to the duration function: only basic events are explicitly given a duration by means of A .
+The duration of occurrences of macro-events will instead be computed on the basis of their structure and of the participating basic events.
+We do not modify our notion of time-structure T : only elementary events are recorded.
+Occurrences of macro-events will instead be inferred.
+53  check(m; [t1 ; t2 ]), i  drops below the thermostatic threshold, gas will start burning.
+The second handles the case where the room is cold at the moment in which the pilot light is ignited.
+This property has an equally interesting termination behavior: it can always be ended by cutting the gas supply, but if the pilot light is on it is suAcient that the room temperature warms up above the threshold set through the thermostat.
+This concludes the specication of the properties of interest.
+It is worth observing that the overall specication of the gas heater could be considerably shortened by admitting the notions of auto-initiation and autotermination [10] to our calculus.
+An auto-initiated property (here burning is a good candidate) is explicitly initiated not by the occurrence of events, but as soon as the validity periods of one or more other properties start overlapping (here pilotOn and cold).
+Autotermination is dened in a dual way.
+We plan to include these constructs in a forthcoming version of the macro-event calculus.
+9s; l 2 T: me(m; [t1 ; t2 ]; s; l) is valid.
+The starting point and duration of macro-events are useful in order to compute MVIs, and ultimately to check whether a given property holds at a certain point in time.
+Therefore, me oers a way to update the predicate happens from Denition 3.5 to operate over generic macro-events.
+Denition 4.4 (MECTD-model) Let H be a MECTD-structure and T be a timestructure over H. We modify Denition 3.5 by overriding the denition of happens given there with the following clause: happens(m; t; d) i me(m; [0; 1]; t; d) This denition provides an elegant specication to the core of the system presented in [10].
+We limited ourselves to treating the situation where macro-events can initiate or terminate properties.
+This is suAcient for many applications, and involves much simpler definitions than the general case.
+We did not include here the possibility of a macro-event that cancels eects caused by some of its components (be it an elementary event, or a macro-event).
+A complete specication can be found in [22], and will be included in an extended version of this paper.
+An implementation of these specications can be found in Section 5.3.
+5  We will now give a Prolog [25] implementation of the calculi we have presented so far and an encoding of our case study.
+We assume the reader is familiar with this logic programming language.
+5.1 EC with Explicit Time  We represent the initiation and termination maps, [ji and hj] of an ECTD -structure by means of the Prolog predicates init and term, respectively.
+We use Prolog 's lists to represent the preconditions of the effect of an event.
+We adopt the integers as the temporal domain T .
+The precedence relation  is then mapped to <.
+Each pair (e; t) in a time-structure is represented as the fact happens(peq ,ptq ), where peq and ptq encode e and t respectively.
+For aesthetic reasons, we represent an interval [t1 ; t2 ] with the two-element list [pt1 q ,pt2 q ].
+The contents of Denition 3.3 are then transcribed as follows in Prolog, where we have kept the predicate name unchanged.
+4.3 Example a Part II  Macro-events are a convenient tool to complete the specication of the example in Section 2.
+Continuing from Section 3.3, we can now express the validity of properties pilotOn, pilotO, and burning: [pilotOnjjpower; gasi [pilotO jji [pilotO jjpilotOni [burningjjpilotOni [burningjjcold; power; gasi hpilotOnjj] hpilotO jjpower; gas] hburningjjpilotOn] hburningjj]  = = = = = = = = =  Implementation  fprLighter jj prDisableg fstartg fgasO g fcoolDowng fprLighter jj prDisableg fgasO g fprLighter jj prDisableg fwarmUpg fgasO g  holdsAt(P, T) :mvi(P, [T1,T2]), T1 =< T, T < T2.
+mvi(P, [T1,T2]) :initiate(P, T1), terminate(P, T2), T1 < T2, \+ broken(P, [T1,T2]).
+Property burning has two initiation clauses.
+The rst applies when the pilot light is lit: if the temperature 54  happens(E, P),  mHoldsAt([],_).
+mHoldsAt([P|C], T) :holdsAt(P, T), mHoldsAt(C, T).
+lasts(E, D).
+mHoldsDuring([], _).
+mHoldsDuring([P|C], I) :holdsDuring(P, I), mHoldsDuring(C, I).
+initiate(P, T) :init(E, P, C), happens(E, T), mHoldsAt(C, T).
+holdsDuring(P, [T1,T2]) :mvi(P, [T0,T3]), T0 =< T1, T2 =< T3.
+terminate(P,T) :term(E, P, C), happens(E, T), mHoldsAt(C, T).
+Again, this implementation can be proved sound and complete with respect to Denition 3.4.  broken(P, [T1,T2]) :(initiate(P, T) ; terminate(P, T)), T1 < T, T < T2.
+We encode the process constructions m1 ;D d m2 , m1 + m2 , m1 jj m2 and m by means of the Prolog terms seq(pm1q ,pm2 q ,pdq ,pDq ), alt(pm1q ,pm2 q ), par(pm1q ,pm2 q ), and it(pmq ), respectively.
+Lacking a better abstraction, we used 100000 for 1.
+We implement the predicate me and Denitions 4.34.4 by replacing the clause for happens/3 above with the following code.
+The convoluted denition for subinterval is due to the fact that it is used both for checking that an interval is contained in another interval, but also to set either endpoints of the former.
+5.3 Macro-Event Calculus  Whenever the syntactic conditions [8] mentioned in Section 3.1 are met, this program allows not only verifying the validity of a property at a given time point t, but also computing all the properties that hold at t. Using the technique in [9], it is possible to prove the soundness and completeness of this program with respect to Denition 3.3.
+5.2 EC with Explicit Time and Event Duration  We add one argument to init and term to the previous representation to encode the constraints that distinguish [jji and hjj] in an ECTD -structure.
+Moreover, we rely on Prolog 's arithmetic to emulate the operation now available in the temporal domain.
+Finally, we rely on the predicate lasts to model the duration function A .
+The behavior of ECTD is captured by replacing the clauses for initiate and terminate with the following denitions, and adding the accessory predicates happens, mHoldsDuring, and holdsDuring.
+me(E, I, S, L) :happens(E, S), lasts(E, L), T is S + L, subinterval([S,T], I).
+initiate(P,TD) :init(E, P, C, K), happens(E, T, D), TD is T + D, mHoldsAt(C, T), mHoldsDuring(K, [T,TD]).
+me(alt(M1,M2), I, S, L) :(me(M1, I, S, L) ; me(M2, I, S, L)).
+me(seq(M1,M2,Min,Max), [T1,T2], S, L) :me(M1, [T1,T11], S, L1), me(M2, [T22,T2], S2, L2), S + L1 =< T11, T11 =< T22, T22 =< S2, Min =< (S2 - S - L1), (S2 - S - L1) =< Max, L is S2 + L2 - S.  me(par(M1,M2), I, S, L) :me(M1, I, S1, L1), me(M2, I, S2, L2), S is min(S1,S2), L is max(S1+L1,S2+L2) - S.  terminate(P, TD) :term(E, P, C, K), happens(E, T, D), TD is T + D, mHoldsAt(C, T), mHoldsDuring(K, [T,TD]).
+me(it(M), [T1,T2], S, L) :me(M, [T1,T], S, L1), me(it(M), [T,T2], S2, L2), S+L1 =< T, T =< S2, L is S2 + L2 - S.  happens(E, P, D) :-  55  me(it(_), [T,T], T, 0) :- !.
+me(it(_), [T,_], T, 0).
+check(M, I) :me(M, I, _, _).
+term(powerOff,  power,  [], []).
+init(coolDown, term(warmUp,  cold, cold,  [], []).
+[], []).
+init(coolDown, term(warmUp,  thermoVOpen, [], []).
+thermoVOpen, [], []).
+happens(M, T, D) :me(M, [0,100000], T, D).
+init(prLighter, sparking, term(relLighter, sparking, term(powerOff, sparking,  subinterval([B1,E1], [B2,E2]) :((var(B2), B1 = B2, !)
+; B2 =< B1), ((var(E2), E1 = E2, !)
+; E1 =< E2).
+init(prDisable, safetyVOpen, [], []).
+term(gasOff, safetyVOpen, [], [pilotOn]).
+term(relDisable, safetyVOpen, [], [pilotOff]).
+Showing the soundness and completeness of this implementation with respect to the specications given in Section 4.2 is complicated by the non-logical implementation of subinterval.
+However, once this predicate has been processed in isolation, standard techniques from [9] can be successfully applied.
+init(coolDown, burning, [], init(par(prLighter,prDisable), burning, [], term(warmUp, burning, [], term(gasOff, burning, [],  We will now complete the treatment of the gasheater example by displaying the clauses that encode the associated MECTD -structure and time structure.
+The latter is immediately rendered by the following facts: 0).
+0).
+1).
+2).
+3).
+3).
+5).
+happens(relDisable, happens(warmUp, happens(coolDown, happens(warmUp, happens(powerOff, happens(gasOff, happens(coolDown,  This completes the formalization of the gas heater.
+We can now use it to extract information that is implicit in the example.
+The following query retrieves the maximum validity intervals of all the properties that appear in this case study.
+6).
+8).
+10).
+11).
+18).
+19).
+25).
+?- mvi(M, I).
+lasts(E, 0).
+summarizes all the relevant information about event duration.
+The initiation and termination maps relative to the gas heater problem are given by the following code, where we have grouped these facts by the property being initiated or terminated: gas, gas,  [], []).
+[], []).
+init(powerOn,  power,  [], []).
+[cold,power,gas]).
+[pilotOn]).
+[]).
+init(start, pilotOff, [], []).
+init(gasOff, pilotOff, [], [pilotOn]).
+term(par(prLighter,prDisable), pilotOff, [], [power,gas]).
+where we have kept the name of the events (and below properties) as in the body of this paper.
+In our example, all events are instantaneous.
+Therefore, the clause  init(gasOn, term(gasOff,  [pilotOn]).
+init(par(prLighter,prDisable), pilotOn, [], [power,gas]).
+term(gasOff, pilotOn, [], []).
+5.4 Example a Part III  happens(start, happens(coolDown, happens(gasOn, happens(powerOn, happens(prDisable, happens(prLighter, happens(relLighter,  [], [power]).
+[], []).
+[], []).
+56  M = gas  I = [1, 19]  ;  M = power  I = [2, 18]  ;  M = cold M = cold  I = [0, 8] I = [10, 11]  ; ;  M = thermoVOpen M = thermoVOpen  I = [0, 8] I = [10, 11]  ; ;  M = sparking  I = [3, 5]  M = safetyVOpen  I = [3, 19]  ;  M = burning M = burning  I = [10, 11] I = [3, 8]  ; ;  M = pilotOn  I = [3, 19]  ;  ;  M = pilotOff  I = [0, 3]  establishing the expressiveness and complexity of variants of the Macro-Event Calculus and at systematically comparing them with other formalisms for discrete process modeling proposed in the literature.
+;  No  We can also inquire whether a given macro-event has occurred, when it started, and how long it lasted.
+For example, if we want to know if it ever happened that the room rst got cold and then warm within 20 time units, the following query will provide three answers:  References  [1] J. Abrial.
+Steam-boiler control specication problem.
+In Proc.
+of the Dagstuhl Seminar on Methods for Semantics and Specications, Dagstuhl, Germany, 1995.
+[2] J. F. Allen and G. Ferguson.
+Actions and events in interval temporal logic.
+Journal of Logic and Computation, 4(5):531{580, 1994.
+[3] S. Andler.
+Predicate path expressions.
+In Proceedings of the 6th ACM Symposium on Principles of Programming Languages, 1979.
+[4] C. Baral and M. Gelfond.
+Representing concurrent actions in extended logic programming.
+In Proc.
+of 13th International Joint Conference on Articial Intelligence | IJCAI, pages 866{871, Chambery, France, 1993.
+Morgan Kaufmann.
+[5] C. Baral and M. Gelfond.
+Reasoning about eects of concurrent actions.
+Journal of Logic Programming, 31(1{3):85{117, 1997.
+[6] P. Belegrinos and M. George.
+A model of events and processes.
+In Proc.
+IJCAI'91, Sydney, Australia, 1991.
+[7] I. Cervesato, L. Chittaro, and A. Montanari.
+A modal calculus of partially ordered events in a logic programming framework.
+In L. Sterling, editor, Proceedings of the Twelfth International Conference on Logic Programming | ICLP'95, pages 299{313, Kanagawa, Japan, 13{16 June 1995.
+MIT Press.
+[8] I. Cervesato, M. Franceschet, and A. Montanari.
+A guided through some extensions of the event calculus.
+Computational Intelligence, 16(2):307{347, May 2000.
+[9] I. Cervesato and A. Montanari.
+A general modal framework for the event calculus and its skeptical and credulous variants.
+Journal of Logic Programming, 38(2):111{164, Feb. 1999.
+[10] L. Chittaro and A. Montanari.
+Reasoning about discrete processes in a logic programming framework.
+In D. Sacca, editor, Proceedings of the Eight Conference on Logic Programming | GULP'93, pages 407{421, Gizzieria Lido, Italy, 1993.
+Mediterranean Press.
+[11] L. Chittaro and A. Montanari.
+EAcient temporal reasoning in the cached event calculus.
+Computational Intelligence, 12(3):359{382, 1996.
+[12] C. Evans.
+The macro-event calculus: Representing temporal granularity.
+In Proceedings of the Pacic Rim International Conference on Articial Intelligence | PRICAI'90, Nagoya, Japan, 1990.
+IOS Press.
+[13] M. Gelfond, V. Lifschitz, and A. Rabinov.
+What are the limitations of the situation calculus?
+In R. Boyer, editor, Automated Reasoning: Essays in Honor of Woody Bledsoe.
+Kluwer, 1991.
+?- happens(seq(coolDown,warmUp,0,20), T,D ).
+T = 0 T = 0 T = 10  D = 8 D = 11 D = 1  ; ; ;  No  Observe that the rst interval embeds the second.
+This is acceptable since, dierently from the evaluation of MVI -goals, queries about macro-events do not involve maximality checks.
+Finally, we show a use of the predicate check, which veries whether a given macro-event has occurred in a given interval.
+?- check(seq(coolDown,warmUp,1,5), [3,19]).
+Yes 6  Conclusions and Future Work  In this paper, we presented a preliminary attempt at dening a Calculus of Macro-Events that extends Kowalski and Sergot's Event Calculus with primitives (process constructors) for modeling discrete processes.
+In particular, we showed how to infer the occurrence of macro-events from the occurrence of their atomic components (monitoring) as well as how to derive the maximal validity intervals of properties initiated and/or terminated by a given set of macro-events (evaluation).
+Furthermore, the expressive power of the Macro-Event Calculus has been demonstrated through the encoding of a simple real-world example (a more complex example, namely the formalization of the Dagstuhl steamboiler control specication problem [1], has been implemented using a superset of our proposal in [22]).
+We are investigating ways to extend this work to naturally capture ner process constructors, in particular denitions, non-occurrence, and exclusive alternatives.
+This would allow, for example, a complete specication of the gas heater problem.
+We are also interested in formalizing synergetic eects and interference [22].
+Finally, we are currently working at properly 57  [14] J. Gustafsson and L. Karlsson.
+Reasoning about actions in a multi-agent environment.
+Linkoping Electronic Articles in Computer and Information Science, 1997. http://www.ep.liu.se/ea/cis/1997/014.
+[15] C. Hoare.
+Communicating Sequencial Processes.
+Prentice-Hall, 1985.
+[16] R. Kowalski and M. Sergot.
+A logic-based calculus of events.
+New Generation Computing, 4:67{95, 1986.
+[17] Y. Lesperance, H. J. Levesque, F. Lin, D. Marcu, R. Reiter, and R. B. Scherl.
+A logical approach to high-level robot programming | a progress report.
+In Control of the Physical World by Intelligent Systems, WorkNotes of the 1994 AAAI Fall Symposium, 1994.
+[18] F. Lin and Y. Shoham.
+Concurrent actions in the situation calculus.
+In Proc.
+of the 10th National Conference of the American Association for Articial Intelligence | AAAI, pages 590{695.
+AAAI Press/MIT Press, 1992.
+[19] S. Lin and T. Dean.
+Localized temporal reasoning using subgoals and abstract events.
+Computational Intelligence, 12(3):423{449, 1996.
+[20] R. Miller and M. Shanahan.
+Narratives in the situation calculus.
+Journal of Logic and Computation, 4(5):513{ 530, 1994.
+[21] R. Milner.
+A Calculus of Communicating Systems.
+Springer-Verlag, 1980.
+[22] M. Mizzaro.
+La modellazione di sistemi complessi nel calcolo degli eventi: Analisi di un caso di studio (in italian).
+Tesi di Laurea in Scienze dell'Informazione, Universita di Udine, 1997.
+Under the supervision of A. Montanari.
+[23] J. Pinto.
+Concurrent actions and interacting eects.
+In Proc.
+of the 6th International Conference on Principles of Knowledge Representation and Reasoning | KR'98, pages 292{303.
+Morgan Kauman, 1998.
+[24] M. Shanahan.
+Solving the Frame Problem.
+The MIT Press, 1997.
+[25] L. Sterling and E. Shapiro.
+The Art of Prolog: Advanced Programming Techniques.
+MIT Press, 1994.
+[26] C. Yi.
+Reasoning about concurrent actions with features and uents.
+In Proceedings of the Third International Workshop on Temporal Representation and Reasoning | TIME'96, pages 6{13, Key West, FL, 1996.
+58

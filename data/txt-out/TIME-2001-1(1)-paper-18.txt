@@ -1,0 +1,393 @@
+Symbolic Model Checking of Real-Time Systems G. Logothetis and K. Schneider University of Karlsruhe Institute for Computer Design and Fault Tolerance (Prof. Dr.-Ing.
+D. Schmid) P.O.
+Box 6980, 76128 Karlsruhe, Germany email: {logo,schneide}@informatik.uni-karlsruhe.de http://goethe.ira.uka.de/fmg  Abstract We present a new real-time temporal logic for the specification and verification of discrete quantitative temporal properties.
+This logic is an extension of the well-known logic CTL.
+Its semantics is defined on discrete time transition systems which are in turn interpreted in an abstract manner instead of the usual stuttering interpretation.
+Hence, our approach directly supports abstractions of real-time systems by ignoring irrelevant qualitative properties, but without loosing any quantitative information.
+We analyse the complexity of the presented model checking algorithm and furthermore present a fragment of the logic that can be efficiently checked.
+point of time.
+It is therefore natural to label the transitions of the abstract transition system by numbers that denote the time required to move from one state to another one.
+In general, there are two possible interpretations of these timed transition systems:  1.
+Introduction  Interpretation I1 : A transition from state s1 to state s2 with label k a means that at any time t0 , where we are in state s1 , we can perform an atomic action that requires k units of time.
+The action terminates at time t0 +k, where we are in state s2 .
+There is no information about the intermediate points of time t0 < t < t0 + k. Interpretation I2 : A transition from state s1 to state s2 with label k > 1 is seen as abbreviation for a stutter1 1 1 1 ing sequence s1 a s1,1 a .
+.
+.
+a s1,ka1 a s2 where all the states s1,i have the same variable assignment as state s1 .
+Formal verification methods have been developed to reason about the correctness of a system with respect to a given specification.
+In particular, model checking [4, 15] of temporal logics has become one of the most successful verification techniques.
+Using this technique requires to adequately model a system by a finite state transition system so that specifications given in temporal logics [8] can be checked for that model.
+In general, model checking procedures suffer from the so-called state explosion problem: The size, i.e., the number of states of the system can exponentially grow with the size of the implementation description.
+It is therefore often necessary to use abstraction techniques like those given in [6, 12, 14] to neglect irrelevant details so that the verification can concentrate on the necessary facts.
+As sets of states are thereby collected into abstract states, this means that the number of transitions to reach a certain state from another one is changed.
+As a consequence, however, information about quantitative time consumption is lost.
+Real-time systems must perform certain actions within limited time bounds or should start actions only after some  Clearly, only interpretation I1 can be used in a setting where more powerful abstraction techniques than stuttering simulations are used.
+It is therefore surprising that none of the previous real-time extensions of CTL is based on interpretation I1 , although this is the more general (expressive) one!
+The development of discrete real-time extensions of CTL has been initiated in [9], where the temporal operators have been extended by time bounds to limit the number of fixpoint iterations required to evaluate the considered temporal expression.
+The models used in [9] were still traditional finite-state transition systems where each transition requires a single unit of time.
+In order to represent real-time systems in a more compact way, [3] introduced timed transition systems, where transitions are labeled by natural numbers that denote the time consumption of the action associated with the transition.
+The meaning of these timed transitions is in our terms the stuttering interpretation I2 .
+In [10] a new real-time temporal logic was introduced, where both interpretations I1 and I2 were unfortunately mixed: Different temporal operators of this logic interpret  N  transitions differently, i.e., either according to I1 or I2 .
+As the meaning of timed transitions therefore depends on the context, it is impossible to reason about the meaning of timed transitions.
+In particular, it is not possible to define composition of structures.
+Becoming aware of the misleading semantics of [10] (see page 11 of [16]), another temporal logic that is solely based on interpretation I2 has been presented in [16].
+In principle, the logic of [16] is defined on unit delay transition systems that are obtained by expanding (cf.
+definition 6) a given timed transition system.
+However, there are different expansion algorithms that yield in different transition systems that are not bisimilar to each other.
+Hence, the verification results obtained for an expanded structure can not be easily transferred back to the timed transition system.
+To summarize, the mentioned real-time extensions of CTL have the following drawbacks: aV None of the previous real-time extensions of CTL is based on interpretation I1 that is necessary to benefit from abstraction techniques.
+aV None of the previous real-time extensions of CTL has a time bounded next state operator to express facts about actions that correspond with a single transition.
+As a consequence, facts as the following one can not be expressed: aIs there a non-stop flight from New York to Paris with a duration of at most 9 hours?a aV The problem to compute the set of states of a timed transition system K where a real-time CTL formula holds, can not be easily translated to an equivalent CTL model checking problem on a unit delay structure: Expansions of timed transition systems may yield in different results [13], and furthermore different expansions are not equivalent to each other [13].
+Hence, there has been much confusion and misconception about the definition of a sound and reasonable real-time extension of the famous temporal logic CTL.
+All mentioned previous approaches [3, 10, 16] are a from a logical perspective a questionable.
+In [13], we have presented a real-time extension JCTL of CTL that is based on interpreting timed transition systems with interpretation I1 .
+This directly supports abstractions of real-time systems by ignoring their irrelevant qualitative properties, but without loosing their quantitative ones.
+For example, we can model processes that compute some values within a certain limit of time with a single transition, that does not state anything about the values of the variables during the computation.
+Moreover, JCTL has a next-state operator equipped with time bounds, so that one can reason about real-time constraints of atomic actions.
+In this paper, we reconsider the logic JCTL and its model checking algorithm, and analyse its complexity.
+It turns out that the complexity to compute the set of states where  a given JCTL formula holds is the same as for previous approaches like [10].
+However, we additionally present a non-trivial fragment JCTLa$?
+of JCTL that can be more efficiently checked.
+In particular, less fixpoints need to be evaluated in this fragment, and the model checking algorithm can ignore the time bounds of the transitions for many of its computations.
+This paper is organized as follows: In the next section, we define our version of timed transitions systems and our real-time temporal logic JCTL.
+We will then proceed with the definition of a symbolic model checking procedure for JCTL.
+After this, we analyze its complexity, and present the fragment JCTLa$?
+of JCTL that can be checked more efficiently.
+Though not closely related to this paper, we want to finally mention that beneath the real-time extensions of CTL that are defined on discrete time models, there are also very successful approaches that are based on a continuous model of time [1, 11, 7, 2].
+These approaches usually rely on timed automata, i.e., on finite state automata that are endowed by a finite set of real-valued clocks.
+Most verification procedures based on timed automata require the construction of a so-called region graph to reduce the infinite state space of timed automata to a finite state problem.
+However, the construction of the region graph is very expensive in practice.
+Approaches for discrete time models do not suffer from the need of such a construction as they directly use finite state transition systems to model the systems.
+2.
+Syntax and Semantics of the Logic JCTL 2.1.
+Timed Kripke Structures We consider systems modeled as timed Kripke structures 1 over some set of variables V. These timed Kripke structures are formally defined as follows: Definition 1 (Timed Kripke Structures (TKS)) A timed Kripke structure over the variables V is a tuple (I, S, R, L), such that S is a finite set of states, I a S is the set of initial states, and R a S A A S is the set of transitions.
+For any state s a S, the set L(s) a V is the set of variables that hold on s. We furthermore demand that for any (s, t, s0 ) a R, we have t > 0 and that for any s a S, there must be a t a and a s0 a S such that (s, t, s0 ) a R holds.
+N  N  Timed Kripke structures may be pictorially drawn as given in Figure 1, where initial states are drawn with double lines.
+1 Timed  transition systems have been introduced by many authors with different names like timed transitions graphs [3], quantitative temporal structures [10], or timed temporal structures in [16].
+Following the CTL notations, we prefer the name timed Kripke structures.
+4 {} s1  3  {} s2  1  {p} s3  1  a fixed path D, since we may have more than one transition between two states that are labeled with different numbers.
+The set of paths starting in a state s is furthermore denoted as PathsK (s).
+Definition 3 (Semantics of JCTL) Given a TKS K = (I, S, R, L), and s a S, then the semantics of the logic is recursively defined as follows:  Figure 1.
+A Timed Kripke Structure Some approaches, e.g.
+[3] label transitions with intervals [a, b] of time.
+It is easily seen that our TKSs subsume these models since we can add for any t a [a, b] a new transition between the considered two states.
+It is crucial to understand what is modeled by a TKS.
+We use interpretation I1 : A transition from state s to state s0 with label k a means that at any time t0 , where we are in state s, we can perform an atomic action that requires k units of time.
+The action terminates at time t0 +k, where we are in state s0 .
+In particular, there is no information about the intermediate points of time t with t0 < t < t0 + k.  N  2.2.
+JCTL as a Real-Time Extension of CTL To write down specifications in a formal way, we use JCTL, a real-time extension of the temporal logic CTL.
+For its definition below, we only use a small subset of logical operators that will be extended below by some abbreviations.
+Definition 2 (Syntax of JCTL) Given a set of variables V, the set of JCTL formulas is the least set satisfying the following rules, where D and D denote arbitrary JCTL formulas, and a, b a are arbitrary natural numbers:  N  aV aV aV aV aV aV aV aV  V a JCTL, i.e, any variable is a JCTL formula AZD, D aSS D a JCTL EX[a,b] D a JCTL EXaLa D a JCTL E[D U[a,b] D] a JCTL E[D UaLa D] a JCTL EG[a,b] D a JCTL EGaLa D a JCTL  The semantics of JCTL is defined with respect to a TKS.
+For the definition of the semantics, we need the notion of paths.
+A path D through a timed Kripke structure is a function D : a S such that ai a .at a .
+(D (i) , t, D (i+1) ) a R holds (we write the function application with a superscript).
+Hence, D (i) is the (i + 1)th state on path D. For a given path D, we define an associated time consumption function DD , so that D and DD satisfy the condition ai a .at a .
+(D (i) , (i) DD , D (i+1) ) a R. Note that DD is not uniquely defined for  N  N  N  N  N  aV aV aV aV  K, s |= p iff p a L(s) for any p a V K, s |= AZD iff (K, s) 6|= D K, s |= D aSS D iff K, s |= D and K, s |= D K, s |= EX[a,b] D iff there is a path D a PathsK (s) with associated duration function DD with     a a$?
+DD(0) a$?
+b aSS K, D (1) |= D  aV K, s |= EXaLa D iff there is a path D a PathsK (s) with associated duration function DD with     a a$?
+DD(0) aSS K, D (1) |= D aV K, s |= E[D U[a,b] D] iff there is a path D a PathsK (s) with associated duration function DD and an i a with dLs dLT ia1   X dLa a$?
+DD(j) a$?
+bdL, aSS K, D (i) |= D  N  j=0   aSS aj < i. K, D (j) |= D   aV K, s |= E[D UaLa D] iff there is a path D a PathsK (s) with associated duration function DD and an i a with dLs dLT ia1   X dLa a$?
+DD(j) dL, aSS K, D (i) |= D  N  j=0   aSS aj < i. K, D (j) |= D   aV K, s |= EG[a,b] D iff there is a path D a PathsK (s) with associated duration function DD , such that for all i a , we have dLs dLT ia1   X dLa a$?
+DD(j) a$?
+bdL, a K, D (i) |= D  N  j=0  aV K, s |= EGaLa D iff there is a path D a PathsK (s) with associated duration function DD , such that for all i a , we have dLs dLT ia1   X dLa a$?
+DD(j) dL, a K, D (i) |= D  N  j=0  a E[D U>k D] := E[D UaLk+1 D] a E[D U=k D] := E[D U[k,k] D]  Given a TKS K and a JCTL formula D, we denote the set of states of K where D holds as JDKK .
+Intuitively, K, s |= EX[a,b] D means that the state s has a direct successor state s0 that satisfies D and can be reached in time t a [a, b].
+K, s |= EXaLa D means that the state s has a direct successor state s0 that satisfies D and can be reached in time t aL a. K, s |= E[D U[a,b] D] means that there is a path D starting in D (0) = s and a number i a so that for the first i states D (0) , D (1) , .
+.
+.
+, D (ia1) the property D holds, and D holds on Pia1 (j) D (i) , and the time t := j=0 DD required to reach state D (i) satisfies the numerical relations a a$?
+t and t a$?
+b. K, s |= E[D UaLa D] means that there is a path D starting in D (0) = s and a number i a so that for the first i states D (0) , D (1) , .
+.
+.
+, D (ia1) the property D holds, and D holds on Pia1 (j) D (i) , and the time t := j=0 DD required to reach state D (i) satisfies the numerical relation a a$?
+t. K, s |= EG[a,b] D means that there is a path D starting in D (0) = s, such that for any state D (i) that is reached within Pia1 (j) a time t := j=0 DD with t a [a, b], we have D (i) .
+Hence, D holds in the interval [a, b].
+Finally, K, s |= EGaLa D means that there is a path D starting in D (0) = s, such that for any state D (i) that is reached Pia1 (j) (i) within a time t := j=0 DD with t aL a, we have D .
+Hence, D holds for all states on D that are reached at time a or after time a.
+In the above definition, we have only used basic operators of the logic.
+Of course, we must introduce some further operators to express some properties directly.
+For this reason, we give the following abbreviations:  N  aV EG Operators: a a a a a  aV Let Is be any time constraint, i.e., [a, b], az k with aza {<, a$?, =, a$?, >}, or the empty constraint.
+Then, we define the following operators: a a a a a a a a a a a  N  Definition 4 (Further Temporal Operators) We define further temporal operators in JCTL as follows, where p is an arbitrary variable: aV Boolean Operators: a a a a  1 := p a" AZp 0 := p aSS AZp D a" D := AZ(AZD aSS AZD) D a D := AZD a" D  aV EX Operators: a a a a a  EXD := EXaL0 D EXa$?k D := EX[0,k] D EX<k D := EX[0,ka1] D EX>k D := EXaLk+1 D EX=k D := EX[k,k] D  aV E[AV U AV] Operators: a E[D U D] := E[D UaL0 D] a E[D Ua$?k D] := E[D U[0,k] D] a E[D U<k D] := E[D U[0,ka1] D]  EGD := EGaL0 D EGa$?k D := EG[0,k] D EG<k D := EG[0,ka1] D EG>k D := EGaLk+1 D EG=k D := EG[k,k] D  AXIs D := AZEXIs AZD A[DUIs D] := AZE[(AZD) UIs AZ(D a" D)]aSSAZEGIs AZD EFIs D := E[1 UIs D] AFIs D := A[1 UIs D] AGIs D := AZEFIs (AZD) E[D BIs D] := E[(AZD) UIs (D aSS AZD)] A[D BIs D] := A[(AZD) UIs (D aSS AZD)] E[D UIs D] := AZA[(AZD) BIs D] A[D UIs D] := AZE[(AZD) BIs D] E[D BIs D] := AZA[(AZD) UIs D] A[D BIs D] := AZE[(AZD) UIs D]  The definitions of the further EX, E[AV U AV], and EX operators should be clear.
+EFIs D holds in state s iff a state can be reached where D holds and that state can be reached within a time that satisfies the the time constraint Is.
+E[DBIs D] means that there must be a path D and a number such that D holds on D (i) , and all states D (j) with i a j a$?
+i do not satisfy D, and the time required to reach D (i) satisfies the time constraint Is (hence, D holds before D).
+We also have weak variants E[AV U AV] and E[AV B AV] of E[AV U AV] and E[AV B AV], respectively, that do not demand that the events that are awaited for must actually occur.
+E[D UIs D] implies E[D UIs D], but E[D UIs D] may also hold, if there is a path D where D can not be reached in time.
+In this case, D must hold on those states on the path that can be reached within a time that satisfies the constraint Is.
+E[AV B AV] is defined in a similar way.
+Finally, the versions with the A path quantifier are defined such that the corresponding path property must hold for all paths leaving the state.
+As can be seen, the EG[a,b] operator states that some property holds for all states that can be reached within [a, b], while EF[a,b] AV states a property for some point of time in that interval.
+Nevertheless, the following lemma holds, which shows that the EGa$?k operator is a somehow hybrid operator that makes both a universal and an existential statement (compare G2 and G3 in the following lemma).
+This is due to the fact, that the equation EGa$?k D = E[D U>k 1] is valid:  N  Lemma 1 (Semantics of EGa$?k D) Given a JCTL formula D and a number k a .
+Then, the following properties are equivalent for any TKS K = (I, S, R, L):  N  (G1 ) K, s |= EGa$?k D (G2 ) there is a path D a PathsK (s) starting in state s, such that dLs i a , we have dLT for all numbers ia1   X dL DD(j) a$?
+k dL, a K, D (i) |= D  N  j=0  (G3 ) there is a path D a PathsK (s) starting in state s and adLTnumber i a such that dLs ia1 i   X X (j) dL DD a$?
+k < DD(j) dL, aSS aj a$?
+i. K, D (j) |= D  N  j=0  j=0  (G4 ) there is a path D a PathsK (s) starting in state s and adLTnumber i a dLssuch that ia1   X dL DD(j) > k dL, aSS aj < i. K, D (j) |= D  N  function expand(I, S, R) Se := {(s, 1) | s a S}; Re := {}; for (s, t, s0 ) a R do for i := 2 to t do Se := Se aS {(s, i)}; Re := Re aS {((s, i a 1), (s, i))}; end for; Re := Re aS {((s, t), (s0 , 1))}; end for; Ie := {(s, 1) | s a I}; return (Ie , Se , Re ); end function Figure 2.
+Expansion of TKS to UDS  j=0  (G5 ) K, s |= E[D U>k 1] The proof of the above lemma is not very difficult.
+We just make use of the well-ordering of natural numbers, i.e., if there is a number with some property, then there is also a least number with the same property.
+2.3.
+Expansion of TKSs Normal Kripke structures are special cases of TKS that are obtained by restricting TKSs so that (s, t, s0 ) a R implies t = 1.
+To avoid confusion, we call the anormal Kripke structuresa unit delay structures in the following: Definition 5 (Unit Delay Structure (UDS)) A TKS K = (I, S, R, L) is called to be unit delay structure iff TK := {t | (s, t, s0 ) a R} = {1}.
+The previously mentioned approaches to define real-time logics that rely on interpretation I2 are forced to expand TKSs in order to define the semantics of their logics.
+For example, the following expansion algorithm could be used for that purpose: Definition 6 (Expansion of TKS) Given a TKS K = (I, S, R, L), we compute (Ie , Se , Re ) = expand(I, S, R) with the function expand as defined in Figure 2.
+Moreover, we define for any (s, u) a Se the label function Le ((s, u)) := L(s).
+The expansion of K is then the unit delay structure Ke := (Ie , Se , Re , Le ).
+As can be seen, the expansion relies on interpretation I2 , since we defined Le ((s, u)) := L(s), i.e., the states of Ke have the same variable assignments as the corresponding states of K. For conciseness, we use the following definition:  Definition 7 (Tracks of a State) Given a TKS K = (I, S, R, L), its expanded structure Ke := (Ie , Se , Re , Le ), and a state s a S. Then, we define TrackK (s) = {(s0 , u) a Se | s = s0 }.
+We emphasize that expansions of TKS can be performed in many different ways that are not equivalent to each other [13].
+Furthermore, real-time model checking problems can not be simply reduced to ordinary CTL model checking problems, although this is widely believed [13].
+For this reason, we must extend the usual CTL model checking procedure to capture JCTL.
+This is shown in the next section.
+3.
+Real Time Model Checking on TKSs In this section, we present a model checking algorithm for our real-time logic JCTL.
+We have implemented this algorithm in our verification tool JERRY by using the CUDD BDD library [17].
+The underlying algorithms for the basic operators are given in Figure 4.
+The essential idea to reason about the real-time constraints is to move fronts of tracks on a virtual expanded structure.
+However, we emphasize that we do never expand the structure.
+Furthermore, we do not run into semantic problems since the result of any evaluation of a logical operator is a set of states instead of a set of tracks.
+Hence, all calculations are independent of the virtual expansion.
+This is achieved by abstraction of the set of tracks, so that the semantics of the evaluated temporal operator is respected.
+In general, there are two possibilities: On the one hand, a state s belongs to the result if its main track (s, 1) belongs to the track set, on the other hand it may be sufficient if anyone of its tracks (s, t) belongs to the track set.
+The choice between the two possibilities depends on the semantics of the considered temporal operator (see Figure 4).
+The key function for the evaluation of all real-time constraints is the function MoveFront.
+Given a set of tracks  t0  D  D s1  s0  t1  D  tna2  sna2  D  tna1  sna1  D sn  Figure 3.
+Correctness of MoveFront TD and a set of states SD , this function computes the set of tracks that have a path of a certain length through the tracks SD A .
+The precise specification is as follows:  N  Lemma 2 (Correctness of MoveFront) Given a TKS K = (I, S, R, L), a set of states SD , and a set of tracks TD , the function MoveFront as given in Figure 4 satisfies the following equations for aza {=, aL} (cf.
+Figure 3): a MoveFront(az, k, SD , TD ) (s0 , t) dLT as1 , .
+.
+.
+, sna1 a SD .a(sn , d) a TD .
+dLZ at0 , .
+.
+.
+, tna1 a .
+dLZ Vna1 dLZ )aRaSS adLZ i=0(si , ti , si+1 Pna1  dLZ kaz dL i=0 ti + d a t aSS t a$?
+t0  N  dLs dLV dLV dLV dLV dLV dL,  Hence, MoveFront(az, k, SD , TD ) computes the set of tracks that have a path through any expanded structure of length ` with ` az k to a track in TD which runs only through tracks of SD A .
+N  Proof: The correctness easily follows by induction on k, when we observe that our algorithm and the right hand sides of the above equivalence both satisfy the following recursion equations (note that primitive recursive definitions are uniquely determined): aV MoveFront(az, 0, SD , TD ) = TD aV MoveFront(=, k + 1, SD , TD ) = (SD A ) aS preTracks(MoveFront(=, k, SD , TD )) aV MoveFront(aL, k + 1, SD , TD )   let T0 := MoveFront(aL, k, SD , TD ) = in T0 aS ((SD A ) aS preTracks(T0 ))  N  N  Using these equations, we can easily prove that T0 = MoveFront(az, i, SD , TD ) is an invariant of the loop in the algorithm given in Figure 4 for MoveFront.
+This directly implies the correctness of the above lemma.
+Please note that in the algorithm given in Figure 4 to implement the function MoveFront, we use (i 6= k) aSS (T0 6= T1 ) as loop condition instead of (i 6= k) (which would also be correct).
+The reason for this is that whenever T0 = T1 holds for an iteration i < k, then it follows that all fronts MoveFront(az, i, SD , TD ), .
+.
+.
+, MoveFront(az , k, SD , TD ) would be identical, so that we already have the result in this case.
+Now consider the function StatesEU[a,b] .
+We first compute the set of tracks T0 that can reach a track of SD A {1} in exactly a steps (where only tracks of the states SD are traversed).
+After this, we move the tracks T0 by further b a a unit delay steps through the tracks of the states SD .
+By the above lemma, we then obtain (s00 , t0 ) a T1 a dLT as01 , .
+.
+.
+, s0m a SD .at00 , .
+.
+.
+, t0ma1 a .
+dLZ as0 , .
+.
+.
+, sna1 a SD .at0 , .
+.
+.
+, tna1 a .
+dLZ dLZ asn a SD .at a .
+dLZ Vma1 0 0 0 dLZ i=0 (si , ti , si+1 ) a RaSS dLZ dLZ (s0m = s0 ) a RaSS dLZ Vna1 dLZ ) a RaSS dLZ i=0(si , ti , si+1 Pna1  dLZ dLZ a= ti + 1 a taSS dLZ  P i=0  P dLZ ma1 0 na1 0 dL baL i=0 ti + i=0 ti + 1 a t aSS 0 0 t a$?
+t 0 aSS t a$?
+t0  N N  N  dLs dLV dLV dLV dLV dLV dLV dLV dLV dLV dLV dLV dLV dLV dLV dL,   P  P ma1 0 na1 t t + + 1 a t0 is the numNote that i i=0 i i=0 ber of unit delay steps that are required to reach track (sn , 1) a SD A {1} from track (s00 , t0 ).
+By the above result, it follows that this time is in the interval [a, b] (consider the case m = 0, where the second MoveFront went along a single transition, and the case where m > 0 holds).
+The final step is to translate this result (given for tracks) to sets of states.
+If (s00 , 1)r a T1 holds,zthen we clearly see that state s0 belongs to E[D U[a,b] D]  (s00 , t0 )  0  K  .
+If, on the other hand,  a T1 holds for some t > 1, but (s00 , 1) is not included in T1 , then it follows by the above formula that the 0 time r to reach (sn , 1) z from (s0 , 1) is larger than b, so that s00 6a E[D U[a,b] D] .
+K  The correctness of EG[a,b] D is seen as follows: T0 is the set of tracks that have a path of length b a a through SD A in the expanded structure.
+T1 is the set of tracks of SD A that can reach T0 while only traversing tracks of SD A .
+Hence, T1 is the set of tracks that have a path of length aL b a a through SD A in the expanded structure.
+Finally, T2 is the set of tracks of S A that can reach T1 in exactly a steps.
+Clearly, we only should consider those tracks with time stamp 1 of T2 .
+The correctness of the other two functions to evaluate E[D UaLa D] and EGaLa D are proved in a similar way.
+Therefore, we obtain the following correctness result:  N N N  N  N  Theorem 1 (Correctness of Function States) For any TKS K = (I, S, R, L) and any JCTL formula D, the function States given in Figure 4 satisfies the equation States(D) = JDKK .
+functionpreStates(S 0)    as0 a S0 .at a .
+; S1 := s a S  (s, t, s0 ) a R return S1 ; end function  N  function preTracks(T ) T1 := {(s, t) | (s, t + 1) a T }; T2 := {(s, t) | a(s0 , 1) a T .
+(s, t, s0 ) a R}; return T1 aS T2 ; end function function MoveFront(az, k, SD , TD ) TD := SD A ; T0 := TD ; T1 := {}; i := 0; while (i 6= k) aSS (T0 6= T1 ) do T1 := T0 ; T0 := TD aS preTracks(T1 ); if equal(az, aL) then T0 := T1 aS T0 endif; i := i + 1; end; return T0 ; end function  N  function StatesEU[a,b] (SD , SD ) T0 := MoveFront(=, a, SD , SD A {1}); T1 := MoveFront(aL, b a a, SD , T0 ); return {s a S | (s, 1) a T1 }; end function function StatesEUaLa (SD , SD ) T0 := MoveFront(=, a, SD , SD A {1}); S0 := {s a S | at a .
+(s, t) a T0 }; repeat S1 := S0 ; S0 := S0 aS (SD aS preStates(S1 )) ; until (S0 = S1 ); return S0 ; end function  N  function StatesEG[a,b] (SD ) T0 := MoveFront(=, (b a a) + 1, SD , S A {1}); T1 := MoveFront(aL, a1, SD, T0 ); T2 := MoveFront(=, a, S, T1 ); return {s a S | (s, 1) a T2 }; end function function StatesEGaLa (SD ) S0 := SD ; repeat S1 := S0 ; S0 := SD aS preStates(S1 ); until S0 = S1 ; (a we now have S0 = JEGDKK a) T0 := MoveFront(aL, a, S, S0 A {1}); return {s a S | (s, 1) a T0 }; end function function States(IS) case IS of is_var(IS) : return {s a S | IS a L(s)}; AZD : SD := States(D); return S \ SD ; DaSSD : SD := States(D); SD := States(D); return SD aS SD ; : SD :=  States(D); EX[a,b] D    as0 a SD .at a [a, b].
+; S0 := s a S  (s, t, s0 ) a R return S0 ; : SD :=  States(D); EXaLa D    as0 a SD .at aL a.  ; S0 := s a S  (s, t, s0 ) a R return S0 ; [a,b] D]: SD := States(D); SD := States(D); E[D U return StatesEU[a,b] (SD , SD ); aLa E[D U D] : SD := States(D); SD := States(D); return StatesEUaLa (SD , SD ); : SD := States(D); EG[a,b] D return StatesEG[a,b] (SD ); aLa : SD := States(D); EG D return StatesEGaLa (SD ); end function  Figure 4.
+Model Checking of JCTL Formulas on a Timed Kripke Structure K = (I, S, R, L)  4.
+Complexity of JCTL In this section, we analyze the complexity of the presented model checking algorithm for JCTL.
+For this reason, we first note that there is a model checking procedure for CTL, e.g.
+the one given in [5], that runs in time O(|D| (|R|+|S|)).
+This procedure is able to evaluate any CTL operator in time O(|D| (|R| + |S|)).
+It is easily seen that if we expand a TKS to a UDS, the number of states and transition is multiplied with the maximum delay time DEK that appears in K. However, the runtime of the JCTL model checking procedure is not in O(DEK |D| (|R| + |S|)), since the number of iterations does also depend on the time constraints of the temporal operators that may enforce more than DEK |S| iterations.
+The crucial part of our complexity analysis is the complexity of the MoveFront function.
+To this end, we note that the following holds: Lemma 3 (Complexity of MoveFront (I)) Given a TKS K = (I, S, R, L), a set of states SD , and a set of tracks TD .
+Let moreover be Ke = (Ie , Se , Re , Le ) the expanded structure of K according to definition 6, and D and D formulas so that the equations SD A aS Se = JDKKe and TD = JD KKe hold.
+Then, we have  N  MoveFront(az, k, SD , TD ) = JIS(az, k, D, D)KKe , where the formula IS(az, k, D, D) is recursively defined as follows: aV IS(az, 0, D, D) = D aV IS(=, k + 1, D, D) = dLT D aSS EXIS(=, k, D, D) dLs let y = IS(aL, k, D, D) dL, aV IS(aL, k + 1, D, D) = dL in y a" D aSS EXy end Moreover, if common subformulas are shared, it is easily seen that |IS(az, k, D, D)| a O(k) holds.
+Hence, MoveFront(=, k, SD , TD ) can be computed in time O(k(|Re | + |Se |)), and MoveFront(aL, k, SD , TD ) even in time O(min{k, |Se |}(|Re | + |Se |)).
+The complexity can also be directly derived from the implementation of MoveFront: Note that the value of T0 monotonically grows in function calls of MoveFront(aL, k, .
+.
+.
+), but not for calls of MoveFront(=, k, .
+.
+.).
+Therefore, MoveFront(aL, k, .
+.
+.)
+runs in time O(min{k, |Se |}(|Re | + |Se |)), but MoveFront(=, k, .
+.
+.)
+requires time O(k(|Re | + |Se |)).
+For this reason, we have the following result: Theorem 2 (Complexity of JCTL) For any TKS K = (I, S, R, L) and any JCTL formula D, the function States given in Figure 4 runs in time O(kED |D| DEK (|R| + |S|)), where DEK := max{t | as, s0 .
+(s, t, s0 ) a R} is the maximum delay time of K, and kED is the maximal number used in time constraints in D.  The proof can be obtained by induction along the JCTL formulas.
+The induction steps are thereby obtained by the following facts, where Time(f ) denotes the runtime of function f : aV Time(preStates) a O(|R| + |S|) aV Time(preTracks) a O(DEK (|R| + |S|)) aV Time(StatesEU[a,b] ) a O(kDEK (|R| + |S|)), where k := max{a, min{b a a, DEK |S|}} a$?
+b aV Time(StatesEUaLa ) a O(aDEK (|R| + |S|)) aV Time(StatesEG[a,b] ) a O(kDEK (|R| + |S|)), where k := max{b a a, a, 1} a$?
+b aV Time(StatesEGaLa ) a O(kDEK (|R| + |S|)), where k := min{a, DEK |S| , 1} a$?
+a Hence, all operators can be evaluated in time O(kED DEK (|R|+ |S|)).
+As a formula D may contain |D| operators, the above theorem follows.
+Hence, one key to define a more efficient fragment of JCTL is to avoid calls of the form MoveFront(=, k, .
+.
+.
+), since this is not as efficient as MoveFront(aL, k, .
+.
+.).
+Using a specialized algorithm similar to the one given in [5], we can even improve the complexity for computing MoveFront(aL, k, .
+.
+.
+): Lemma 4 (Complexity of MoveFront (II)) Given a TKS K = (I, S, R, L), a set of states SD , and a set of tracks TD .
+Let moreover be Ke = (Ie , Se , Re , Le ) the expanded structure of K according to definition 6, and D and D formulas so that the equations SD A aS Se = JDKKe and TD = JD KKe hold.
+Then, there is an algorithm to compute MoveFront(aL, k, SD , TD ) in time O(|Re | + |Se |).
+N  The specialized algorithm is similar to the one given in [5], but it needs to additionally take care of the lengths of the paths that have reached a certain track.
+For this reason, we maintain for any track si a Se a list Ti = [si,1 ,.
+.
+.
+, si,mi ] such that (si,j , si ) is a transition in Re .
+Any track si will be marked with a number mi later on that is the minimal length of a path to reach the set TD from si .
+Furthermore, we create lists L` during the computations that contain the tracks that are marked with the number `.
+The algorithm performs then the following steps: Step 1: We eliminate all si,j in each list Ti that does not belong to TD .
+This can be done in time O(|Re |), since we look at each transition once.
+Step 2: We mark the tracks TD with the number 0, and list them in our first list L0 .
+Let ` := 0.
+This step is performed in time O(|Se |), since we look at each track at most once.
+Step 3: For each track si in L` , and each track si,j of Ti , we mark si,j with ` + 1 if it is not already marked, and put si,j in list L`+1 in this case.
+We eliminate si,j from Ti .
+We then increment `, and repeat this step until ` = k holds or no transitions are left in the lists Ti .
+Clearly, the repeated execution of step 3 does look at each transition at most once, so that O(|Re |) is an upper bound for its complexity.
+Hence, we see that the entire algorithm runs in time O(|Re | + |Se |).
+Note that the above sketched algorithm works with a depth-first search and therefore performs a in theory a better than breadth-first searches like those used by symbolic model checking based on BDDs.
+However, in practice, the latter approaches are in general superior.
+The next step is to define a subset of JCTL that can be computed without calls MoveFront(=, k, AV, AV).
+Clearly, we must therefore forbid the interval constraints, and therefore are restricted to the basic operators EX[a,b] , EXaLa , E[AV U[0,a] AV], and EGaLa only.
+Of course, we can still use all macro operators that can be defined from these basic operators like, for example, E[D Ua$?a D] := E[D U[0,a] D], EFa$?a D := E[1 Ua$?a D], and EGa$?a D := E[D U>a 1] (cf.
+lemma 1).
+The following interesting theorem allows us however to further extend this set of formulas: Theorem 3 The following equations are valid, and therefore allow to reduce aL constraints to a$?
+constraints: aV aV aV aV aV aV  a$?k  E[D UaLk+1 D] = EF (D a" EXE[D U D]) E[D BaLk+1 D] = EFa$?k (D a" EXE[D B D]) EGaLk+1 D = EFa$?k EXEGD A[D UaLk+1 D] = AGa$?k (D aSS AXA[D U D]) A[D BaLk+1 D] = AGa$?k (AZD aSS AXA[D B D]) AFaLk+1 D = AGa$?k AXAFD  Moreover, constraints aL 0 can be simply omitted due to the equations E[D UaL0 D] = E[D U D] and E[D BaL0 D] = E[D B D], and EGaL0 D = EGD.
+The above equations allow us to split the temporal expressions on the left hand side into a quantitative and a qualitative part.
+The latter is a simple CTL formula, and can therefore be directly checked on the Kripke structure that is obtained by omitting the time constraints of the TKS.
+As this is a normal CTL model checking problem, it follows that this can be computed in time O(|R| + |S|).
+The other fixpoint, i.e., EFa$?k .
+.
+., has a time constraint, but this is now of type a$?.
+Observe now that EFa$?k D is equivalent to E[1 U[0,k] D], and we already know how to compute that in time O(|Re | + |Se |), i.e., in time O(DEK (|R| + |S|)).
+For the proof, note that the last three equation (starting with A quantifiers are dual to the first three ones, so that it is sufficient to prove the first three ones.
+The third one can be reduced to the first one by the equation  EGaLk+1 D = E[D UaLk+1 0].
+Also, the second equation can be reduced to the first via the equation E[D BaLk+1 D] = E[(AZD) UaLk+1 (D aSS AZD)].
+Hence, we only need to prove the first equation, or equivalently, the fourth: For this reason, it is convenient to rewrite the right hand side to AGa$?k D aSS AGa$?k AXA[D U D].
+A[D UaLk+1 D] holds in a particular state s iff for all such that paths D starting in s, there is a number i a P (j) (i) D aL k + 1, (2) K, D |= D, and (3) aj < (1) ia1 j=0 D (j) |= D holds.
+We may choose for any path D the i. K, D least number i.
+In particular, let j be the least number for a considered path D such that (1) holds.
+Then, we have j a$?
+i, and therefore D must hold on each state D (0) ,.
+.
+.
+, D (ja1) , which is captured in the first conjunct (AGa$?k D) of the right hand side.
+In state D (j) , we must furthermore demand that A[D U D] holds, and this is captured by the second conjunct.
+Hence, we can now define the following subset JCTLa$?
+of JCTL that consist of the formulas that we have found to be efficiently checkable so far (we only list E quantified formulas to avoid too much redundancies).
+N  Definition 8 (The Fragment JCTLa$?
+of JCTL) Given a set of variables V, the set of JCTLa$?
+formulas is the least set satisfying the following rules, where D and D denote are arbitrary arbitrary JCTLa$?
+formulas, and a, b a natural numbers, and aza {<, a$?, aL, >}:  N  aV aV aV aV aV aV aV aV  V a JCTLa$?
+, i.e, any variable is a JCTLa$?
+formula AZD, D aSS D, D a" D a JCTLa$?
+EX[a,b] D a JCTLa$?
+EXaza D a JCTLa$?
+E[D Uaza D] a JCTLa$?
+EGaza D a JCTLa$?
+E[D U<a D] a JCTLa$?
+and E[D Ua$?a D] a JCTLa$?
+EF<a D a JCTLa$?
+and EFa$?a D a JCTLa$?
+Note that JCTLa$?
+still contains CTL, but we believe that it is strictly less expressive than JCTL, although we have not yet a proof for this.
+As each temporal operator of JCTLa$?
+can be evaluated in time O(|Re | + |Se |), i.e., O(DEK (|R| + |S|)), we immediately have the following result: Theorem 4 (Complexity of JCTLa$? )
+For any TKS K = (I, S, R, L) and any JCTLa$?
+formula D, there is an algorithm to compute JDKK in time O(|D| DEK (|R| + |S|)), where DEK is defined as in theorem 2.
+In comparison to the complexity of JCTL as given in theorem 2, the factor kED disappeared.
+This is due to the fact that the temporal operators that belong to JCTLa$?
+are all monotonic, so that the iterations can stop at least when all tracks have been visited once.
+The more important part is, however, that the equations of theorem 3 enable us to reduce a considerable part of the  model checking to qualitative fixpoints.
+This is due to the fact, that we can separate between a quantitative and a qualitative aspect in these formulas.
+Note again, that the qualitative fixpoint is computed on the abstract structure with an ordinary CTL model checking procedure.
+5.
+Conclusions We have presented a new real-time temporal logic JCTL that is directly defined on timed Kripke structures using interpretation I1 .
+This logic overcomes some semantic problems of previous real-time extensions of CTL and allows us to use abstractions without loosing quantitative information.
+We analysed the complexity of the JCTL model checking problem and presented a non-trivial fragment JCTLa$?
+that can be checked more efficiently than JCTL.
+Our first experimental results are promising and allow to check practical JCTLa$?
+model checking problems in runtimes that are comparable to CTL model checking.
+References [1] R. Alur, C. Courcoubetis, and D. Dill.
+Model Checking in Dense Real-time.
+Technical report, Stanford University, University of Crete, 1991.
+[2] J. Bengtsson, K. Larsen, F. Larsson, P. Pettersson, and W. Yi.
+UPPAAL in 1995.
+In Tools and Algorithms for the Construction and Analysis of Systems, number 1055 in Lecture Notes In Computer Science, pages 431a434.
+SpringerVerlag, March 1996.
+[3] S. Campos and E. Clarke.
+Real-Time Symbolic Model Checking for Discrete Time Models.
+In T. Rus and C. Rattray, editors, Theories and Experiences for Real-Time System Development, AMAST Series in Computing.
+World Scientific Press, AMAST Series in Computing, May 1994.
+[4] E. Clarke and E. Emerson.
+Design and Synthesis of Synchronization Skeletons using Branching Time Temporal Logic.
+In D. Kozen, editor, Workshop on Logics of Programs, volume 131 of Lecture Notes in Computer Science, pages 52a71, Yorktown Heights, New York, May 1981.
+Springer-Verlag.
+[5] E. Clarke, E. Emerson, and A. Sistla.
+Automatic Verification of Finite-State Concurrent Systems Using Temporal Logic Specifications.
+ACM Transactions on Programming Languages and Systems, 8(2):244a263, April 1986.
+[6] E. Clarke, O. Grumberg, and D. Long.
+Model checking and abstraction.
+ACM Transactions on Programming Languages and systems, 16(5):1512a1542, September 1994.
+[7] C. Daws, A. Olivero, S. Tripakis, and S. Yovine.
+The tool KRONOS.
+In Hybrid Systems III, volume 1066 of Lecture Notes in Computer Science.
+Springer, 1996.
+[8] E. Emerson.
+Temporal and Modal Logic.
+In J. van Leeuwen, editor, Handbook of Theoretical Computer Science, volume B, pages 996a1072, Amsterdam, 1990.
+Elsevier Science Publishers.
+[9] E. Emerson, A. Mok, A. Sistla, and J. Srinivasan.
+Quantitative Temporal Reasoning.
+Journal of Real-Time Systems, 4:331a352, 1992.
+[10] J. FrAsAl, J. Gerlach, and T. Kropf.
+An Efficient Algorithm for Real-Time Model Checking.
+In European Design and Test Conference (EDTC), pages 15a21, Paris, France, March 1996.
+IEEE Computer Society Press (Los Alamitos, California).
+[11] T. Henzinger, X. Nicollin, J. Sifakis, and S. Yovine.
+Symbolic Model Checking for Real-Time Systems.
+In IEEE Symposium on Logic in Computer Science (LICS), pages 394a406, Santa-Cruz, California, June 1992.
+IEEE Computer Society Press.
+[12] G. Logothetis and K. Schneider.
+Abstraction from counters: An application on real-time systems.
+In Design, Automation and Test in Europe (DATEa2000), Paris, France, March 2000.
+IEEE Computer Society Press.
+[13] G. Logothetis and K. Schneider.
+A new approach to the specification and verification of real-time systems.
+In EUROMICRO Conference on Real-Time Systems.
+IEEE/ACM, 2001. http://goethe.ira.uka.de/fmg/ps/LoSc01.ps.gz.
+[14] C. Loiseaux, S. Graf, J. Sifakis, A. Bouajjani, and S. Bensalem.
+Property preserving abstractions for the verification of concurrent systems.
+Formal Methods in System Design, 6:1a35, February 1995.
+[15] J. Queille and J. Sifakis.
+Specification and verification of concurrent systems in CESAR.
+In International Symposium in Programming, 1981.
+[16] J. Ruf and T. Kropf.
+Using MTBDDs for discrete timed symbolic model checking.
+Multiple-Valued Logic a An International Journal, 1998.
+Special Issue on Decision Diagrams.
+[17] F. Somenzi.
+CUDD: CU decision diagram package, release 2.3.0, 1998. ftp://vlsi.colorado.edu/pub/ and http://vlsi.Colorado.EDU/.

@@ -1,0 +1,319 @@
+A Temporal Object-Oriented Data Model with Multiple Granularities Isabella Merlo1 1  Elisa Bertino2  Elena Ferrari 2  Giovanna Guerrini1  Dipartimento di Informatica e Scienze dellaInformazione UniversitaE di Genova - Italy fmerloisa, guerrini g@disi.unige.it 2  Dipartimento di Scienze dellaInformazione UniversitaE degli Studi di Milano - Italy fbertino, ferrarie g@dsi.unimi.it  Abstract In this paper we investigate some issues arising from the introduction of multiple temporal granularities in an objectoriented data model.
+Although issues concerning temporal granularities have been investigated in the context of temporal relational database systems, no comparable amount of work has been done in the context of object-oriented models.
+Moreover, the main drawback of the existing proposals is the lack of a formal basis a which we believe is essential to manage the inherent complexity of the object-oriented data model.
+In this paper, we provide a complete temporal object-oriented type system supporting multiple temporal granularities and we formally define the set of legal values for our type system.
+We then address issues related to inheritance, type refinement and substitutability.
+1.
+Introduction Conventional database systems do not offer the possibility of dealing with time-varying data.
+The content of a database represents a snapshot of the reality in that only the current data are recorded, without the possibility of maintaining the complete history of data over time.
+If such a need arises, data histories must be managed at application program level, thus, making the management of data very difficult, if at all possible.
+To overcome this lack, in the past years, there has been a growing interest in temporal extensions to the current database technology.
+Several extensions to the relational and the object-oriented data models and the associated query languages have been proposed [13].
+An important requirement, when dealing with temporal aspects, concerns the support for multiple temporal granularities.
+Multiple temporal granularities allow one to store  temporal data according to different temporal units, depending on the needs of the application domain.
+The choice of the correct temporal granularity not only allows the system to store the minimal amount of data, but also establishes an important integrity constraint: data cannot be changed more often than the specified granularity.
+The relevance of multiple granularities in the context of temporal databases is well recognized by the scientific community.
+A considerable amount of work has been developed in the context of temporal relational database systems [4, 5].
+For instance, the standard for temporal relational database systems, TSQL-2 [11], supports multiple granularities, whereas in [12], temporal granularities are used in the context of temporal relational databases to express constraints over data.
+Such constraints are modeled by temporal functional dependencies.
+By contrast, no comparable amount of work has been carried out in the context of the object-oriented data model, where the introduction of multiple temporal granularities poses additional issues with respect to the relational context, due to the semantic richness of such model.
+Most of the temporal object-oriented data models proposed so far do not deal with temporal granularities.
+The only ones dealing with temporal granularities [8, 9, 10, 14] support multiple temporal granularities as extensions to the set of types of the temporal model.
+However, in most of these approaches the specification and the management of these different granularities, e.g.
+how to convert from a granularity to another, is completely left to the user.
+Moreover, in contrast to the relational context, the introduction of temporal granularities in object-oriented data models is, in most cases, informal.
+For instance, none of the proposed approaches consider the impact of inheritance when multiple granularities are supported, nor they address issues concerning consistency, type refinement and substitutability.
+We believe that these are  important topics to be investigated and that their treatment on a formal basis is a means to manage their complexity.
+In this paper we make a step in this direction by proposing a complete temporal type system supporting multiple temporal granularities.
+First, we formally define the notion of temporal type with respect to a given granularity, then we provide a formal definition for the set of legal values of our temporal type system.
+Finally, the notions of inheritance, type refinement and substitutability are revisited taking multiple granularities into account.
+Substitutability ensures that each instance of a given class can be used whenever an instance of one of its superclasses is expected.
+To enforce substitutability, the idea is that attribute domains can be replaced in a subclass by refined types.
+For instance, an attribute with granularity month can be refined in an attribute with granularity day defined on the same domain or on a more specific one.
+This means that in the subclass the history of the daily changes of the attribute is kept.
+Clearly the attribute may not maintain the same value for each day of the month.
+Then, the question arises of which value should be considered when the value of the attribute in a given month is required, that is, when an instance of the subclass must be seen as an instance of the superclass.
+To overcome this problem, we introduce the notion of coercion function.
+Coercion functions are used to compute, given the values of the attribute in the subclass, the value to be considered in the superclass.
+The remainder of this paper is organized as follows.
+Section 2 presents the object model we refer to in the paper and the notion of temporal granularity.
+Section 3 formally introduces our temporal type system, whereas issues related to inheritance are discussed in Section 4.
+In Section 5 an illustrative example is presented.
+Finally, Section 6 concludes the paper and outlines future research directions.
+2.
+Preliminaries In this section we first characterize the reference object model we refer to in the paper, then we introduce some preliminary concepts related to multiple temporal granularities.
+2.1.
+Reference Object Model In the reference object model we assume the existence of two kinds of types: object types and literal types, as in the ODMG data model [7].
+The main difference between object and literal types is that values belonging to object types, defined through classes, have object identifiers, whereas values belonging to literal types are identified by themselves.
+Moreover, for both object and literal types we assume the existence of a set of predefined basic types and of a set of constructors of collection types.
+Examples of collection  types are sets, lists, arrays and so on.
+The previous notions are formalized by the following definitions.
+Definition 1 (Object Types).
+The set of object types, OT , is recursively defined as follows: - the predefined object types, (BOT  OT );  BOT , are object types  - the class identifiers, CI , are object types (CI   OT );  - let o onstr be a general type constructor for collection object types, then, for each type t, o onstr<t> is a collection object type (o onstr < t > 2 OT ).
+2 Definition 2 (Literal Types).
+The set of literal types, is recursively defined as follows: - the predefined literal types, (BLT  LT );  LT ,  BLT , are literal types  - let l onstr be a general type constructor for collection literal types, then, for each type t, l onstr<t> is a collection literal type (l onstr < t > 2 LT ); - let a1 ; :::; an be distinct labels and t1 ; :::; tn be types, then strut < t1 a1 ; :::; tn an > is a struct literal type (strut < t1 a1 ; :::; tn an > 2 LT ).
+2 Note that our model provides both collection object types and collection literal types.
+The difference between the two is that values of collection object types have an identifier, whereas values of collection literal types do not have an identifier.
+The set of types we refer to throughout the paper, denoted as ST ,1 is defined as the union of the set of object types and the set of literal types, that is ST = OT [ LT .
+As far as literal types are concerned, given a type t belonging to LT , we denote with dom(t) the set of values of type t. By contrast, if t belongs to OT , then the set of values of type t is the set of object identifiers belonging to t. Since objects can be dynamically created and deleted, the set of values of an object type depends on time.2 We do not explicitly specify the set of legal values corresponding to each type of the reference model since they are not relevant for the remainder of the discussion.
+Details on these aspects can be found in [2].
+Legal values for the extended temporal model are presented in subsection 3.2.
+As far as the class definition is concerned, our notion of class is one of the most common definition that can be found 1 ST stands for static types, since these types do not include the time dimension.
+2 These concepts are formalized in subsection 3.2.  in the literature [1].
+In our model classes are characterized by an identifier,  2 CI , which represents the type of the objects belonging to the class, a set of attributes and a set of method signatures.
+The attributes of a class are characterized by a name and a type, which represents the set of legal values for that attribute, that is, the attribute domain.
+Method signatures are characterized by a method name, the name and type of input parameters and the name and type of output parameters.
+We do not provide here a formal definition of classes, since it is not relevant for the remainder of the discussion.
+Classes, or equivalently, object types, are organized into an inheritance hierarchy, named ISA hierarchy, whose properties and features will be described in Section 4.
+The following example illustrates the notation we use throughout the paper to represent classes.
+Example 1 Let Person be a given class.
+Moreover, let Employee be a class, subclass of Person with proper attributes emp nbr and name of type string, age and salary of type integer and partiipates of type Projet. Let inrease salary be a method that given an amount amount increases the salary of the employee of the given amount.
+A possible declaration for class Employee is the following:  Employee f emp nbr: string; name: string; age: integer; salary: integer; partiipates: Projet; inrease salary(integer amount);  g  3 2.2.
+Multiple Granularities Issues concerning temporal granularities are a recent research topic in the temporal database area.
+A glossary of time granularity concepts [3] has been recently published.
+In [3] all the main concepts concerning temporal granularities are formally defined without referring to any particular data model.
+To be as general as possible in extending the object model presented in the previous section with temporal granularities, we refer to the definitions in [3].
+As suggested in the glossary, one of the first notion to be fixed in a temporal context is the time domain, that is, the set of primitive temporal entities used to define and interpret time-related concepts.
+To model the time dimension, we introduce a new type time whose set of values is the set of natural numbers IN (that is, dom(time) = IN).
+Thus,  we assume the existence of a relative beginning denoted by symbol a0a, but no last element.
+Moreover, we consider a special variable now denoting the current time.
+Therefore, in our model, the time domain is the pair (IN,), where  is the order on IN.
+We recall that our time domain is discrete since every element has an immediate successor, and every element except the first has an immediate predecessor.
+Temporal granularities are formally defined as follows.
+Definition 3 (Granularity)[3].
+Let IS be an index set, that is a set of integers, and 2IN be the power set of the time domain.
+A granularity G is a mapping from IS to 2IN such that both the following conditions hold: (1) if i < j and G(i) and G(j ) are non-empty, then each element of G(i) is less than all elements of G(j ); (2) if i < k < j and G(i) and G(j ) are non-empty, then G(k ) is non-empty.
+2 Intuitively a granularity defines a countable set of granules, each granule G(i) identified by an integer.
+The first condition in Definition 3 states that granules in a granularity do not overlap and that their index order is the same as their time domain order.
+The second condition states that the subset of the index set that maps to non-empty subsets of the time domain is contiguous.
+The usual collections days, months, weeks and years are granularities.
+For readability, we use a atextual representationa for each non-empty granule, termed as label, which is more descriptive than the granule index.
+For example, throughout the paper, days are in the form mm=dd=yy , months are in the form mm=yy and so on.
+A finer than relationship can be defined among temporal granularities [3], with the following meaning.
+A granularity G is said to be finer than a granularity H , denoted G  H , if for each index i, there exists an index j such that G(i)  H (j ).
+For example, days is a granularity finer than months (days  months).
+In the following the finer than relationship will be used to establish subtyping relationships among temporal types and to state how attribute domains can be refined along the inheritance hierarchy.
+3.
+Temporal Type System In this section, the type system described in subsection 2.1 is extended by adding temporal types related to different granularities.
+Furthermore, the notion of set of values of a given type is formally defined according to the new set of temporal types.
+3.1.
+Temporal Types and Multiple Granularities We extend the set of types of the model, ST , with a collection of temporal types, so that temporal and non-  temporal domains can be handled in a uniform way.
+First, the set of basic literal types is extended with the type time.
+Then, for each type t 2 ST and granularity G, a corresponding temporal type, temporalG (t), is defined.
+Intuitively, instances of type temporalG (t) are partial functions from granules of G to instances of type t.3 Definition 4 (Temporal Types).
+Let t2 ST be a type and G be a temporal granularity, then temporalG (t) is the temporal type corresponding to type t and granularity G. 2 In the following the set of temporal types will be denoted as T T , whereas T denotes the whole set of the types provided by our model.
+Temporal types, defined with respect to a given granularity, are particularly meaningful in the context of databases.
+If an attribute a of an object o has type temporalG (t), then such attribute cannot vary more than once for each granule of G. Therefore, given a granule G(i), the value of the attribute is the same for each instant t 2 G(i).
+In our model, temporal types can be used in the definition of collection object and literal types, as stated by the following definitions.
+Definition 5 (Object Types).
+The set of object types, OT T , is recursively defined as follows: - each element of OT (see Definition 1) belongs to OT T (OT  OT T ); - for each type t 2 T , o onstr<t> (see Definition 1) is a collection object type (o onstr<t> 2 OT T ).
+2 Definition 6 (Literal Types).
+The set of literal types, LT T , is recursively defined as follows: - time 2 LT T ; - each element of LT (see Definition 2) belongs to LT T (LT  LT T ); - for each type t 2 T , l onstr<t> (see Definition 2) is a collection literal type (l onstr<t> 2 LT T ); - let a1 ,...,an be distinct labels and t1 ,...,tn be types in T , then strut<t1 a1 ,...,tn an > is a struct literal type (strut<t1 a1 ,...,tn an > 2 LT T ).
+2 The set of types of our temporal model is defined as the union of object, literal and temporal types, that is, T = OT T [ LT T [ T T .
+3 We elaborate on that throughout the paper.
+3.2.
+Temporal Values In this section we define the set of legal values supported by our model.
+Let OID be the set of possible object identifiers.
+We define a function  : OT T  IN !
+2OID , that, given an object type t and a time instant t, returns the set of identifiers of objects belonging to type t at time t. We define the set of legal values of each type t 2 T by using three functions, namely Eval, EvalG and T Eval, formally defined as follows.
+Definition 7 (Legal Values of a Non-Temporal Type with Respect to the Time Domain).
+Let t 2 T n T T be a nontemporal type and t 2 IN be a time instant, then Eval(t; t) denotes the extension of type t at time t:  Eval(t; t) =    dom(t) if t 2 LT T  (t; t) if t 2 OT T  2  Note that, according to the previous definition, only object types have extents which depend on time.
+Intuitively, the set of values of a literal type does not change over time since no literal values can be explicitly created or deleted, whereas objects belonging to object types are dynamically created and deleted, thus an object type extent depends on the considered instant.
+When dealing with temporal granularities, function Eval is generalized to a granularity G through the following definition.
+Definition 8 (Legal Values of a Non-Temporal Type with Respect to a Granule).
+Let t 2 T n T T be a non-temporal type, G be a granularity and i 2 IS be an index, then EvalG (t; i) denotes the extension of type t with respect to the granule identified by i:  EvalG (t; i) =  T  2  t G(i) Eval(t; t)  where G(i) is the set of time instants corresponding to granule i with respect to granularity G. 2 Example 2 Let department be a class such that Evalyears (department, 1997)4 = fd1 ,d2 , d3 g. Then, for each instant belonging to 1997, d1 ,d2 , d3 must exist.
+Formally, Evalyears (department, 1997) = T t2I Eval(department, t) where I denotes the set of instants corresponding to 1997, years(1997) = I  IN.
+The idea is that if a department exists only during a portion of a year it does not belong to the extent of class department of that year.
+3 We are now ready to define the set of legal values for temporal types with respect to a given time instant t 2 IN.
+4 For simplicity, the label 1997 is used instead of the index sponding to such granule.
+i  corre-  Definition 9 (Temporal Type Legal Values).
+Let temporalG (t) 2 T T be a temporal type and t 2 IN be a time instant, then T Eval(temporalG (t); t) denotes the set of legal values of type temporalG (t) at instant t:  T Eval(temporalG (t); t) = ff jf = f A G such that f : 2IN !
+Si2IS EvalG (t; i) is a partial function such that for each i 2 IS if f(G(i)) is defined then f(G(i)) 2 EvalG (t; i)g 2 Note that the set of legal values of a given temporal type does not depend on the particular time instant.
+Formally we can state that:  S  t2IN T Eval(temporalG (t); t) = T Eval(temporalG (t); t) for each t 2 IN  Thus in the following we will omit the time instant argument.
+Since the set of values of a given temporal type does not depend on time, we can extend function EvalG (Definition 8) to temporal types as follows:  T  EvalG (temporalH (t); i) = t2G(i) T Eval(temporalH (t); t) = T Eval(temporalH (t); t)  The following example clarifies the above definitions.
+Example 3 Let department be a class such that: D = S Eval years (department, i) = fd1 ,d2 , d3 , .
+.
+.
+, dn g, i2IS then, according to Definition 9:  T Eval(temporalyears (department), t) = ff jf = f A years such that f : 2IN !
+D is a partial function such that for each i 2 IS if f(years(i)) is defined then f(years(i)) 2 Evalyears (t, i)g  Examples of functions, denoted as set of couples, in T Eval(temporalyears (department), t) are:  fhI1992 ; d1 i; hI1993 ; d4 ig; fhI1995 ; d2 i; hI1998 ; d2 ig  where years(1992) = I1992 , years(1993) = I1993 and so on.
+3  4.
+Inheritance Inheritance relationships among object types are described by an ISA hierarchy established by the user.
+The ISA hierarchy represents which classes are subclasses of (inherit from) other classes.
+This information is expressed as a partial order <ISA on the set of object types OT T .
+The reflexive closure of the <ISA relation will be denoted as ISA .
+Starting from the ISA hierarchy, a relation T can be imposed on the set of types T .
+Definition 10 (Subtypes).
+Let t1 , t2 2 T be two types, and let G and H be two temporal granularities, then, t2 is a subtype of t1 (denoted as t2 T t1 ) iff one of the following conditions holds:     2 BOT [ CI and t2 ISA t1 ; t1 = o onstr<t01>, t2 = o onstr<t02> and t02 T t01 ;  t1 = l onstr<t01>, t2 = l onstr<t02> and t02 T t01 ;  t1 =strut<t01 a1 ,...,t0n an >, t2 =strut<t001 a1 ,...,t00n an > and 8i 2 [1; na: t00i T t0i ;  t1 = temporalG (t01 ), t2 = temporalH (t02 ), t02 T t01 and G  H .
+2 t1 , t2  Subtyping has two important implications in objectoriented models [6].
+The first is extent inclusion, that is, the property ensuring that the extent of a subtype is included in the extent of its supertype.
+The second is substitutability , that is, the property that each instance of a type can be used whenever an instance of one of its supertypes is expected.
+The following proposition ensures that T satisfies the extent inclusion property.
+Proposition 1 Let t1 , t2 2 T be two types such that t2 T t1 , then the set of values of type t2 is a subset of the set of values of type t1 .
+4 Proof Sketch Extent inclusion can be easily proved for non-temporal types.
+For example, let 1 and 2 be two classes such that 2 T 1 .
+It is obvious that the values of type set<2 > are a subset of the values of type set<1>.
+We focus our attention on temporal types.
+Let t2 = temporalH (t02 ) and t1 = temporalG (t01 ).
+To prove the proposition we should prove that the set of values of type temporalH (t02 ) is a subset of the set of values of type temporalG (t01 ).
+Formally, this means to prove that T Eval(temporalH (t02 ))  T Eval(temporalG (t01 )).
+According to Definition 9:  Hset = T Eval(temporalH (t02 )) = ff jf = f A H such that f : 2IN !
+Si2IS EvalH (t02 ; i) is a partial function such that for each i 2 IS if f(H (i)) is defined then f(H (i)) 2 EvalH (t02 ; i)g and  Gset = T Eval(temporalG (t01 )) = ff 0 jf = f0 A G such that f0 : 2IN !
+Si2IS EvalG (t01 ; i) is a partial function such that for each i 2 IS if f0 (G(i)) is defined then f0 (G(i)) 2 EvalG (t01 ; i)g  Since G  H , for each index i, an index j exists such that G(i)  H (j ).
+This implies that for each function f = f A H 2 Hset , a function f 0 = f0 A G 2 Gset exists such that if f(H (j )) = v , then f0 (G(i)) = v for each i such that G(i)  H (j ).
+The extent inclusion property is automatically satisfied by two classes related by the ISA relationship, whereas to ensure substitutability, some conditions must be satisfied.
+Those conditions are related to the fact that each subclass must contain all attributes and methods of its superclasses.
+Apart from the inherited features, additional features can be introduced in a subclass.
+Inherited features may be redefined (overwritten) in a subclass under a number of restrictions.
+In our model the redefinition of an attribute domain is possible by specializing the domain of the attribute.
+In this paper, we do not deal with method refinement, but our approach can be easily extended to the refinement of method signatures.
+The idea is that attribute domains can be replaced in subclasses by refined types.
+A type t2 is a refinement of a type t1 if t2 is subtype of t1 (t2 T t1 ).
+In the context of temporal types, this means, for example, that an attribute defined with granularity months can be refined in an attribute with granularity years on the same domain or on a most specific one, since the temporal type of the attribute in the superclass is a supertype of the temporal type of the attribute in the subclass.
+However, we would like also to allow an attribute defined with a given granularity to be refined in an attribute with a finer granularity on the same domain or on a most specific one.
+An example is to refine an attribute defined with granularirty years in an attribute with granularity months.
+The reason is that, according to our point of view, attribute refinement is a meaningful way of adding information in the refined attribute.
+More precisely, by refining the granularity associated with an attribute, one can specify more detailed information for a given time interval.
+For example, if an attribute a defined with granularity years is specialized in a subclass in an attribute with granularity months, then more information for that attribute can be stored in the subclass.
+In the superclass, only values for each year can be stored for a, whereas in the subclass values for each mounth of each year can be stored for a.
+However, to ensure substitutability, in case of attribute refinement where the refining attribute domain has a finer granularity with respect to the refined attribute domain, we need to introduce a coercion function to compute the value of the refined attribute with respect to the coarser granularity.
+The following example clarifies these concepts.
+Example 4 Let Person and Employee be two classes such that Employee ISA Person.
+Moreover, let a be a temporal attribute whose domain is temporalG (t) in Person and  whose refined domain in Employee is temporalH (t).
+For simplicity, we assume the inner type t to be the same, thus we can focus on temporal granularities.
+We have two cases: Case 1.
+G years:    H , for example G = months and H =  Personf...a:temporalmonths(t);...g Employeef...a:temporalyears(t);...g In this case, since temporalyears (t) is a subtype of temporalmonths (t) no problems arise.
+When an object  of type Person is accessed we expect the type of attribute a to be temporalmonths (t), but if such object is an instance of Employee we will have an object whose attribute a is of type temporalyears (t).
+However, if attribute a has a value for a given year, such value is the same for each month of the year.
+Thus, we do not need any additional information to map one granularity onto the other while accessing objects of type Person.
+Case 2.
+H years:    G, for example H = months and G =  Personf...a:temporalyears(t);...g Employeef...a:temporalmonths(t);...g In this case for an instance of type Employee we may know the value of the attribute just in some months of the year, but not in all the months of the year.
+Thus, the problem is to determine which value among the ones in which the attribute is defined must be considered for the coarser granularity.
+Suppose for example that one is interested in knowing the value of attribute a corresponding to year 1994.
+Then, all the values corresponding to the months of such year will be retrieved and the value related to year 1994 will be computed according to a coercion function.
+3 Our idea is to add information to the refined attribute which allows one to choose the value.
+The general idea is that if an attribute of type temporalG (t01 ) is refined in a subclass into an attribute of type temporalH (t02 ), with t02 T t01 and H  G, a coercion function must be defined for the attribute, according to which the attribute value is computed.
+When the attribute is accessed, with respect to a specific granule j of granularity G, the coercion function is applied to all the granules i1 ; : : : ; in such that H (ik )  G(j ), k 2 [1; na.
+The following definition formalizes the notion of coercion function.
+Definition 11 (Coercion Function).
+Let t1 = temporalG (t01 ) and t2 = temporalH (t02 ) be two temporal types such that, t02 T t01 and H  G. A coercion function C is a partial function defined as:  C : T Eval(temporalH (t02 )) !
+T Eval(temporalG (t01 )) that maps values of type temporalH (t02 ) into values of type temporalG (t01 ).
+2  A large variety of coercion functions could be devised.
+We have developed a simple language for defining coercion functions.
+In our approach, a coercion function is associated with an attribute definition, since such function establishes how values of the attributes have to be coerced to the coarser granularity.
+The syntax in BNF form of attribute specifications, whose semantics will be clarified in the remainder of the section, is given in Figure 1.
+With reference to Figure 1 terminal symbol index denotes an element in IS , meth inv denotes a method invocation and square brackets denote optional symbols.
+As specified in the BNF grammar of Figure 1, depending on how the value of a granule G(j ) is computed with respect to the values of the granules H (i), such that H (i)  G(j ), coercion functions can be classified into three categories: selective, aggregate and user-defined coercion functions, whose meaning is formally defined in Definition 12.
+In Figure 1 terminal symbols first, last and Proj(index) denote selective coercion functions of obvious meaning, whereas min, max, avg and sum denote the well-known SQL aggregate functions.
+Definition 12 (Coercion Function Classification).
+A coercion function C can be classified as follows.
+   Let fi1 ; : : : ; ik g be the set of indexes such that H (ik )  G(j ) and f (H (ik )) = vk , then C is a selective coercion function if C (f ) = f 0 where f 0 (G(j )) = vk , k 2 [1; na.
+Let fi1 ; : : : ; ik g be the set of indexes such that H (ik )  G(j ) and f (H (ik )) = vk , then C is an aggregate coercion function if C (f ) = f 0 where f 0 (G(j )) = v and v is computed as function of all the previous values.
+  Let f be a value of type temporalH (t02 , then a userdefined coercion function C is such that the value f 0 of type temporalG (t01 to be returned by function C is a user-defined method.
+2  Intuitively, in case of selective coercion functions, one of the possible values among fv1 ; : : : ; vk g is chosen for a generic granule j .
+In case of aggregate coercion functions, an aggregate function, such as the average or the sum, is applied to the values fv1 ; : : : ; vk g to compute the value of granule j .5 In case of user-defined coercion function the method to convert from one granularity to the other is completely left to the user.
+5 Obviously these functions apply in case of set of values for which such functions are defined, such as, for example integers.
+Example 5 Let t2 = temporalmonths (integer) such that fhI2=1998 ; 4i; hI4=1998 ; 5i; hI9=1998 ; 3ig 2 T Eval(t2 ) where months(2=1998) = I2=1998 and so on.
+Moreover, let t1 = temporalyears (integer).
+An example of aggregate coercion function which maps values of type t2 into values of type t1 is fhI1998 ; 4ig = avg(fhI2=1998 ; 4i; hI4=1998 ; 5i; hI9=1998 ; 3ig).
+Moreover an example of selective coercion function which maps values of type t2 into values of type t1 is fhI1998 ; 3ig = last(fhI2=1998 ; 4i; hI4=1998 ; 5i; hI9=1998 ; 3ig).
+3 In order to ensure substitutability some restrictions are imposed on the ISA relationship, formalized by the following rule.
+Rule 1 (Attribute Refinement).
+Let 1 and 2 be two classes such that 2 <ISA 1 .
+Moreover, let a be an attribute of class 1 whose domain is of type t1 ) in 1 .
+Then, a can be refined in 2 by an attribute of type t2 ) iff one of the following conditions holds.
+1. t2  T t1 ;  2. t1 = temporalG (t01 ), t2 = temporalH (t02 ), t02 T t01 , H  G and an appropriate coercion function C is associated to attribute a in 2 .
+4 The following proposition proves that Rule 1 ensures substitutability.
+Proposition 2 Given an ISA relationship, if Rule 1 holds, then type substitutability is ensured.
+4 Proof Sketch If condition 1 holds, t2 is a subtype of t1 .
+Then, because of Proposition 1, the values of attribute a of instances of 2 are legal values for attribute a of instances of 1 , and thus substitutability is ensured.
+If condition 2 holds the coercion function ensures substitutability of instances of type 2 with respect to instances of type 1 .
+5.
+An Illustrative Example In this section an example of an inheritance hierarchy including several temporal granularities is presented.
+Example 6 Let Course be a class storing the information concerning university courses.
+For each course we are interested in representing the name, the professor (T professor), the teaching assistant (T assistant) and the students taking the course (P students).
+Information are stored with different granularities.
+For example, the professor teaching the course is the same during one year, whereas the teaching assistant is the same during a semester.
+Moreover, for internal statistics, for each course the set  hattr spei ::= hattribute name:domain typei j href attribute name:domain type [h oer fun iai hoer funi ::= hseletive oer funi j haggregate oer funi j huser-def oer funi hseletive oer funi ::= first j last j Proj(index) haggregate oer funi ::= min j max j avg j sum huser-def oer funi ::= meth inv  Figure 1.
+BNF grammar of students attending the course during one year is stored.
+In the following let Professor, Researher, Student and Person be classes and let days, weeks, months, semesters and years be granularities such that days  months  semesters  years and days  weeks.
+lass Course  f  name:string; T professor:temporalyears(Professor); T assistant:temporalsemesters(Researher); P students:temporalyears(set<Student>);  g  Courses are partitioned into three types: introductory courses (I Course), experimental courses (E Course) and theoretical courses (T Course).
+Each class representing each of the course type is a subclass of the class Course, that is, I Course ISA Course, E Course ISA Course and T Course ISA Course.
+Each class inherits all the attributes of the Course class and redefines some of them according to Rule 1.
+Moreover they introduce proper attributes.
+In the following only redefined or proper attributes are reported.
+lass I Course: Course  f  T assistant:temporalyears(Researher); P students:(temporaldays(set<Student>), ount students()); room: temporalyears (integer); lab: temporalweeks (string);  g  lass E Course: Course  f  T assistant:(temporalmonths(Researher), present()); expert:temporaldays(Person); lab:temporalmonths(string);  g  lass T Course: Course  f  T assistant:(temporalmonths(Researher), present()); room: temporalmonths (integer);  g  Let us discuss each class separately.
+As far as introductory courses are concerned, the teaching assistant is the same for the whole year, thus I Course redefines the T assistant attribute whose type is now temporalyears (Researher).
+Type substitutability is obviously ensured since for the year the teaching assistant is the same for each semester.
+Moreover, for internal statistics the students participating to each daily class must be stored.
+Since days is finer than years a coercion function must be defined for the refined attribute in class I Course, here the user-defined coercion function ount students() is defined.
+A possible implementation for ount students() could be a method computing the percentage of days in which the student has participated to the course, for each student in the union of the value of P students over the days of the year.
+If this percentage is greater than fifty percent, the student is returned in the set given as result.
+Similarly, both E Course and T Course classes redefine the T assistant attribute with a granularity finer than the one in the superclass.
+Thus an appropriate coercion function is associated with the attribute.
+A possible implementation for the present() user-defined coercion function could be a method which computes for each semester the researcher who did most of lectures for the course.
+Finally, each class introduces some proper attributes.
+For introductory courses both a room and a laboratory (lab) are needed.
+The room is the same for the whole year, while the laboratory can change each week.
+Experimental courses only have a laboratory and it is the same for each month.
+Moreover an expert can give daily seminars to the students.
+Theoretical courses need a room for lectures and the same room is assigned to a theoretical course in a month.
+3  6.
+Conclusions In handling temporal information, the need often arises of managing temporal data expressed according to different granularities.
+Those data should in many cases be compared and used by the same application program.
+A temporal data model should thus offer the possibility of handling multiple temporal granularities.
+In this paper, we have formally defined a temporal object-oriented data model supporting multiple granularities, and we have revisited on a formal basis issues related to inheritance, type refinement and substitutability.
+We are extending the work presented in this paper along several directions.
+First, all operations on objects should be re-examined in this new context: for example, different notions of object equality can be devised when comparing two objects whose states have as components temporal values expressed at different granularities.
+Moreover, we are studying the problem of querying this kind of objects and developing a query language for the proposed data model.
+Finally, we are investigating how the proposed model can be effectively implemented on top of an ODMG-compliant object-oriented DBMS.
+We are indeed extending the temporal extension of the ODMG data model we have proposed [2] to handle multiple granularities.
+References [1] S. Abiteboul, R. Hull, and V. Vianu.
+Foundations of Databases.
+Addison-Wesley, 1995.
+[2] E. Bertino, E. Ferrari, G. Guerrini, and I. Merlo.
+Extending the ODMG Object Model with Time.
+In E. Jul, editor, Proc.
+Twelfth European Conference on Object-Oriented Programming, number 1445 in Lecture Notes in Computer Science, pages 41a66, 1998.
+[3] C. Bettini, C. Dyreson, W. Evans, and R. Snodgrass.
+A Glossary of Time Granularity Concepts.
+In Temporal Databases: Research and Practice, number 1399 in Lecture Notes in Computer Science, pages 406a413, 1998.
+[4] C. Bettini, X. S. Wang, and S. Jajodia.
+A General Framework and Reasoning Models for Time Granularity.
+In Proc.
+of the Third International Workshop on Temporal Representation and Reasoning (TIMEa96), 1996.
+[5] C. Bettini, X. S. Wang, and S. Jajodia.
+Satisfiability of Quantitative Temporal Constraints with Multiple Granularities.
+In Proc.
+of 3rd International Conference on Principle and Practice of Constraint Programming, 1997.
+[6] L. Cardelli.
+Types for Data Oriented Languages.
+In J. W. Schmidt, S. Ceri, and M. Missikoff, editors, Proc.
+First Intal Conf.
+on Extending Database Technology, Lecture Notes in Computer Science, pages 1a15, 1988.
+[7] R. Cattel, D. Barry, D. Bartels, M. Berler, J. Eastman, S. Gamerman, D. Jordan, A. Springer, H. Strickland, and D. Wade.
+The Object Database Standard: ODMG 2.0.
+Morgan-Kaufmann, 1997.
+[8] C. Combi, G. Cucchi, and F. Pinciroli.
+Applying ObjectOriented Technologies in Modeling and Querying Temporally Oriented Clinical Databases Dealing with Temporal Granularity and Indeterminancy.
+IEE Transactions on Inforamtion Technology in Biomedicine, 1(2):100a127, 1997.
+[9] M. T. Ozsu, R. Peters, D. Szafron, B. Irani, A. Lipka, and A. Munoz.
+TIGUKAT: A Uniform Behavioral Objectbase Management System.
+VLDB Journal, 4(3):445a492, 1995.
+[10] E. Rose and A. Segev.
+TOODM - A Temporal ObjectOriented Data Model with Temporal Constraints.
+In Proc.
+Tenth Intal Conf.
+on the Entity-Relationship Approach, pages 205a229, 1991.
+[11] R. T. Snodgrass.
+The TSQL2 Temporal Query Language.
+Kluwer Academic Publisher, 1995.
+[12] X. Wang, C. Bettini, A. Brodsky, and S. Jajodia.
+Logical Design for Temporal Databases with Multiple Granularities.
+ACM Transactions on Database Systems, 22(2):115a170, 1997.
+[13] Y. Wu, S. Jajodia, and X. S. Wang.
+Temporal Database Bibliography Update.
+In Temporal Databases: Research and Practice, number 1399 in Lecture Notes in Computer Science, pages 338a366, 1998.
+[14] G. Wuu and U. Dayal.
+A Uniform Model for Temporal and Versioned Object-Oriented Databases.
+In A. Tansel, J. Clifford, S. Gadia, S. Jajodia, A. Segev, and R. Snodgrass, editors, Temporal Databases: Theory, Design, and Implementation, pages 230a247.
+Benjamin/Cummings, 1993.

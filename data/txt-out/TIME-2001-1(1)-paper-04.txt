@@ -1,0 +1,255 @@
+Temporal Reasoning: An Application to Normative Systems Tiberiu Stratulat, FrancESSoise CleErin-Debart, and Patrice Enjalbert GREYC, CNRS UPRESA 6072 UniversiteE de Caen, 14032 Caen, France ftistratu, clerin, patriceg@info.unicaen.fr Abstract We propose a first-order model as a possible formal basis for normative agent systems (NAS).
+The model allows us to describe the execution of actions in time and the use of dynamic norms.
+We also present its operational aspect which is based on the reduction of the deontic constraints to temporal ones.
+In order to show the applicability of the model we briefly describe a logic programming implementation and we present two types of applications: the detection of the violation cases and the prototype of a scheduler with deontic and temporal constraints.
+1 Introduction In the area of MAS the problem of coordinating activities among agents is a very important one.
+A solution to this problem, that has been proposed in the last years concerns the use of norms or social laws ([21], [4], [3], [7]).
+A norm is mainly a syntactical description of an ideal behavior saying what an agent should do or not.
+The main users of the norms are the ordinary agents which try to have a norm-compliant behavior, and the control elements of the system which check if the agents obey the norms.
+Therefore a norm is just a piece of information sent to each agent involved in coordinated interaction and which is interpreted (accepted or ignored) at the agent level based on some decision-making internal mechanism.
+When constructing norms the architecture of a normative system requires the use of many concepts such as social structure, authority, roles, obligations, action, time, etc.
+In this paper we study only a subset of them, and in particular the relationship between the deontic1 characterization and the temporal execution of actions.
+We show that the use of norms could be reduced to the use of temporal information.
+This method only applies to a certain class of normative problems, notably those that describe ideal behaviors 1 by  deontic we mean what is obligatory, permitted or forbidden  in time and where actions have a duration of execution.
+As shown before, the normative description is mainly used in two situations: to constrain a behavior and to verify if the actual behavior is conform to its ideal description.
+For the former case, by translating deontic constraints into temporal ones we gain when scheduling future courses of actions from the use of the constraint solvers that already exist for temporal models.
+For the latter case, we simply need some methods to verify if the interval of the act execution is consistent to the interval prescribed by the norm.
+In order to clearly show how to manipulate the temporal information in such systems, we propose in the next section a logical model that helps to describe the execution of actions in time.
+We give ontological definitions for the various concepts used in the model such as acts, events, actions, event types, obligations and violations, and we present their properties.
+The main applications of the model, the deontic scheduling and the detection of violations are described in section 3.
+We present some related works in section 4 and give the conclusions in section 5.
+2 Formal Model The model behind a normative agent system requires for an explicit representation of the world and the way this world changes.
+We need a model that allows us to represent the execution of actions in time and which is able to treat at the same level the different notions of agency, time, events and obligations.
+Therefore, following the classical trend of AI ([15, 1, 20]) we propose a model, where the main ingredients are fluent predicates p(t) that characterize the state of the world at a certain point in time, and event occurrences ours(e; i) which capture the changes that take place.
+We use a linear model of time.
+We start by briefly presenting the syntactical elements of a many-sorted first-order language, provided a typed-signature  and the main sorts Agent, Event, EventT ype, T ime (instants represented by integers or rationals), Interval (for time intervals) and Boolean.
+In this model we separate the use of events from that of acts (and  similarly for actions and types of events as their classes) and introduce two subsorts At  Event and Ation  EventT ype.
+Variables are denoted by strings starting with lower case letters, and constants by strings starting with upper case letters.
+Free variables are assumed to be universally quantified.
+We use typed predicates, each with fixed arity.
+We consider the usual definitions for terms and wellformed formulas.
+The semantics of the language is based on a -signature with classical definitions for variable assignment, satisfaction and validity of a formula.
+In the following we introduce the main predicates and functions used in this framework.
+2.1 Time points and intervals     time point predicates and functions: =; <; ; +.
+interval predicates, of type Interval  Interval !
+Boolean.
+Their use and definition are those developed by Allen in [1], [2]:  starts(i; j ) finishes(i; j ) meets(i; j ) before(i; j ) before(i; j ) _ meets(i; j ) during(i; j ) during(i; j ) _ i = j disjoint(i; j )      i:j ij i : j ij ivj i ./ j  i : j _ j : i  mixed point-interval predicates and functions: [t1 ; t2 a the interval function, it generates an interval given two instants; in(t; i) is true if t is inside i, which formally is defined as in(t; i)  [t; ta  i; ?
+the empty interval; \ the interval intersection function; min(i) and max(i), functions that compute the minimum and the maximum value of an interval.
+the open-ended intervals a [t; !
+[ = fxjx  tg, and a  ; ta = fxjx  tg, ; !
+[ = a ; ta [ [t; !
+[ .
+2.2 Temporal predicates In this model we use the so-called temporal predicates, which are predicates with one or more temporal arguments (i.e.
+fluent predicates and occurrences of events).
+Their properties over an interval, however could be different.
+In order to show this difference we use the notion of homogeneity.
+A predicate is homogeneous if and only if when it holds over an interval i, it also holds over any of its subintervals.
+For instance, a fluent predicate is homogeneous and an event is non-homogeneous.
+In order to avoid the explicit introduction of the homogeneity axiom for each fluent predicate p(i; :::) we use the following equivalent form:  holds(i; p(:::)).
+As an example, letas consider that the library was open between 9:00 and 12:00.2 Since in any subinterval of [9 : 00; 12 : 00a the library was open, we write:  holds([9 : 00; 12 : 00a; open(Library)) The definition of holds in a time-point is given by:  holds(t; p)  holds([t; ta; p) In contrast to homogeneous predicates, nonhomogeneous temporal predicates describe a relation only w.r.t.
+a specific interval.
+For instance, the displayed time-schedule of a library, which opens from 9:00 to 12:00 has such property.
+Therefore, in the case of a fluent predicate it is possible to have many temporal arguments.
+The fact that last year the schedule of the library was from 9:00 to 12:00 is written as:  holds([01=01=2000; 12=31=2000a; shedule(Library; [9 : 00; 12 : 00a)) where the predicate shedule=3 is fluent and homogeneous over the first interval, but non-homogeneous over the second.
+2.3 Events We introduce the notion of event as a means to classify how the world may change.
+Each event has a duration and it starts and ends at unique moments of time (different or equal).
+In order to represent the occurrence of an event we use either the non-fluent predicates starts(e; t) and finishes(e; t) of type Event  T ime !
+Boolean and which have the properties:  8e; t; t0 6= t starts(e; t) ) :starts(e; t0 ) 8e; t; t0 = 6 t finishes(e; t) ) :finishes(e; t0) or ours(e; i), an equivalent predicate.
+Example: there is a meeting between 8am and 10am: ours( Meeting , [8 : 00; 10 : 00a).
+The predicate ours(e; i), is the main predicate with which we build the most part of the predicates used in this framework.
+Its definition depends on the type of event, if it is basic or complex.
+In order to make this distinction among events we provide the model with an algebra of events with operations for sequential a;a, parallel ajja and non-deterministic choice a?a compositions.
+They are overloaded to work on both Event and EventT ype objects.
+1. for basic events we have that: 2 Note that in order to have more expressive examples we introduce user-defined intervals such as hours and dates.
+ours(e; [t1 ; t2 a)  t1  t2 ^ starts(e; t1 ) ^ finishes(e; t2) 2. for composite events we have:  ours(e1 ?
+e2 ; i)  ours(e1 ; i) _ ours(e2 ; i) ours(e1 jj e2 ; i)  9i0 i0 v i ^ (ours(e1 ; i) ^ ours(e2 ; i0 ) _ ours(e1 ; i0 ) ^ ours(e2 ; i)) ours(e1 ; e2; i)  9i1 ; i2 i1 : i2 ^ starts(i1 ; i) ^ finishes(i2; i) ^ ours(e1 ; i1) ^ ours(e2 ; i2 ) We continue with ours(e), a variant of ours(e; i) without mentioning the time interval:  ours(e)  9i ours(e; i) In this model we consider a linear time, which permits the use of the past relatively to an instant.
+In order to describe the past occurrence of an event, we introduce new predicates, which are fluent versions of ours:   ourred(e) is true at t if e occurred in the past of t. holds(t; ourred(e))  9i ours(e; i) ^ i : [t; 1)   ourred(e; i) is the version that indicates if e oc-  curred in the interval i, where i is either its interval of occurrence or a larger interval that includes it.
+The two versions are:  holds(t; ourred (e; i))  ours(e; i) ^ i : [t; 1) holds(t; ourred(e; i))  9i0 i0 v i ^ ours(e; i0 ) ^ i0 : [t; 1) In the definitions that follow, we will consider only the second version.
+ ourring(e) is a property which is true only when an event is occurring.
+holds(t; ourring(e))  9i in(t; i) ^ ours(e; i) Some might argue that the meaning of this predicate is different from Allenas one proposed in [1] and used in formalizing processes.
+Since we have not introduced an explicit separation between events and processes, our approach is much closer to the formalization and to the motivations behind the use of the aprocess-likea predicates (i.e.
+CupF illing ) proposed in Allen and Fergusonas work [2].
+2.4 Event types We also introduce the notion of class of events, or event type, as an abstraction of a certain collection of events.
+The classes could have a hierarchical structure, for which we introduce sublass("; "0 ) a non-fluent predicate of type EventType  EventType !
+Boolean.
+We also define instane of (e; ") that links event tokens to their classes.
+It is useful when the same occurrence of an event is interpreted as meaning different things (the same instance of more classes).
+For instance when someone signs on the check 4526, it could be interpreted as writing on a piece of paper, as an identification or as making a payment: instane of (sign hek4526,P ay).
+Because we work with complex events and event types, we need axioms for this predicate that allows the composition.
+If aAa denotes one of the composition operators a?a, a;a or ajja, then the axioms are:  instane of (e1 A e2 ; "1 A "2 )  instane of (e1 ; "1 ) ^ instane of (e2 ; "2 )  instane of (e; "1 ) ^ sublass("1; "2 ) ) instane of (e; "2 )  Similarly to events, we introduce for acts the notion of  ation as being a class of acts.
+2.5 Acts  When an event has an actor, we call it act.
+Since we consider an act as an event produced by an actor, we give similar definitions for predicates on acts as we did for events.
+We start with does(agent; at; i), which shows that agent does at over interval i.
+It is the corresponding predicate to ours(e; i) for events:  does(agent; at; i)  ours(at; i) ^ agent of (agent; at) The predicate agent of (agent; at) describes who is responsible for doing at. In the case of a composite act we have:  agent of (agent; at1 A at2 )  agent of (agent; at1) ^ agent of (agent; at2) Example The event of signing the check 4526, produced by Mr. X at 10 oaclock is written as:  does(X; sign hek4526); [10 : 00; 10 : 00a) In a similar manner we consider the definitions for the rest of the corresponding fluent act predicates, respectively: done(agent, act), done(agent, act, i) and doing(agent, act).
+We introduce another fluent predicate failed( agent, act, i) to represent the fact that the agent failed to do at in i:  holds(t; failed(agent; at; i))  holds(t; :done(agent; at; i)) The introduction of failed predicate is motivated by the fact that we donat permit the use of the action negation, which in general is problematic.
+The solution is to adopt the aclosed world assumptiona and consider : as the negation by failure [5] used in logic programming.
+The failure of doing an act in an interval is given by the failure to derive if the act has been done in that interval.
+t1   t2 t  t1  t2 t  t1  t2 t  (a) [t1 ; t2 a in the past of t   t1   t t2  t1   t t2  t1  t t2  (b) t inside [t1 ; t2 a  2.6 Deontic properties In order to keep the presentation as much as simple, we will consider only some elements from the general set that composes a norm.
+Therefore, in this model a norm is of the following conditional type:  OP I    Condition  OP I is one of the deontic predicates: O(agent; ; i), P (agent; ; i) or I (agent; ; i).
+These where  predicates show that an agent is obliged/permitted/forbidden to execute some acts of type  in the interval i.
+In general the deontic notions help to describe ideal states (to-be type) or ideal behaviors (to-do type).
+Since an agent is by definition someone who acts, we are more interested in working with the to-do type.
+This is different from the main trend in the area of deontic logic, where the deontic operators are modal logical operators of type Op with p a logical formula (see [17] for an introductory presentation).
+Note that the deontic predicates are fluent, that is, their truth values change in time.
+By considering them fluent, and therefore homogeneous, it allows us to introduce the concepts of lifetime for norms, and persistence for obligations.
+This is quite natural, because in the real world we have laws that are voted at a certain moment and then abrogated.
+Their lifetime could be different from the time interval they refer to.
+For instance, the obligation for Mr. X to pay the taxes in January, is written as O(X; P ay taxes; [01=01; 31=01a).
+If this obligation is derived from a more general tax law voted last year and still in force, the complete representation is:  holds([01=01=2000; !
+[); O(X; P ay taxes; [01=01; 31=01a)) If the law is abrogated or modified in 2001, the updated form becomes:  holds([01=01=2000; 01=01=2001a; O(X; P ay taxes; [01=01; 01=31a)) Another example that shows the importance of both manners to treat the time within norms is related to retroactive laws.
+In this case, the period of time a norm refers to could contain subintervals that are in the past of the moment  Figure 1.
+Violation cases for I (agent; ; [t1 ; t2 a) at t  of its creation.
+As a consequence, while looking to some current behavior, it is possible to have completely legal acts at the moment of their execution, and which generate violations when the new retroactive law is approved.
+It is important to note that the deontic predicates apply only to actions, and not to acts.
+An action is an abstract concept that is used in our model as a class.
+The acts represent real and concrete occurrences and hence are viewed as instances of actions.
+For example, when someone signs the check 4526, what is obligatory is not the act of effectively signing that check, but the class to which it belongs, in our case, the action P ay .
+2.7 Violations A possible definition for the violation case is captured by the fluent predicate V (agent; ; i).
+It means that the agent violated at t (the moment of observation) a norm w.r.t.
+the execution of an act of type  over the interval i.
+When we compute the violations we take into account the normative descriptions and the current and past execution of the system.
+Therefore, we have identified the following cases of violation: 1. the norm is an obligation O(agent; ; i) with i in the past of t and there is no act of type  executed in i.
+2. the norm is an interdiction I (agent; ; i) with i in the past of t and there is an act of type  executed into an interval that intersects i (see figure 1a).
+3. the norm is an interdiction I (agent; ; i) with t contained in i and there is an act of type  in execution or executed into an interval started by i and finished by t (see figure 1b).
+Formally, this is captured by the next axiom:  holds(t; V (agent; ; [t1; t2 a))  holds(t; O(agent; ; [t1 ; t2 a)) ^ [t1 ; t2 a  [t; 1) ^ 8at (instane of (at; ) ) holds(t; failed(agent; at; [t1; t2 a)))_ holds(t; I (agent; ; [t1 ; t2 a)) ^ [t1 ; t2 a  [t; 1)^ 9at; instane of (at; )^ (holds(t; done(agent; at; [t1; t2 a))_ holds(t1 ; doing(agent; at))_ holds(t2 ; doing(agent; at)))_ holds(t; I (agent; ; [t1 ; t2 a)) ^ in(t; [t1 ; t2 a)^ 9at; instane of (at; )^ (holds(t; done(agent; at; [t1; ta))_ holds(t1 ; doing(agent; at))_ holds(t; doing(agent; at))) If we isolate the temporal relations in the above definition, the violation case could be defined only in terms of the intersection between the interval of the act and the interval given in the norm.
+There is a violation if this intersection is empty for obligations and non-empty for interdictions.
+We will use this equivalent definition when scheduling with norms (see next section).
+ours(sign hek4526; [01=14=01; 01=14=01a) agent of (X; sign hek4526) instane of (sign hek4526; P ay taxes) From the above description and by using the operational aspect of the implementation of holds=2, we infer the following propositions:  holds([14=01=01; !
+[; ourred(sign hek4526))  holds([14=01=01; !
+[; ourred(sign hek4526; [14=01=01; 14=01=01a))  holds([14=01=01; !
+[; done(X; sign hek4526))  holds([14=01=01; !
+[; done(X; sign hek4526; [14=01=01; 14=01=01a))  Note that there is no violation detected.
+If we add the interdiction to make payments on weekends:  holds(a ; !
+[; I (X; P ay; [13=01=01; 14=01=01a)) sublass(P ay taxes; P ay) we get the violation:  3 Applications The model proposed in this framework has been implemented in Prolog Eclipse [8] and has been used to build two applications: the prototype of a control element and the scheduling module of an agent.
+Each predicate of the model has a direct corresponding Prolog predicate.
+We used for the definitions of the temporal predicates (fluents, execution of acts, violations, etc.)
+the library for finite domains of Eclipse, that provides a very powerful mechanism for constraint propagation.
+The introduction of the holds=2 predicate is essential to the implementation of our model as a logic program.
+We use the techniques of meta-programming to answer to questions of the type holds(i; p), where the temporal argument is a variable.
+The constraint propagation module collects the temporal constraints and tries to find a solution which makes p true by instantiating i to a domain (if possible).
+Violation checking For the detection of the violations we are interested to have questions of the kind holds(i; V (agent,, interval)).
+Letas reconsider the example with Mr. X and his obligation to pay the taxes in January.
+In addition we have the fact that he paid the taxes on January 14th, by signing the check with the number 4526.
+This scenario is described by the following propositions:  holds([01=01=2000; !
+[; O(X; P ay taxes; [01=01=01; 31=01=01a))  holds([14=01=01; !
+[; V (X; P ay; [13=01=01; 14=01=01a)) Scheduling A second application of the model concerns the specification of a scheduling problem with temporal and deontic constraints.
+Letas suppose that an agent is under the influence of a set of norms, each norm having a cost to pay if violated.
+The agent should schedule into a frame of time F its future acts so that it should pay the minimum cost.
+It is the role of the agentas scheduling module to propose the list of the future acts and their times of execution L = f(k ; [sk ; fk a)gk given the estimated duration for each action D = fduration(k ; dk )gk and the deontic constraints that hold at the moment of scheduling:  OF ;t = fO(; i; ost)jholds(t; O(; i; ost) ^ i  Fg IF ;t = fI (; i; ost)jholds(t; I (; i; ost) ^ i \ F 6= ?g Temporal reasoning is a very good field of application for constraint reasoning (TCSP).
+In this type of application we separate the temporal information from the rest of the problem and treat it separately as a constraint domain for which we can use existing specialized reasoning tools.
+Therefore we reconsider the deontic constraints as temporal constraints and solve the scheduling problem as a TCSP problem.
+Figure 2 presents an algorithm for scheduling with deontic constraints.
+The algorithm generates a (possible null) planned instance for each obligatory action k , and then collects all the temporal constraints  procedure shedule input: OF ;t , IF ;t , D output: L, Cost, C L = fg; Cost =C 0; for O(; i; ost) 2 OF ;t  generate at((; i; ost); s ; f ; ost ); L = L [ f(; [s ; f a)g; Cost =C Cost + ost ;  end procedure generate at input: (; i; ost) output: s ; f ; ost generated =C f0; 1g; if generated ost =C 0; [s ; f a vC i; d = duration(); f =C s + d ; I = f(ik ; ostk )jI (; ik ; ostk ) 2 IF ;t g; for (ik ; ostk ) 2 I if ik \ [s ; f a 6= ?
+/* interdiction violated */ ost =C ost + ostk ; else /* obligation violated */ ost =C ost; s =C null; f =C null; end Figure 2.
+Algorithm for deontic scheduling  C that are hence created.
+The generation of each act and the propagation of constraints are made by using the backtracking method.
+We indexed the operations on time intervals with C to show that they are added to the set of constraints only if they preserve the overall consistency, otherwise they generate a backtracking step.
+The algorithm computes the list of the scheduled actions and the global cost for that solution.
+Since it collects only temporal constraints, the algorithm could be extended with other types of temporal restrictions (i.e.
+the execution order between actions).
+Starting from the Prolog implementation of the model, it was easy to implement this algorithm notably because Prolog already provides backtracking for solving the predicates.
+We used the same library for finite domains to implement the constraint propagation mechanism for C .
+To obtain the solution with the minimum cost we used the predicate minimize(+predicate, cost).
+This predicate is implemented using the branch and bound method.
+It tries to instantiate the variables of predicate and offers the solution that optimizes cost.
+4 Related Work The formalization of normative concepts such as obligation, right, permission, duty, power, etc., has a long tradition that has been developed in the area of Deontic Logic.
+One may say that Deontic Logic came into existence in 1951 with the publication of von Wrightas paper Deontic Logic [24] that inspired, directly or indirectly, most of the works that followed it.
+Presented initially as a first-order formalism, Deontic Logic has been developed after as a branch of modal logic.
+As examples of works that have been proposed to represent normative concepts in first-order formalisms, we mention Sergot who described in [19] an application of logic programming for representing legal rules.
+We also note in his work the presence of predicates with temporal arguments.
+In a more recent paper [14] Lokhorst gives a complex account of reasoning about actions and obligations which generalizes the logic programming implementation of Ronald M. Leeas deontic expert system DX.
+See [18] for a presentation of defeasible deontic reasoning used in DX.
+Finally, a temporal treatment of legal norms in a first-order formalism is proposed by HernaEndez MarAaEn and Sartor [10].
+They present a model based on event-calculus [12] and treat various temporal aspects of legal rules, showing that there is a legitimate separation between the validity of a norm and its internal time.
+Although we didnat follow the modal tradition to describe normative concepts, we acknowledge that there are other interesting approaches that belong to this stream of research.
+Many of them propose semantics that interpret the deontic concepts in terms of temporal ones.
+For instance in [9] the notion of obligation is considered as a sort of liveness condition: something will happen in the future.
+This view is arguable, since an obligation refers to something that should happen.
+Horty and Belnap [11] define the obligations in a branching time framework.
+In order to represent the obligations on actions, they use the stit operator and the possibility to choose among future courses of actions.
+Van Eckas approach [23] is based on the definition of temporal necessity and in [6] Dignum and Kuiper propose a treatment of the obligations with deadlines, based on Meyeras reduction of deontic logic to dynamic logic [16].
+5 Conclusions In this paper we proposed a first-order model for normative agent systems, starting from the idea that norms are means for influencing and controlling the agentas behavior.
+The norms are dynamic in the sense that they have a lifetime (appear and disappear in time) and prescribe the execution of an action over a time-interval.
+We showed how to describe the execution of an act and how to compute the  violation cases.
+Another essential point in our framework is the distinction between acts (as concrete occurrences) and actions (as classes of acts).
+Since a norm describes an ideal behavior, we use this distinction to show that a norm characterizes a class of acts and not an act.
+In order to show the applicability of this model we briefly described a logic programming implementation in Eclipse Prolog and we presented two types of applications: the detection of the violation cases and the prototype of a scheduler with deontic and temporal constraints.
+A possible future extension could be the use of obligations on relative intervals and repetitive actions.
+We study the possibility of integrating a language for describing userdefined periods as presented in [13] and used in [22].
+[11] J. Horty and N. Belnap.
+The deliberative stit: A study of action, omission, ability, and obligation.
+Journal of Philosophical Logic, 24:583a644, 1995.
+Acknowledgements We would like to thank GeErard Becher for his interest in this work and the anonymous referees for their helpful comments.
+[15] J. M. McCarthy and P. J. Hayes.
+Some philosophical problems from the standpoint of artificial intellingence.
+Machine Intelligence, 4:463a502, 1969.
+References  [16] J. J. C. Meyer.
+A different approach to deontic logic: Deontic logic viewed as a variant of dynamic logic.
+Notre Dame Journal of Formal Logic, 29:109a136, 1988.
+[1] J. F. Allen.
+Towards a general theory of action and time.
+Artificial Intelligence, 23:123a154, 1984.
+[2] J. F. Allen and G. Ferguson.
+Actions and events in interval temporal logic.
+Technical report, Computer Science Department, University of Rochester, 1994.
+[3] M. Barbuceanu, T. Gray, and S. Mankovski.
+Coordinating with obligations.
+In Proceedings of Autonomous Agentsa98, Minneapolis, MI, 1998.
+[4] C. Castelfranchi.
+Commitements: From individual intentions to groups and organizations.
+In Proceedings of ICMASa95.
+AAAI Press, 1995.
+[5] K. Clark.
+Negation as Failure.
+Logic and Databases.
+Plenum Press, New York, 1978.
+[6] F. Dignum and R. Kuiper.
+Specifying deadlines with dense time using deontic and temporal logic.
+International Journal of Electronic Commerce, 3(2):67a86, Winter 1998-99.
+[7] F. Dignum, D. Morley, L. Sonenberg, and L. Cavedon.
+Towards socially sophisticated BDI agents.
+In Proceedings of ICMASa2000, Boston, USA, 2000.
+[12] R. A. Kowalski and M. J. Sergot.
+A logic-based calculus of events.
+New Generation Computing, 4:67a95, 1986.
+[13] B. Leban, D. D. McDonald, and D. R. Forster.
+A representation for collections of temporal intervals.
+In Proceedings of the 5th National Conference on Artificial Intelligence, pages 367a371, Philadelphia, 1986.
+[14] G.-J.
+C. Lokhorst.
+Reasoning about actions and obligations in first-order logic.
+Studia Logica, 57:221a 237, 1996.
+[17] J. J. C. Meyer and R. J. Wieringa.
+Deontic logic: A concise overview.
+In J. J. C. Meyer and R. J. Wieringa, editors, Deontic Logic in Computer Science: Normative System Specification.
+John Wiley & Sons, 1993.
+[18] Y. U. Ryu and R. M. Lee.
+Defeasible deontic reasoning: A logic programming model.
+In J. J. C. Meyer and R. J. Wieringa, editors, Deontic Logic in Computer Science: Normative System Specification.
+John Wiley & Sons, 1993.
+[19] M. Sergot.
+Prospects for representing the law as logic programs.
+In K. L. Clark and S. A. TaErnlund, editors, Logic Programming.
+Academic Press, 1982.
+[20] Y. Shoham.
+Reasoning about change.
+MIT Press, 1988.
+[21] Y. Shoham and M. Tennenholtz.
+On social laws for artificial agent societies: off-line design.
+Artificial Intelligence, 73:231a252, 1995.
+[22] P. Terenziani.
+Integrated temporal reasoning with periodic events.
+Computational Intelligence, 16(2):210a [8] http://www-icparc.doc.ic.ac.uk/eclipse/.
+256, 2000.
+[9] J. L. Fiadeiro and T. S. E. Maibaum.
+Temporal reasoning over deontic specifications.
+Journal of Logic and Computation, 1(3):357a395, 1991.
+[23] J. van Eck.
+A system of temporally relative modal and deontic predicate logic and its philosophical applications.
+Logique et Analyse, 99,100, 1982.
+[10] R. HernaEndez MarAaEn and G. Sartor.
+Time and norms: a formalisation in the event-calculus.
+In Proceedings of ICAIL-99, 1999.
+[24] G. H. von Wright.
+Deontic logic.
+Mind, 60:1a15, 1951.

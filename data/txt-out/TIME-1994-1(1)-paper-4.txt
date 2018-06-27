@@ -1,0 +1,244 @@
+An application-independent support system for integrated assumption-based temporal reasoning Clemens Beckstein  Univ.
+Erlangen-Nfiurnberg, IMMD-8 Am Weichselgarten 9 D-91058 Erlangen, Germany beckstein@informatik.uni-erlangen.de  Abstract  Reason maintenance systems and temporal reasoning systems are among the most prominent application-independent support systems used for complex AI applications and there are many applications that need both support for logical and temporal reasoning.
+Apparently it is not enough to just provide two isolated support modules.
+The logical and temporal subsystems have to be coupled in the right way.
+We present a hybrid support system integrating assumption-based logical and temporal reasoning, give a formal characterization, and show what an ecient incremental implementation of the system would look like.
+1 Assumption-based temporal reasoning  Suppose we want to mass produce some machines the details of which are not important here.
+As part of this, we have to plan how to manufacture the parts of the machines.
+These plans can then be used to search for a schedule that guarantees a cost eective production of the parts on a given set of machines.
+When planning or executing plans, assumptions have to be made | about future world states, the availability of resources or the duration of actions.
+These assumptions have to be managed explicitly in order to be able to make or retract them as needed.
+Explicit representation and processing of assumptions can be accomplished with assumption-based reason maintenance systems as the ATMS dK86].
+On top of the ATMS there usually are systems like the PNMS (Plan Network Maintenance System) BLS92] representing and maintaining non-linear plans with assumptions.
+It is often impossible to separate and sequentialize planning and scheduling in applications due to the strong interactions between them.
+The isolated generation of an \optimal" plan can render it impossible  Tim Geisler  Univ.
+Mfiunchen, Institut ffiur Informatik Wagmfiullerstr.
+23 D-80538 Mfiunchen, Germany geisler@informatik.uni-muenchen.de  to nd the best schedule.
+When viewed separately, a global optimum can often be produced from two suboptimal partial solutions.
+Therefore planning and scheduling have to be considered together.
+Temporal reasoning is necessary for scheduling as well as for planning, but the requirements are dierent.
+For planning, a lot of qualitative temporal information is needed because the executability of plans has to be ensured and propositions about the ordering of events in time have to be made.
+In order to produce a schedule, propositions about absolute time points and durations have to be made, which require metric temporal information.
+For scheduling, metric constraints are not absolute they can be dierent under dierent assumptions.
+This problem can be solved by making the assumptions underlying these constraints explicit , i.e.
+by going from temporal constraints to assumption-based temporal constraints.
+By reasoning with temporal rules, normal boolean propositions become derivable, and by reasoning with logical rules new temporal constraints can be computed.
+Therefore, an integration of the assumption-based processing of temporal constraints and the assumption-based processing of logical constraints is necessary.
+The product of this integration can then be added to a problem solver as a module which acts both as a conventional reason maintenance system and a temporal reasoning system.
+In the rest of this paper, we present how such a module can be constructed from the ATMS by merging it with a simple assumption-based temporal reasoning system.
+2 A simple assumption-based temporal reasoning system  The STP: The starting point of our development 1  was the Simple Temporal Problem (STP ) DMP91], a very simple formalism for temporal reasoning with 1 In the sequel we will use the abbreviation (A)STP both for the problem and the system that can solve (assumption-based) simple temporal problems.
+metric constraints.
+The STP is a constraint satisfaction problem over a set T of variables with the range D, given by a set of constraints C the elements of which all have the form tj ; ti  a where ti  tj 2 T and a 2 D. The elements of the domain can be interpreted as time points or time distances and the constraints express upper bounds for the (directed) distance of two time points.
+Implicitly for each variable ti a constraint t0 ; ti  0 is introduced, where t0 is a distinguished variable.
+A solution of an STP is an assignment of the variables from T satisfying all constraints C .
+With this kind of constraints a lot of interesting temporal relations can be expressed (like the duration of jobs, partial ordering of jobs or deadlines and other information of importance for scheduling).
+An STP can be represented as a labeled directed graph.
+Each variable is represented by a node and each constraint tj ; ti  a is represented by an edge from ti to tj with the label a.
+The test for satisability as well as the solutions can be computed from the shortest paths between the node representing the variable t0 and all other nodes in the graph.
+Hence, the Floyd-Warshall algorithm (cf.
+AHU74, CLR90]), which has a time complexity of O(n3) where n is the number of variables, can be used to solve an STP.
+The algorithm computes, as a side eect, maximal directed distances between each pair of time points represented by a variable.
+These can be viewed as solutions to the constraints in the sense described above.
+Extension to the ASTP: In a lot of applications temporal constraints cannot be expressed absolutely as in the STP.
+We therefore generalized the STP to an ASTP1 (Assumption-based Simple Temporal Problem).
+In the ASTP, constraints are expressed relative to a set of assumptions.
+Let A denote the universe of all assumptions.
+An ASTP is a constraint satisfaction problem over a set T of variables with the range D, given by a set of constraints C with elements of the form U ` tj ; ti  a (ti tj 2 T and a 2 D and U  A is a set of assumptions).
+In the ASTP we also have for each variable the implicit constraint  ` t0 ; ti  0.
+The ASTP is apparently downward compatible to the STP | an STP-constraint of the form tj ; ti  a is represented in the ASTP as  ` tj ; ti  a.
+The solutions P (A) !
+(T !
+D) of an ASTP for C are all the functions which map sets of assumptions2 U  A to assignments for the variables in T and satisfy all constraints (U 0 ` tj ; ti  a) 2 C where 0 U  U.
+2 P (A) denotes the power set of the set A.
+As the Floyd-Warshall algorithm can be generalized to path problems in weighted directed graphs where the edge weights are elements of a closed semiring (S 	   0 1) AHU74], a suitable semiring has to be identied to get an algorithm for the solution of an ASTP.
+Path problems in closed semirings can be formalized as follows: The label (p) of a path p = hv1  : : : vk i in such a graph is dened as (p) := (v1  v2 )   : : :   (vk;1 vk ) where the label (u v) of an edge (u v) is their weight.
+If (u v) is not an edge of the graph, then (u v) = 0.
+The generalized Floyd-Warshall algorithm computes the summary luv of all labels of all paths for all pairs (u v) of nodes in the graph: M (p) luv := p=hu:::vi  It can be sketched as follows: for i j := 1 to n if i = j then lij := 1  (i j ) else lij := (i j ) for k := 1 to n for i j := 1 to n lij := lij  (lik  (lkk )?
+ lkj ).
+(*) The iteration operator ?
+is dened as a?
+:= L1i=0unary i a , with a0 := 1 and ai := a   ai;1.
+This algorithm has a time complexity of O(n3 (Tfi + T ) + n2T?
+), where Tfi , T and T?
+are the time complexities for the corresponding operations.
+Note that for the semiring identied in this paper, these operations do not have a constant time complexity because minimized labels can get arbitrarily large.
+Since we want to design a hybrid system consisting of the ATMS and the ASTP, we assume in the following that a unary predicate nogood over P (A) exists with :nogood() ^ 0 (nogood(U) !
+(8U : U  U 0 !
+nogood(U 0 ))): Let D be the set of all possible temporal distances.
+This set makes up a commutative monoid (D + 0) where D := R  f;1 +1g and + is the generalization of real addition on D according to: a + (+1) = (+1) + a = +1, (;1) + (+1) = (+1) + (;1) = +1 and a+(;1) = (;1)+a = ;1 where a b 2 R. It is now possible to express the set of all temporal distances relative to a set of assumptions as DA := D  P (A) and to order it partially with v: d1 U1] v d2 U2 ] () d1  d2 ^ U1  U2 The set L^ of the so called prelabels is L^ := fL j L  DA ^ 9d ] 2 Lg:  The idempotent function m : L^ !
+L^ minimizes prelabels: m(L) := minv (L) nfd U] j d U] 2 L ^ nogood(U)g: minv is a function mapping a partial ordered set w.r.t.
+v to the set of its minimal elements.
+The domain of the semiring, the set L of the minimized labels, can then be dened as ^ L := fm(L) j L 2 Lg and the semiring (L 	   0 1) itself can be specied as follows (with L1  L2 2 L): L1 	 L2 := m(L1  L2 ) L1   L2 := m(f d1 + d2 U1  U2 ] j d1 U1] 2 L1 ^ d2 U2 ] 2 L2 g) 0 := f+1 ]g 1 := f0 ]g It is easy to show that the requirements for a closed semiring as stated in AHU74] are fullled: (L   1) and (L 	 0) are commutative monoides, 0 is absorbing w.r.t.
+the concatenation operator  , the summary operator 	 is idempotent and   is distributive over 	.
+Summaries over countable innite sequences exist and 	 is associative, commutative and idempotent for innite summaries.
+Furthermore   is distributive over countable innite summaries.
+When applying the iteration operator to a label Lii, it can happen that ;1 U] 2 L?ii , that is U ` ti ; ti  ;1.
+This constraint is not satisable.
+Therefore the ASTP has no solutions for assumption sets U 0 where U 0  U.
+In ATMS terminology the assumption set U is a nogood.
+For our formalization in this case the predicate nogood has to be extended by U and all supersets of U: ;1 U] 2 L?ii =) nogood := nogood  fU 0 j A  U 0  U g An ASTP with the constraint set C can be transformed into a directed graph (called ASTP-graph) weighted with temporal labels by creating a node for each variable ti and creating an edge (ti  tj ) from ti to tj with a temporal label Lij for each pair of nodes: For i 6= j: M Lij := f1 ]g  fd U ] j (U ` tj ; ti  d) 2 Cg: For i = j: M Lij := f0 ]g  fd U ] j (U ` ti ; ti  d) 2 Cg: For each environment U  A maximal temporal distances d(U ti  tj ) for the time points represented by the variables ti and tj can be extracted from the labels Lij of the edges (ti  tj ) of the graph computed by the Floyd-Warshall algorithm.
+The corresponding function d : P (A)  T  T !
+D is dened as: d(U ti tj ) := minfd0 j U 0 d0] 2 Lij ^ U 0  U g:  We can use this function to transform temporal labels of edges in the ASTP-graph into logical labels of temporal constraints in the ATMS: U is an environment of the logical label of the implicit temporal constraint tj ; ti  d(U ti tj ) unless it is subsumed by another environment in the ATMS label.
+It only has to be communicated to the ATMS, if the temporal constraint tj ; ti  d(U ti tj ) is relevant .
+Typically, this is the case if the constraint is mentioned in a justication or queried by the problem solver.
+Moreover, two extreme solutions with t0 = 0 can be extracted from the ASTP: Smin (U) := f(ti  ;d(U ti t0)) j ti 2 T g Smax (U) := f(ti  d(U t0 ti )) j ti 2 T g Smin (Smax ) is a solution mapping environments to assignments describing minimal (maximal) distances to t0 .
+Minimized temporal labels L 2 L have the following properties: 8T 2 L T 0 2 L : T v T 0 !
+T = T 0 (minimality) 8d U] 2 L : :nogood(U) (consistency) 8U  A : 9d U 0] 2 L : U 0  U (closedness) The following examples show the eects of the operators (assumption sets like fA B C g are noted as ABC for brevity).
+m(f5 AB] 3 A] 1 C] 1 ]g) = f3 A] 1 C] 1 ]g f3 A] 2 B] 1 ]g   f1 BC] 5 ]g = f8 A] 7 B] 3 BC] 1 ]g f3 A] 2 B] 1 ]g 	 f1 BC] 5 ]g = f3 A] 2 B] 1 BC] 5 ]g We will give an example demonstrating how the Floyd-Warshall algorithm computes the minimized labels once we have shown in the following section how to couple an ATMS and an ASTP.
+3 Integration of ATMS and ASTP  The ATMS considers assumption-based temporal constraints of the form U ` tj ; ti  a as uninterpreted propositions (nodes) of the form dtj ; ti  ae the logical labels of which include the environment U (explicitly or implicitly, because it was removed by subsumption).
+Temporal nodes are handled specially they are interpreted by the ASTP.
+The interface of the hybrid system to the problem solver corresponds to the interface of the ATMS to the problem solver (cf.
+dK86]).
+In addition, the problem solver can query the AST processor for solutions of the AST problem.
+Especially, consistent variable assignments can be computed for a given context.
+To cope with the special semantics of temporal nodes, we generalize the notion of derivability for the ATMS: A node n holds in an environment U with a set R of justications R`U !n if there is a series of node sets S1  : : : Sm with  S1 = tc(U),  Si+1 = tc(Si  fy j 9(x1  : : : xk ) y) 2 R with xj 2 Si (1  j  k)g),  n 2 Sm .
+The function tc denotes the temporal closure  tc(N) := t^ci(N) i  of a node set N, where t^c(N) := N  fdtj ; ti  de j dtk ; ti  aik e 2 N ^ dtj ; tk  akj e 2 N ^ d  aik + akj g: Given the formal specication of the integration of the ATMS and the ASTP, how can the two systems be combined in practice?
+What would an implementation of it look like?
+It is evident that changes in the logical labels of temporal nodes that are computed by the ATMS have to be collected and communicated to the ASTP.
+This now causes changes in the temporal labels of edges in the ASTP-graph.
+Hence, the ASTPgraph must be recompleted with the Floyd-Warshall algorithm.
+This causes another change in the temporal label of an ATMS-node, if the newly discovered constraint is relevant, and the game starts again.
+An ecient implementation of the hybrid system (in the sequel called ATTMS | the assumption-based temporal truth maintenance system) requires changes to the ATMS label propagation algorithm and the generalized Floyd-Warshall algorithm.
+The ATMS works incrementally: one justication at a time is added to the dependency network.
+After each addition a label update is invoked, even when the problem solver is not currently interested in the label of a node.
+The generalized Floyd-Warshall algorithm as realized in AHU74] does not work incrementally.
+Using it as is for the ASTP therefore means computing all temporal labels after every change which is not acceptable.
+As will be seen in a moment, both modules of the hybrid system have to be adapted.
+This adaption essentially aects the following areas: Processing of nogoods: The ATMS and the ASTP must maintain a common set of nogoods.
+This set of nogoods is taken into consideration in the algorithm used for solving an ASTP (cf.
+the denition of the minimizing function m and its use in the denition for the operators 	 and  ).
+The ASTP can discover new nogoods.
+As shown previously, this happens when the iteration operator computes a temporal label with the temporal distance ;1.
+In this situation all the newly discovered nogoods are automatically communicated to the ATMS.
+Computing the temporal labels in the ASTPgraph: Computing the temporal labels from  scratch can be very inecient.
+In general, it is more ecient to use an incremental algorithm for the update of the ASTP labels.
+There are two ways to develop an incremental label update algorithm.
+First, the generalized Floyd-Warshall algorithm can be made more \incremental".
+In RR91] it is shown that it is not possible to construct a real incremental algorithm (having a time bound depending only on the size of the incremental change of the input and the minimal change of the output) for the general all pairs shortest path problem and thus for the path problem on closed semirings.
+But it is very easy to develop an algorithm with a time complexity of O(n2(Tfi +T +T? ))
+for an edge insertion operation using the approach described in IK83].
+During label propagation in the ATMS, usually more than one label of a temporal constraint is updated.
+All these updates are collected and added to the ASTP at the same time.
+The outer loop of the Floyd-Warshall algorithm only has to process the endpoints of added edges.
+Another big eciency improvement can be obtained by incrementalizing the semiring operations, analogous to the incremental ATMS label update algorithm.
+A formal description of this incremental version is left out for brevity and can be found in Gei94].
+Processing the information resulting from temporal propagation eficiently: Even an \in-  cremental" Floyd-Warshall algorithm as described above works in a kind of batch processing mode.
+With each batch a number of temporal labels is updated, which can be transformed into logical labels of temporal constraints as previously shown.
+The ATMS therefore must update more than one label at a time.
+Technically these updates can be seen as new justications for the ATMS.
+The ATMS is not interested in all of the temporal constraints maintained by the ASTP, but only in temporal constraints used in justications or queries of the problem solver.
+Only changes of labels belonging to these constraints must be communicated to the ATMS.
+Nevertheless, in general, a set of justications has to be communicated to the ATMS.
+We call the problem of eciently adding a set of justications to the dependency network as the bulk update problem .
+A solution for the bulk update problem for the ATMS is shown in BG94, Gei94].
+The two central ideas for this algorithm are avoiding redundant label products  and an optimal serialization of the label updates in the dependency network.
+Typically, there are a lot of common antecedents in large justication sets as occurring in the justication sets communicated by the ASTP.
+Computing label products of these antecedents as needed during the ATMS label propagation algorithm leads to a waste of computation when done several times for the same antecedents.
+With a fast heuristic common subexpression elimination algorithm these redundant computations can mostly be recognized and avoided.
+In order to do that, label propagation has to be synchronized so that the set of pending updates on which the common subexpression elimination is performed is as large as possible.
+A side eect of the synchronization is the minimization of the number of propagation waves started at each node.
+This can be achieved by using the partial order underlying the dependency network.
+A non-trivial subproblem is the incremental actualization of this topological information based on the structure of the strongly connected components of the dependency network.
+An ecient -incremental algorithm maintaining this information as new justications are added was developed.
+4 An example  Suppose the following justications are communicated to the ATTMS (assumptions are denoted with capital letters)3 : (A ^ B ) r) (B ^ C ) ?
+) (A ) d5  T2 ; T1  6e) (B ) d3  T3 ; T2  4e) (C ) d1  T3 ; T2  3e) (D ^ dT1 ; T3  ;6e ) s) Now the label propagation in the ATMS is started.
+After it has is nished, the logical labels of the nodes in the ATMS are updated to4 hr fAB gi hdT1 ; T3  ;6e fgi hs fgi hdT2 ; T3  ;3e fB gi hdT2 ; T3  ;1e fB C gi: As this causes changes in the logical labels of some temporal nodes, the corresponding temporal labels in the ASTP-graph change as well.
+The ASTP-graph then looks as follows:  #"f fi gg T !
+fi fi0 ]    D zzzz DDDDDD z DDDD ffi1fi]gzzzzzz DffiD;3B] fi;1C ] fi1fi]g z z f fi4B ] fi3C ] fi1fi]g DDDD z z DDDD zzzzz ffi1fi]g DDD z zzz ffi6A] fi1fi]g <  3  b   # T fi f fig !
+fi0 ]  O  o  #"f fi gg T !
+fi  2  /  ffi;5A] fi1fi]g  O  D zzzz DDDDDD z DDDDffi;3B] fi;1C ] fi1fi]g ffi10AB] fi9AC ] fi1fi]zg zzzzz DD z z zzz ffi4B] fi3C ] fi1fi]g DDDDDD z z z ffi;8AB] fi;6AC ] fi1fi]g DDDD D zzzzz ffi6A] fi1fi]g 3  b   # T f fi g fi !
+ "f fi g fi ! "
+|  1  fi0 ]  /  ffi;5A] fi1fi]g  o  O  T2  fi0 ]  O  This causes several logical labels to change.
+Here are the labels of a few selected nodes in the ATMS: hr fAB gi hdT1 ; T3  ;6e fAB AC gi hs fABD ACDgi hdT3 ; T1  9e fAC gi: Suppose that a new justication (A ) dT3 ; T1  7e) is added to the ATTMS now.
+As 7 A] v 10 AB] and 7 A] v 9 AC], the temporal label of the ASTP-edge T1 !
+T3 can be simplied to f7 A] 1 ]g: After the subsequent completion of the temporal labels with the Floyd-Warshall algorithm, the ASTPgraph looks at follows:  #"f fi gg T !
+fi fi0 ]    D zzzz DDDDDD z DDDD ffi7A] fi1fi]gzzzzzz DffiD;3B] fi;1C ] fi1fi]g z z f fi4B ] fi3C ] fi1fi]g DDDD z z zzzzffi;8AB] fi;6AC ] fi1fi]g DDDDDD D zzzzz ffi6A] fi4AB] fi1fi]g <  3  b   #fi T f!
+;  " fi  !f fi g "  |  1  /  o  O  fig  fi 1AB ] fi0 ]  ffi;5A] fi1fi]g  T2  fi0 ]  O  Since the label of the ASTP-edge T1 !
+T1 is containing a relative temporal distance ;1 AB] with a negative distance value, the environment AB is discovered as being inconsistent.
+This produces a new nogood AB for the ATTMS and all environments that are a superset of this nogood have to be removed from the logical labels in the ATMS.
+In addition, all relative distances with environments which are a superset of the new nogood have to be removed from the temporal labels in the ASTP.
+Eventually, the ASTPgraph looks as follows:  #"f fi gg T !
+fi fi0 ]    D zzzz DDDDDD z DDDDffi;3B] fi;1C ] fi1fi]g ffi7A] fi1fi]gzzzzzz DD z z zzz ffi4B] fi3C ] fi1fi]g DDDDDD z DDDD z z ffi;6AC ] fi1fi]g D zzzzz ffi6A] fi1fi]g  fi0 ]  3 (A ) d5  T2 ; T1  6e) is an abbreviation for the three justications (A ) dT2 ; T1  6e) (A ) dT1 ; T2  ;5e) (dT2 ; T1  6e ^ dT1 ; T2  ;5e ) d5  T2 ; T1  6e).
+4 A node n with label l(n) is written as hn l(n)i  fi0 ]    <  "  |  1   T " fi  !f fi g  Now the Floyd-Warshall algorithm must recomplete the temporal labels in the ASTP-graph:  <  3  b   # T fi f fig !
+fi0 ]  O  o   T " fi  !f fi g "  |  1  2  /  ffi;5A] fi1fi]g  O  fi0 ]  The logical labels of the interesting nodes in the ATMS are then given by: hr fgi hdT1 ; T3  ;6e fAC gi hs fACDgi:  5 Related work  Only a few approaches can be found in the literature which attempt to merge assumption-based reasoning with temporal reasoning.
+All these systems share the application domain \model-based diagnosis".
+Propositions are associated with time points or time intervals in order to model states at certain time points or during time intervals.
+A rst attempt to integrate temporal reasoning into an ATMS was made in DF89].
+In this approach, propositions, assumption sets and intervals are related via a global table.
+Symbolically represented time intervals are propagated similar to assumptions along time-independent logical justications resulting in expressions over intervals.
+The temporal dimension is just a second indexing scheme besides the assumption sets.
+HEART JR90] combines propositions and time intervals with start and end points instantiated with numbers.
+The result of this combination (called an episode ) is treated as a node.
+Assumptions as well as antecedents and the conclusion of a justication are episodes.
+\Environments" are sets of episodes.
+As the assumptions are structured in a purely propositional and an interval component, the notion of label minimality is generalized.
+In order to keep \labels" minimal, episodes with the same propositions and overlapping intervals are merged.
+Redundant episodes (based on interval inclusion) are removed.
+In an eATMS justication TL93] every proposition P is associated with a time point variable t or the set of all time points .
+Justications have the form P1:t1 ^ : : : ^ Pk :tk ^ R(t1  : : : tk) ) Q:f(t1  : : : tk ) where the ti are time point variables or , R is a predicate over tuples of time points enabling the specication of temporal relations and f is a function mapping tuples of time points to time points.
+Assumptions are time-independent.
+The label of a time-independent proposition is a set of ordinary ATMS labels indexed with time points instantiated with numbers and are only minimized w.r.t.
+the  entry.
+The ATMS propagation algorithm is extended to handle justications of the form described above.
+One disadvantage of this approach is that the termination of the propagation algorithm is not guaranteed because there are temporal variables in justications allowing innite deductions.
+Another disadvantage is the restriction to time points.
+In the TARMS HNP91], the most complex of these hybrid systems, the assumptions are timeindependent as well.
+The temporal information is  represented in the labels of time-independent propositions, which are sets of ordinary ATMS labels indexed with xed time intervals.
+These labels are minimized by merging adjacent intervals when they are associated to the same ATMS labels.
+The justications are splitted in two parts: an ATMS-like justication and a temporal method.
+The temporal method determines the intervals used in the consequents' label depending on the labels of the antecedents.
+Using dierent temporal methods, a variety of temporal relationships can be modelled.
+None of the systems mentioned here is able to process temporal constraints as usual temporal reasoning systems do because they are not able to solve temporal constraint satisfaction problems.
+Also, inconsistencies in the temporal dimension are not handled as nogoods in the ATMS.
+Furthermore these systems are not suitable for scheduling applications because no metric temporal information can be processed.
+Time map management systems as the well known TMM DM87] do not support the simultaneous management of multiple contexts.
+They are therefore not well-suited as support systems that have to manage assumptions explicitly which is important in application domains like planning and scheduling.
+A main dierence between our approach and the approaches cited is the treatment of temporal constraints as nodes, which can be justied in the same manner as other nodes and therefore can have dierent status in dierent contexts.
+6 Summary and future work  We have presented a hybrid system integrating assumption-based logical and temporal reasoning.
+This system is a common generalization of the ATMS and an assumption-based temporal reasoning system.
+The resulting hybrid system (the ATTMS) is especially suited to support integrated planning and scheduling.
+The system is implemented already in Common Lisp, but some more work has to be done in order to evaluate and improve the performance of the overall system.
+We are currently investigating the formal complexity of subalgorithms and of the whole system.
+We are also thinking about what an interface to a problem solver on a higher level of abstraction might look like.
+Other temporal reasoning approaches including Allen's interval algebra All83] will have to be examined whether they can be extended in an assumption-based manner and integrated into the ATMS.
+The approach of Allen in a sense also uses the Floyd-Warshall algorithm, which is not complete for Allens interval algebra.
+It would be interesting to investigate the restriction to the maximal subclass ORD-Horn of the interval algebra found by Nebel NB93] for which the Floyd-Warshall algorithm is complete.
+Last but not least we are evaluating the practical suitability of our approach based on several larger planning and scheduling problems.
+References  AHU74] Aho, A. V. Hopcroft, J. E. Ullman, J. D.: The Design and Analysis of Computer Algorithms.
+Addison-Wesley, Reading, MA,  1974.
+All83] Allen, J. F.: Maintaining Knowledge about Temporal Intervals.
+Communications of the ACM, 11(26):832{843, 1983.
+BG94] Beckstein, C. Geisler, T.: An Improved  Dependency Network Management Algorithm for the ATMS.
+Technical report,  IMMD8, Universit!at Erlangen-N!urnberg, 1994.
+In preparation.
+BLS92] Beetz, M. Lindner, M. Schneeberger, J.: Temporal Projection for Hierarchical, Partial-order Planning.
+Technical Report AIDA-92-15, FG Intellektik, TH Darmstadt, 1992.
+CLR90] Cormen, T. H. Leiserson, C. E. Rivest, R. D.: Introduction to Algorithms.
+MIT Press/McGraw-Hill, Cambridge, MA, 1990.
+DF89] Dressler, O. Freitag, H.: Propagation of Temporally Indexed Values in Multiple Contexts.
+In: Proc.
+GWAI-89, Eringerfeld,  dK86]  pages 88{99, 1989. de Kleer, J.: 1.
+An Assumption-based  TMS, 2.
+Extending the ATMS, 3.
+Problem solving with the ATMS.
+Arti cial Intelligence, 28:127{224, 1986.
+DM87] Dean, T. L. McDermott, D. V.: Temporal Data Base Management.
+Arti cial Intelligence, 32:1{55, 1987.
+DMP91] Dechter, R. Meiri, I. Pearl, J.: Temporal Constraint Networks.
+Arti cial Intelligence, 49:61{95, 1991.
+Gei94] Geisler, T.: Ein anwendungsunabhangiges Unterstutzungssystem zum integrierten annahmenbasierten temporalen Schlieen.
+Diplomarbeit, Universit!at Erlangen-N!urnberg, IMMD8, 1994.
+HNP91] Holtzblatt, L. J. Neiberg, M. J. Piazza, R. L.: Temporal Reasoning in an Assumption Based Reason Maintenance System.
+Technical Report M91-22, MITRE, Bedford, MA, 1991.
+IK83] Ibaraki, T. Katoh, N.: On-Line Computation of Transitive Closures of Graphs.
+Information Processing Letters, 16:95{97, 1983.
+JR90] NB93]  Joubel, C. Raiman, O.: How Time Changes Assumptions.
+In: Proceedings of  the 9th European Conference on Arti cial Intelligence (ECAI '90), Stockholm, 1990.
+Nebel, B. B!urckert, H.-J.
+: Reasoning about Temporal Relations: A Maximal Tractable Subclass of Allen's Interval Algebra.
+Technical Report RR-93-11, DFKI,  Saarbr!ucken, 1993.
+RR91] Ramalingan, G. Reps, T.: On the Com-  putational Complexity of Incremental Algorithms.
+Technical Report TR 1033, Univer-  TL93]  sity of Wisconsin, Madison, 1991.
+Tatar, M. M. Letia, I.
+A.: Embedding Tem-  poral Reasoning into the ATMS Framework.
+In Puppe, F. G!unther, A., editors: Expertensysteme '93 (XPS-93), Hamburg,  pages 276{282, 1993.

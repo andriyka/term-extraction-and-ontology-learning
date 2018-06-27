@@ -1,0 +1,370 @@
+Towards Symbolic Strategy Synthesis for Aidan Harding, Mark Ryan School of Computer Science University of Birmingham Edgbaston Birmingham B15 2TT UK ath,mdr@cs.bham.ac.uk  Abstract We provide a symbolic algorithm for synthesizing winning strategies in Alternating Time Temporal Logic.
+ATL has game semantics, which makes it suitable for modelling open systems where coalitions of agents work together to achieve their goals.
+A typical use of the algorithm would begin with a highly non-deterministic set of agents, , for which we wish to synthesize behaviour.
+These may be composed with a set of opponent agents, which provide an environment.
+The desired behaviour is then written in LTL, and a strategy for to implement this is synthesised.
+If implements this strategy, then the system will be guaranteed to satisfy the desired property.
+The algorithm presented here is part of a work in progress and updates can be found at http://www.cs.
+bham.ac.uk/Eath/atl_synthesis.
+1 Introduction The aim of this work is to synthesize strategies for indZnite games.
+These games can serve as models for reactive programs, and thus a winning strategy can be used as a prescription to automatically generate program code.
+The formalisms that we use to describe these games are Alternating Transition Systems (ATS) and Alternating Time Temporal Logic (ATL) [1].
+The algorithm used for this synthesis is very similar to that used for model checking ATL AL (which checks for the existence of winning strategies).
+In fact, the synthesis algorithm runs the model checking procedure at the same time as recording the strategy.
+Using an extra automaton to summarise the history of the computation, we generate a stateful strategy.
+The implementation technology for our synthesis algorithm will use the BDD approach of symbolic model check-  -LTL  Pierre-Yves Schobbens Institut daInformatique FaculteEs Universitaires de Namur Rue Grandgagnage 21 5000 Namur Belgium pyschobbens@info.fundp.ac.be  ers [6, 8].
+Symbolic model checking has allowed the size of computable examples to be increased by orders of magnitude, and to our knowledge, has not hitherto been applied to program synthesis.
+This encoding is more than a mere detail of the implementation a it informs how the synthesis algorithm is written.
+By keeping one eye on the symbolic implementation, we can not only tackle larger problems, but also hope to produce a prototype quickly by modifying/extending the symbolic model checker, M OCHA [11].
+The games we consider are played by a set of agents,  , and proceed in rounds.
+At each round, all players move  simultaneously and the combination of their moves decide a unique successor state for the game.
+The specidZcations (winning conditions for the game) are written in Alternating Time Temporal Logic (the specidZc fragment is LTL, see Section 2.2) a they assert a capability for some set  .
+A strategy is a function which takes a of agents sequence of states in the game (the history), and returns a choice for a given agent.
+If, by following a particular strategy, an agent will satisfy the winning condition, it is called a winning strategy.
+The games are not determined i.e.
+for a given state there may be no winning strategy for either the agents, , or their opponents,  .
+In the notation of ATL, we may have   fi   .
+Synthesizing strategies has a number of potential benedZts:   For program synthesis: Once we have obtained a (dZnite state) winning strategy in a reactive system, , it is a relatively trivial matter to encode that strategy into a new system Az which implements the strategy.
+The relationship between these two systems can be dedZned as a redZnement up to the hiding of any new variables, , Az will satisfy  i.e.
+if and whilst  satisdZes we ignore the values of new variables, any trace of  Az is a possible trace of , and all traces of  Az satisfy .
+Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  For veridZcation: we can provide more than a yes/no answer.
+In the positive case, it may be that the specidZcation is satisdZed vacuously (e.g.
+a badly formed ATLAL specidZcation such as   fi    F	 fi    is satisdZed if the initial state satisdZes fi fi  ).
+Providing a winning strategy may reveal such errors in specidZcation.
+In the negative case, model checkers usually provide a counter example in the form of a trace to show how a property is violated.
+This trace may not be the most useful one to help the programmer in dZnding a bug.
+A counter-strategy would encapsulate many different possible traces and thus it could provide a more intuitive explanation of why a property fails.
+In the following section we provide an introduction to Alternating Time Temporal Logic; Section 3 describes the synthesis algorithm (with a running example); Section 4 discusses the corretness of the algorithm; and Section 5 contains some concluding remarks.
+A    fi  Az	 is a transition function from a state, , and an agent, , to the set of as choices.
+as choices are sets of states, and one particular choice,  , is taken by each agent in each round of the game.
+Successive states of the system are found by taking the intersection of one choice each for all agents AzAS  .
+A  The transition function is non-blocking and unique i.e.
+for every state, and vector of choices, one for each agent, the intersection of these choices is singleton.
+For two states  ,  Az and an agent ,  Az is an a-successor of  if there exists some   A   such that  Az   .
+The set of -successors of  is denoted   .
+For two states  and  Az ,  Az is a successor of  if   fi  Az    .
+A computation, , is dedZned as an indZnite sequence of states Az  A"  Az     such that for all   , AVA" is a successor of  .
+Subsegments of a computation path    Az  A"     are denoted by postdZxing an interval in square brackets.
+For example,   	         ,  		       and 	   .
+2.2  -LTL Syntax  2 Alternating-Time Temporal Logic Alternating-Time Temporal Logic [1] (ATL) is a temporal logic for reasoning about reactive systems comprised of agents.
+It contains the usual temporal operators (next, always, until) plus cooperation modalities, e.g.
+ , where is a set of agents.
+This modality quantidZes over the set of behaviours of the system and means that have a collective strategy to enforce , whatever the choices of the other players.
+ATL generalises CTL, and similarly ATL AL generalises CTLAL , -ATL generalises the -calculus.
+These logics can be model-checked by generalising the techniques of CTL, often with the same complexity.
+For our purposes we shall concentrate on the fragment that we have termed  -LTL  2.1 Alternating Transition Systems ATL is interpreted over Alternating Transition Systems (ATS) which are Kripke structures, extended to represent the choices of agents.
+An ATS is a 5-tuple  fi   A  where   is a set of propositions  fi  is a set of agents   is a set of states     AL maps each state to the propositions which  are true in that state  Let  be a set of atomic propositions and fi a set of agents.
+Formulae of  -LTL are formulae of LTL, predZxed with a cooperation modality.
+The grammar of  LTL is given by:                 fi   A"  Az      fi   A"  Az   X   A"  Az   A" Az where    are atomic propositions, and  fi is a set  of agents.We use the usual abbreviations for ,  in terms of fi, .
+The operator   is a path quantidZer, and X,  (until) and  (release) are temporal operators.
+As in CTL, we write F for  , and G for  .
+2.3  -LTL Semantics and Strategies To dedZne the semantics of  -LTL, the notion of strategies is used.
+A strategy for an agent  is a mapping   AV   such that for all   AL and all   , we have       A  .
+The strategies map dZnite predZxes of -computations to a choice in A   as suggested by the strategy.
+We also dedZne collaborative strategies for a set of agents, .
+A collaborative strategy is a mapping fi  AV   such that for all   AL and all   , we have fi      fi   fi  Azfi     A  .
+The outcomes of a strategy must also be dedZned.
+For a state  , a set of agents , and a family of strategies fi        the outcomes of fi from  are  Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  A  denoted  fi  .
+They are the  -computations that the agents in  can enforce by following their strategies.
+  Az fi A" fi Az    is in  fi   if   Az and for all positions 	  AVA" is a successor of  satisfying AVA"     fifi 	.
+A  The semantics of -LTL are dedZned inductively, with propositional formulae, negation, and disjunction handled in the usual way:  fi fi fi      AZ   iff there exists a set,  , of strategies, one for each agent in , such that   fi  , we have  AZ       AZ   AZ A"  Az iff 	 fi	fi  AZ Az and  	   	fifi  AZ A" .
+fi  AZ A"  Az iff 	 , we have fi	fi  AZ Az unless there exists a position  	   	 such that fifi  AZ  AZ X iff fifi  A" .
+3 The Synthesis Procedure If  AZ , then there is a strategy for  to obtain  from  .
+Given a system, we aim to check for the existence of a winning strategy.
+When there are possible winning strategies, we will synthesize one.
+The synthesis procedure is summarised below, and the following subsections explain each step in detail.
+We dZrst construct some automata, and then run the synthesis algorithm on the composition of these automata.
+An example accompanies each step of the process.
+The inputs to the algorithm are an Alternating Transition System, , representing the program (game) and a specidZcation, , in -LTL.
+The outputs are a set of states in  for which  holds, and a strategy which ensures  from those good states.
+At an abstract level, the synthesis runs as follows: 1.
+Generate a BuEchi automaton for .
+This is done in the standard way [10], with some care taken to ensure that it can be done symbolically.
+We call it the specidZcation automaton and write is as  .
+Let  be its set of accepting states.
+2.
+Create a memory automaton,  , for .
+This is a partially-determinised version of  , where each state is a set of states from  .
+For efdZciency, we do not complete the determinisation by taking into account accepting states.
+Rather, we will use  and  together.
+ has the advantage that its transitions are uniquely determined by the propositions of , so it will be deterministic when they are run together.
+3.
+Use a modidZed version of the Emerson-Lei algorithm [4] on all three automata ,  , and  .
+The algorithm will dZnd the states in  from where  can force paths that are accepted by  , i.e.
+they reach  indZnitely often.
+During this calculation, the necessary steps for  are recorded into a strategy which relies on the current state of  to summarise the history of the game.
+3.1 Generating the SpecidZcation Automaton We are presented with an ATS,   fi fi fi   fi A , and a specidZcation .
+The parts of the ATS are dedZned in Section 2.1 above, and  is simply an LTL formula over .
+The dZrst step of the algorithm is to construct a symbolic representation of the tableau automaton,  , for .
+This construction is similar to that given by [3].
+The state space of this automaton is fi     where  is the set of states over a new set of propositions,  , introduced to characterise each temporal operator in .
+ is made up of three sets:  ,  , and  .
+For each occurrence of a temporal operator in , we introduce a new proposition.
+For  A"  Az , we introduce  XA'	A"  	Az Al   .
+For A"  Az , we introduce XA'	A" 	Az Al   .
+For X, we introduce  X	   .
+The original formula can now be re-written in terms of    by recursively applying the following rules:    Az  A"   A'	A"  	Az Al     Az  A"   A'	A" 	Az Al  X  X	  A" Az  A"  Az   (  ) (  )  (  )  By performing this translation once on , we obtain  Az which is in terms of    .
+The set of initial states of  is Az  Az       Az AZ Az  i.e.
+the set of states which are consistent with  Az .
+Of course, this set is easily represented by the BDD for  Az .
+The rule  , below, allows us to dedZne the transitions.
+	A"   A"  (  )  To dZnd the successors of a state,    fi , we forget the  part of the state and apply   to each proposition in  (these are the propostitions which describe the future).
+We write this application as    , to mean     A' fiA'AlAl  .
+This gives a new formula over    , which describes the next state.
+We simply strip the primes, and start the procedure again by replacing temporal operators using  ,  , and  .
+Clearly, all of this can be done symbolically.
+The sets of states are dedZned by formulae over their propositions, so these provide the functions that the BDDs will represent.
+Each of the subsequent operations on the sets of states can be performed by substitutions.
+A  Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  module Server external request : bool interface send : bool  XG  atom controls send reads request, send update [] true -> senda := nondet endatom endmodule    XG   XG   XF  XG  XF  XG  System := Client || Server  module Client interface request : bool   XF  XG  atom controls request update [] true -> requesta := nondet endatom endmodule Figure 1.
+M OCHA code for the example system  Example To demonstrate the algorithm we shall introduce a running example.
+The M OCHA code for the input system is given in Figure 1.
+A Client can make requests as often as it likes, and the Serveras behaviour is to nondeterministically send responses (ignoring the input provided).
+The (fairly trivial) specidZcation formula is  Gfi  F	 (we will abbreviate fi as  and 	 as , thus    fi).
+The synthesised system should insure that any request from the Client is eventually followed by a response from the server.
+Constructing the BuEchi automaton proceeds as follows: 1.
+Calculate the set of new variables: XGA'  F Al   XF fi      XF  XG  A'  F Al  A'  A'  Al  Al  A'    F Al  3.
+The set of initial states are those that satisfy Explicitly, XGA' FAl fi   XGA' FAl fi,  XF  XGA' FAl fi  XGA' FAl fi, XF  XGA'     F     XF   XG F  XF  XG F  F    F   XF  XG F   XGA'  Al  .. .
+2.
+Rewrite the LTL part of in terms of  and  to obtain Az  Figure 2.
+The nondeterministic BuEchi automaton for Gfi  F	.
+(XF is used to abbreviate XF , and XG for XGA' FAl ).
+The propositions in  are drawn on states rather than arrows for brevity.
+If in state fi   , the automaton reads the input fi   , it may transition to any succesor which contains fi in its label.
+Double circles denote accepting states.
+Az.
+FAl fifi  4.
+Conditions on succesor states are calculated by applying  to the inital states, then stripping primes and making substitutions for temporal operators with   and fi .
+5.
+This gives us a new set of states from which to search for successors.
+The process is repeated until no new successors are found.
+The automaton is drawn out explicitly in Figure 2.
+3.1.1 Adding Fairness So far,  does not force liveness formulae to be satisdZed.
+We will add fairness constraints to address this, and thus enforce the semantics of LTL.
+For each subformula   	  A"  Az of , we introduce a fairness constraint   	X  	 A"  Az .
+This allows Az .
+In terms of     ,   for loops where   is always false, but as soon as it becomes  Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  true, and  ensure that  can only be satisdZed by  Az being encountered.
+A BuEchi automaton accepts paths which visit the set of accepting states,  , indZnitely often.
+When we have a set, fi , of constraints where fi  ,  must be augmented by extra variables in order to construct  .
+These variables will monitor the satisfaction of the fairness constraints without affecting the existing transitions.
+The set of accepting states will then be those where the monitors bear witness to all fairness constraints having been satisdZed.
+We use one bit,  for each constraint,   .
+ values are checked off as the constraints that they observe are satisdZed.
+When they are all satisdZed, the bits are reset.
+We distinguish the states where all  are true as the set of necessary states,  ; we distinguish the initial state of the fairness constraints, where all  are false, as Az .
+The transitions of   are characterised by  , below.
+       	  fi         fi      fi Az  fi  fi     fi Az  fi  fi    XGA' FAl   XF  XGA'     F    XGA'    Al   F  Al               Figure 3.
+A BuEchi automaton to accept a language with indZnite number of s and s   XGA'     fi  	 fi  	 	  	 	 fi     	 fi        Example Continuing with the example from above, there is one fairness constraint   Az fi fiXF  .
+So there is no need to involve  .
+The BuEchi condition is that an accepting path must go through one of the following states indZnitely often (drawn with double circles in Figure 2):       same language and are related by 	 i.e.
+  ( ) So we extend the state space of  to include a new set of propositions,  , whose values are dedZned by  .
+We require that  is true indZnitely often.
+This completes the construction of the specidZcation automaton.
+    F  Al   3.2 Constraints on the SpecidZcation Automaton In order for the synthesis algorithm to work correctly, we need to ensure that  satisdZes certain criteria.
+More detailed reasoning can be found in Section 4, but here we introduce the terms and show how they apply to our construction.
+For the interaction between the specidZcation and the memory to be correct, we would like  to be globally reverse deterministic [5] ([2] calls such automata unambiguous).
+This means that each accepted word has exactly one path in the automaton, or to put it another way, the languages accepted by any two states in  are disjoint.
+In practice, this is too strong a restriction, and we dedZne a relation, 	, on the states so that we can have  globally reverse deterministic up to 	.
+We dedZne 	 is such a way as any two states in  either have disjoint languages or they accept the  (1)     (2)  This relation is required because our automaton deals with fairness.
+Consider Figure 3, it shows an automaton to accept the language with an indZnite number of s and s.
+Since the s and s could occur in any order, by necessity, all of the states accept the same language.
+When we impose fairness constraints on  , much the same thing happens: We get distinct states that accept the same language.
+By the construction of  we know that it will be globally reverse deterministic upto 	.
+We further need it to be locally reverse deterministic up to 	.
+This means that any two states which transition into the same state, with the same label are related by 	.
+   	  A    A		  fi       	    (3)  If the language of a state is empy, we call it a dead state.
+By removing dead states, we can ensure that our globally reverse deterministic automata is also locally reverse deterministic; therefore we remove the dead states.
+To do this, we use the algorithm in Figure 4.
+This dZnds the set of states which can reach  indZnitely often, thus those that have a non-empty language.
+It works with a nested dZxpoint computation, accumulating its result in the variable  .
+Initially, our target,  , is just  and we perform reachability to dZnd the set of states,  which can reach  .
+This is the new value for  ; and the new target,  , is    i.e.
+the states in  that can reach  again once.
+We then do reachability on  to dZnd the states which can reach  twice.
+The process is repeated until  reaches a dZxpoint, at which time  is the set of states that can reach  indZnitely often.
+Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE    repeat counted by          fi  repeat counted by    	    until  stabilises  ;          until stabilises  Figure 4.
+The Emerson-Lei algorithm.
+NB  	   returns the set of states which can transition to   in one step  be dedZned by   and  .
+The choice of variables from  that are admitted to   is dependendent on the variables in fi.
+We look at the possible valuations for the variables in fi to dZnd distinct cases in  .
+This can easily be done with BDDs by ordering the fi variables before the  variables and then identifying unique subtrees in the  layers.
+The fi root of each subtree in the  layer dedZnes one case,   .
+Each case gives rise to a goal,   , over  .
+For each case, we apply   , replace any temporal operators with their propositional identities (using  fi ,  , and  ), and strip primes to obtain a formula representing the next state (this part is the same process as used in section 3.1, above).
+The fi part of the successor state is simply derived from   .
+We repeat this process of dZnding successors for each of the resulting states, continuing until  stabilises.
+Example  3.3 Creating the Memory Automaton As the name suggests, the memory automaton,  , will provide the memory for the strategy.
+Intuitively, the specidZcation tells us exactly what we need to remember.
+We could start off with the specidZcation formula, and modify it as requirements are added or met.
+In fact, this is exactly what  does.
+Looking at Figure 2, we see that whenever an  is read, unless it is matched with an , the  XF remains until an  is seen.
+However, we cannot use  as the memory because it is non-deterministic.
+When the strategy is to be used, we would have to record not just a move in the game, but also a move in the memory.
+Instead, we partially determinise  with the subset construction to give an automaton which has deterministic transitions, and enough states to characterise every run of  .
+Although  is (forwards) non-deterministic, it is reverse deterministic and will only be used in the backwards computation of the synthesis algorithm.
+This combination of forwards and reverse determinism are enough to generate a strategy (this claim is justidZed, in Section 4).
+Each state in  will correspond to a set of states from  , or equivalently a formula over fi   .
+So, each state of  represents the goal that we are currently trying to achieve.
+Although we have a symbolic construction below, the states of  are as those that would be found by applying the usual subset construction to  .
+The set of accepting states, however, is not dedZned.
+This is to avoid the complexities of determinising the winning condition of a BuEchi automaton [9].
+Instead, we will run  and  together, using  in the strategy generation and  to evaluate the winning condition.
+To construct  symbolically, we set the initial state to be the inital goal of  ,  Az fi fiAz .
+The successor states will  1.
+The initial state in the memory automaton for our running example is represented by      XF  fi XGA' F Al .
+2.
+To illustrate the choosing of cases, its BDD is given at the top of Figure 5.
+There are two cases (left and right in the dZgure):  fi  fi  XF fi XGA' F Al and    fi  fi XGA' F Al .
+3.
+Take the dZrst case, we apply   XF fi XGA' F Al , to obtain F fi G  F .
+Applying  fi , and  A' F Al .
+ , and simplifying, we get    XF  fi XG So, one next state is   XF  fi XGA' F Al .
+Since the model is highly non-deterministic, it does not restrict the transitions of  .
+4.
+The second case corresponds to returning to the initial state.
+5.
+Taking cases from    XF  fi XGA' F Al , and extending them we dZnd no more new states, but two new transitions.
+The complete memory automaton is given in Figure 6.
+The two states redZect the important parts of the specidZcation.
+The upper state is for when no requests have been received, or one has just been granted.
+The lower is for when a request is pending.
+As we perform the synthesis, these roles will decide the actions of the strategy.
+3.4 The Synthesis Algorithm The synthesis algorithm (Figure 7) runs over all three automata: the game, , the specidZcation,  , and the memory  .
+States in this statespace are written as triples   , where      	      .
+It is very similar to the  Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE     A'  Al  A'  A'    A'  XF AlAl  Az       XF Al  XG    XGA'  A'    F Al  algorithm used in the removal of dead states (Figure 4) because one part of its job is to do just that: dZnd the set of states in the combined statespace from where fi can force plays which are accepted by the specidZcation component i.e.
+the states that satisfy fi .
+Of course, the synthesis algorithm also generates a strategy for fi to acheive .
+We begin our explanation of the algorithm with a list of the variables used, and their purpose:      fifi          a The set of states from where fi can force  visits to the set of states in the combined statespace where  	 .
+Az begins by including everything, and states are removed as  increases.
+When   stabilises, it is the greatest dZxed point and fi can force an indZnite number of visits to A'   Al  	 .
+fiXF fiXG       Az  XG  Figure 6.
+The memory automaton for A'  fiXG  A"      fiXF  fiXG  XF AlAl      A"    A"  Az      Figure 5.
+The BDD for A' A' XF AlAl XGA' F Al (top) with the unique subtrees in the  layer shown below.
+XF is used to abbreviate XF , and XG for XGA' F Al .
+     	     	 , and fi can  a The set of states, A'   Al, where  force  A" visits to A'   Al  	 .
+NB these later visits may be to states outside  , but still satisfying  	.
+        fi a The set of states from where fi can force play into  in  steps or less.
+As  increases, each  fi is larger than the last until it stabilises at a least dZxed point.
+The states in a stable  fi are all of those that can force play into   in a dZnite number of steps.
+  a The set of states from which fi can force play into     in one step.
+    a The strategy by which there exists    fi A"  fi A'  Al  such that fi can force play from A'  Al into some state in  within  steps.
+Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  Az    fi         fi      fifi ; repeat counted by       Az  fi; 	Az  fi;      fi       ; repeat counted by       fi  fiA" ;        	fiA" ; forall   fi     iffi  fiundedZned  fi  fi   ; endfor 	fi  	fiA"  A" ; until 	fi stabilises   A"  	fi until  stabilises          fi     A    	  	     fi  A fi      A     s.t.
+     fi      Figure 7.
+The synthesis algorithm over three automata, ,  , and  (top).
+The rededZnition of  (bottom)  Consider the dZrst part of the task.
+We want to dZnd the set of states from which the transitions of  provide words accepted by  i.e.
+in the combined automaton,  goes through  indZnitely often.
+The code for this is almost identical to that in Figure 4.
+The difference occurs in the definition of  .
+Normally,   returns the set of states from which there exists a transition into  .
+For our purposes, we need a mix of quantidZers: We want  to be able to ensure that for any next state in the game, it is possible for the specidZcation and memory to transition such that the combined successor must be in  .
+We might call such a predecessor function   .
+As a matter of convenience in building the strategy, we return not just the set of states that can reach  , but with each state we return a choice for  that will reach  .
+This rededZnition of   , we call   and it is given in Figure 7.
+When we write  A"  in the algorithm, this returns the set of elements of  projected to their dZrst element i.e.
+what would have been obtained by  .
+The second part of the task is to generate a strategy for .
+In general, this strategy will require memory.
+In our case, this is provided by the memory automaton,  .
+We leave the question over whether there are enough states in  until Section 4, for now we just assume that there are.
+For each iteration of the inner loop, every element of  is checked for  whether we need to update the strategy.
+An update is made, if the particular  fi combination has not previously been dedZned on this iteration of the  -loop.
+Clearly, when  fi is updated, it is doing the right thing - it picks a choice which (by being in ) is known to be either in    , or closer to it.
+If a combined state has two different choices which may reach    	fiA" , this corresponds to two elements in .
+Which one gets recorded in the strategy is arbitrary, and either would work.
+If a combined state is discovered on two different iterations of the -loop, then only the dZrst instance is recorded in the strategy.
+This is correct, because the dZrst dZnd takes a more direct route to    .
+If two combined states  A"  fi, and  Az  fi where A"   Az are discovered on different iterations of the -loop, then only the dZrst one is recorded into the strategy.
+Say that  A" is found dZrst, we can show that any path which reaches  Az could also reach  A" , thus the use of A" as strategy is sound.
+Example In order to run the synthesis algorithm on our example, we have write the statespace in triples over the system, the specidZcation, and the memory.
+The system states are fi  	 	, where  and 	 indicate the truth value of  and 	, respectively.
+fi is when both are false.
+The specidZcation states are fi 	 XF  	 XF  XF 	 where  	 are as before and  stands for  XF .
+We omit the XGA'FAl part in our notation because it is required in every state.
+The memory states are   	   XF  	  XF , again ommiting the  XGA'FAl .
+We write the triples as in the algorithm e.g.
+    	   XF  1.
+We begin with  A" , which are the reachable states where   fi and    .
+We do not need to worry about , because the specidZcation has only one fairness constraint.
+A"  fi fi   	  XF , 	 	   	  XF , 	 	   	  XF , 	 	   	  XF  2.
+We then dZnd    A"  fi:   fi fi   	  XF  	 	 	 	   	  XF  	 	  	 	   	  XF  	 	 	 	   	  XF  	 	   	  XF  	 	 fi  	  XF  	 	 fi    	  XF  	 	  3.
+Having found a set , we store good moves into the strategy A"A" .
+We just take the dZrst dedZnition for each  fi pairing, because any given one from  will satisfy the specidZcation.
+Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  A"A" A"A" A"A" A"A" A"A"   fifi      fiXF    fifi      fiXF    fifi    fiXF    fifi    fiXF    fifi      fiXF     4.
+Now, A" A" becomes A" , A" Az becomes A" A" and we dZnd   	A"  A" A" .
+The dZrst part of the set is the same as before, but the following extra elements are included:        fiXF    fi        fiXF    fi              fiXF    fi        fiXF    fi      fiXF    fi      fiXF    fi        fiXF    fifi  5.
+In updating the strategy, we dZnd that A" Az is dedZned for every value found in this .
+This is not surprising, because no state is more than one step away from 	 A" .
+The strategy is not changed, because the new choices we have discovered would just postpone reaching 	 A" .
+6.
+We dZnd that A" Az is stable, and so is A" .
+The strategy, is simply for the server to aways be sending, regardless of whether it has received a request.
+A trivial strategy, but a successful one.
+4 Correctness At the time of writing this paper, the proof of correctness is not yet complete.
+When the proof is dZnished, it will be available from http://www.cs.bham.ac.
+uk/Eath/atl_synthesis.
+In the meantime, we provide less formal explanations for why the construction works.
+The dZrst question is whether the algorithm correctly identidZes the set of winning states.
+We would certainly expect that to be true, since our algorithm is based on the one given by Emerson and Lei in [4].
+The only change is the rededZnition of  .
+Our dedZnition differs from the norm by quantifying over the choices enforcable by agents and by having the memory running alongside the game and specidZcation.
+The agent part is well understood from [1].
+We can prove that the memory automaton is not constraining the system by using reverse determinism and its construction.
+Take a state    where    .
+For each state in  , distinct paths back to the set of initial states are labelled by distinct words.
+When a word is put into the memory automaton, its subset construction ensures that the path will  lead to to the same .
+So, when the algorithm looks backwards from 	 , the memory automaton does not prevent it from dZnding states that would be discovered without it.
+We use similar reasoning to argue that there are enough states in  for strategies to remember all that they need.
+Since the dedZnition of a strategy is given when we know that there is a chance to make progress, if there is enough memory then the strategy will be winning.
+5 Conclusions We have presented an algorithm for synthesizing strategies in agent-based systems that can be implemented with symbolic methods.
+Although we do not yet have an implementation to demonstrate the feasability of our approach, the results of symbolic model checkers give us reason to be optimistic for our synthesis algorithm.
+The novel use of partial determinisation has avoided the non-trivial problem of determinising a non-deterministic BuEchi automaton, and the use of a game-oriented temporal logic has provided the ideal setting for the synthesis of open systems.
+The most obvious line of future work is implementation.
+M OCHA [11] is a symbolic model checker for verifying ATL specidZcations against programs written in reactive modules.
+It is available with source, and contains a scripting language, so a prototype should be straightforward to build.
+An interesting theoretical extension of the synthesis algorithm would be to consider incomplete information i.e.
+the notion that agents do not have the ability to read the global state, but just some subset of it.
+Kupferman and Vardi [7] considered this problem for two agents in a CTL/CTL  setting, but there are many situations where three agents with different views would be needed.
+For example, in modelling security protocols where two agents,  and , try to communicate without leaking information to an intruder  , each agent has a different view.
+ and  can only see local information and are forced to communicate over some public channel.
+ can only see what is put on the channel.
+So, even though  and  are cooperating, we cannot amalgamate their views of the system.
+References [1] R. Alur, T. A. Henzinger, and O. Kupferman.
+Alternatingtime temporal logic.
+In Proceedings of the 38th Annual Symposium on Foundations of Computer Science, pages 100a 109.
+IEEE Computer Society Press, 1997.
+[2] O. Carton and M. Michel.
+Unambiguous BuEchi automata.
+Theoretical Computer Science, 297:37a81, 2003.
+[3] E.M. Clarke, O. Grumberg, and K. Hamaguchi.
+Another look at LTL model checking.
+In David L. Dill, editor, Proceedings of the sixth International Conference on Computer-  Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE  [4]  [5] [6]  [7]  [8] [9]  [10]  [11]  Aided VeridZcation CAV, volume 818, pages 415a427, Standford, California, USA, 1994.
+Springer-Verlag.
+E. A. Emerson and C. Lei.
+EfdZcient model checking in fragments of the mu-calculus.
+In IEEE Symposium on Logic in Computer Science, pages 267a278, June 1986.
+E. A. Emerson and A. P. Sistla.
+Deciding full branching time logic.
+Information and Control, 61(3):175a201, 1984.
+J.R. Burch, E.M. Clarke, K.L.
+McMillan, D.L.
+Dill, and L.J.
+Hwang.
+Symbolic model checking: A"AzAzAz states and beyond.
+In Proceedings of the Fifth Annual IEEE Symposium on Logic in Computer Science, pages 1a33, Washington, D.C., 1990.
+IEEE Computer Society Press.
+O. Kupferman and M. Vardi.
+Synthesis with incomplete informatio (sic).
+In 2nd International Conference on Temporal Logic, pages 91a96.
+Kluwer Academic Publishers, July 1997.
+K. L. McMillan.
+Symbolic Model Checking.
+PhD thesis, Carnegie Mellon University, 1993.
+S. Safra.
+Complexity of Automata on IndZnite Objects.
+PhD thesis, The Weizmann Institute of Science, Rehovot, Israel, March 1989.
+M. Y. Vardi and P. Wolper.
+An automata-theoretic approach to automatic program veridZcation.
+In Proceedings of the First IEEE Symposium on Logic in Computer Scien ce, pages 322a331, 1986.
+Mocha.
+http://www-cad.eecs.berkeley.edu/ Etah/mocha/.
+Proceedings of the 10th International Symposium on Temporal Representation and Reasoning and Fourth International Conference on Temporal Logic (TIME-ICTLa03) 1530-1311/03 $17.00 AS 2003 IEEE

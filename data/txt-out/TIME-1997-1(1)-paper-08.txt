@@ -1,0 +1,305 @@
+On Effective Data Clustering in Bitemporal Databases Jong So0 Kim and Myoung Ho Kim Department of Computer Science Korea Advanced Institute of Science and Technology 373-1, KuSung-Dong, YuSung-Gu, Taejon, Korea, 305-701 E-mail : {jskim,mhkim}@dbserver.kaist.ac.kr Abstract  performance of database systems by enabling them to prefetch and/or postwrite transfered blocks of data [l].
+Therefore, it is essential for efficient temporal query processing to adopt a data clustering method designed for temporal database environment.
+Data clustering methods for conventional databases do not perform well in temporal databases because there exist many differences between their query patterns.
+Queries in conventional databases are represented in forms of predicates composed of conditions on attributes of data objects.
+On the other hand, temporal queries include time conditions, that specify the temporal constraints of data objects on time attributes, as well as the conditions of conventional queries.
+Time conditions, which are the most effective filtering conditions in temporal queries, are expressed with special temporal operators on time attributes of temporal data.
+Clustering methods for temporal data objects should take these differences into consideration.
+There has been much work on temporal databases.
+However, as far as we know, there is no full-dress proposal for temporal data clustering.
+[a] addressed the physical organization of temporal data and proposed a data partitioning scheme for range queries and aggregation.
+This work, however, only considered a single time dimension, which is not enough to be applied to general temporal databases.
+[3] proposed a partitioned storage structure for temporal databases and mentioned a data clustering issue under the proposed storage model briefly.
+In this paper, we propose a data clustering measure, called Temporal Ajginity, that can be used for the clustering of temporal data.
+The temporal affinity, which is based on the analysis of query patterns in temporal databases, reflects the closeness of two temporal data objects in viewpoints of temporal query processing.
+The closeness of temporal data objects is an effective data clustering criteria in temporal databases.
+It means the possibility that two data objects are selected together by a given temporal query.
+In our scheme,  Temporal databases provide built-in supports for efficient recording and querying of time-evolving data.
+In this paper, data clustering issues in temporal database environment are addressed.
+Data clustering is one of the most effective techniques that can improve performance of a database system.
+However, d a t a clustering methods for conventional databases do not perform well in temporal databases because there exist crucial differences between their query patterns.
+We propose a d a t a clustering measure, called Temporal Ajginity, that can be used for the clustering of temporal data.
+The temporal ajginity, which is based on the analysis of query patterns in temporal databases, reflects the closeness of temporal data objects in viewpoints of temporal query processing.
+We perform experiments to evaluate the proposed measure.
+The experimental results show that a data clustering method with the temporal ajginity works better than other methods.
+1  Introduction  Conventional databases represent only a snapshot of the real world, that is, the most recent state.
+Temporal databases, on the contrary, maintain past, present, and future data.
+Temporal databases provide users with built-in facilities for recording and querying timeevolving data efficiently.
+They can be applied to many applications where underlying data have temporal properties inherently, such as trend analysis in decision support systems, version control in computeraided design, and medical record management.
+Temporal databases manage a gigantic amount of data to maintain the history of stored data.
+Since query processing in temporal databases requires handling of huge data, efficient disk access is needed for high performance of temporal databases.
+Data clustering is an effective method that can improve the locality of data accesses by clustering related data together in one storage block.
+In general, data clustering methods improve  0-8186-7937-9/97 $10.000 1997 IEEE  54  two data objects with a high affinity are clustered together in one storage block to reduce the number of disk accesses.
+Experimental results are also presented in order to evaluate the proposed temporal data clustering measure.
+Our performance study indicates that a data clustering method with the temporal affinity works better than other methods.
+The paper is organized as follows.
+we describe some preliminary knowledge needed to understand our study, in Section 2.
+In Section 3, we address canonical temporal queries, which is a classification of temporal query patterns.
+We propose the temporal affinity for each canonical temporal query in Section 4.
+Section 5 addresses the application of the temporal affinity to temporal data clustering.
+In Section 6, we discuss performance of a clustering method with the temporal affinity.
+Finally, we conclude with a summary of our contributions in Section 7.
+2 2.1  domain is a sequence of discrete time instants.
+Table 1: A temporal relation Emp-Sal  I  Employee  1  1  Marv  I  2.2  Sex  I  Salary  I  Vs 0  1  Ve  I  Ts  1121 0  1  Te  1  I  3  I  Canonical temporal operators  In temporal databases, special operators are used to specify temporal constraints of data objects.
+Database users can describe various temporal relationships among data objects with these operators.
+For example, TSQL2 [6], which is one of the most important query language in temporal databases, uses when clauses.
+Within the when clauses, a number of temporal operators can be used, including overlap, precede, follow, etc.
+In this work, we mainly focus on 6 temporal operators - overlap, contain, precede, follow, as-of and within.
+We call these operators as canonical temporal operators.
+The selection of these operators are based on the operators addressed in [3, 6, 71.
+Table 2 shows the canonical temporal operators and their interpretations in forms of predicates.
+In the table, d is a temporal data object and d. Vs, d. Ve, d. Ts, and d. Te represent the time attributes of d. An operand t is a time point and (a, b) is a time interval.
+Background Temporal databases  In general, temporal databases support two dimensions of time to model the constantly changing real world: valid time(a time interval during which a fact is true in the real world) and transaction time(a time interval during which a fact is recorded in the database).
+Temporal databases are classified into rollback databases, historical databases, and bitemporal databases (2TDBs) according to the time dimensions supported.
+2TDBs support both valid time and transaction time [4].
+In this paper, temporal databases denote 2TDBs and temporal queries denote bitemporal queries in 2TDBs.
+There have been various proposals to represent temporal data based on the relational data model.
+In this study, we assume the tuple timestamped representation scheme which is addressed in [5].
+Table 1 shows an example of representing temporal data in the tuple timestamped manner.
+An attribute in a temporal relation is one of surrogate, temporal attributes, nontemporal attributes, and time attributes.
+A surrogate is an attribute of a temporal relation which can identify an entity in the real world.
+A temporal attribute is an attribute whose value varies over time.
+A nontemporal attribute is an attribute that have a fixed value over time.
+Time attributes represent the start time and end time of valid time interval and transaction time interval.
+For example, in Table 1, the surrogate of the Emp-Sal relation is Employee and Sex is the nontemporal attribute.
+Salary is the temporal attribute, and Vs, Ve, Ts, and Te are the time attributes of the relation.
+In this work, we assume that the temporal  Table 2: Canonical temporal operators  Valid  Time  Operator d overlap (a,b) d precede t  d.Vs  Predicate 5 b A d.Ve d.Ve < t d.Vs > t  ( a 5 d.Te  2a  5 b)v  The meanings of the above four valid time operators are clear.
+The as-of transaction time operator finds a valid version of a real world entity at a given time point.
+An operand of the as-of operator means a reference time - a time point on which query processing is based.
+In the same manner, the within transaction time operator finds all valid versions during a given time interval.
+The within operator is used for the version scanning of a real world entity.
+55  3  Analysis of temporal queries  operators are used.
+T h e n t h e closeness of d l and d2 f o r q, C(dl,d2,q), as defined a s t h e probabalaty that q selects d l and d2 together.
+Since there are a variety of temporal query patterns depending on the temporal operators used in the query, we choose typical query patterns based on [3, 7, 81 and call them as canonacal t e m p o r a l queraes.
+The canonical temporal queries contain the following types of temporal queries:  From the above definition, it is clear that to cluster d l and d2 having a large C ( d l , d 2 , q ) value is advantageous for efficient processing of q.
+Though there could be many different types of q, we focus on canonical temporal queries which have been shown to be the most useful and effective for general temporal database applications.
+Reference time query This type of query specifies a past/future snapshot of a database and is evaluated based on the specified database state.
+The canonical transaction time operator as-of is used in the query.
+It is also known as rollback query.
+4.2  Version scanning query It finds data objects which correspond to several versions of a real world entity.
+The canonical transaction time operator wathan is used.
+Temporal affinities with respect to the canonical temporal queries  Reference time query  To be selected by a reference time query, a temporal data object must have a transaction time interval which contains the time point given in the query.
+Figure 1 shows time relationships of three temporal data objects d l , d2, and d3.
+Historical query It inquires the real world history of data objects in temporal database.
+One of the canonical valid time operators, precede, follow, overlap, and contaan, is used.
+4  ;  tl  Te  i  j i  k: j d3  Ts  Te  TimeLine  t2  Figure 1: Time relationships of temporal data objects for reference time queries  As illustrated in Figure 1 , in order that d l and d 2 are selected together by a reference time query, the parameter value t l of a reference time query must be in [ d l .
+T s , d2.Te].
+In case of d l and d3, the parameter value t2 must be in [ d S .
+T s , d l .
+T e ] .
+From this observation, we can notice that, in reference time queries, the closeness of two temporal data objects has a close relationship with the length of overlap of their transaction time intervals.
+Therefore, temporal affinity with respect to the reference time queries is defined as follows.
+It computes the length of the overlapped transaction time interval for two temporal data d l and d2.
+Temporal affinity of temporal data  objects In this section, we address the temporal affinity of temporal data objects.
+We will first define the closeness of two temporal data objects in viewpoints of temporal query processing.
+Then we derive a temporal affinity, which reflects the closeness of temporal data objects, for each canonical temporal query.
+4.1  Te  ifdZ  b  To understand the canonical temporal queries more clearly, let's consider an example in Table 1.
+Table 1 is a temporal relation that represents the time-varying salaries of employees.
+Consider the query, "What is Peter's salary during time range [2, 51 as of time 2."
+It is a reference time query because it finds Peter's salary based on the database state at time 2.
+It is also a historical query since it asks the real world history of Peter's salary.
+The query, "Get all the records of Mary's salary that have existed during time range [a, 41," is an example of version scanning query.
+4  dl  Ts Ts  +  (dl.Te - dl.Ts) (d2.Te - d 2 .
+T ~ ) - (ma,( d l .Te, d 2 .Te) - min(d l .T s,d 2 .T s))  AF,(dl, d2) =  Closeness of temporal data objects  I  ( 0  if dl.Te  2 d2.Ts A d2.Te 2 d1.T.s  otherwise  As we mentioned earlier, the closeness of temporal data objects means the possibility that two temporal data objects are selected together by a given temporal query.
+The closeness of two temporal data objects is defined as follows:  Theorem 1 A F r ( d l ,d 2 ) as proportaonal t o C ( d l , d 2 , qr) f o r a reference tame query qr.
+Definition 1 L e t dl, d2 be t w o temporal data objects a n d g be a t e m p o r a l query in which canonical temporal  Proof: Let d l , d2, and d 3 be temporal data objects.
+Assume that A F r ( d l ,d2) = c y , AF,(dl, d3) = /3, and  (1) The following theorem shows the feasibility of AF,..  56  Q > /?.
+To prove Theorem 1, it is sufficient to show that the probability of selecting d l and d 2 together ( p l ) is greater than the probability of selecting d l and d3 ( p 2 ) for any reference time query.
+Let t be a parameter value of a reference time query which is evaluated at time Trio,.
+Also let bt(dl,dZ) be the length of overlapped transaction time interval of d l and d2.
+Then,  data objects d l and d2.
+Tnow  &.
+Version scanning query  Version scanning queries find temporal data objects which correspond to a number of versions of a real world entity.
+The parameter [ t s , t e of ] a version scanning query specifies the time range to which transaction times of the selected data objects belong.
+A temporal data object is selected by a version scanning query only if its transaction time interval and the parameter interval of the query overlap.
+Therefore, two temporal data objects are selected together by a version scanning query only if their transaction time intervals overlap the given parameter interval of the query respectively.
+Figure 2 illustrates time relationships of three temporal data objects.
+otherwise  0  0  d3  to at  5 t , 5 d2.Te A d1.Ts 5 t , 5 Tnow  Ts  d2  Ts  Te  4  Te  dl  /te +  d2.fe Ts  (2)  Proof : Let d l , d2, and d3 be temporal data objects.
+Assume that A F , ( d l , d2) = a , A F , ( d l , d 3 ) = ,f3, a > p, d l .
+T s > d 2 .
+T e 1 and d l .
+T s > d 3 .
+T e .
+To prove Theorem 2, it is sufficient to show that the probability of selecting d l and d2 together ( p l ) is greater than the probability of selecting d l and d3 ( p z ) for any version scanning query.
+Since the current time is TnOw, the maximum value of possible transaction time is T n o w .
+Let [ t s , t ebe ] a parameter of a version scanning query.
+Then t , and t , should satisfy the following condition to select both d l and d2 as in Figure 3:  In the same manner, p2 = Since we assumed 0 that Q > p, it is clear that p l > p z .
+Te  = d2.K  Theorem 2 A F , ( d l , d 2 ) is proportional C(dl,d2,q,) for a version scanning query q, time T,,, .
+CY -  dl  if d1.K  In AF,, T,,, is the time when the affinity is evaluated and d 1 .
+K means the surrogate value of d l .
+The following theorem shows the feasibility of AF,.
+range of t to select d l and d 2 all possible range of t It(d1, d 2 ) total time range  Ts  1  AF,(dl, d2) =  min( d l .Te, d2.Te) .
+(T,,, - max(dl.Ts,d2.Ts))  Te  Tnow  dl:Ts  Time Line  Figure 3: Selection of two temporal d a t a objects for a version scanning query  Therefore, in Figure 4, p l is calculated as follows: s-region  e-region  .
+k4  Figure 2: T i m e relationships of temporal d a t a objects for version scanning queries  Tnow dl.Ts  The s-region means the time range to which the query parameter value t , should belongs in order to select two temporal data objects together.
+The e-region is defined in the same way for the parameter value t,.
+In Figure 2, for d l and d2, the s-region is [O,tl] and the e-region is [ta,Tnow].
+For d l and d3, the s-region is [O,t3] and e-region is [td,Tnour].
+Thus the closeness of two temporal data objects for version scanning queries can be determined by multiplying the length of the sregion by the length of the e-region.
+Temporal affinity of temporal data objects for version scanning queries is defined as follows.
+It computes the value obtained by multiplying the length of the sregion by the length of the e-region for two temporal  d2.Te  I  d2.Te dl.Ts  Tnowwts  Figure 4: Probability of selecting two temporal data objects together for a version scanning query  Pl  = -  area in which d f and d2 are selected (Q) total area (T) d2.Te.
+(T,,, - d l .
+T s ) T & & 2  -  57  2.  d2.Te.
+(T,,, T&W  - dl.Ts)  Since min(dl.Te, d2.Te) max(dl.Ts,d2.Ts) = dl.Ts,  = p1  =  x.  d2.Te T,20*.
+notes the maximum time that is permitted in the temporal database.
+The first part of AFh-, is for the case that valid time intervals of two temporal data objects overlap.
+It computes the area Q in which two temporal data objects are selected together as in Figure 6.
+The second part of AFh-, is conceptually identical with AF,.
+and In the  same manner, p2 = Hence, it is clear that T?,, p l > p2 from the assumption, cy > p.  Historical query Historical queries inquire the real world history of data objects in temporal databases.
+Since some of the canonical valid time operators, which are used in historical queries, have exclusive properties, it is impossible to derive a single temporal affinity for historical queries.
+Therefore, we present temporal affinity for each canonical valid time operator.
+The main idea of each temporal affinity is addressed.
+The feasibility of the presented affinity could be shown in similar ways as Theorem 1 and Theorem 2 without much effort.
+e  I  otherwise  (3) '5 Tmax  *  Vs  o  dl.Vs  U"' dlVs  i  (b)  0  Case 2 : contaan In this case, temporal data objects, whose valid time interval [Vs,Ve] contains the parameter interval of a historical query [v, ,U,], are selected.
+This condition is similar with that of reference time queries except that the subject of inclusion is a time interval.
+Therefore, temporal affinity is derived easily based on the affinity for reference time queries, AF,., as follows.
+j  :  t l' t2 '  .
+(C)  Figure 5: Relative positions of two valid t i m e intervals  +  Figure 5 shows relative positions oi two valid time intervals on the time line.
+Since (a) is the same case with version scanning queries, we concentrate on (b) and (c).
+In the case (b) and (c), to select both d l and d 2 , a historical query with overlap operator should have a parameter interval [v,,v,] which satisfy the following condition.
+l((vs  Tmax  0  d l Ve  i  dZVe  Figure 6: T h e possible range of [ws,v,] in which both d l and d2 are selected  d2 t e  ' t i t i b ' (a)  d2.Ve  e  Vs  Vs Ve e u  U  if d1.Vs 5 d2.Ve A dl.Ve 2 d 2 .
+V ~ min(dl.Ve,d2.Ve) .
+(T,,, - max(dl.Vs,d 2 .
+V ~ ) )  Historical queries with overlap operator select temporal data objects whose valid time interval [Vs,Ve] overlap the parameter interval [vs, we] given in the query.
+This condition is similar to that of version scanning queries.
+However, there is a crucial difference in that valid time intervals of two temporal data may overlap.
+In version scanning queries, it is impossible for two transaction time intervals to overlap since we concern only the objects correspond to versions of a real world entity.
+Thus the difference should be considered in the temporal affinity for historical queries with overlap operator.
+V  2  {  AF'h-,,(dl, d2) =  Case 1 : overlap  Vs  min(dl.Ve,cl2.Ve) .
+(T,,, - max(dl.Vs,d 2 .
+V ~ ) ) - (mi"( d l .
+V e , d P .
+V e ) - m s x ( d l .
+V s , d Z .
+V s ) ) '  AFh-,(dl, d2) =  1  (dl.Ve - dl.Vs) (d2.Ve - d 2 .
+V ~ ) -(max(dl.Ve, d2.Ve) - min(dl.Vs, d 2 .
+V ~ ) ) if dl.Ve 0  2 d 2 .
+V A~ d2.Ve 2 dl.Vs  otherwise  (4) It computes the length of the overlapped valid time interval for two temporal data objects d l and d2.
+Case 3 : precede This type of historical query selects temporal data objects that have valid time intervals taking precedence over a specific time point.
+Hence, two temporal data objects are selected together by a historical query with precede operator only if both of their valid time intervals precede a parameter value t of the query.
+Figure  < t l A v, < t l ) V (v. > t 2 A v, > t 2 ) )  0  The condition denotes the negation of the condition that two temporal data objects d l and d 2 are not selected together.
+Therefore, temporal affinity of two temporal data objects for historical queries with overlap operator is given as follows.
+In AFh-,, Tmao de-  58  2  7 shows the relationships of temporal data objects for historical queries with precede operator.
+0 I fa I 1 , C f i = 1 , x fi = 1 i=l  .
+-.
+-  ti ti Timetine Figure 7: T h e relationships of temporal d a t a objects for historical queries with precede operator  Let T,,, denotes the maximum time that can be represented in the temporal database.
+In Figure 7, a parameter value t should be in time range [tl, TmaX] for a query to select d l and d& together.
+In case of d l and d3, 1 should be a value in [t2,Tmar].
+From this observation, temporal affinity for historical queries with precede operator is derived as follows.
+A F h - p ( d l , d 2 ) = Tmax - maz(dl.Ve, d2.Ve)  (5)  C a s e 4 : follow In this case, temporal data objects, whose valid time interval [ Vs, Vel follows the time point specified in a query, are selected.
+Since this is a symmetrical case of precede operator, temporal affinity is derived easily as follows.
+6.1  (6)  ity of two temporal data objects with respect to each canonical temporal query.
+However, an unification of these affinities is needed to apply them t o temporal data clustering.
+One way of unifying temporal affinities is to construct a single temporal affinity as the weighted sum of each affinity.
+Thus, the unified temporal affinity is given as follows:  + .AFh-p(d1, d 2 ) +  + ~ 3 AFh-,,(dl, .
++a5  d2)  1.
+Data generation : In this step, a set of temporal data objects are generated by given parameters.
++ CY^ .
+AF,(dl, d 2 ) a4 (Y6  A n experiment  We conducted an experiment that simulates benchmark query processing on clustered data objects in order to evaluate the performance of clustering methods with various clustering measures.
+The performance of a data clustering method is represented by the number of disk page accesses during the processing of a set of benchmark queries.
+To reduce implementation overhead, we observe average number of cluster references during the benchmark query processing for a benchmark query.
+The number of cluster references represents the performance of a clustering method if the total number of clusters approximates to the total number of disk pages.
+The experiment is composed of the following steps.
+The application of temporal affinities to temporal data clustering In Section 4,we have presented the temporal affin-  AF(d1,d2) = a1 .
+AFT(&, d 2 )  Performance evaluation  In this section, we present performance evaluation of the proposed data clustering method.
+Other clustering methods with straightforward clustering measures, such as surrogate, transaction time, and valid time are also eyaluated for the comparison with the proposed method.
+0  5  i=3  where fi is the frequency of the query pattern on which the corresponding temporal affinity is based and si is a scaling factor that is needed to normalize each temporal affinity.
+Since a valid time condition and a transaction time condition can be specified together in a temporal query, the constraint on fi is separated into two parts.
+Hence, the data objects in temporal databases can be clustered with the proposed clustering measure, unified temporal affinity.
+The details of the clustering algorithm is not presented in this paper.
+Since there have been many proposals on the general data clustering algorithm, such as [9, 103, we can introduce one of them to the clustering procedure of temporal data objects with the proposed measure.
+6  It computes the possible range of a parameter for a historical query with precede operator that selects d l and dd together.
+AFh-j(d1, d2) = m i n ( d l .
+V s , d 2 .
+V ~ )  6  AFh-,(dl, d2) * A F h - j ( d 1 , d2) *  2.
+Clustering of data objects : Temporal data objects, generated in step 1 , are clustered using a given clustering measure.
+In A F ( d 1 , d 2 ) , ai means the weight of each temporal affinity.
+There are many factors that affect the weight of each temporal affinity.
+In this work, ai is determined by the frequency of each canonical temporal query in an application.
+Thus,  3.
+Benchmark query processing : Benchmark queries are processed on the clustered temporal data objects.
+During the query processing, average number of cluster references for a benchmark query is observed.
+ai = fa .
+si  59  other words, the objects having the same surrogate value are clustered together.
+Since we could not obtain any temporal data set in real applications, we generated the temporal data objects whose time attributes are random variables taking particular distributions.
+For example, we assume that the time interval between transaction start times (Ts) of two consecutive versions takes the Poisson distribution because T s of a temporal data object represents a time point at which the object is recorded in the database.
+Therefore, Ts takes the exponential distribution.
+In step 2, we use CLARA (Clustering LARge Applications) [9] to cluster temporal data objects into predetermined number of clusters.
+The number of clusters ( K ) is determined by the total number of data objects ( N ) ,the size of a data object ( S ) ,and the size of a disk page ( P ) as I< = Therefore, I< approximates LsJ to the number of disk pages.
+The benchmark queries, processed in step 3 , are selected based on [ 3 ] .
+Table 3 shows the operators that are used in the benchmark queries.
+We assume that the parameters of benchmark queries are random variables taking the uniform distribution.
+0  0  Table 3: Operators in benchmark queries  6  I( Valid time 1  11  operator overlap precede jollow contain overlap precede joriow contain  Valid Time (VT) : The objects having similar Vs values are clustered together.
+The results are presented in Table 5.
+Table 5 shows the average number of cluster references for a benchmark query.
+The results are obtained by varying the total number of data objects (N) and the size of a data object ( S ) .
+Since the clustering algorithm CLARA is based on the sampling of underlying data objects, we repeated the same experiment 12 times and present the average of 10 values to the exclusion of the maximum and the minimum value.
+Moreover, since the clustering method, KEY, shows the worst performance, we present it only in the case that N = 100,000.
+Figure 8 presents the average number of cluster references when N = 100,000.
+In the figure, we observe that the clustering method for conventional databases, KEY, performs badly in temporal databases.
+[-$-I.
+Query t j e  Transaction Time (TT) : Cluster the objects based on the time at which they are stored in the database.
+The objects having similar T s values are clustered together.
+Transaction time operator as-oj as- oj  450  as-of wathin within within within  2  3  I  200  I  I  I  I  I  I  /  0  #,e---  J 150  5  100 50  * .
+.
+-  Table 4: T h e parameters 0  Value [O, 3,6501  1000  2000  ---3000  ----U  ,  .
+- + * - -  4000 5000 Number of Clusters  6000  I  *]  ----* 7000  6000  5,000 ... 100,000 30 ... 300  Figure 8: Performance of clustering methods when N =  4K bytes  Experimental results show that the proposed method, AF, outperforms the other methods in all cases.
+Therefore, the proposed data clustering method causes less number of disk page accesses than other methods.
+The results also explain that the performance gap is getting larger as the size of a data object increases.
+This observation means that the effectiveness of a data clustering measure becomes more critical as the size of a data object grows.
+In the experimental results, TT works better than VT.
+This observation can be explained by the properties of the benchmark queries.
+That is, it is advantageous to cluster data objects with similar T s values  100,000  6 .
+2 Analysis of the results In the experiment, clustering methods with the following measures are also evaluated for the comparison with the proposed method.
+We compared the proposed method with ad-hoc methods since there is no clustering measure proposed for general temporal database environment.
+0  I  as-of  Table 4 shows the important parameters used in the experiment and their values.
+Parameter Time range Number of objects (N) Size of an object (S) Page size (P) Number of clusters  I  I  Surrogate (KEY) : Cluster the objects which correspond to versions of a real world entity.
+In  60  Table 5 :  Results  5000  TT VT  10000  TT VT  50000  TT VT  100000  TT VT KEY  AF  AF  AF  : avg.
+number of cluster references  7.6110 10.7831 10.1304 11.6308 16.2788 24.0835 27.5847 48.2473 36.6513 33.7277 63.4208 78.6571  10.6383 14.7195 13.6445 14.6210 22.7593 28.2283 29.3154 57.4623 38.1123 37.7987 89.8035 153.3342  19.6466 29.5773 23.6878 28.2998 46.1629 48.8135 53.2884 105.3862 66.8941 72.7964 168.4137 354.0892  23.2365 34.7333 28.4242 33.6648 52.3493  J  58.0326 66.3661 120.2427 81.3429 92.8960 187.6794 391.1975  work is the first attempt to develop an effective data clustering method in general temporal database environment.
+for the canonical transaction time operators, as-of and within.
+However, for the canonical valid time operators, precede and follow,clustering of objects with similar Vs values does not cause performance gain.
+7  14.0037 21.4152 17.6532 20.4612 33.5147 36.0065 41.2513 82.1416 47.4983 50.0324 127.1227 261.3214  References [l] J.
+Gray and A. Reuter.
+Transaction Processing : Con-  Conclusion  cepts and Techniques.
+Morgan-Kaufmann Publishers, 1993.
+In this paper, data clustering issues in temporal database environment have been addressed.
+Since temporal databases maintain a gigantic amount of data, an efficient data clustering method is essential for high performance.
+In temporal databases, data clustering methods for conventional databases do not perform well because temporal query patterns are different from conventional query patterns.
+Temporal queries include time conditions that are the most effective filtering conditions in temporal queries.
+Therefore, a data clustering method for temporal databases should take the time conditions into consideration for efficient processing of temporal queries.
+We have proposed a data clustering measure, called temporal affinity, which reflects a temporal data clustering criteria, the closeness of temporal data objects in viewpoints of temporal query processing.
+We first have analyzed temporal query patterns and classified them into three canonical query patterns, i.e.
+reference time query, version scanning query, and historical query.
+Temporal affinity for each canonical query pattern have been defined with a demonstration of the feasibility.
+Then we also have discussed the unification of the temporal affinities which is needed to apply them to temporal data clustering.
+We have conducted performance experiments to evaluate the performance of the proposed data clustering method.
+The experimental results have shown that the proposed method outperforms other data clustering methods.
+To the best of our knowledge, we believe that this  [2]  D. Rotem and A. Segev.
+Physical Organization of Temporal Data.
+In Proceedings of the 3rd ICDE, pages 547-553, 1987.
+R. Snodgrass.
+Partitioned Storage for Temporal Databases.
+Information Systems, 13(4):369-391,  [3] I. Ahn and 1988.
+C. Jensen, J. Clifford, S. Gardia, and et al.
+A Consensus Glossary of Temporal Database Concepts.
+A C M S I G M O D Record, 23(1), 1994.
+[5] C. Jensen, M. Soo, and R. Snodgrass.
+Unifying Temporal Data Model via a Conceptual Model.
+Information Systems, 19(7):513-547, 1994.
+[6] R. Snodgrass, I. Ahn, G. Ariav, and et al.
+TSQL2 language specification.
+A CM S I G M O D Record, 23( 1):65-  [4]  86, 1994.
+[7]  J.
+Won and R. Elmasri.
+Representing Retroactive and Proactive Versions in Bi-Temporal Databases(2TDB).
+In Proceedings of the 12th ICDE, pages 85-94, 1996.
+B. Salzberg and V. J. Tsotras.
+A Comparison of Access Methods for Time Evolving Data.
+Technical Report NU-CCS-94-21, 1994.
+[9] L. Kaufmann and P.J.
+Rousseeuw.
+Finding Groups i n Data: an Introdution to Cluster Analysis.
+John Wiley and Sons, 1990.
+[8]  [lo] T. Zhang, R. Ramakrishnan, and M. Livny.
+BIRCH: An Efficient Data Clustering Method for Very Large  Databases.
+In Proceedings of SIGMOD Conference, pages 103-114, 1996.
+61

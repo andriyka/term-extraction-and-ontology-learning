@@ -1,0 +1,520 @@
+Data & Knowledge Engineering 44 (2003) 143a164 www.elsevier.com/locate/datak  Optimizing temporal queries: edZcient handling of duplicates Ivan T. Bowman, David Toman  *  Department of Computer Science, University of Waterloo, 200 University Ave. West, Waterloo, Ont., Canada N2L 3G1 Received 10 December 2001; accepted 3 July 2002  Abstract Recent research in the area of temporal databases has proposed a number of query languages that vary in their expressive power and the semantics they provide to users.
+These query languages represent a spectrum of solutions to the tension between clean semantics and edZcient evaluation.
+Often, these query languages are implemented by translating temporal queries into standard relational queries.
+However, the compiled queries are often quite cumbersome and expensive to execute even using state-of-the-art relational products.
+This paper presents an optimization technique that produces more edZcient translated SQL queries by taking into account the properties of the encoding used for temporal attributes.
+For concreteness, this translation technique is presented in the context of SQL/TP; however, these techniques are also applicable to other temporal query languages.
+ 2002 Elsevier Science B.V. All rights reserved.
+Keywords: Temporal query languages; Duplicate semantics for temporal queries; Compilation of temporal queries; Query optimization; Query performance  1.
+Introduction The last decade of research in the area of temporal databases has led to the development of several temporal query languages based on extensions of existing relational languages, in particular of SQL [10,12a15].
+These languages are based on the idea of timestamping tuples: associating them with a time instant at which the tuple is valid.
+These instants are usually drawn from a linearly ordered universe that models time in the database.
+The semantics of queries are then dedZned in terms of the individual time instants [4].
+*  Corresponding author.
+Tel.
+: +1-519-888-4567x444; fax: +1-519-885-1208.
+E-mail address: david@uwaterloo.ca (D. Toman).
+0169-023X/03/$ - see front matter  2002 Elsevier Science B.V. All rights reserved.
+PII: S 0 1 6 9 - 0 2 3 X ( 0 2 ) 0 0 1 3 3 - 7  144  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  Although query semantics is dedZned in terms of time instants, the space requirements of explicitly storing tuples with individual instants is prohibitive: tuples would need to be repeated for each instant at which they are valid.
+Instead, practical languages rely on a compact encoding of sets of time instants (often referred to as periods of validity), for example by using intervals, bitemporal elements, or other interval-based encoding.
+The chosen encoding is then used as the concrete domain for the representation of values of temporal attributes.
+Example 1.
+A software development company maintains a time reporting database that records the projects and tasks that each developer worked on throughout the year.
+The relation used for this reporting has the following signature: AssignmentAdegDay; Employee; Project; TaskA: Fig.
+1 contains an instance of this relation and a compact interval encoding of the instance.
+Note that Ann was assigned to both tasks 1 and 2 of project aAa during February.
+Since the query semantics is dedZned over time instants, one way to evaluate queries would be to use a standard relational query language over the expanded, point-based instance.
+This approach would allow queries to be written and executed with the well-understood semantics of relational theory.
+However, this approach would require prohibitive time and space to answer queries since the number of tuples to be processed could depend on the values of attributes in the compact encoding.
+For example, a single interval-encoded tuple can be expanded into an arbitrary number of tuples by adjusting the interval endpoints.
+Since it is not feasible to execute queries against the point-based instance, queries are ultimately evaluated over a compact encoding, independently of the query language used.
+The query evaluation is often based on translating the original query to a standard relational query that can be  Fig.
+1.
+Time-reporting example database.
+I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  145  executed over the encoding [15] or [12a14] (for snapshot and sequenced fragments).
+Translation allows queries to be written with a well-understood relational language, and this translation yields queries that can be executed in time and space that is at most polynomial in the size of the compact encoding, regardless of the particular values in intervals.
+However, such compilationbased approaches often lead to very complex queries that are extremely didZcult to optimize (given current state-of-the-art query optimizers).
+The main obstacle here is the fact that the SQL query optimizer has no knowledge of the properties of the encoding used for temporal attributes and therefore cannot take advantage of rewrites valid under the semantics of the original temporal queries.
+This shortcoming stands out especially when following the strict duplicate-preserving semantics of SQL.
+Duplicates are not permitted in pure relational theory, but SQL permits them in order to allow counting, and also to allow applications to indicate that the query processor does not need to spend the time removing duplicates if they do not adZect the application.
+For these reasons, SQL permits bags instead of sets, and dedZnes the multiplicity of tuples expected from the various operations.
+Example 2.
+Let D be a temporal database which asserts that value a is in the relation R at all time instants t P 0.
+Let D1 Az hR : fAdega; A"0; 10A; Adega; A"11; 1Agi and D2 Az hR : fAdega; A"0; 1Agi be two (semantically equivalent) compact encodings of D. Now consider the query aagive me all the values in the dZrst attribute of Raa.
+Under the set semantics, the answer for both D1 and D2 is a single tuple containing the value aaaaa.
+However, answering this query under a duplicate-preserving semantics is much more complicated: we would have to produce a tuple a for every time instant associated with aaathis is clearly not possible as the result would have to be indZnite.
+For this reason, SQL/TP (cf.
+Section 2 or [15,16] for description of the language) prohibits duplicate-preserving projections of temporal attributes.
+Example 3.
+The commonly proposed solution for implementing the query from Example 2 that simply projects out the interval attribute [12] (non-sequenced fragment) is also problematic: the result of the above query didZers for D1 and D2 in the number of duplicate aaaaas returned (2 tuples for D1 and 1 for D2 ).
+It has been argued however, that no well-behaved temporal query should distinguish between equivalent temporal databases.
+While one might argue that the didZerence between the instances D1 and D2 can be resolved using coalescing [2], it has been shown that, in general, coalescing-based approaches are bound to fail [5,15].
+The query translator may recognize contexts within the translated query where the answer is not sensitive to the duplicates generated by a subquery.
+Consider the following example.
+Example 4.
+If we are interested in the time reporting for employee Ann, we can write the query Q using the schema of Fig.
+1 as follows: SELECT DISTINCT Day, Project FROM Assignment WHERE Employee Az aAnna  146  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  We can use query Q to build up larger queries.
+If we are interested only in knowing the projects that Ann worked on, we can write query Q2 as: SELECT DISTINCT Project FROM Q If the query translator is aware that Q is being evaluated in a context where duplicates do not adZect the result (for example, because of the DISTINCT keyword in query Q2 ), then the translator could simply project out the aTaska attribute of Q.
+The intermediate results of Q would then be: Day  Project  Jan 1aFeb 28 Feb 1aMar 31  A A  This intermediate result contains duplicate tuples because of the overlapping time intervals; these duplicates are then eliminated by the DISTINCT of query Q2 .
+If we were also interested in the days when aAnna or aBoba was assigned to each project, with duplicates for days they were both assigned, we could write a query Q3 as: (Q) UNION ALL (SELECT DISTINCT Day, Project FROM Assignment WHERE Employee Az aBoba) In this case, we must eliminate the duplicate values resulting from the overlapping time intervals.
+The relational projection used in the Q2 context is not sudZcient in this caseaawe need a more sophisticated technique (implemented by coalescing in some languages and as normalization in SQL/TP) to eliminate duplicates within the range-encoded time intervals.
+The intermediate results of Q as found by the SQL/TP normalization procedure is the following: Day  Project  Jan 1aJan 31 Feb 1aFeb 28 Mar 1aMar 31  A A A  In this example, the context of evaluation of a query can be used to choose a more edZcient evaluation technique.
+In the Q2 context, Q can be evaluated edZciently using the relational duplicate-preserving project.
+In the Q3 context, we must use the more expensive normalization procedure to eliminate duplicates in the range-encoded time intervals.
+The above examples set up the scene for this paper: while we want to use a well behaved, declarative language such as SQL/TP, we would also like to employ the simple (relational) projection that projects out the compact representation of sets of time instants (as in Example 3) and  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  147  thus provides a vastly better performance (similarly to duplicate preserving vs. distinct projections in SQL).
+The problem of edZciently executing relational queries in the presence of duplicates has been well investigated for non-temporal query languages, and formal descriptions of algebras for bag queries have been developed which allow the issues of duplicates to be described precisely [7,9].
+In addition to formal descriptions, results on optimization allow moving group-by and duplicate elimination operations to earlier or later contexts during execution plans in order to improve execution cost [3,8,17].
+These optimization results also allow duplicate elimination operations to be avoided in cases where they do not adZect the results.
+However, these prior results do not immediately generalize to the problem of executing temporal queries containing duplicates, mainly because SQL/TP supports indZnite abstract databases (as shown in Example 2).
+In particular, solutions based on counting and aggregation to avoid problems with duplicate values in SQL/92 queries fail for SQL/TP queries as the counts would need to be indZnite (cf.
+Example 3).
+In addition, to recover answers required by SQLas dedZnition, an unfold [10] or expand [8] operation is necessary to replicate a tuple based on an integer value stored in the database.
+This operation, however, cannot be expressed in SQL itself.
+The contributions of the paper are twofold: (1) First, we identify contexts in a given query in which relaxed SQL/TP-to-SQL/92 translation rules can be used.
+In addition we provide these additional compilation rules and show their edZect on several examples.
+(2) Second, and more importantly, the proposed approach provides a general paradigm for optimizing temporal queries (and in general, queries over non-trivial encodings of data) that leads beyond the optimizations possible in standard SQL.
+We demonstrate the approach on SQL/TP, the query language proposed by Toman [15,16].
+However, we would like to stress that the proposed approach is applicable to other proposals, e.g., to IXRM [10] and to the SQL/TemporalaTSQL2aATSQL2 family [12a14].
+The remainder of this paper is organized as follows.
+Section 2 provides an introduction to the SQL/TP query language and the basic compilation technique used to translate SQL/TP queries into SQL/92 (a more detailed description can be found in [15,16]).
+Section 3 describes the main results of the paper: it dedZnes the duplicate insensitive evaluation contexts.
+Section 4 shows patterns where these contexts can simplify the SQL/TP-to-SQL translation.
+Section 4.2 outlines the modidZed compilation procedure from SQL/TP to standard SQL.
+Finally, Section 5 presents our conclusions and discusses several open questions and directions for future research.
+2.
+SQL/TP primer The SQL/TP language operates on a point-based view of time.
+Temporal attributes are drawn from a discrete, countably indZnite, linearly ordered set without endpoints.
+In addition to time, we also use all of the standard data types provided by SQL such as strings, integers, dZoats, and so on.
+Since we do not assign any a priori meaning to these data types, we refer to them as the uninterpreted constants.
+148  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  The relationship between the time instants and the uninterpreted constants is captured in a dZnite set of temporal relations in a database.
+We distinguish between the abstract temporal database, which is dedZned in terms of time points, and the concrete temporal database, which is a compact encoding of the abstract database.
+DedZnition 5 (Abstract temporal database).
+A signature sigAdegRA of a relational symbol R is a tuple Adega1 : t1 ; .
+.
+.
+; ak : tk A where ai are distinct attribute names, ti are the corresponding attribute types, and k is the arity of R. Attributes of type time are temporal attributes, and the others are data attributes.
+A database schema is a dZnite set of relational symbols R1 ; .
+.
+.
+; Rn paired with signatures sigAdegR1 A; .
+.
+.
+; sigAdegRn A.
+A table R is a (possibly indZnite) bag of tuples that match the signature of R dedZned in the database schema.
+An abstract temporal database is a set of tables dedZned by a database schema.
+In general, we do not restrict the cardinality of temporal tables: we allow indZnite tables as well.
+However, we do require that the multiplicity of each distinct tuple is dZnite.
+Note, too, that there is no restriction on the number of temporal attributes in a relation.
+The abstract temporal database provides a natural data model for modeling and querying temporal data based on timestamps.
+However, the storage cost for a naive representation of such a database would be prohibitively large.
+In the case of indZnite tables, it is not even possible to store the abstract temporal database.
+To address this issue, SQL/TP uses a compact encoding of sets of time instants.
+The choice of intervals as the compact encoding dedZnes a class of concrete temporal databases.
+DedZnition 6 (Concrete temporal database).
+Let R be a relational symbol with signature E. A concrete signature corresponding to E is dedZned as a tuple E of attributes that contains (1) a data attribute A for every data attribute a in E, and (2) an interval attribute It for every temporal attribute t in E. The attribute It holds the interval encoding of consecutive time instants.
+1 A concrete temporal database schema is a set of relational symbols and their concrete signatures derived from their signatures in the abstract database schema.
+A concrete temporal database is a set of dZnite relations dedZned by a concrete database schema.
+To capture the relationship between the abstract and concrete temporal databases, we dedZne a semantic map operator s  t. The meaning of a single concrete tuple x Az AdegIt ; a1 ; .
+.
+.
+; ak A is a bag of tuples sxt Az fAdegt; a1 ; .
+.
+.
+; ak Ajt 2 It g. Similarly, for concrete tuples with multiple abstract temporal attributes we dedZne the result of the s  t operator to be the hypercube resulting from allowing in the concrete tuple.
+This each temporal attribute ti to range within its interval bounds dedZned U map is extended to a concrete relation R by taking the additive union t2R A"A"t of the meanings of all concrete tuples t 2 R.  1 We assume the existence of an interval-valued data type in the target language; in the absence of such a data type we use pairs of attributes to denote left and right endpoints of intervals instead.
+I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  149  Fig.
+2.
+Syntax of SQL/TP.
+2.1.
+Syntax and semantics The syntax of the SQL/TP query language is dedZned by the grammar in Fig.
+2, which has been slightly simplidZed to omit details such as the precedence of query constructs.
+Here, hcexpi denotes a column expression (an aggregate function), hsexpi denotes a scalar expression, hconditioni represents an atomic condition, and hsetopi is a multi-set operation.
+The meaning of QAdegDA is dedZned by induction as follows: (1) RAdegDA denotes the relation stored in D named R. (2) AdegFROM Q1 r1 ; .
+.
+.
+; Qk rk AAdegDA Az Q1 AdegDA      Qk AdegDA implements Cartesian product.
+(3) AdegQ WHERE uA Az ru QAdegDA is the restriction operation, where u is an atomic condition (free of boolean connectives).
+For temporal attributes, the allowed conditions u are of the form ai Az c 6 aj , c 6 ai , or ai 6 c, where ai and aj are temporal attributes and c is a constant.
+(4) AdegSELECT e1 AS i1 ; .
+.
+.
+; ek AS ik QAAdegDA is the duplicate-preserving projection operation that generates a bag of tuples with signature i1 ; .
+.
+.
+; ik and one tuple Adege1 AdegxA; .
+.
+.
+; ek AdegxAA for each tuple x 2 QAdegDA.
+(5) AdegQ GROUP BY a1 ; .
+.
+.
+; ak AGG f 1 Adegb1 A AS i1 ; .
+.
+.
+; f n Adegbn A AS in AAdegDA is the grouping operator, where ai and bi are attribute names, and f i are aggregate functions.
+For temporal attributes, the aggregate functions may be MIN, MAX, or COUNT.
+The aggregate functions may be omitted, in which case the operation has the edZect of removing duplicates (similarly to the SQL/92 SELECT DISTINCT).
+(6) AdegQ1 hSETOPiQ2 AAdegDA Az Q1 AdegDA op Q2 AdegDA are the set (bag) operators.
+The allowed operations op are: UNION (set union), UNION ALL (additive union), EXCEPT (set didZerence), EXCEPT IN (aanot existsaa), EXCEPT ALL (monus), INTERSECT (set intersection), INTERSECT IN (aaexistsaa), and  150  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  INTERSECT ALL (duplicate-preserving intersection).
+Compared to the original dedZnition of SQL/TP [15,16], we introduce two additional multi-set operations EXCEPT IN and INTERSECT IN.
+These two operations are the counterparts of SQLas NOT EXISTS and EXISTS constructs in the WHERE clause and their meaning is dedZned as follows: AdegQ1 EXCEPT IN Q2 AAdegDA Az fjx 2 Q1 AdegDA : x 62 Q2 AdegDAjg AdegQ1 INTERSECT IN Q2 AAdegDA Az fjx 2 Q1 AdegDA : x 2 Q2 AdegDAjg where fjx 2    jg denotes the formation of a bag of x values.
+Note that from the expressive power point of view, the new operations do not add new capabilities to SQL/TP (as both of them can be simulated by EXCEPT ALL and INTERSECT ALL with the help of additional joins).
+However, they allow us to extend the inference technique described in Section 3 to a larger class of queries.
+Further, these operations allow us to express a query that is semantically equivalent to an SQL/TP query but which has a more edZcient implementation.
+The other set (bag) operators behave exactly like their SQL/92 counterparts.
+As in the standard SQL/TP, we guarantee closure of all of the above constructs by requiring that the SELECT clause may not project out a temporal attribute encoded using intervals (as this might violate the requirement of dZnite duplication; cf.
+Example 2) and the grouped-by and nongrouped attributes in the GROUP BYaaAGG clause are mutually independent whenever aggregate functions COUNT and SUM are used.
+addition, to guarantee that the result of a query is representable using the interval encoding, we require all attributes in the answer to a query to be pairwise independent [15].
+The particular restriction to bags with dZnite duplication only, and in turn the restriction placed on the projection operation, is needed to guarantee meaningful semantics of bag operations.
+Example 7.
+Consider the query AdegSELECT d FROM rA EXCEPT ALL AdegSELECT d FROM r WHERE t > 10A executed over a concrete relation rAdegd; tA Az fAdega; A"0; 1Ag.
+Clearly, if a duplicate-preserving projection of temporal attributes (in this case t) was permitted, the two subqueries would both return countably many tuples (a), and thus the number of duplicate tuples in the result of the query (according to the usual rules for cardinal arithmetic) is not dedZned.
+2.2.
+Query compilation Our dZnal goal is to translate SQL/TP queries to standard SQL and then submit the result to an odZ-the-shelf database engine.
+To achieve this goal we have to resolve two problems.
+First, while the top-level attributes of an SQL/TP query have to be independent, this restriction may not hold for subqueries of the original query.
+To translate (sub-)queries with dependent attributes we use conditional queries of the form Qfug where Q is an SQL translation of the original query (without any references to individual time instants) and u is a formula that captures the remaining restrictions on temporal attributes.
+The translation itself is then realized by a function comp that  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  151  maps SQL/TP queries to sets of conditional queries by induction on their structure, while maintaining the following invariant: ] M ruj sQj AdegDAt QAdegsDtA Az scompAdegQAAdegDAt Az Qj fuj g2compAdegQA  The SQL/TP language carefully models the set and the multi-set semantics of SQLaaSQL/TP queries are translated to generate exact multiplicities for all tuples as dedZned by standard SQL semantics.
+The compilation procedure thus proceeds inductively on the structure of the original query Q by replacing subqueries by aaequivalentaa subqueries according to the above invariant [15,16].
+The second problem that arises during translation is that every temporal attribute t in an SQL/TP query that refers to individual time instants in T has to be replaced with an attribute It ranging over intervals, the elements of the concrete temporal sort.
+The challenge here lies in the dedZnition of relational operators that preserve semantics over the interval-based encoding.
+Example 8.
+Let D be the following encoding of a temporal database: D Az hS1 : fAdega; A"0; 4A; Adegb; A"0; 1A; Adegb; A"7; 8Ag; S2 : fAdega; A"4; 6A; Adegb; A"1; 7Agi If we compute the expression S Az S1 EXCEPT S2 , then one possible encoding is given by S : fAdega; A"0; 3A; Adegb; A"0; 0A; Adegb; A"8; 8Ag Relational database engines do not have the ability to generate the desired results using existing relational techniques.
+For this purpose, we introduce a novel normalization technique.
+The idea behind the technique is quite simple: we normalize the encoded input relations in a manner which allows relational operations to treat intervals as atomic values.
+In this way, the ordinary relational operations give the desired results for the encoded relations.
+Fig.
+3 shows a graphical depiction of the normalization operation applied to implement set didZerence for Example 8.
+The formal definitions are as follows:  Fig.
+3.
+Set didZerence using normalization.
+152  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  DedZnition 9 (Time compatibility).
+Let fQ1 ; .
+.
+.
+; Qk g be a set of SQL/92 queries with compatible signatures and X a subset of their attributes.
+We call the queries Q1 ; .
+.
+.
+; Qk X-compatible if, whenever there are two concrete tuples t1 2 Qi AdegDA and t2 2 Qj AdegDA, then spX Adegt1 At \ spX Adegt2 At 6Az ; ) pX Adegt1 A Az pX Adegt2 A for all concrete temporal databases D and all 0 < i 6 j 6 k. The dedZnition of an X-compatible set of queries says that if the meanings of two concrete tuples intersect then it is always the case that these two tuples coincide.
+This way we can guarantee the intervals behave like points with respect to set/bag operations.
+If X contains all of the temporal attributes of the queries, then we say that the queries are time compatible.
+It is also easy to see that we can dedZne a normalization operation that transforms an arbitrary set of queries to an X-compatible set of s  t-equivalent queries.
+Moreover, this operation can be dedZned using a dZrst-order query: 2 Lemma 10.
+Let fQ1 ; .
+.
+.
+; Qk g be a set of SQL/92 queries with compatible signatures and X a subset of their attributes.
+Then there are first-order queries NX A"Qi ; Q1 ; .
+.
+.
+; Qk  such that (1) sQi AdegDAt Az sNX A"Qi ; Q1 ; .
+.
+.
+; Qk AdegDAt for all concrete databases D, (2) fNX A"Qi ; Q1 ; .
+.
+.
+; Qk  : 0 < i 6 kg are X-compatible.
+To dedZne a time-compatible set of queries the above lemma is used for all temporal attributes in the common signature.
+2.3.
+Implementation of normalization operator The normalization operation can be performed in OAdegn log nA Az OAdegmA where n is the combined size of the inputs and m is the size of the output of the operator.
+For example, it can be implemented by merging sorted inputs.
+More edZcient implementations are possible in cases the optimizer knows properties of the inputs to the operator (e.g., that the inputs are already sorted).
+However, the normalization operation is never better than OAdegnA in the size of the input relations, and removing it or replacing it by SQLas duplicate-preserving projection always improves performance.
+3.
+Duplicate insensitive contexts For many queries, the requirement to match the precise multiplicity semantics imposes a signidZcant cost in the translated query.
+For some sub-expressions, this additional cost can be eliminated because the translated expression is evaluated in a context that does not require precise multiplicity semantics.
+More formally:  2  Similarly to coalescing; a native implementation of the normalization can often be made more edZcient.
+I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  153  DedZnition 11 (Query equivalence).
+Let Q1 and Q2 be SQL/TP queries.
+We say that Q1 and Q2 are: SET  aV set equivalent, Q1 Az Q2 if fx : x 2 Q1 AdegDAg Az fx : x 2 Q2 AdegDAg for all databases D; BAG aV bag equivalent, Q1 Az Q2 , if Q1 AdegDA Az Q2 AdegDA for all databases D; the Az sign is used to denote bag equality unless otherwise noted.
+If two queries are set equivalent, they produce the same set of distinct tuples for any given instance.
+However, the multiplicity of the tuples does not need to agree in the results of the two queries.
+If, however, two queries are bag equivalent, they produce the same bag of tuples for any given instance.
+DedZnition 12 (Context).
+An expression CA"  is a context (of signature r) if, for any SQL/TP query Q with signature r, CA"Q (denoting the syntactical substitution of Q for A" ) is a valid SQL/TP query.
+Here, the signature r represents the schema of attributes expected by the context, and we say that the above queries Q are compatible with CA" .
+For simplicity we omit the context signatures whenever possible.
+For example, CA"  Az AdegA"  WHERE Employee Az aAnn0 A and C 0 A"  Az AdegFROM Q1 r1 ; A"  r2 A are contexts.
+The expression CA"Assignment represents the expansion: AdegAssignment WHERE Employee Az aAnn0 A and the expression CA"AdegAssignment WHERE Project Az aA0 A represents the expansion: AdegAdegAssignment WHERE Project Az aA0 A WHERE Employee Az aAnn0 A: If CA"  and C 0 A"  are two contexts with signature r and r0 , respectively, then CA"C 0 A"  is also a context of signature r0 .
+Here, CA"C 0 A"  stands for the composition of contexts.
+The above contexts also dedZne the composite context and the expansion CA"C 0 A"  Az AdegAdegFROM Q1 r1 ; A" r2 A WHERE Employee Az aAnn0 A CA"C 0 A"Assignment Az AdegAdegFROM Q1 r1 ; Assignment r2 A WHERE Employee Az aAnn0 A; respectively.
+DedZnition 13 (Duplicate insensitive context).
+A context CA"  is duplicate insensitive if SET  BAG  Q1 Az Q2 ) CA"Q1  Az CA"Q2  for any pair of queries Q1 and Q2 compatible with CA" .
+Example 14.
+Consider the context CA"  Az AdegA"  GROUP BY aA:  154  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  This context is duplicate insensitive since the result of the expression contains one tuple in its output for each distinct value a for any pair of Q1 set-equivalent to Q2 (both with the same signature containing the attribute a).
+Lemma 15.
+It is undecidable whether or not an arbitrary context CA"  is duplicate insensitive.
+Proof.
+Consider the context CA"  Az AdegFROMA" r; QsA where Q is a closed query.
+3 Then CA"  is duplicate insensitive if and only if Q is unsatisdZable (empty).
+However, emptiness is not decidable [1], so there cannot exist a decision algorithm for duplicate insensitivity.
+ DedZnition 16 (Set preserving context).
+A context CA"  is set preserving if SET  SET  Q1 Az Q2 ) CA"Q1  Az CA"Q2  for any pair of queries Q1 and Q2 compatible with CA" .
+Example 17.
+Clearly, every context that is duplicate insensitive is also set preserving.
+In addition, there are several contexts which are set preserving but which are not duplicate insensitive.
+Consider the context CA"  Az AdegA"  WHERE uA: This context is set preserving since the result of the expression contains the same set of distinct tuples in its output for any pair of set-equivalent queries Q1 and Q2 with signatures compatible with CA" .
+Lemma 18 (Set preserving contexts).
+The following contexts are set preserving: FROM Q1 r1 ; .
+.
+.
+; A" ri ; .
+.
+.
+; Qk rk , A"  WHERE u, SELECT e1 AS i1 ; .
+.
+.
+; ek AS ik A" , A"  GROUP BY a1 ; .
+.
+.
+; ak AGG f 1 AS i1 ; .
+.
+.
+; f m AS im Adegfor f i 2 fMIN; MAXgA, A"  hSETOPi Q2 , Q1 hSETOPi A"  where hSETOPi is one of the following: aV UNION, UNION ALL, aV INTERSECT, INTERSECT IN, INTERSECT ALL, aV EXCEPT, EXCEPT IN.
+Note that the EXCEPT ALL contexts are not set preserving in general, since the monus operation produces didZerent sets as results depending on the multiplicities of the tuples in each input.
+3  Unlike the SQL standard, SQL/TP allows closed queries with the expected semantics.
+I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  155  Proof.
+By case analysis.
+Case FROM: Consider the context CF A"  Az FROM Q r; A"  s For any two compatible queries Q1 and Q2 , the results of the expansion CF A"Q1  is Q  Q1 and the result of CF A"Q2  is Q  Q2 .
+For each tuple t 2 CF A"Q1 , there are tuples r 2 Q and s 2 Q1 such that SET t is the concatenation of r and s. If Q1 Az Q2 , then s 2 Q2 as well, so t 2 CF A"Q2 .
+Therefore, fs 2 CF A"Q1 g  fs 2 CF A"Q2 g.
+By a similar argument, fs 2 CF A"Q2 g  fs 2 CF A"Q1 g.
+Therefore, SET  SET  Q1 Az Q2 ) CF A"Q1  Az CF A"Q2  and the context CF A"  is set preserving.
+The extension to a general Cartesian product of more than two relations follows from the standard equivalence with a sequence of binary Cartesian products and an inductive argument.
+Case WHERE: The context CW A"  Az A"  WHERE u produces the same set of distinct resulting tuples for any two set equivalent queries Q1 and Q2 compatible with the context.
+For any tuple t 2 CW A"Q1 , t 2 Q1 and hence t 2 Q2 and therefore t 2 CW A"Q2 .
+Thus, the context CW A"  is set preserving.
+Case SELECT: The context CS A"  Az SELECT e1 AS i1 ; .
+.
+.
+; ek AS ik A"  is also set preserving.
+Let Q1 and Q2 be any two set equivalent queries compatible with CS A" .
+If tuple t 2 CS A"Q1 , then there is a tuple r 2 Q1 such that t is the projection of r. By set equivalence, r 2 Q2 and therefore t 2 CS A"Q2 .
+This gives the result that CS A"  is a set preserving context.
+Case GROUP BY: The context CG A"  Az A"  GROUP BY a1 ; .
+.
+.
+; ak AGG f 1 AS i1 ; .
+.
+.
+; f m AS im is duplicate insensitive if either there are no aggregate functions, or they are drawn only from MIN and MAX.
+In this case, the context is trivially set preserving since duplicate insensitivity is a stronger condition.
+Case hsetopi: The contexts CP1 A"  Az A"  hSETOPi Q2 CP2 A"  Az Q1 hSETOPi A"  are set preserving for the set operations listed above.
+For these contexts, the presence of a distinct tuple t in the results depends only on the existence of a single tuple t in one or both of the inputs (depending on the particular hsetopi used).
+Thus, additional duplicates do not adZect the distinct tuples generated in the result, although they do change the multiplicity.
+ Lemma 19 (Duplicate insensitive composition).
+Let C1 A"  be a duplicate insensitive context with signature r1 , and C2 A"  a set-preserving context with signature r2 .
+Then the context defined by composition of these two contexts, CA"  Az C1 A"C2 A" , is duplicate insensitive.
+156  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  Proof.
+For any two queries Q1 , Q2 compatible with r2 , we have that SET  SET  Q1 Az Q2 ) C2 A"Q1  Az C2 A"Q2  because C2 A"  is set preserving.
+Further, we have that SET  BAG  C2 A"Q1  Az C2 A"Q2  ) C1 A"C2 A"Q1  Az C1 A"C2 A"Q2  since C1 is duplicate insensitive.
+Thus, for any two queries Q1 , Q2 compatible with r2 , we have SET  BAG  Q1 Az Q2 ) CA"Q1  Az CA"Q2  and CA"  is thus duplicate-insensitive.
+ 3.1.
+Inference of duplicate insensitivity Although there is no decision algorithm to dZnd precisely whether a given context is duplicate insensitive, we can dedZne syntax directed rules for dZnding several useful classes of duplicate insensitive contexts.
+Lemma 20 (Duplicate insensitive contexts (i)).
+The contexts A"  GROUP BY a1 ; .
+.
+.
+; ak AGG f 1 AS i1 ; .
+.
+.
+; f m AS im Adegfor f i 2 fMIN; MAXgA, A"  INTERSECT Q; A"  EXCEPT Q; A"  UNION Q, Q INTERSECT A" ; Q EXCEPT A" ; Q UNION A"  are duplicate insensitive.
+Proof.
+All the above contexts CA"  are set preserving (by Lemma 18); further, these contexts always generate duplicate-free results.
+For these contexts, SET  SET  Q1 Az Q2 ) CA"Q1  Az CA"Q2  and further, since duplicates are eliminated in the output, SET  BAG  CA"Q1  Az CA"Q2  ) CA"Q1  Az CA"Q2  Thus, SET  BAG  Q1 Az Q2 ) CA"Q1  Az CA"Q2  and the contexts are duplicate insensitive as desired.
+ Lemma 21 (Duplicate insensitive contexts (ii)).
+The contexts Q INTERSECT IN A" ; and Q EXCEPT IN A"  are duplicate insensitive.
+Proof.
+Let CA"  Az AdegQ hopi A" A be a context where hopi is INTERSECT IN or EXCEPT IN.
+Let Q1 SET and Q2 be any two queries compatible with the signature of context CA"  where Q1 Az Q2 .
+For each  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  157  tuple t 2 Q, either t 2 Q1 ^ t 2 Q2 or t 62 Q1 ^ t 62 Q2 .
+The decision to include t in the output of CA"  depends only on the existence of a single witness in Q1 and Q2 , and didZerent multiplicities does not adZect this decision.
+Further, all duplicates of t 2 Q are treated identically, so the multiplicity of t in the result will either be zero or the same as the multiplicity in the original query.
+Therefore, we see that for any pair of queries Q1 and Q2 SET  BAG  Q1 Az Q2 ) CA"Q1  Az CA"Q2 : Thus the context CA"  is duplicate insensitive.
+ Lemma 22 (Inference of duplicate insensitivity).
+If CA"  is a duplicate-insensitive context, then the contexts CA"FROM Q1 r1 ; .
+.
+.
+; A" ri ; .
+.
+.
+; Qn rn , CA"SELECT e1 AS i1 ; .
+.
+.
+; en AS in A" , CA"A"  WHERE u, CA"Q INTERSECT ALL A" , CA"A"  INTERSECT ALL Q, CA"A"  INTERSECT IN Q, CA"A"  EXCEPT IN Q, CA"Q UNION ALL A" , and CA"A"  UNION ALL Q are also duplicate insensitive.
+Proof.
+The inner contexts in all of the above cases are set preserving by Lemma 18.
+Since context CA"  is duplicate insensitive, the composed context CA"C 0 A"  is also duplicate insensitive by Lemma 20.
+  4.
+Duplicate insensitive compilation In this section we turn to the main goal of the paper: we show how the information about duplicate insensitivity of query contexts can be used to improve the SQL/TP compilation to SQL and in turn to generate more edZcient SQL queries.
+Our focus is the elimination of the normalization operator generated by the original approach [15] in the translations of the following two SQL/TP constructs: aV the aggregation/duplicate elimination operation and aV a set/bag operation.
+More formally, let Q1 and Q2 be two SQL/92 queries with a common concrete signature X corresponding to an SQL/TP signature fix, perhaps resulting from translating parts of an SQL/TP query.
+The original translation establishes the following:  158  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164 BAG  sQ1 AdegDAt GROUP BY fiy Az sNY A"Q1 ; Q1  GROUP BY Y AdegDAt BAG  sQ1 AdegDAt hSETOPi sQ2 AdegDAt Az sNX A"Q1 ; Q1 ; Q2  hSETOPi NX A"Q2 ; Q1 ; Q2 AdegDAt for fiy  fix a set of grouping attributes and D an arbitrary concrete database.
+It is easy to see that we cannot use optimization based on rewrites purely within SQL/TP and therefore (modidZed) techniques for aadistinctaa elimination used by standard SQL optimizers, e.g., [6,9,11], cannot be used: there is no SQL/TP expression that could replace the original one in a duplicate-insensitive context and simplify the result of the translation.
+In particular the (commonly suggested) expression SELECT fix AS fix Q is not a valid substitute and, moreover, must be disallowed due to the problems outlined in Example 1.
+In addition, it is also easy to see that translating an SQL/TP expression cannot generate SQLas duplicate preserving projection since such SQL/92 queries are not s  t-generic over concrete temporal databases in general (while all translations of SQL/TP queries are s  t-generic).
+Therefore, we consider modifying the SQL/TP-to-SQL translation instead.
+We proceed in two steps.
+First we explore translation rules in which the normalization operator can be removed if we weaken the requirement of bag equality to set equality for the results of the compiled queries.
+Second, we integrate these new rules with an existing SQL/TP compilation procedure [15,16] employing duplicate insensitivity inferred for query contexts present in the input query.
+4.1.
+Relaxed compilation rules In the following we use Q1 and Q2 to stand for two SQL/92 queries with a common concrete signature X corresponding to a SQL/TP signature fix.
+The following Lemmas treat the individual cases.
+First and most important is the case where the GROUP BY operation in SQL/TP is used for projection.
+Here we want to use SQLas vastly more edZcient duplicate-preserving projection.
+This is, however, only possible in duplicate insensitive contexts: Lemma 23 (Aggregation and duplicate elimination).
+Let D be an arbitrary concrete database and fiy a subset of Q1 as attributes.
+Then SET  sQ1 AdegDAt GROUP BY fiy Az sSELECT Y FROM Q1 AdegDAt Proof.
+Let fi a be an abstract tuple such that fi a 2 sQ1 AdegDAt GROUP BY fiy .
+Then there must be a tuple ab 2 sQ1 AdegDAt and consequently a concrete tuple AB 2 Q1 AdegDA such that ab 2 sABt.
+Then, however, fi 2 SELECT Y FROM Q1 AdegDA and thus fi fi t. The proof of A a 2 sSELECT Y FROM Q1 AdegDAt since fia 2 sA the reverse inclusion is similar.
+ The right-hand side query is a pure SQL/92 query and does not involve the normalization operator.
+Thus, we use this equation to generate a translation rule (cf.
+Section 4.2).
+Note also that the query on the right-hand side is not bag-equivalent to any SQL/TP query.
+The following three Lemmas provide similar results for the other operations that involve normalization:  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  159  Lemma 24 (Union).
+Let D be an arbitrary concrete database.
+Then SET  sQ1 AdegDAt UNION A"ALL sQ2 AdegDAt Az sQ1 UNION ALL Q2 AdegDAt fi 2 sQ1 AdegDAt UNION A"ALL sQ2 AdegDAt.
+Then fia must belong to the answer to Q1 or Q2 .
+Proof.
+Let a fi 2 Q1 AdegDA such that W.l.o.g., we assume fi a 2 sQ1 AdegDAt.
+Then, there must be a concrete tuple A fi fi fi a 2 sAt.
+Since A 2 Q1 UNION ALL Q2 AdegDA we have fia 2 sQ1 UNION ALL Q2 AdegDAt.
+Again, the other direction is similar.
+ In duplicate insensitive contexts the set/bag intersection can be turned into a join: Lemma 25 (Intersection).
+Let D be an arbitrary concrete database.
+Then SET  sQ1 AdegDAt INTERSECT A"ALLjIN sQ2 AdegDAt Az sSELECT r: X \ s: X FROM Q1 r; Q2 s WHERE r: X \ s: X 6Az ;AdegDAt where r: X \ s: X is a select list consisting of r: Xj AS Xj for data attributes and r:Ij \ s:Ij AS Ij for temporal attributes.
+The select list expression r:Ij \ s:Ij AS Ij gives the interval encoding of the overlap of the r:Ij and s:Ij intervals.
+Similarly, r: X \ s: X 6Az ; is a conjunction of equalities for matching data attributes and conditions of the form r:Ij \ s:Ij 6Az ; for temporal attributes.
+This latter condition identifies tuples r and s that have overlapping interval encodings of the Ij temporal attribute.
+This condition can, of course, be further expressed as a simple order condition involving interval endpoints.
+fi 2 sQ1 AdegDAt INTERSECT A"ALLjINsQ2 AdegDAt then there must be concrete tuples A1 2 Proof.
+If a fi 1 t \ sA fi 2 t. These two tuples, however, satisfy the WHERE a 2 sA Q1 AdegDA and A2 2 Q2 AdegDA such that fi fi representing the clause on the right-hand side of the equation and therefore a concrete tuple A fi 2 is in the answer to the right-hand side query.
+Subsequently, fia is in the fi 1 and A intersection of A fi 2 t. Similarly, the other inclusion fi t Az sA fi 1 t \ sA abstract answer to the right-hand side, since fia 2 sA holds.
+ Similarly, the set/not-exists-like set didZerence can be turned into an anti-join: Lemma 26 (DidZerence).
+Let D be an arbitrary concrete database.
+Then BAG  sQ1 AdegDAt EXCEPT A"IN sQ2 AdegDAt Az sSELECT A"DISTINCT r: X FROM NX A"Q1 ; Q1 ; Q2 r WHERE NOT EXISTS AdegSELECT FROM Q2 s WHERE r: X  s: X A AdegDAt where r: X  s: X is a conjunction of equalities for data attributes (with matching names) and interval inclusion conditions for temporal attributes, respectively.
+160  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  fi2 fi 2 sQ1 AdegDAt EXCEPTA"IN sQ2 AdegDAt.
+Then there must be a concrete tuple A Proof.
+Let a fi t such that fi fi t (such a tuple must exist since the normalization a 2 sA a 2 sA NX A"Q1 ; Q1 ; Q2  such that fi operation preserves meaning of abstract relations and fia 2 sQ1 AdegDAt).
+Moreover, there is no tuple fi tuple satisdZes the NOT EXISTS condition as, B 2 Q2 AdegDA such that fi a 2 sBt.
+Then, however, the A fi t \ sBt 6Az ; implies sA fi t  sBt.
+due to the normalization operation applied on Q1 AdegDA we have sA The other direction is the same.
+ Note that in the case of set didZerence we can eliminate only the normalization operation connected with the R operand.
+On the other hand, due to the (necessary) N operator applied on Q1 , this translation preserves bag equality.
+4 4.2.
+Enhancement of query compilation As the last step of the development we incorporate the notion of duplicate insensitive contexts and the simplidZed translation rule(s) developed in last section into the SQL/TP-to-SQL/92 translator.
+We use two mutually recursive functions compS and compB that are used in the duplicate insensitive (set) and duplicate sensitive (bag) contexts, respectively (comp stands for both cases).
+We follow a convention that if Qj and uj appear in the translation, then they range over all j such that Qj fuj g 2 compX AdegQA where X (the appropriate bag- or set-based translation rule) is determined by the context created by the operation for its arguments (cf.
+Lemmas 20a22).
+Fig.
+4 summarizes the translation rules.
+Theorem 27.
+Let Q be an SQL/TP query.
+Then for every concrete database D we have BAG D U (1) QAdegsDtA Az scompB AdegQAAdegDAtAz Qj fuj g2compB AdegQA ruj sQj AdegDAt SET D S (2) QAdegsDtA Az scompS AdegQAAdegDAtAz Qj fuj g2compS AdegQA ruj sQj AdegDAt  Proof.
+The compB translation rules have been shown to be correct in previous work [15].
+Each of the set-based translation rules compS is either an instance of an equality shown in Lemmas 23a26 or follows from Lemmas 20a22.
+ We illustrate the improved translation in the following examples.
+The dZrst example shows how the translation handles nested aadistinctaa queries.
+Example 28.
+Decorrelation of SELECT DISTINCT and EXISTS-like queries; in SQL/TP syntax: FROM  Q1q1; AdegQ2 GROUP BY tA q2  WHERE  q1:t Az q2:t  GROUP BY q1:a  4  The set EXCEPT operator is paired with the SELECT DISTINCT right-hand side.
+I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  Fig.
+4.
+Complete SQL/TP translation rules.
+161  162  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  is translated to the SQL/92 query SELECT  q1:a  FROM  Q1q1; AdegSELECT I t AS I t Q2A q2  WHERE  leftAdegq1:I tA <Az rightAdegq2:I tA  AND  leftAdegq2:I tA <Az rightAdegq1:I tA  GROUP BY  q1:a  where the left and right (perhaps user-dedZned) functions allow us to access the left and right endpoints of a given interval value, respectively.
+This query can be further aadZattenedaa using the standard SQL rewriting rules.
+Without the ability to detect that the inner query operated in a duplicate insensitive context, we would have to use the Nftg normalization procedure, and generate a much more expensive query.
+Similar examples can be made for other EXISTS-based queries which, in practice, cover a very large number of cases.
+In the above example, we could, however, completely omit the inner projection in the original query.
+The next example shows that this cannot be done in general: Example 29.
+Duplicate elimination removal within a set operation: AdegQ1 GROUP BY a AS aA EXCEPT AdegQ2 GROUP BY a AS aA assuming a is a data attribute (but both Q1 and Q2 have additional temporal attributes in their signatures), can still be compiled to AdegSELECT a AS a FROM Q1A EXCEPT AdegSELECT a AS a FROM Q2A  5.
+Conclusion We have presented a technique for optimizing the translation of SQL/TP to SQL/92.
+The technique takes advantage of static determination of duplicate insensitive contexts in the original query and uses more lax translation rules that produce much more edZcient SQL/92 queries as results.
+These more edZcient queries cannot be achieved by a pure SQL/TP to SQL/TP translation, nor by state-of-the-art commercial query optimizers from the SQL/92 queries resulting from the translation.
+The proposed technique introduces a novel approach to optimizing queries that are evaluated over an encoded database rather than over a standard relational representation.
+The proposed technique is also applicable in the more general constraint databases, e.g., where complex spatial objects are compactly encoded in a relational tables using a particular constraint representation.
+5.1.
+Future work The technique presents a new approach to query optimization.
+While the current application of the technique is limited to handling duplicates in SQL/TP, the approach is much more general and can be summarized as follows: Given a declarative query language that is translated to another  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164  163  language to facilitate query evaluation over a particular encoding of data, can the translation process take advantage of the fact that in certain query contexts we can use a translation that produces more edZcient translations (but which are not equivalent to the original query in general)?
+Acknowledgements The authors gratefully acknowledge the Natural Sciences and Engineering Research Council of Canada, the Communications and Information Technology of Ontario, and iAnywhere Solutions (a Sybase company) for their support of this research.
+References [1] S. Abiteboul, R. Hull, V. Vianu, Foundations of Databases, Addison-Wesley, 1995.
+[2] M. BaZ ohlen, R.T. Snodgrass, M.D.
+Soo, Coalescing in temporal databases, in: International Conference on Very Large Data Bases, 1996, pp.
+180a191.
+[3] S. Chaudhuri, K. Shim, Including group-by in query optimization, in: International Conference on Very Large Data Bases, 1994, pp.
+354a366.
+[4] J. Chomicki, Temporal query languages: A survey, in: D.M.
+Gabbay, H.J.
+Ohlbach (Eds.
+), Temporal Logic, First International Conference, Springer-Verlag, 1994, pp.
+506a534, LNAI 827.
+[5] J. Chomicki, D. Toman, Temporal logic in information systems, in: J. Chomicki, G. Saake (Eds.
+), Logics for Databases and Information Systems, Kluwer, 1998, pp.
+31a70 (Chapter 3).
+[6] P. Godfrey, J.
+Grant, J. Gryz, J. Minker, Integrity constraints: Semantics and applications, in: J. Chomicki, G. Saake (Eds.
+), Logics for Databases and Information Systems, Kluwer, 1998, pp.
+265a306 (Chapter 9).
+[7] S. Grumbach, T. Milo, Towards tractable algebras for bags, Journal of Computer and System Sciences 52 (3) (1996) 570a588.
+[8] A. Gupta, V. Harinarayan, D. Quass, Aggregate-query processing in data warehousing environments, in: International Conference on Very Large Data Bases, 1995, pp.
+358a369.
+[9] V.L.
+Khizder, D. Toman, G. Weddell, Reasoning about duplicate elimination with description logic, in: Computational Logic 2000, 2000, pp.
+1017a1032.
+[10] N.A.
+Lorentzos, The interval-extended relational model and its application to valid-time databases, in: A. Tansel, J. ClidZord, S. Gadia, S. Jajodia, A. Segev, R. Snodgrass (Eds.
+), Temporal Databases: Theory, Design, and Implementations, Benjamin/Cummings, 1993, pp.
+67a91.
+[11] P. Seshadri, H. Pirahesh, T.Y.
+ClidZ Leung, Complex query decorrelation, in: 12th International Conference on Data Engineering, 1996, pp.
+450a458.
+[12] R.T. Snodgrass, M.H.
+BaZ ohlen, C.S.
+Jensen, A. Steiner, Adding Valid Time to SQL/Temporal.
+ISO/IEC JTC1/ SC21/WG3 DBL MAD-146r2 21/11/96, (change proposal), International Organization for Standardization, 1996.
+[13] R.T. Snodgrass, C.S.
+Jensen, M.H.
+BaZ ohlen, Evaluating and Enhancing the Completeness of TSQL2, Technical Report TR 95-5, Computer Science Department, University of Arizona, 1995.
+[14] R.T. Snodgrass, I. Ahn, G. Ariav, D. Batory, J. ClidZord, C.E.
+Dyreson, R. Elmasri, F. Grandi, C.S.
+Jensen, W. Kafer, N. Kline, K. Kulkarni, T.Y.C.
+Leung, N. Lorentzos, J.F.
+Roddick, A. Segev, M.D.
+Soo, S.A. Sripada, TSQL2 language specidZcation, SIGMOD Record 23 (1) (1994) 65a86.
+[15] D. Toman, Point-based temporal extensions of SQL, in: International Conference on Deductive and ObjectOriented Databases, 1997, pp.
+103a121.
+[16] D. Toman, Temporal extensions of SQL: A constraint approach, in: G. Kuper, L. Libkin, J. Paradaens (Eds.
+), Constraint Databases, Springer, 2000, pp.
+31a70 (Chapter 8).
+[17] W.P.
+Yan, P. Larson, Eager aggregation and lazy aggregation, in: International Conference on Very Large Data Bases, 1995, pp.
+345a357.
+164  I.T.
+Bowman, D. Toman / Data & Knowledge Engineering 44 (2003) 143a164 Ivan T. Bowman is a Ph.D. student in the School of Computer Science at the University of Waterloo, and a member of the Adaptive Server Anywhere query processing team at iAnywhere Solutions, a partially owned subsidiary of Sybase Inc.
+He is also a member of the ACM SIGMOD, and his research interests include query optimization and execution.
+David Toman received his B.S.
+and M.S.
+degrees from the Masaryk University, Brno, Czech Republic in 1992, and his Ph.D. fron Kansas State University in 1996, all in computer science.
+He is currently assistant professor at the School of Computer Science, University of Waterloo, Canada.
+His research interests include temporal, deductive, and constraint database systems, query optimization and compilation, query processing in embedded control programs, description logics, logic programming, and programming languages.

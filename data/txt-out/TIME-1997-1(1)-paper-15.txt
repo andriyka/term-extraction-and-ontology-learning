@@ -1,0 +1,237 @@
+Concurrency Control for Perceivedly Instantaneous Transactions in Valid-Time Databases Marcel0 Finger*  Peter MCBrien  Departamento de CiGncia da ComputaCZo Instituto de MatemAtica e Estatistica Universidade de SZo Paulo mfinger @ime.usp.br  Dept.
+of Computer Science King's College London Strand, London WC2R 2LS pjm@dcs.kcl.ac.uk  Abstract  So now has to be treated as a special value in validtime temporal databases that demands special treatment.
+Several distinct possible semantics for now in valid-time transactions have been studied in [6];the basic choices and their associated problems are presented in Section 2.
+The basic conclusion drawn in [6] is that there is no 'perfect' semantics for now in validtime databases.
+However, we claim that perceiuedly instantaneous transactions provide the most intuitive semantics for now.
+In this kind of transaction, now remains constant and its value is determined by the transactions' submission time.
+In this paper, we deal with the problem that perceivedly instantaneous transactions bring to validtime databases, namely that their concurrent execution cannot always be serialised in the standard way.
+So, after reviewing the possible semantics for now in valid-time databases, Section 2 explains our choice of perceived instantaneity.
+Section 3 shows that this kind of transaction does not respect normal serialisation theory; it then formulates a temporal serialisation theory and characterises temporally serialisable executions (Theorem 3.1).
+Section 4 proposes two extensions of traditional two-phase locking that guarantee temporal serialisation, namely maturity ordering (MO-2PL) and maturity ordering with resource knowledge (MORK-2PL); temporal serialisation theory is used to prove their correctness.
+Although temporal databases have received considerable attention as a topic for research, little work in the area has paid attention t o the concurrency control mechanisms that might be employed in temporal databases.
+This paper describes how the notion of the current time - also called 'now' - i n valid-time databases can cause standard serialisation theory t o give what are at least unintuitiue results, if n o t actually incorrect results.
+T h e paper t h e n describes two modifications t o standard serialisation theory which correct the behaviour t o give what we t e r m perceivably instantaneous transactions: transactions where serialising TI and Tz as [Tl,Tz]always implies that the current t i m e seen b y TI is less than or equal t o the current t i m e seen b y Tz.
+1  Introduction  Query languages for valid-time temporal database normally contain a notion of 'current-time' [l,2, 3, 41, usually represented as the value of a special variable now.
+While it is agreed that the value of now should remain constant during a valid-time database operation such as querying and updating [5, 41, no such agreement exists with respect to the behaviour of now during a valid-time transaction.
+The problem is that now cannot be considered as regular data.
+Otherwise, a long temporal transaction could read-lock it, preventing the system clock from changing (supposing, for example, that there is a tick transaction that models the periodical updates of now).
+It is highly undesirable that the duration of transactions influences the way other transactions perceive the clock.
+2  There are several possible ways of determining the value of the variable now.
+Each possible choice for the semantics of now will be named by subscripting the 'pure' variable now with an appropriate letter.
+*Partially supported by Brazilian CNPq, research grant P Q 300597/95-9.
+0-8186-7937-9197 $10.00  0 1997 IEEE  An Overview of the Semantics of 'Current-Time' in Valid-Time Transactions  112  The first semantical choice for temporal transaction's current-time relates t o whether the value of now should be user-defined or run-time determined.
+If it is user defined (nowu), then prior to a transaction submission the user has to provide a value for nowu; in this way, the transaction can be executed as if nowU were any time in history; the value of nowu does not change during execution, unless there is an explicit operation to do that in the transaction body.
+We do not rule out the existence of transactions with userdefined values for now, but we also want to allow for the possibility t o set the value of now automatically.
+The intuitive semantics for run-time determined nowR is 'at the time of transaction execution', but here too there are several choices.
+The crucial one is whether nowR changes or not.
+If it is allowed to change by mirroring the value of a real-time system clock, then it has been shown that the result of a transaction can be affected by the number of clock ticks occurring during a transaction [6].
+This could be interpreted as a violation of the isolation principle of the ACID transaction properties [7].l Perhaps more seriously, allowing the value of now to change during a transaction execution puts a heavy burden on transaction programmers, who in that case have t o cope with the possibility of clock changes between each pair of now-dependent data accesses.
+Those problems tell us that time-varying nowR should be considered only in very particular cases and should not be the default semantical choice for now in temporal databases.
+So, if the value of now is to be made constant and run-time dependent, what determines its value?
+Three transaction events can be the determiner:  locking if we impose that the order of now should be kept by serialisation.
+To summarise, as concluded in 161, there are no semantics for the automatic determination of now that are technically simple to achieve and intuitive.
+While it should always be possible for the user to set the value of now, we propose that the most intuitive semantics for now is a constant one, related in some way to the time of execution of the transaction: perceived instantaneity is akin to transaction atomicity and frees a programmer from imagining what happens if time changes during execution; furthermore its value should be determined by submission time: it approximates best the semantics of now as 'at this very moment' from the point of view of a user, while begin time is unknown and can only be interpreted as 'as soon as it is possible'.
+The former is what we call perceivedly instantaneous transaction in a valid-time database.
+The rest of this paper deals with the concurrency control problems that can arise from our choice, and how to solve them.
+Section 3 formalises our notion of perceivedly instantaneous transaction as an additional restriction on serialisation graphs, and Section 4 presents two concurrency control mechanisms which meet this restriction.
+3  Temporal Serialisation  Figure 1shows two transactions, TI and T2, running concurrently according to the two-phase locking (2PL) concurrency control mechanism.
+Transaction TI was submitted and immediately started; the reading of the system clock gave t , so now1 = t. Transaction T2, on the other hand, perceives now2 = t + 1.
+All read and write operations in TI and T2 refer to the perceived current time (now).
+TI starts by reading the value of y, and T2 starts by reading the values of x; soon after that TI wants to write to x but is blocked by the locking system until after T2 commits.
+If we want a serialisation of that concurrent execution, then [TI,T2] is ruled out by the locking mechanism, so we are left with [T2,TI].
+But if transactions were executed serially in this order, the determination using submission time of the perceived value of news would imply now2 5 nowl, contradicting the scenario in Figure 1 where now1 < now2.
+Note that this 'time going backwards' phenomenon, caused by the choice of submission time determining nows, can also occur if instead we use nowB (determined by begin time).
+For example, nowB = nows when the delay between transaction submission and the beginning  commit time (nowc): this value is not known during transaction execution.
+Although updates can be deferred until commit time is known, it is not possible to execute queries that depend on the unknown value of now.
+It is therefore ruled out.
+submission time (nows): this is the time when the transaction is submitted.
+begin time (nowg): due to system load, the actual start of execution is delayed for an arbitrary period after submission.
+We show in Section 3 that both begin time and submission time may fail to serialise under two-phase ]In fact, the isolation principle requires the execution of transactions to be independent from each other; here we are assuming a stronger isolation, namely that of external events such as clock ticks; that is why we carefully stated that this could be seen as a violation, instead of stating it certainly is one.
+113  t  [YI  t+l  tipk  L  blocked w1[4  I I  now1 = t  now:!
+= t  +1  Figure 1: Violation of temporal serialisation them is a write operation.
+A transaction Ti is then formalised as a partial order (Ti,+) where:  of its execution is null.
+Time moving backwards even occurs with nowu, but then it would be argued that this would be expected, since the progression of values of nowu would be a matter of user choice.
+It follows that normal serialisation does not guarantee a 'now-ordering' which we call temporal serialisation.
+This may cause problems because TI is perceived as happening before TZ, so the past data read by T:!is incorrect according to such perception.
+Note that adopting a timestamp order concurrency control would not solve the problem: TI would be aborted and restarted in its attempt to write to x; its submission time does not change after restart, resulting in the same serialisation [T2,T1]but still now1 < now2.
+If begin time determined the value of now, then after a restart we could have a new value for nowl 5 now2, thus obtaining temporal serialisation.
+This, however, goes against the intuition of perceived instantaneity.
+The solution is to try to impose temporal serialisability by means of the concurrency control mechanism.
+It is this option that we investigate next.
+3.1  Ti c Oi; either ai E Ti or ci E Ti; if li is ai or ci, then for any other operation o E Ti, o -+ l i , i.e.
+l i must be the last operation in the transaction;  For simplicity and to keep notation unambiguous, it is assumed that at most a single operation on some object x is performed during a transaction, as is usual in classical serialisation theory [8]; however, none of the results in this paper depends on such a restriction.
+If T = { T I , .
+.
+, T,} is a set of transactions, a complete history H* over T is a partial order ( H * ,< H * ) such that:  H*=  Temporal Serialisation Theory  Ti;  i.e.
+the order of H* is an extension of the orders of Ti's; +H-  We now detail a temporal serialisation theory which may be used to avoid the time moving backwards problem, regardless of the choice of how now is determined.
+We call the value of now as seen by a transaction the maturity of the transaction, and it can be seen as having an integer value.
+A transaction T, is more mature than a transaction T j if the value of the current valid time seen by T, is strictly smaller than that seen by T j ;we represent that by writing now, < now3.
+Our serialisation theory will ensure that if now, < now, then T, will always be serialised before T J .
+A database is seen as a set of 'objects' in the loose sense (not the object oriented sense).
+The set of possible operations 0, for a transaction T, contains, for every object x in the database, T , [ z ](read x) and w,[x] (write z); it also contains the terminating operations c, (commit), a, (abort).
+Two operations performed by distinct transactions over the same data z are said to conflict if one of  2  +i,  for every two conflicting operations p and q in H* , either p + H % q or q +H* p.  A history H over T is simply a prefix of a complete history over T .
+The committed projection of a history H, C ( H ) ,is obtained by deleting from H all operations from transactions that are not committed in H .
+Two histories ( H ,4 ~and ) ( H ' , + H I ) are equivalent, which is denoted by H G H', if:  .
+H  = H' = ries over T ;  T i , i.e.
+both H and  H'are histo-  For every pair of non-aborted transactions Ti and Tj in T , if pi conflicts with q j in H then pi <H q j iff pi + H I q j .
+114  A history H is serial if for every Ti,Tj E H , all operations of Ti appear before all operations of Tj or viceversa.
+A history H is serialisable if C ( H ) is equivalent to some serial history.
+For non-temporal transactions, the notion of serialisability is all that is needed.
+But for temporal transactions we do not want more mature transactions to be serialised after less mature ones.
+Therefore we introduce the notion of temporally preserving histories.
+A history H is temporally preserving iff for every pi, q j E H , if pi <H q j , then nowi 5 nowj.
+Finally, we say that a history is temporally serialisable (TSR) iff C ( H ) is equivalent to some history that is both serial and temporally preserving.
+Temporal serialisation allows for transactions with the same maturity to be serialised in any order among themselves.
+But it imposes the restriction that more mature transactions be serialised before less mature ones.
+For non-temporal transactions it is widely known that serialisability is equivalent to having an acyclic serialisation graph [8].
+A similar property applies to histories of temporally serialisable transactions.
+Let H be a history over transactions T = { T I , .
+.
+,T,}, and T C T be the set of committed transactions in H .
+The serialisation graph for H , S G ( H ) ,is a directed graph whose nodes are Ti E T C and whose edges are such that Ti -+ Tj iff there exists conflicting pi, q j in H such that pi + H q j .
+S G ( H ) is monotonic iff Ti -+ Tj implies nowi 5 nowj.
+The temporal version of the serialisability theorem is the following.
+Since SGH is a directed acyclic graph it may be topologically sorted.
+Let T,, , .
+.
+.
+, T,,,, be a topological sort of S G H , and let H , be the serial history formed by concatenating the histories of T,, , .
+.
+.
+,T,,,,.
+Clearly both H, and C ( H )are defined over T C .
+Suppose there are Ti,Tj E TC such that pi E Ti conflicts with q j E Tj.
+If pi qj then there is an edge Ti -+ Tj in S G H ; therefore, in the topological sort of S G H , Ti must appear before Tj so pi + H ~ q j .
+Conversely, if pi <H* q j then either pi qj or q j + c ( H ) pi because pi and qj conflict; but the latter leads to the contradiction that qj + H ~ pi.
+SO C ( H ) E H,, and hence H is serialisable.
+Finally, suppose pi and qj conflict and pi + H q j .
+If nowj < nowi then Tj + Ti is an edge of S G H , Tj appears before Ti and, from C ( H ) E H,, q j + c ( H ) pi which contradicts pi + H q j .
+So nowi 5 nowj of all pi + H q j and H , is temporally preserving.
+So H is temporally serialisable, finishing the proof.
+cl  Example 3.1 A non-monotonic graph The situation depicted in Figure 1leads to a serialisation graph that is correct for standard serialisation theory; which would indicate that the only dependency is T2 -+ TI due to the conflict between w1[z]and r2[z].
+Tlv w1[xl,r2[xI  The graph is non-monotonic since we can add a dashed line to indicate now1 < now2, and see that the dependency T2 -+ TI breaks the monotonicity rule.
+0  Theorem 3.1 (Temporal Serialisability) A history H i s temporally serialisable i f and only i f S G ( H ) is acyclic and monotonic.
+Proof (+) Suppose H is temporally serialisable.
+Then, by classical serialisability theorem, SG(H ) is acyclic.
+Suppose Ti -+ Tj is an edge of S G ( H ) .
+Then there are conflicting pi and q j such that pi +H q j .
+Since H is temporally preserving, it follows that nowi 5 nowj, so S G ( H ) is monotonic, as required.
+(e) Suppose S G ( H ) is now acyclic and monotonic, and suppose the nodes of S G ( H ) are T C = T I , .. .
+,Tm.
+Extend S G ( H ) into SGH by adding an edge Ti -+ Tj if nowi < nowj.
+Clearly SGH is monotonic.
+We claim it is also acyclic.
+Since SGH is monotonic, for every Ti -+ Tj in SGH we have nowi 5 nowj.
+Therefore, for every path T p l , .
+.
+,Tp,.
+if Tpi precedes Tpjin the path, then nowpi 5 nowpj.If there is a cycle T p l , .
+.
+,Tp7,TPlin S G H , then there must be an extra edge Tpi -+ Tpj in SGH but not in S G ( H ) such that nowpi < nowpj.
+Since there is also a path from Tpj to Tpi,it follows that nowpj 5 nowpi,which is a contradiction.
+4  Achieving Temporal Serialisation  Having defined a temporal serialisation theory, we now aim to define a concurrency control mechanism which achieves temporal serialisability.
+We note in passing that conservative 2PL [8]can achieve our aim when using nowg, since the locks and the value of now are determined simultaneously.
+However, conservative locking is not very efficient, and this is not a general solution for all types of now.
+Our approach extends the strict 2PL concurrency control mechanism to achieve temporal serialisation.
+2PL already guarantees serialisation [8],so we only have to enforce that all temporal histories are temporally preserving.
+In 2PL a transaction Ti can perform an operation pi[z]only after the corresponding lock on z, pl,[z],has been obtained.
+Two locks pZi[z] and qZj[z] conflict if the corresponding operations pi[z] and q j [z] conflict.
+115  A lock pli[x]is obtained if no conflicting lock on x is being held.
+In strict 2PL, locks can be released only after the transaction commits or aborts.
+Then following two protocols develop upon this basic mechanism.
+4.1  Maturity Ordering  To achieve temporal serialisation we extend strict 2PL with a mechanism that enforces maturity ordering, thus obtaining MO-2PL which satisfies the following rules:  1.
+The strict 2PL rules.
+2.
+Let Ti and Tj be two transactions such that nowi < nowj.
+If Tj is a non-terminated transaction that holds or has held a lock for an object x and Ti requests a conflicting lock on x, then Tj is aborted and restarted, and Ti is given the requested lock.
+3 .
+A transaction may only be committed after all more mature transactions have been committed.
+Note that rule ( 3 ) places a restriction on the value that may be assigned to now in a new transaction; that is the value of now in such transactions can not be more mature than the value of now given to any committed transaction.
+Secondly, when TI attempts to obtain a lock for w1[x],  Tz is aborted since it holds a conflicting lock on x and is less mature then T I .
+After TI commits, T2 can be restarted.
+0 Rule ( 3 ) above places a heavy burden on the system implementing MO-2PL.
+If there is a single transaction T that lasts for several chronons (i.e.
+the basic indivisible units of time [ 9 ] ) then , every transaction submitted in the intermediate chronons while T is executing will have its commitment unnecessarily delayed until, at least, the termination of T .
+So a single long transaction can cause the delay of several potentially small transactions.
+The number of transactions in the system can increase significantly, leading to a serious decrease.
+in system throughput known as thrashing.
+For these reasons, MO-2PL should be used in a system only if transactions are guaranteed to terminate within a relatively short period of time, so that at most one tick event (i.e.
+a single chronon increment) may occur during the execution of any transaction.
+The unnecessary delays in the commitment of transactions can then be avoided.
+If this is not the case, then the following MORK-2PL system should be adopted.
+4.2  Enriching Maturity Order with Resource Knowledge  To improve on MO-2PL we have to provide the concurrency control system with a priori knowledge of the resources (potential locks) each transaction may need.
+With the existence of such knowledge we expect to eliminate the heavy burden placed by the commit rule (3) of MO-2PL, and hence provide a greater degree of concurrency between the transactions.
+The predeclaration of resources is defined as follows.
+Theorem 4.1 MO-2PL hastoraes are temporally sera-  alasable.
+Proof Let H be an MO-2PL history.
+Since MO-2PL is simply a restriction of the 2PL rules, it follows that S G ( H ) is acyclic.
+To show that S G ( H ) is monotonic, suppose by contradiction it has an edge T, t T, such that nowj < now,.
+Since T, t T, there must be conflicting operations p,[x] EUR T, and q j [ z ] E TJ such that pa[.]
+<H q J [ x ]Either .
+T, commits before lock q13[x]is requested, or afterwards.
+If T, committed before ql, [ x ] , rule ( 3 ) would be broken, since T, is less mature than T j .
+If T, committed after ql,[x], rule (2) would have caused T, to be aborted, removing the conflict.
+Thus nowJ p now, and S G ( H ) is monotonic.
+It follows by Theorem 3.1 that H is temporally serialisable.
+0  0  Prior to start of execution, a transaction must declare each of the potential locks it may require during execution.
+Not all predeclared locks need be requested during execution.
+However, if a nondeclared lock is requested, the transaction must be aborted.
+By requiring that all transactions predeclare their potential locks, we create Maturity Ordering with Resource Knowledge (MORK-2PL), which contains MO2PL's rules (1) and (2) plus a new commit rule:  Example 4.1 Use of MO-2PL for Figure 1 If  3'.
+Ti can commit while a more mature Tj is still running only if Tj has not predeclared a lock that conflicts with any of those obtained by Ti; otherwise Ti waits for the termination of Tj.
+we use MO-2PL the following changes occur to the normal 2PL behaviour.
+Firstly, when Tz reaches its end, it is unable t o commit, since the more mature transaction TI is still executing, and thus T2 suspends.
+116  A small adaptation in the proof of Theorem 4.1 shows that:  enough, or has dear consequences even if occurring rarely, this would justify the cost of altering concurrency control mechanisms.
+Second, if temporal serialisation is to be implemented, we have to devise ways of doing it efficiently, specially in what concerns the manipulation of transaction resource knowledge.
+Preferably, we would like to be able to add temporal serialisation to an existing 2PL scheduler without interfering with its internal behaviour, i.e.
+by treating it as a black box.
+We need also to study potential optimisation for transactions which do not access the now value, and thus need not obey temporal serialisation.
+Finally, we have to study how perceivedly instantaneous transactions can coexist with transactions with user defined time, or even with transactions supporting other semantics of now that temporal database applications may require.
+Theorem 4.2 MORK-2PL histories are temporally serialisable.
+The previous knowledge of each transaction potential resources, which is the price paid for the improved performance of MORK-2PL over MO-2PL, can be obtained by a special compiler/code analyser.
+When there are conflicts between locks obtained by one transaction and potential locks for an executing more mature transaction, MORK-2PL behaves just like MO-2PL; when such conflict does not exist, MORK-2PL allows a transaction to commit much earlier than MO-2PL would have allowed.
+Note that in the case that each transaction predeclares potential locks on all the database, MORK-2PL degenerates into MO-2PL.
+5  Acknowledgments  Conclusion  In this paper we have presented a solution to the time moving backwards problem introduced in [6].
+This solution was based around the notion of perceivedly instantaneous transactions which required the presentation of a temporal serialisation theory.
+We then presented and proved the correctness of two protocols for concurrency control of perceivedly instantaneous transactions in valid-time databases.
+Apart from the obvious contribution to the correct use of now in temporal databases, we believe that our work has a useful contribution in the analysis of the use of the CURRENT-TIMESTAMP variable in SQL92 [lo].
+This variable would appear to share many of the properties of the now variable in temporal databases.
+Work related to our approach can be found in [ll], where the scheduling of transactions was submitted to chronological constraints involving the order in which transactions had t o be executed; these constraints were totally external to the transactions and do not refer to the current-time perceived by transactions.
+The serialisation problems encountered in this paper and [ll]are different in nature; as a result, [ll]could not simply extend an existing scheduling mechanism and had to propose a totally different chrono-scheduler.
+There are several ways in which our work can be continued.
+First, although we have theoretically shown that normal concurrency control may fail temporal serialisation, we do not know how often such a violation occurs in practical temporal database applications nor how serious its effects may be.
+If it happens frequently  117  The authors would like to thank the anonymous reviewers for their carefully reading of this paper, and helpful suggestions for improvements.
+References [l] G. Wiederhold, S. Jajodia, and W. Litwin, "Integrating temporal data in a heterogenous environment", In Tansel et al.
+[3], chapter 22, pp.
+563-579.
+[2] N. Sarda, "Algebra and query language for a historical data model", Computer Journal, vol.
+22, no.
+1, pp.
+11-18, 1990.
+[3] A.U.
+Tansel, J. Clifford, S. Gadia, S. Jajodia, A. Segev, and R. Snodgrass, Eds., Temporal Databases: Theory, Design and Implementation, Benjamin/Cummings, 1993.
+T h e TSQL2 Temporal Query Language, Kluwer Academic Publishers, 1995.
+[4]R.T. Snodgrass, Ed.,  [5] J. Clifford, C. Dyreson, T. Isakowitz, C.S.
+Jensen, and R.T. Snodgrass, "On the semantics of "NOW" in temporal databases", Tech.
+Rep. R94-2047, Dept.
+of Mathematics and Computer Science, Aalborg University, November 1994.
+[6] M. Finger and P.J.
+McBrien, "On the semantics of 'current-time' in temporal databases" , in X I  Brazilian Symposium on Databases (SBBD '96), http://www.dc.ufscar.br/eventos/sbbd96/, October 1996, pp.
+324-337.
+"Principles of [7] T. Harder and A. Reuter, transaction-oriented database recovery", ACM Computing Surveys, vol.
+15, no.
+4, pp.
+287-317, December 1983.
+[8] P.A.
+Bernstein, V. Hadzilacos, and N. Goodman, Concurrency Control and Recovery in Database Systems, Addison-Wesley, 1987.
+[9] C.S.
+Jensen et al, "A consensus glossary of temporal database concepts", SIGMOD Record, vol.
+23, no.
+1, pp.
+52-64, 1994.
+[lo] ISO/IEC, "Database language SQL (SQL-92 or SQL2)", Tech.
+Rep. 9075:1992, ISO/IEC, 1992.
+[ll]D.  Georgakopoulos,  M. Rusinkiewicz, and W. Litwin, "Chronological scheduling of transactions with temporal dependencies", VLDB journal, vol.
+3, no.
+1, pp.
+1-28, 1994.
+118

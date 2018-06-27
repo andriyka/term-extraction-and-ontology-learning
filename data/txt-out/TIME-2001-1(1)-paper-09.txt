@@ -1,0 +1,679 @@
+Discovering Calendar-based Temporal Association Rules Yingjiu Li, Peng Ning, X. Sean Wang, Sushil Jajodia Center for Secure Information Systems, George Mason University, Fairfax, VA 22030 yli, pning, xywang, jajodia  @ise.gmu.edu  Abstract A temporal association rule is an association rule that holds during specific time intervals.
+An example can be that eggs and coffee are frequently sold together in morning hours.
+This paper studies temporal association rules during time intervals specified by user-given calendar schemas.
+Generally, the use of calendar schemas makes the discovered temporal association rules easier to understand.
+An example of calendar schema is (year, month, day), which yields a set of calendar-based patterns of the form example,    fi	   , where each    is either an integer or the symbol  .
+For  is such a pattern, which corresponds to the time intervals consisting of all the 16th days of  all months in year 2000.
+This paper defines two types of temporal association rules: precise-match association rules that require the association rule hold during every interval, and fuzzy-match ones that require the association rule hold during most of these intervals.
+Compared to the non-temporal association rule discovery, temporal association rules are more difficult to find due to the usually large number of possible temporal patterns for a given calendar schema.
+The paper extends the well-known Apriori algorithm, and also develops two optimization techniques to take advantage of the special properties of the calendar-based patterns.
+The paper then studies the performance of the algorithms by using a real-world data set as well as synthetic data sets.
+The performance data show that the algorithms and related optimization techniques are effective.
+1 Introduction Among various types of data mining applications, the analysis of transactional data has been considered important.
+It is assumed that the database keeps information about user transactions, where each transaction is a collection of data items.
+The notion of association rule was proposed to capture the cooccurrence of items in transactions [AIS93].
+For example, given a database of orders (transactions) placed in a restaurant, we may have an association rule of the form egg  which means that    coffee (support: 3%, confidence: 80%),  of all transactions contain the items egg and coffee, and  !#"$  of the transactions that have the  item egg also have the item coffee in them.
+The two percentage parameters above are commonly referred to as support 1  and confidence respectively.
+One interesting extension to association rules is to include a temporal dimension.
+For example, eggs and coffee may be ordered together primarily between 7AM and 11AM.
+Therefore, we may find that the above association rule has a support as high as 40% among the transactions that happened between 7AM and 11AM and has a support as low as 0.005% in other transactions.
+As another example, if we look at a database of transactions in a supermarket, we may find that turkey and pumpkin pie are seldom sold together.
+However, if we only look at the transactions in the week before Thanksgiving, we may discover that most transactions contain turkey and pumpkin pie.
+That is, the association rule aturkey   pumpkin piea has a high support and a high confidence in the transactions that happened in the week  before Thanksgiving.
+The above suggests that we may discover different association rules if different time intervals are considered.
+Some association rules may hold during some time intervals but not during others.
+Discovering temporal intervals as well as the association rules that hold during the time intervals may lead to useful information.
+Informally, we refer to the association rules along with their temporal intervals as temporal association rules.
+The discovery of temporal association rules has been discussed in the literature.
+For example, in [ OERS98], discovery of cyclic association rules (i.e., the association rules that occur periodically over time) was studied.
+However, periodicity has limited expressiveness in describing real-life concepts such as the first business day of every month since the distances between two consecutive such business days are not constant.
+In general, the model does not deal with calendric concepts like year, month, day, etc.
+In [RMS98], the work in [ OERS98] was extended to treat user-defined temporal patterns.
+Although the work in [RMS98] is more flexible than that of [ OERS98], it only considers the association rules that hold during the time intervals described by a user-given calendar algebraic expression.
+In other words, a single set of time intervals is given by the user and only the association rules on these intervals are considered.
+This method hence requires useras prior knowledge about the temporal patterns.
+(Other related work will be discussed later in the paper.)
+In this paper, we propose an approach to discovering temporal association rules with relaxed requirement of prior knowledge.
+Instead of using cyclic or user-defined calendar algebraic expressions, we use calendar schemas as frameworks for discovering temporal patterns.
+Our approach is not a simple extension of the previous approaches, because we assume less prior knowledge and, therefore, we have more potential temporal patterns to explore.
+It is necessary to explore optimization opportunities afforded by the relationships among the temporal patterns in order to achieve the performance and scalability for practical uses.
+A calendar schema is determined by a hierarchy of calendar concepts.
+For example, a calendar schema can be (year, month, day).
+A calendar schema defines a set of simple calendar-based patterns (or calendar patterns for short).
+For example, given the above calendar schema, we will have calendar patterns such as every day of January of 1999 and every 16th day of January of every year.
+Basically, a calendar pattern is formed for a calendar schema by fixing some  2  of the calendar units to specific numbers while leaving other units afreea (so itas read as aeverya).
+It is clear that each calendar pattern defines a set of time intervals.
+Based on the work for generating user-defined calendars, e.g., [LMF86], cyclic patterns of [OERS98] and calendar algebra expressions of [RMS98] can be considered as special cases of calendar patterns.
+We assume that the transactions are timestamped so we can decide if a transaction happens during a specific time interval.
+Given a set of transactions and a calendar schema, our first interest is to discover all the association rule and calendar pattern pairs such that for each pair  , the association rule  fifi    satisfies the minimum support and  confidence constraint among all the transactions that happen during each time interval given by the calendar pattern   .
+For example, we may have an association rule turkey  pumpkin pie along with the calendar pattern every day in   every November.
+We call the resulting rules temporal association rules w.r.t.
+precise match.
+In some applications, the above temporal association rules may be too restrictive.
+Instead, we may require that the association rule hold during aenougha number of intervals given by the corresponding calendar pattern.
+For example, the association rule turkey   pumpkin pie may not hold on every day of every November, but holds on more than !"  of November days.
+We call such rules temporal association rules w.r.t.
+fuzzy match.
+Our data mining problem is to discover from a set of timestamped transactions all temporal association rules w.r.t.
+precise or fuzzy match for a given calendar schema.
+We extend an existing algorithm, Apriori, to discover all such temporal association rules.
+In addition, we observe that the calendar patterns formed from a calendar schema are not isolated but related to each other.
+We use the relationship to develop two optimization techniques called temporal aprioriGen and horizontal pruning.
+These optimization techniques can be applied to both classes of temporal association rules with some adaptation.
+Our contribution in this paper is two-fold.
+First, we develop a new representation mechanism for temporal association rules on the basis of calendars and identify two classes of interesting temporal association rules: temporal association rules w.r.t.
+precise match and temporal association rules w.r.t.
+fuzzy match.
+Our representation requires less prior knowledge than the prior methods and the resulting time intervals are easier to understand.
+Second, we extend the algorithm Apriori and develop two optimization techniques to discover both classes of temporal association rules.
+Our experiments demonstrate that our optimization techniques are effective.
+The rest of the paper is organized as follows.
+In section 2, we define temporal association rules in terms of calendar patterns in the framework of calendar schemas.
+In section 3, we extend Apriori to discover large itemsets for temporal association rules and present our optimization techniques to improve the performance and scalability.
+In section 4, we present the experimental evaluation of our algorithms using both real and synthetic data sets.
+Section 5 presents the related work, and section 6 concludes the paper with some discussions.
+Appendix A gives the proof of the lemmas and theorems that appear in the paper.
+3  2 Problem Formulation 2.1 Association Rule The concept of association rules, which was motivated by market basket analysis and originally presented in [AIS93], has been discussed in many application domains.
+Let   fi      subset of .
+An itemset is also defined to be a subset of .
+Given a set     denote a set of data items.
+A transaction is defined to be a  is a relationship between the two disjoint itemsets  and  of transactions, an association rule of the form .
+An association rule satisfies some user-given   	            requirements.
+The support of an itemset by the set of transactions is the fraction of transactions that contain the itemset.
+     An itemset is said to be large if its support exceeds a user-given threshold over  is the fraction of transactions containing  that also contain  is large and its confidence exceeds a user-given threshold     fi  .
+The confidence of  .
+The association rule       holds in  if  .
+(There are constraints other than    user-specified minimum support and minimum confidence that define interesting rules, e.g., minimum improvement constraint [BAG99].
+However, they are out of the scope of this paper.)
+2.2 Simple Calendar-based Pattern In the following, we present a class of calendar related temporal patterns called simple calendar-based patterns.
+'2'3 ' $54 ' $,+-648771794 ' -  %3  !#" 	%$&'($ )*$,+.-/&'($,+- 01010 )-/&  A calendar schema is a relational schema (in the sense of relational databases)   together with a valid constraint (explained below).
+Each attribute  week etc.
+Eeach domain        is a calendar unit name like year, month, and  ' $:4;71717<4 ' >= ?
+(&A@%BC%C%D 1BC%CE 7177 BCC%CGF <H.<I& KL= < M,N  is a finite subset of the positive integers.
+The constraint valid is a Boolean function on  specifying which combinations of the values in  are avalida.
+This constraint serves  two purposes.
+The first is to exclude the combinations that do not correspond to any time intervals due to the inter-  @%B )J 7177 1BJ,F )%?=&6@B )J 7717 6B*F  action of the calendar units.
+For example, we may have a calendar schema                  with the constraint valid that evaluates  fi              to True only if the combination    gives a valid date1 .
+The second purpose of the valid constraint is to exclude the time intervals that we are not interested in.
+For example, if we do not want to consider the weekend days and holidays, we can let valid evaluate to False for all such days.
+'3 !O" P*$&'($ )*$,+.-/&'($,+- 01010 )-/&%'Q!
+!
+PK R$ M$,+.- 10010 ),-N S G3 'Q3 S K> $ M $,+.- 10010 ) - N VPW<XYXYZ[MWY[	\] VPW<XYXY^[_[P\WM]  For brevity, we may omit the domains arises.
+and/or the constraint valid from the calendar schema when no confusion  Given a calendar schema    pattern for short) on the calendar schema    is a tuple on  the wild-card symbol .
+Here, we choose to use The calendar pattern 1 For  example,        is a valid date while      3 '(3  , a simple calendar-based pattern (or calendar  of the form  for both an element of        where each  is in  4  ,T>- U  and the symbol to simplify our notation.
+represents the set of time intervals that are intuitively described by athe is not.
+or  -  of the  %T>U  0 010 %T>$ U  $ T>3 U K	S 1B B N ,  , of  .a In the above description, if  ,3  is the wild-card symbol a*a (instead of an integer), then  K<B YS 1B %N  the phrase athe  a is replaced by the phrase aeverya.
+For example, given the calendar schema week, day, hour  , the  calendar pattern     "  means athe 10th hour on the first day (i.e., Monday) of every weeksa.
+Similarly,  'Q$ 4 7177 4 '2-     "  represents the time intervals athe 10th hour of every day of week 1a.
+Each calendar pattern in effect represents the time intervals given by a set of tuples in  that are valid.
+For simplicity, we omit a more formal treatment  of the above concepts.
+  )%?= )IA K<B YS 1B %N  We say a calendar pattern  covers another calendar pattern  in the same calendar schema if the set of time intervals   K9B 1B 1B N P$ ) $G+.- 7177 )B    of  is a subset of the set of intervals of  .
+For example, given the calendar schema the 10th hour of every day of week 1) covers  K> $ ) $,+- 17 717 M - N  for a given calendar schema                     if and only if for each ,     "  , either       KP$ )%$G+.- 17 77 MG-N , 3 3 "  3  fi        ,     "  (i.e.,  (i.e., the 10th hour of day 1 of week 1).
+It is easy to see that  , a calendar pattern          = a*a or  covers another calendar pattern      .
+Simple calendar-based patterns give a simple and intuitive representation of sets of time intervals in terms of a calendar schema.
+Note that time intervals or periodic cycles can be easily described by calendar patterns with appropriate  KS <9N  B   ! "
+)%?= 3  calendar schemas having perhaps user-defined calendars.
+For example, the periodic cycle aevery seventh daya can be expressed by a calendar pattern    , where    	   which day the cycle starts.
+3 - B   L= ?
+<H .<I  , under the calendar schema   $ ) $,+.- 10100  >.<I M?=  For simplicity, we require that in a calendar schema ( tained in a unit of  H.<I    , for    month.
+However, the schema  .
+For example,      fi       fi                  fi   ), each calendar unit of    depending on  is uniquely con-  is allowed since each day is covered by a unique  is not allowed because a      fi  may not be contained in a unique  .
+It is often convenient and sometimes necessary for users to define calendar units and then use them in calendar  schemas.
+For example, the 24 hours of a day may be partitioned into five parts, representing early morning, morning, work hour, night, and late night respectively, forming a new calendar unit.
+The reader is referred to [LMF86] and [BJW00] for generation of user-defined calendars.
+For brevity of presentation, we introduce some notations for calendar patterns.
+We call a calendar pattern with exactly  fi  wild-card symbols a k-star calendar pattern (denoted  ) and a calendar pattern with at least one wild-card  symbol a star calendar pattern.
+In addition, we call a calendar pattern with no wild-card symbol (i.e., a 0-star calendar  '$ 4 7717R4 '2-  pattern) a basic time interval under the calendar schema if the combination is valid with respect to the constraint given in the calendar schema.
+In other words, a basic time interval corresponds to a tuple in  that is valid.
+2.3 Temporal Association Rules We assume that each transaction is associated with a timestamp that gives the time of the transaction.
+For example, a    transaction may be associated with a timestamp that represents November 1, 2000, which indicates that the transaction occurred on November 1, 2000.
+Given a basic time interval (or a calendar pattern  ) under a given calendar schema,  5    we denote the set of transactions whose timestamps are covered by (or  ) as  !
+!
+Syntactically, a temporal association rule over a calendar schema rule and   is a calendar pattern on     fi (or  is a pair  fi fi    ).
+, where  is an association   .
+However, multiple meaningful semantics can be associated with temporal  association rules.
+For example, given a set of transactions, one may be interested in the association rules that hold in the transactions on each Monday, or the rules that hold on more than 80% of all Mondays, or the rules that hold in all transactions on all Mondays (i.e., consider the transactions on all Mondays together).
+In the following, we identify two classes of temporal association rules on which we will focus in this paper.
+Other kinds of temporal association rules may be interesting, but we consider them as possible future work.
+  Temporal Association Rules w.r.t.
+Precise Match Given a calendar schema       of timestamped transactions, a temporal association rule  L= ?
+<H.<I /I6 * %?=  association rule  holds in   fi        fifi  ! "
+P$ )*$,+.- 7177  KS BB N   holds w.r.t.
+precise match in  , we may have a temporal association rule (turkey  (i.e., the 4th Thursday in November of every year).
+timestamped transactions, and a real number  rule  holds in     and a set    ("   ) that holds    pumpkin pie holds on all Thanksgiving days           , a set  , called match ratio), a temporal association rule    if and only if for at least "#"  may have a temporal association rule (turkey     ! "
+P$ ) $,+- 71717 )-   B B *  >= ?
+<H.<I M?%=  " R0 KS BB YS*N  of fi fi  of the basic time intervals covered by  , the association  .
+For example, given the calendar schema  the association rule turkey     if and only if the  pumpkin pie,   Temporal Association Rules w.r.t.
+Fuzzy Match Given a calendar schema      for each basic time interval covered by  .
+For example, given the calendar schema  w.r.t.
+precise match.
+This rule means that the association rule turkey  holds w.r.t.
+fuzzy match in  fi  pumpkin pie,      fi      and the match ratio  "  !
+, we  ) that holds w.r.t.
+fuzzy match.
+This means that    pumpkin pie holds on at least 80% of the days in November.
+Given a calendar schema, we want to discover all interesting association rules with all their calendar patterns in the given calendar schema.
+Specifically, we attack the following two data mining problems:  !
+1.
+(Precise match) Given a calendar schema tion rules  fi fi  that hold w.r.t.
+precise match in  2.
+(Fuzzy match) Given a calendar schema temporal association rules  fi   !
+  and a set    of timestamped transactions, find all temporal associa-  .
+, a set      of timestamped transactions, and a match ratio  that hold w.r.t.
+fuzzy match in    , find all  .
+We further assume that we are not interested in the association rules that only hold during basic time intervals.
+Indeed, such rules do not reveal much information in terms of time.
+Therefore, we exclude the 0-star calendar patterns   	   from the output of our data mining problems.
+       Now we introduce some additional notations for the sake of presentation.
+For a basic time interval in a calendar schema, we say an itemset is large for if it is large in  w.r.t.
+precise match if it is large for each basic time interval covered by  .
+Further consider a fuzzy match ratio 6    .
+For a calendar pattern  , we say an itemset is large for  , we    (1)  large 1-itemsets  ;    (2) for (k=2; fi (3) (4) (5) (6)  	    do begin   = aprioriGen  fi   ; // New candidates forall transactions  do subset(    ); //   !#"%$  if &  ' ' (  )!#"%$+*-,/."102!4353#6$ ;   is contained in   (7) end (8) Answer =  7    ;      B *  Figure 1: Algorithm 8    say an itemset is large for  w.r.t.
+fuzzy match if it is large for at least    ""  .
+of the basic time intervals covered by  .
+3 Finding Large Itemsets Mining temporal association rules can be decomposed into two subproblems: (1) finding all large itemsets for all star calendar patterns on the given calendar schema, and (2) generating temporal association rules using the large itemsets and their calendar patterns.
+Finding large itemsets along with their calendar patterns is the crux of the discovery of temporal association rules.
+In the following, we will focus on this problem.
+The generation of temporal association rules from large itemsets and their calendar patterns is straightforward and can be resolved using the method discussed in [AS94].
+Our approaches to finding large itemsets for all calendar patterns are based on Apriori [AS94].
+Before going into details of our approaches, we briefly go over Apriori.
+3.1 Apriori Figure 1 shows the outline of Apriori.
+The algorithm fi  8        algorithm tries to find large -itemsets (i.e., itemsets with generates 9     fi  fi  consists of a number of passes.
+During pass , the  items that have at least the minimum support).
+It first  fi  , the set of candidate large -itemsets, then counts the support of each candidate itemset by scanning all  the transactions in the data set, and finally finds  :   fi  , the set of large -itemsets, by inspecting the supports of all the  candidate itemsets.
+The algorithm terminates when no large itemset is discovered after a pass.
+Function  ?   <;      fi    +.-  B  fi  9  is a critical step of Apriori (step 3).
+It constructs the set of candidate large -itemsets,  from the set of large ( -1)-itemsets, :   , ensuring that all  >= fi    -item subsets of each candidate in 9   are in :   +.  , .
+It turns out that aprioriGen is very effective in reducing the size of the candidate set [AS94].
+Scanning the transactions and updating the supports of candidate itemsets (step 4 and 5) are the most time7  (1) forall basic time intervals  do begin (2)        fi  large 1-itemsets in      forall star patterns that cover  do  (3) (4)  update      using     ;  (5) end (6) for (  (7)     ; 	 a star calendar pattern such that  fi   &	   ;'  -  ) do begin  forall basic time intervals  do begin // Phase I: generate candidates      ;  (8)  generate candidates  (9)  // Phase II: scan the transactions fi forall transactions      do subset (   (10)      ,  ); //  )!#"%$   if '+    &   2 (  )!#"%$+*, . "
+0 5!
+343#6$	 ;       (11)  is contained in   // Phase III: update for star calendar patterns forall star patterns that cover  do  (12) (13)  update  (14)  end  (15)  Output               using     ;  for all star calendar pattern .
+(16) end  Figure 2: Outline of our algorithms for finding large k-itemsets        consuming steps, since they require access to both disk and a potentially large set of candidate itemsets.
+Apriori uses a hash tree to store all candidate itemsets and their supports [AS94].
+In Figure 1, function  hash tree according to the transaction      traverses the    and increments the supports of the candidate itemsets contained in .
+3.2 Overview of Our Algorithms  !
+  We extend Apriori to discover large itemsets w.r.t.
+precise and fuzzy match.
+When precise match is considered, the  	    input of our algorithms consists of a calendar schema , a set     of timestamped transactions, and a minimum support  .
+When fuzzy match is considered, an additional input, a match ratio  !
+, is given.
+Depending on the data  mining tasks, our algorithms output the large itemsets for all possible star calendar patterns on  in terms of precise  match or fuzzy match.
+Figure 2 shows the outline of our algorithms.
+(This outline is generic for both precise and fuzzy match as well as with and without our optimization techniques discussed later.
+For different algorithms, appropriate subroutines will be supplied.)
+As Apriori, the algorithms work in passes.
+In each pass, the basic time intervals in the calendar schema are  8  processed one by one.
+During the processing of basic time interval  first computed , and then : 2     	   fi  	  fi  fi  in pass , the set of large -itemsets :   	   	   is   is used to update the large -itemsets for all the calendar patterns that cover  .
+Note   that although our data mining tasks do not need association rules for basic time intervals, the large itemsets for basic time intervals  :   	     K N K N  K  N  are used in the algorithms for efficiency considerations.
+Indeed, assume we have the calendar   K  N  schema year, month, day  .
+In the algorithms, we may need to consider, e.g., the calendar patterns 1995, *, 1 as well  K  N  K  N  as *,1,* .
+These two patterns have an overlapping basic time interval, namely 1995, 1, 1 .
+In our algorithms, we use the large itemsets for 1995, 1, 1 (and for other basic time intervals) to derive the large itemsets for 1995, *, 1 and *,1,* to avoid duplicate tasks.
+This strategy is reflected in lines (4) and (13).
+ %%A   The first pass is specially handled.
+In the first pass, we compute the large 1-itemsets for each basic time interval by counting the supports of individual items and comparing their supports with    .
+In the subsequent passes,  we divide the processing of each basic time interval into three phases.
+Phase I generates candidate large itemsets for the basic time interval from the previously generated large itemsets.
+Phase II reads the transactions whose timestamps are covered by the basic time interval, updates the supports of the candidate large itemsets, and discovers large itemsets for this basic time interval.
+Phase III uses the discovered large itemsets to update the large itemsets for each star calendar fi  pattern that covers the basic time interval.
+At the end of each pass, it outputs the set of large -itemsets, :	  fi  , for all  star patterns  w.r.t.
+precise or fuzzy match.
+Similar to the discovery of non-temporal association rules, phase I is the critical step in mining temporal association rules.
+Indeed, the fewer candidate large itemsets are generated, the less time phase II will take, and the better performance can be achieved.
+Several observations can be used to reduce the number of candidate large itemsets.
+We will discuss phase I in detail in the following subsections.
+Phase II is performed in the same way as in Apriori by using the candidate large itemsets generated in phase I.
+Now let us explain phase III.
+After the basic time interval  calendar patterns that covers   :"  fi  	    fi  :   :      fi    	    fi  are updated as follows.
+For precise match, this is done by intersecting the set :  of large -itemset for the basic time interval   :  fi  is processed in pass , the large -itemsets for all the  ).
+(Certainly, when :  	    with the set    :   fi  fi  5"   	       of large -itemsets for the calendar pattern  (i.e.,  is updated for the first time, we let :   fi  fi  :   	       .)
+It is easy to  see that after all the basic time intervals are processed, the set of large -itemsets for each calendar pattern consists of fi  the -itemsets that are large for all basic time intervals covered by the pattern.
+Update for fuzzy match is a little more complex.
+We associate a counter c update with each candidate large itemset for each star calendar pattern.
+The counters are initially set to 1.
+When the counters of the itemsets in : but not in :   fi  are added to :        fi  by  and this is the -th update to : 2 When  that are also in :  fi    	   fi  :    	     is used to update :     fi  in phase III,  are incremented by 1, and the itemsets that are in :  with the counter set to 1.
+Suppose there are totally      9   	    A?    basic time intervals covered  .
+It is easy to see that an itemset cannot be large for  if its counter  some of our optimization techniques are used, a subset of the large  -itemsets for fi  may be used as      fi 	   as explained later.
+  MK	S JN :   %%? /"  A? /"  A?% 8"  A?% 8"    AB,  J    AC,  B    AD,  J    BC,    <K )J%N :  (Before update)       <KS JN  A? /"  %%? /" J  A? /"#B  A? 8"  A? /" B  :     AB  AB,  AC  AC,  B  (After update)          AD, BC  BC,  BD  BD,      (X)      (X)  Figure 3: Update candidate large 2-itemsets for fuzzy match (Example 1)  does not satisfy   %%?      7  =      .
+Thus, in the algorithm outlined in Figure 2, steps 4 and 13 for fuzzy    match can be instantiated by the following procedure.
+Procedure Update4FuzzyMatch ( :    Let if :  be the number of times that :    :" :  	 fi90  A?% 8"#B "  @ fi :      ,:  fi   	    )   has been updated (including this update);  fi  <0  A? 8"#B  has never been updated then     Let : else set  :             , and set fi  for each fi    fi    :  fi    for each fi    :  	  fi<0   	  =  :  A?        fi      :   <0  A? 	    7  F  , and fi  =  ;  fi    for each fi  :  	     :   fi  ;  ;    endif  " R0 fi" D  KS JN  Example 1 Suppose we are given a calendar schema ratio  "  !
+.
+Consider the calendar pattern  K	S )J%N    ! "
+&@%B 7717 )DGF  week        day  &@B 17 717 F K	S )J%N K J N : <KS JN  <KS )J%N  "  left column, and the set of large 2-itemsets for third time that :  <KS )J%N      K )J%N  is updated (i.e.,           :       (i.e.,      ) is given in the  ) is in the middle column.
+Suppose this is the  ).
+Then the resulting  The itemsets marked with aXa do not satisfy the condition  :  <K )J%N : <KS JN  A?%   =    7   (i.e.,    and want to update the     .
+In Figure 3, the set of candidate large 2-itemsets (i.e.,    and a fuzzy match     fi  .
+There are totally 5 basic time intervals covered by  ).
+Suppose we have computed the large 2-itemsets for the basic time interval  candidate large 2-itemsets for          can be computed as in the last column.
+and thus are dropped from      .
+fi  If the set of large -itemsets : fi    	   	  is correctly computed for each basic time interval  , then Update4FuzzyMatch  can correctly generate large -itemsets w.r.t.
+fuzzy match for all star calendar patterns.
+This is guaranteed by the following lemma.
+Lemma 1 Consider the algorithm outlined in Figure 2.
+If procedure Update4FuzzyMatch is used at steps 4 and 13 and  :    	   fi  fi  is the set of large -itemsets for each basic time interval  processed, for each calendar pattern  ,  :   fi   fi  	 , then after all the basic time intervals are  contains all and only the -itemsets that are large for at least 10  B * "#"  of the basic time intervals covered by  .
+3.2.1 Calendar Tree In the algorithm, it is necessary to locate the large itemsets for a given calendar pattern quickly.
+We use a data structure called a calendar tree to organize the large itemsets for all the calendar patterns.
+! "
+ $ &G' $ ) $,+.- &R' ,$ +.- 10100 ) - &R'  '3 =  B  %$ 2" K>G$ )%$G+.- 0100 MG-N  Given a calendar schema        , the calendar tree for    !
+Itemsets are stored in the leaf nodes.
+An interior node at height contains a look-up table of size one cell for each domain value in pointer to a node at height  ,$    , which has  plus a cell for the wild-card symbol a*a.
+Each cell of the look-up table contains a  .
+The root is at height  (corresponding to  that stores the set of large itemsets for a calendar pattern pointer corresponding to  ' 3  B    is a tree of height .
+    ).
+When we want to locate the leaf node      G$G+.-  , we start from the root, follow the  , and from this node follow the pointer corresponding to  , and so on, until we reach  the leaf node corresponding to  .
+3.3 Generating Candidate Large Itemsets for Precise Match 3.3.1 Direct-Apriori for Precise Match A naive approach to generating candidate large itemsets is to treat each basic time interval individually and directly apply Apriorias method for candidate generation.
+We call this approach Direct-Apriori for precise match, or just Direct-Apriori when it is clear from the context.
+Phase I of Direct-Apriori is instantiated as follows.
+9    	   " ?   <;  : .+            	      fi  Direct-Apriori for precise match can correctly generate the large -itemsets w.r.t.
+precise match.
+As we discussed    B  earlier (in subsection 3.2), pass 1 of the algorithm can correctly generate the large 1-itemsets for all calendar patterns.
+Consider a basic time interval itemsets, 9     	  fi      	  in pass  fi  for fi  fi  fi  .
+According to Apriori [AS94], the set of candidate large -  	  , is a super set of all the large -itemsets for  .
+Thus, phase II of the algorithm will correctly generate  	  the set of large -itemsets for  .
+By the argument in subsection 3.2, for each calendar star pattern  , : fi       will consist  of the -itemsets that are large for each basic time interval covered by  after all the basic time intervals are processed.
+3.3.2 Temporal-Apriori for Precise Match Direct-Apriori cannot achieve the best performance; it not only ignores the assumption that we are not interested in temporal association rules for individual basic time intervals, but also the relationship among calendar patterns.
+Here we present two optimization techniques, which we call temporal aprioriGen and horizontal pruning respectively, to  11  improve the candidate generation by considering these issues.
+The resulting algorithm is called Temporal-Apriori for precise match, or Temporal-Apriori when it is clear from the context.
+The first optimization technique temporal aprioriGen is partially based on the assumption mentioned above.
+Since  	 , we do not need to count the supports for all the potentially large -itemsets generated by 9 	 " ?   ;  : +- 	 .
+Indeed, we only need the supports of the itemsets that are potentially large for some star calendar patterns that covers 	 .
+In other words, given a basic time interval 	 , if a candidate large -itemset cannot be large for any of the star calendar patterns that cover 	 , we can ignore it even if it could be large for 	 .
+we are not interested in the large itemsets for basic time intervals, during the processing of each basic time in-  terval   fi                       fi        Temporal aprioriGen is also based on an observation about the relationships between the calendar patterns on the same calendar schema.
+This observation is given in the following lemma.
+Lemma 2 Given a star calendar pattern  , an itemset is large for  w.r.t.
+precise match only if it is large w.r.t.
+precise match for all 1-star calendar patterns covered by  .
+Lemma 2 gives us an opportunity to improve the generation of candidate large itemsets.
+Consider the set of candi-  	  fi  date large -itemset for  , i.e.,  9   	      .
+We only need  9   	    to generate large itemsets for patterns  that cover    fi  (since our data mining problem excludes 0-star patterns in the output).
+Now we need to have a -itemset in  	  9     	  	    only if it is large for all the 1-star patterns that cover  .
+Indeed, an itemset is large for a given star calendar pattern   B  only if it is large for all 1-star calendar patterns covered by  by the above lemma.
+Thus, using temporal aprioriGen, fi  we can generate the candidate large -itemsets (  fi  ) via the following procedure.
+Procedure TemporalAprioriGen4PreciseMatch(  )  9    	     *-   = ;   forall 1-star patterns    	  9   =9  return 9   fi   	       	   that covers     	  +.- *-  do  :  aprioriGen      '  ! "
+& @B 71717 D,F &@B 71717 F : <K )J%N " 5@ 8 %8 9 8/' %8fi /9  ' 9;' 9fi(F : <KS JN " @58 %8 9 ' 19fi(F : <K SN " 5@ 8 18 9 8 '   ' 9;'HF 9 <K	S )J%N " @58 9 8 'HF 9 <K YS*N " @58 ' )8 9;'HF  9 MK )JN " 9 MK	S JN 9 MK S*N " @58/9 8 ' 18 9;'HF : MK JN 9  <K )J%N # " @58 9 8 ' 8 9;' 8 9fi /9;'HF  	 : **	 : : 	 - : - : 	  the following large 2-itemsets:  	 9 	    ;    Example 2 Consider the calendar schema  8     , and          week                       day      the candidate large 3-itemsets, we will first generate Then the set of candidate large 3-itemsets is          3-itemsets as             .
+Suppose we have computed ,    and             contrast, if we use Direct-Apriori, we will generate the candidates from      fi          .
+If we use temporal aprioriGen to compute                          .
+.
+In  and have the set of candidate large  .
+  Our second optimization technique, horizontal pruning, is also based on Lemma 2, but applied during a pass.
+fi  Consider pass .
+For each basic time interval  , we update (among others) the first time        is updated, for every    processed, we update 12              to be  for each        that covers  .
+After       , i.e., drop the  itemsets in :  *   fi  that do not appear in :  -    all the large -itemsets for     	   .
+Hence, after the first time :     *  is updated, :   *-  *   always contains   -  (plus other itemsets that will eventually be dropped).
+In other words, at any time of the  processing (except before the first update), if a -itemset fi does not appear in : Now we can use the tentative :  as follows.
+If an itemset fi in  9  	        	    -  fi      , then fi is not large for  .
+fi  (i.e., updated at least once) to prune the candidate large -itemsets in 9	   does not appear in any of the tentative :      	      , where     -  at least one of the 1-star patterns that cover  	    	.
+-  Let this particular 1-star pattern be   -  	   is a 1-star pattern that  covers  , then fi cannot be large for any star pattern  that covers  .
+Indeed, any star pattern  covering      	  must cover  .
+Since fi is not large for any  1-star pattern that covers  , fi is not large for  .
+By Lemma 2, fi cannot be large for  .
+Therefore, we may drop fi from  9    	       .
+In summary, Horizontal pruning can be implemented by the following procedure.
+Procedure HorizontalPrune4PreciseMatch( 9  -  that covers   if there exists a 1-star pattern   "  then return 9    ;    	     " : *-  forall 1-star patterns   9  return     	              	  	 )   *-      such that :     has not been updated even once   ;  	  that covers    	    do  ;  .
+  K J N :  MK	S JN " @58 H ' F :  <K SN " @58 ' )8 9;'HF  9  MK )JN " @48/9 )8 ' 8 9;'HF 9  MK J N " 9  MK )JN  :  <K	S )J%N :  MK YS*N " @58 ' )8 9;'HF   Example 3 Let us continue example 2.
+Suppose when the basic time interval have       and               .
+Given the generated set of candidate large 3-itemsets    , we can further prune it by    is being processed, we already                         .
+In summary, phase I of Temporal-Apriori for precise match can be instantiated as follows.
+   9     	  9  	  	    = TemporalAprioriGen4PreciseMatch( );   = HorizontalPrune4PreciseMatch( 9    	 ,  	 );       We prove the correctness of Temporal-Apriori for precise match in the following way.
+First, we show that the algorithm has the same output as Direct-Apriori if for each basic time interval  	  fi    	 , it uses a super set of the union of  large -itemsets for all 1-star calendar patterns that cover  .
+Then we prove the equivalence of Temporal-Apriori and fi  Direct-Apriori by showing that the set of candidate large -itemsets used for each basic time interval in TemporalApriori is such a super set.
+This result is summarized in Lemma 3 and Theorem 1.
+Lemma 3 If Temporal-Apriori for precise match uses a super set of fi  	  7fi 	 :   *    as the set of candidate large  -itemsets for each basic time interval  , then it has the same output as Direct-Apriori for precise match.
+Theorem 1 Temporal-Apriori for precise match is equivalent to Direct-Apriori for precise match.
+13  week 1  day 1  day 2  day 3  day 4  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  X  week 2 week 3  X  week 4 week 5  X  day 5  day 6  day 7 X  Figure 4: Distribution of large itemset fi  3.4 Generating Candidate Large Itemsets for Fuzzy Match 3.4.1 Direct-Apriori for Fuzzy Match  B *  As we discussed earlier, given a fuzzy match ratio it is large for at least  "#"    , an itemset is large for a calendar pattern  w.r.t.
+fuzzy match if  of the basic time intervals covered by  .
+For brevity, we still refer to such itemsets as  large itemsets in the context of fuzzy match.
+Similar to Direct-Apriori for precise match, Apriorias candidate generation method can be directly applied to each  	 ;"  individual basic time interval when fuzzy match is considered.
+We call this approach Direct-Apriori for fuzzy match.
+?   ;  : + -  9  Then phase I of Direct-Apriori for fuzzy match is instantiated in the same way as for precise match, i.e.,           	        .
+   fi  Indeed, Direct-Apriori supplies phase III (i.e., procedure Update4FuzzyMatch) with the set of large -itemsets for each basic time interval.
+By Lemma 1, it is easy to see that Direct-Apriori for fuzzy match can correctly generate large itemsets w.r.t.
+fuzzy match for all calendar patterns.
+3.4.2 Temporal-Apriori for Fuzzy Match Recall that our first optimization technique temporal aprioriGen is based on both Lemma 2 and the assumption that we are not interested in large itemsets for basic time intervals.
+The assumption still applies when fuzzy match is considered.
+However, Lemma 2 is not true in the context of fuzzy match.
+This can be seen through a counter example.
+& @%B 7717 D,F KS YS*N R0 7 D 7 " J 60 7 " DG0 E  Example 4 Consider a calendar schema  ! "
+week        day  & @%B 7177 F   and fuzzy match ratio     fi   " 60 "  .
+!
+Suppose an itemset fi is large for the basic time intervals marked with aXa in Figure 4.
+The figure shows that fi is large  <K B BN fi  " R0 fi K	S 1BN K<B YS*N 	K S 1BN  for    .
+Moreover, is large for the calendar pattern  ratio   "  nor    !
+requires is large for at least .
+For    "  !
+since it is large for 29 basic time intervals (the match    !
+basic time intervals).
+However, fi is not large in neither  60 7 D "  , fi is large for 3 basic time intervals, which is less than "  5 basic time intervals, which is less than "  !
+.
+14  !
+ .
+For K<B YS*N , fi   is large for    Example 4 shows that an itemset may be large for a star calendar pattern  even if it is not large for any 1-star pattern covered by  .
+Therefore, we cannot directly use the same approach as we did for precise match.
+Nevertheless, we can still apply temporal aprioriGen to fuzzy match with some modification: We just consider all star calendar patterns fi  B  instead of 1-star calendar patterns.
+This is correct since if a -itemset is large for a calendar pattern  , then each of its fi  =    -item subset must be large for  .
+The procedure is shown as follows.
+Procedure TemporalAprioriGen4FuzzyMatch(  )  9     	    = ;     	  forall star patterns  that covers   9 return 9   	    =9   fi     	     	     +.-  do  aprioriGen  :    :   fi  +.-   	  fi   (*);     .
+  ! "
+& @B 71717 D,F &@B 17 717 F : <K )J%N " 4@ 8 %8 9 8 ' %8fi  ' 9;' 9fi(F : <KS )J%N " @48 #8 9 8 ' /9  ' 9fi(F : <K SN " @58 %8 9 8 '  ' 9;'HF : MK	S YS*N " @58 %8 '  ' 9;' %8 9 8fi(F : " : <KS JN : <K )J%N " @58 8 9 8 '  ' )9fi(F 9  MK	S )JN " : " @58 'HF 9 <K SN :" @58 ' 8 9;'HF 9 MK	S S*N 5" 4@ 8 ' 8 9fi(F   9  MK )JN " 9  <K	S )J%N 9  MK YS*N 9  <KS SN "#5@ 8 ' 8 9;' 8 9fi(F  = B : +.
+: +.-  : +.- 	  Example 5 Consider the calendar schema the following large 2-itemsets:   ,            week                  day          , and           fi  .
+Suppose we have computed  ,                  we use Temporal-Apriori for fuzzy match to compute the candidate large 3-itemsets, we first get        can get               and then generate    and                     aprioriGen      .
+If        .
+Similarly, we    .
+Then the set of candidate large 3-itemsets is            .
+  Note that in the procedure TemporalAprioriGen4FuzzyMatch, the statement marked with a*a requires access to  the large  fi    -itemsets for basic time intervals.
+When the calendar schema includes a large number of basic time  intervals, this step will greatly increase the memory requirement, since the large itemsets for these basic time intervals must be kept.
+An alternative is to use    fi  instead of    fi        when memory is the critical resource.
+This alternative can reduce the memory requirement by not keeping all the large itemsets for basic time intervals; however, the downside is that it may generate some candidates that would not even be generated by Direct-Apriori.
+In our experiments, we use the original proposal for pass 2 and the alternative way for the later passes.
+Due to the difference between precise match and fuzzy match, our second optimization technique for precise match, horizontal pruning, cannot be directly applied to fuzzy match, either.
+This is because fuzzy match allows a large itemset to be not large for some basic time intervals.
+Nevertheless, a similar idea can be applied to fuzzy match.
+The idea is based on the observation that an itemset is not large for a calendar pattern if it is not large for a certain number of basic time intervals covered by the pattern.
+For example, an itemset fi can never be large for 80% of all Mondays if it is already known not to be large for 20% of the Mondays.
+This observation leads to the following pruning procedure.
+Note that we reuse the procedure Update4FuzzyMatch, which was developed to update the large itemsets w.r.t.
+fuzzy match (see subsection 3.2).
+The idea is to discard the  	  candidate large itemsets that cannot be large for calendar pattern  even if they are large for  .
+15  Procedure HorizontalPrune4FuzzyMatch( 9  	  if there exists  that covers   "   then return 9   	      such that :  "  forall star patterns  that covers    fi  :  "     Update4FuzzyMatch  end return  9   9     	      	)  has not been updated     do begin  9  29    fi      	      ;  ;  fi  	   	  ;       ;  ;  9    .
+  9   <K )J%N " @58 '  ;' 8 9fi(F :  <KS JN :  MK YS*N :  <KS YS*N 9  MK JN K JN :  <KS )J%N 9  MK JN 9  <K	S )J%N :" @48 ' 8 fi(F 5@ 8 ' )8 9;'HF 9  MK	S YS*N " @58 'HF 9  <K )J%N 9  <K )J%N " 9  <K JN  9 MK S*N 9  <KS SN "#@48 ' 8 9;'HF  Example 6 Let us continue example 5.
+We have generated a set of candidate large 3-itemsets  8 9  .
+Suppose all of    all itemsets in   with         ,          , and                .
+If we also get 9    MK YS*N :"  9  <KS JN  can be pruned as                         .
+    , we can use the procedure Update4FuzzyMatch to update a copy of  , then      have been updated at least once.
+Assuming that    and get the result, for example,          were large for    and               Using the fuzzy match version of temporal aprioriGen and horizontal pruning, phase I of Temporal-Apriori can be instantiated as follows.
+   9     	  9  	  	    = TemporalAprioriGen4FuzzyMatch( );   = HorizontalPrune4FuzzyMatch( 9    	 ,  	 );       The correctness of Temporal-Apriori for fuzzy match can be shown in the same way as for precise match.
+First,  	  we show that the algorithm has the same output as Direct-Apriori for fuzzy match if for each basic time interval  , it  	  fi  uses a super set of the union of large -itemsets for all calendar patterns covering  .
+Then we prove the equivalence fi  of Temporal-Apriori and Direct-Apriori by showing that the set of candidate large -itemsets used for each basic time interval in Temporal-Apriori is such a super set.
+This result is summarized in Lemma 4 and Theorem 2.
+Lemma 4 If Temporal-Apriori for fuzzy match uses a super set of fi  	  7   	 :    fi  as the set of candidate large  -itemsets for each basic time interval  , then it has the same output as Direct-Apriori for fuzzy match.
+Theorem 2 Temporal-Apriori for fuzzy match is equivalent to Direct-Apriori for fuzzy match.
+4 Experiments To evaluate the performance of our algorithms and optimization techniques, we performed a series of experiments on a DELL OptiPlex GX200 PC running Windows 2000 Professional.
+The PC has a 667 MHz Pentium III CPU with 256 16  Precise match pass   # calendar    patterns  Fuzzy match (,  # large  # calendar  -itemsets  patterns         )       Fuzzy match (,  # large  # calendar  -itemsets  patterns  # large    -itemsets  2  130  3812  130  4003  130  4472  3  130  1770  130  1868  130  2179  4  92  341  103  366  122  445  5  28  29  29  30  32  33  Figure 5: Discovery in the KDD Cup 2000 data (  	   " 60 D   )  "    #  )  KB full cache and 256 MB main memory.
+The data sets were stored on a 30 GB, 7200 RPM EIDE hard disk.
+In the following, we first assess the performance of our algorithms using the transactional data published in KDD Cup 2000 [KB00].
+Then we generate synthetic data sets to further evaluate the algorithms with data sets having various characteristics.
+4.1 KDD Cup 2000 Data Set We choose the clicks data file in the KDD Cup 2000 data sets to perform our experiments.
+The clicks data file consists of homepage request records, each of which contains attribute values describing the request and the person who sent the request.
+Examples of the attributes include when the request was submitted, where the person lives, and how many children the person has, and so on.
+We consider each request record as a transaction.
+The requests recorded in the clicks data file are from January 30, 2000 to March 31, 2000, which cover 8 weeks (from the 6th to the 13th week in year 2000) plus 6 days (in the 14th week).
+We use timeOfDay to represent  !fifi  "  &Q@E 7717 BfiRF  &  the calendar concept formed by partitioning each day into three parts: early morning (0am - 8am), daytime (8am  @%B )J 7177 ,F  & @B )J RF  - 4pm), and evening (4pm - 12pm).
+We use the calendar schema           timeOfDay         7177  week           day  , where the domain values of week represent the number of week of year  2000, the domain values of day represent Sunday, Monday,  , Saturday, the domain values of timeOfDay represent  early morning, daytime, and evening.
+The predicate valid evaluates to True for all basic time intervals between January 30, 2000 and March 31, 2000.
+We preprocess the clicks data file to remove NULL and unknown values marked with a?a.
+To simplify the problem, we focus on the categorical attributes and ignore all the attributes identified as aignorea, adatea, atimea, and acontinuousa.
+The preprocessed data set consists of 777,480 transactions.
+The largest transaction consists of 100 items, the  !
+smallest transaction consists of 5 items, and the transactions contain 23.4 items on average.
+Using the aforementioned calendar schema fifi    , the maximum and the minimum number of transactions per basic time interval are 27,807  and 12, respectively, and the average number of transactions per basic time interval is 4,180.
+17  (b) Fuzzy match  (a) Precise match 1400  1400 TemporalaApriori DirectaApriori  1200 Execution time (sec)  Execution time (sec)  1200 1000 800 600 400  TemporalaApriori (m=0.9) DirectaApriori (m=0.9) TemporalaApriori (m=0.8) DirectaApriori (m=0.8)  1000  800  600  400  200 2  1.5  1 0.75 0.5 Minimum support (%)  0.33  200 2  0.25  1.5  1 0.75 0.5 Minimum support (%)  0.33  0.25  Figure 6: Execution time of our algorithms on the KDD Cup 2000 data   A 2" R0 *D  The experimental results are summarized in Figures 5 and 6.
+Figure 5 shows the number of calendar patterns and large itemsets discovered from the data set with the minimum support    "    #  .
+We discovered up  to large 5-itemsets along with their calendar patterns.
+It is also interesting to note that we indeed discovered more patterns with fuzzy match than with precise match, and the smaller the match ratio we used for fuzzy match, the more patterns we discovered.
+Figure 6 shows the execution time of Direct-Apriori and Temporal-Apriori w.r.t.
+both precise match and fuzzy match with match ratios 0.9 and 0.8.
+(Note that in Figure 6(b), Direct-Apriori for fuzzy match took almost the same time for match ratios 0.9 and 0.8.)
+The result shows that our optimization techniques improve the performance by 2 to 3 times.
+However, since the size of the data set is not very large (777,480 transactions with 23.4 items per transaction on average), the operating system can cache all the data in physical memory.
+In the next subsection, we validate this performance gain for very large data sets.
+4.2 Synthetic Data Sets In order to generate data sets with various characteristics, we extend the transaction data generator proposed in [AS94] to incorporate temporal features.
+Specifically, for each basic time interval   	    in a given calendar schema, we first  generate a set of maximal potentially large itemsets called per-interval itemsets and then generate transactions    	  from per-interval itemsets following the exact method in [AS94].
+(Due to space reason, we do not repeat this method in the paper; the reader is referred to [AS94] for the details.)
+To model the phenomenon that some itemsets may have temporal patterns but others may not, we choose a subset of the per-interval itemsets from a common set of itemsets called pattern itemsets that are shared across basic time intervals but generate the others independently for each basic time interval.
+We use a parameter pattern-ratio, denoted   , to decide the percentage of per-interval itemsets that should be chosen from the pattern itemsets.
+18  Notation  ( ( ( ( ( ( ( (      fi   Meaning  Default value  Number of transactions per basic time interval  10,000  Avg.
+size of the transactions  10  Avg.
+size of the maximal potentially large itemsets  4  Avg.
+number of the maximal potentially large itemsets per basic time interval  1,000  Number of items  1,000  Calendar Schema  (year: 1995-1999  ,month,day)  Pattern-ratio  0.4  Avg.
+number of star calendar patterns per pattern itemset  40  Figure 7: Parameters for data generation To decide which pattern itemsets should be used for a basic time interval, we associate several star calendar patterns  4  with each pattern itemset.
+For each basic time interval, we choose itemsets repeatedly and randomly from the pattern itemsets until we have enough number of pattern itemsets (i.e.,    the total number of per-interval itemsets).
+Each  time when a pattern itemset is chosen, we use it as a per-interval itemset if it has an associated calendar pattern that covers the basic time interval; otherwise, the itemset is ignored.
+Intuitively, the more calendar patterns are assigned to a pattern itemset, the more chances that the pattern itemset is used as per-interval itemsets.
+We use a parameter 	 to adjust this feature such that the number of calendar patterns assigned to each pattern itemset conforms to a Poisson distribution with mean   .
+The calendar patterns assigned to pattern itemsets are selected from the space of all star calendar patterns.
+In order to model the phenomenon that the calendar patterns covering more basic time intervals are less possible than those  R0 D  covering fewer ones, we associate with each calendar pattern a weight, which corresponds to the probability that this calendar pattern is selected.
+The weight of a calendar pattern is set to "    fi  , where is the number of wild-card symbols  in the calendar pattern.
+The weight is then normalized so that the sum of the weights of all calendar patterns is 1.
+The calendar pattern to be assigned to a pattern itemset is then chosen by tossing an      -sided weighted coin, where     is  the total number of calendar patterns.
+Our data generation procedure takes eight parameters, which are shown in Figure 7.
+The upper part of table shows the parameters required by the original data generator proposed in [AS94], while the lower part shows the parameters related to temporal features.
+Figure 7 also shows the default values of the parameters.
+To examine the performance of the algorithms with data sets having different characteristics, we generated a series of data sets, most of which were generated by varying one parameter while keeping others at their default values.
+The size of the data sets ranges from 739 MB to 5.41 GB.
+Our first set of experiments was to evaluate the optimization techniques with synthetic data sets.
+We generated  19  x 10  (b) Fuzzy match (m=0.9)  4  3.5 TemporalaApriori DirectaApriori  x 10  3 Execution time (sec)  Execution time (sec)  2  1.5  1  2.5 2 1.5 1  0.5 0.5 0 2  1.5  1 0.75 0.5 Minimum support (%)  0.33  10  6  10  4  10  2  10  1 0.75 0.5 Minimum support (%)  0.33  10  0.25  2  3  (e) Precise match (minsup=0.75%)  10  4 Pass Number  5  6  (f) Precise match (minsup=0.75%)  12000  12000  10000  10000  8  10  6  10  4  10  Execution time (sec)  TemporalaApriori DirectaApriori Execution time (sec)  Number of candidate large itemsets  1.5  (d) Fuzzy match (m=0.9, minsup=0.75%)  10  TemporalaApriori DirectaApriori 8  0  0 2  0.25  (c) Precise match (minsup=0.75%)  10  10 TemporalaApriori DirectaApriori  Number of candidate large itemsets  (a) Precise match  4  2.5  8000 6000 TemporalaApriori DirectaApriori 4000  8000 6000 TemporalaApriori DirectaApriori 4000  2  10  2000  0  10  2  3  4 Pass Number  5  0 0  6  2000  0.2  0.4 0.6 Pattern ratio (Pr)  0.8  0  1  1  (h) Fuzzy match (m=0.9, minsup=0.75%)  (g) Precise match (minsup=0.75%) 12000  20 40 60 80 100 Number of calendar patterns per pattern itemset (N p)  (i) Fuzzy match (m=0.9, minsup=0.75%)  12000  12000  10000  10000  Execution time (sec)  Execution time (sec)  10000 8000 6000 4000  8000 6000 TemporalaApriori DirectaApriori 4000 2000  2000 0 3  Execution time (sec)  TemporalaApriori DirectaApriori  4 5 6 Avg.
+size of potentially large itemsets (|I|)  0 0  7  (j) Fuzzy match (m=0.9, minsup=0.75%)  8000 6000 TemporalaApriori DirectaApriori 4000 2000  0.2  0.4 0.6 Pattern ratio (Pr)  0.8  0  1  12000  12000  10000  10000  TemporalaApriori DirectaApriori  8000 6000 4000 2000 0 3  TemporalaApriori DirectaApriori  Execution time (sec)  Execution time (sec)  Execution time (sec)  10000  8000 6000 4000  7  0 1  Precise match Fuzzy match, m=0.95 Fuzzy match, m=0.9 Fuzzy match, m=0.8  8000 6000 4000 2000  2000  4 5 6 Avg.
+size of potentially large itemsets (|I|)  20 40 60 80 100 Number of calendar patterns per pattern itemset (N p)  (l) Scaleaup tests for TemporalaApriori (minsup=0.75%)  (k) Fuzzy match (minsup=0.75%)  12000  1  0.95  0.9  0.8  0.7  Match ratio (m)  Figure 8: Experimental result on synthetic data sets 20  0 10000 30000 50000 75000 Number of transactions per basic time interval (|D|)   " 60 C  a data set using the default parameters and performed experiments with various minimum supports for both precise match and fuzzy match (match ratio  "  ).
+The execution time is shown in Figures 8(a) and 8(b).
+The experimental  result shows that our optimization techniques are quite effective.
+For precise match, Temporal-Apriori is 5 to 22 times faster than Direct-Apriori; for fuzzy match, Temporal-Apriori is 2.5 to 12 times faster than Direct-Apriori.
+Moreover, all the algorithms are sensitive to the minimum support: the smaller the minimum support is, the longer the execution time is.
+However, the execution time of Temporal-Apriori increases much slower than that of Direct-Apriori.
+Figures  R0 *D  8(c) and 8(d) also give the total number of candidate large itemsets for the experiments with the minimum support   $  "  , showing that our two optimization techniques greatly reduced the number of candidates in each pass.
+Our second set of experiments was intended to evaluate the performance of both Temporal-Apriori and DirectApriori with various kinds of data sets.
+We generated three sets of data sets.
+The first set of data sets uses different    values for  and default values for other parameters.
+Similarly, the second and the third set of data sets uses different    and   , respectively, and uses default values for other parameters.
+The experiments were performed  60 D    values for  using the minimum support "    #  .
+Figures 8(e) through 8(j) show the execution time of both precise match and fuzzy  match for these data sets.
+In all the experiments, Temporal-Apriori performs significantly better than Direct-Apriori.
+Figures 8(e) and 8(h) indicate that Direct-Apriori is not very sensitive to pattern ratio.
+However, the execution time of Temporal-Apriori increases by 100% for precise match and 200% for fuzzy match as the pattern ratio 0 to 1.
+The reason is that when the pattern ratio      ranges from  increases, the number of large itemsets that have temporal patterns  increases as well and thus results in a larger number of candidate large itemsets.
+In Figures 8(f) and 8(i), the execution time of Temporal-Apriori increases by 75% for both precise and fuzzy match when the parameter 	 (i.e., the number of calendar patterns per pattern itemset) ranges from 1 to 100.
+This is because a larger 	   increases the supports of itemsets and results in a larger set of candidates.
+In contrast, the execution time of Direct-Apriori decreases slightly as    increases.
+Figures 8(g) and 8(j) show that the execution time of Temporal-Apriori increases slightly as the average  size of potentially large itemsets (   ) ranges from 3 to 7, while the execution time of Direct-Apriori decreases by   about 20%.
+Our third set of experiments was intended to study the impact of match ratio to our fuzzy-match algorithms.
+Fig-  60 D  ure 8(k) shows the execution time of both Temporal-Apriori and Direct-Apriori with various match ratios.
+These experiments used the data set with all default parameters and the minimum support "    #  .
+The result indicates that  Temporal-Apriori is very sensitive to match ratio: the larger the match ratio is, the longer time Temporal-Apriori takes.
+The execution time of Direct-Apriori also increases slightly.
+Nevertheless, in the worst case when match ratio is 0.7, Temporal-Apriori still performs significantly better than Direct-Apriori.
+Finally, to examine the scalability of Temporal-Apriori, we generated a series of data sets with increasing number of transactions per basic time interval and performed a set of experiments for precise match and fuzzy match with different match ratios.
+The sizes of the data sets range from 739MB to 5.41 GB.
+As shown in Figure 8, TemporalApriori takes time linear to the number of transactions.
+21  In summary, our experiments on synthetic data sets show that our optimization techniques are quite effective and the algorithms are stable for various kinds of data sets.
+In addition, our optimized algorithm scales up very well w.r.t.
+the number of transactions.
+5 Related Work Since the concept of association rule was first introduced in [AIS93], discovery of association rules has been extensively studied [AS94, SON95, BMUT97, ZPOL97, AS96, HKK97, SK98].
+The concept of association rule was also extended in several ways, including generalized rules and multi-level rules [SA95, HF95], multi-dimensional rules, quantitative rules [SA96, MY97], and constraint-based rules [BAG99, NLHM99].
+Among these extensions is the discovery of temporal association rules.
+There are several kinds of meaningful temporal association rules.
+The problem of mining cyclic association rules (i.e., the association rules that occur periodically over time) has been studied in [ OERS98].
+Several algorithms and optimization techniques were presented in [OERS98] and shown effective through a series of experiments.
+However, this work is limited in that it cannot deal with multiple granularities and cannot describe real-life concepts such as the first business day of every month.
+In [RMS98], the work in [OERS98] was further extended to approximately discover user-defined temporal patterns in association rules.
+The work in [RMS98] is more flexible and practical than [ OERS98]; however, it requires user-defined calendar algebraic expressions in order to discover temporal patterns.
+Indeed, this is to require useras prior knowledge about the temporal patterns to be discovered.
+Although the calendar algebra adopted in [RMS98] is a powerful tool to define temporal patterns, users need to know exactly what temporal patterns they are interested in to give such expressions.
+In some cases, users lack such prior knowledge.
+Our work differs from [OERS98] and [RMS98] in that instead of using cyclic patterns or user-defined calendar algebraic expressions, we use calendar schema as a framework for temporal patterns.
+As a result, our approach usually requires less priori knowledge than [OERS98] and [RMS98].
+In addition, unlike [RMS98], which discover temporal association rules for one user-defined temporal pattern, our approach considers all possible temporal patterns in the calendar schema, thus we can potentially discover more temporal association rules.
+Finally, based on the representation mechanisms proposed in [LMF86] or [BJW00], we can have calendar schemas for both cyclic and userdefined temporal patterns.
+Thus, cyclic patterns and calendar algebra expressions can be considered as special cases of calendar patterns.
+In [AR00], the discovery of association rules that hold in the transactions during the itemsa life time was discussed.
+The algorithm Apriori was extended to discover such association rules.
+Our problem differs in that we consider the association rules for calendar patterns instead of the life time of the items.
+There are other related research activities.
+In [LWJ00], discovery of calendar-based event patterns was discussed.
+22  In [CP98], a generic definition of temporal patterns and a framework for discovering them were presented.
+In [CP99], the discovery of the longest intervals and the longest periodicity of association rules was discussed.
+In [RR99], it was proposed to add temporal features to association rules by associating a conjunction of binary temporal predicates that specify the relationships between the timestamps of transactions.
+These works consider different aspects of temporal data mining; we consider them as complementary to ours.
+Finally, a bibliography of temporal data mining can be found in [RS99].
+6 Conclusion and Future Work In this paper, we studied the discovery of association rules along with their temporal patterns in terms of calendar schemas.
+We identified two classes of temporal association rules, temporal association rules w.r.t.
+precise match and temporal association rules w.r.t.
+fuzzy match, to represent regular association rules along with their temporal patterns.
+An important feature of our representation mechanism is that the corresponding data mining problem requires less prior knowledge than the prior methods and hence may discover more unexpected rules.
+The discovered rules are easier to understand.
+Moreover, we extended Apriori, an existing algorithm for mining association rules, to discover temporal association rules w.r.t.
+both precise match and fuzzy match.
+By studying the relationships among calendar patterns, we developed two optimization techniques to improve the performance of the data mining process.
+Our experiments showed that our optimization techniques are quite effective.
+The future work includes two directions.
+First, we would like to explore other meaningful semantics of temporal association rules and extend our techniques to solve the corresponding data mining problems.
+Second, we would like to consider temporal patterns in other data mining problems such as clustering.
+References [AIS93]  R. Agrawal, T. Imielinski, and A. N. Swami.
+Mining association rules between sets of items in large databases.
+In Proc.
+of the 1993 Intal Conf.
+on Management of Data, pages 207a216, 1993.
+[AR00]  J.M.
+Ale and G.H.
+Rossi.
+An approach to discovering temporal association rules.
+In Proc.
+of the 2000 ACM Symposium on Applied Computing, pages 294a300, 2000.
+[AS94]  R. Agrawal and R. Srikant.
+Fast algorithms for mining association rules in large databases.
+In Proc.
+of the 1994 Intal Conf.
+on Very Large Data Bases, pages 487a499, 1994.
+[AS96]  R. Agrawal and J. C. Shafer.
+Parallel mining of association rules.
+IEEE Transactions on Knowledge and Data Engineering, 8(6):962a969, 1996.
+23  [BAG99]  R.J. Bayardo Jr., R. Agrawal, and D. Gunopulos.
+Constraint-based rule mining in large, dense databases.
+In Proc.
+of the 15th Intal Conf.
+on Data Engineering, pages 188a197, 1999.
+[BJW00]  C. Bettini, S. Jajodia, and X.S.
+Wang.
+Time granularities in databases, data mining, and temporal reasoning.
+Springer-Verlag, 2000.
+[BMUT97] S. Brin, R. Motwani, J. D. Ullman, and S. Tsur.
+Dynamic itemset counting and implication rules for market basket data.
+In Proc.
+of ACM SIGMOD Intal Conf.
+on Management of Data, pages 255a264, 1997.
+[CP98]  X. Chen and I. Petrounias.
+A framework for temporal data mining.
+In Proc.
+of the 9th Intal Conf.
+on Database and Expert Systems Applications, pages 796a805, 1998.
+[CP99]  X. Chen and I. Petrounias.
+Mining temporal features in association rules.
+In Proc.
+of the 3rd European Conf.
+on Principles and Practice on Knowledge Discovery in Databases, pages 295a300, 1999.
+[HF95]  J. Han and Y. Fu.
+Discovery of multiple-level association rules from large databases.
+In Proc.
+of 21th Intal Conf.
+on Very Large Data Bases, pages 420a431, 1995.
+[HKK97]  E. Han, G. Karypis, and V. Kumar.
+Scalable parallel data mining for association rules.
+In Proc.
+of the 1997 ACM SIGMOD Intal Conf.
+on Management of Data, pages 277a288, 1997.
+[KB00]  R. Kohavi and C. Brodley.
+2000 knowledge discovery and data mining cup.
+Data for the Cup was provided by Blue Martini Software and Gazelle.com, 2000. http://www.ecn.purdue.edu/KDDCUP/.
+[LMF86]  B. Leban, D. McDonald, and D. Foster.
+A representation for collections of temporal intervals.
+In Proc.
+of AAAI-1986 5th Intal Conf.
+on Artifical Intelligence, pages 367a371, 1986.
+[LWJ00]  Y. Li, X.S.
+Wang, and S. Jajodia.
+Discovering temporal patterns in multiple granularities.
+In Proc.
+of Intal Workshop on Temporal, Spatial and Spatio-temporal Data Mining, 2000.
+[MY97]  R. J. Miller and Y. Yang.
+Association rules over interval data.
+In Proc.
+of the 1997 ACM SIGMOD Intal Conf.
+on Management of Data, pages 452a461, 1997.
+[NLHM99] R. T. Ng, L. V. S. Lakshmanan, J. Han, and T. Mah.
+Exploratory mining via constrained frequent set queries.
+In Proc.
+of the 1999 ACM SIGMOD Intal Conf.
+on Management of Data, pages 556a558, 1999.
+[OERS98]  B. OEzden, S. Ramaswamy, and A. Silberschatz.
+Cyclic association rules.
+In Proc.
+of the 14th Intal Conf.
+on Data Engineering, pages 412a421, 1998.
+[RMS98]  S. Ramaswamy, S. Mahajan, and A. Silberschatz.
+On the discovery of interesting patterns in association rules.
+In Proc.
+of the 1998 Intal Conf.
+on Very Large Data Bases, pages 368a379, 1998.
+24  [RR99]  C.P.
+Rainsford and J.F.
+Roddick.
+Adding temporal semantics to association rules.
+In Proc.
+of the 3rd European conf.
+on principles and practice of knowledge discovery in databases, pages 504a509, 1999.
+[RS99]  J.F.
+Roddick and M. Spiliopoulou.
+A bibliography of temporal, spatial and spatio-temporal data mining research.
+SIGKDD Explorations, 1(1):34a38, June 1999.
+[SA95]  R. Srikant and R. Agrawal.
+Mining generalized association rules.
+In Proc.
+of the 21th Intal Conf.
+on Very Large Data Bases, pages 407a419.
+Morgan Kaufmann, 1995.
+[SA96]  R. Srikant and R. Agrawal.
+Mining quantitative association rules in large relational tables.
+In Proc.
+of the 1996 ACM SIGMOD Intal Conf.
+on Management of Data, pages 1a12, 1996.
+[SK98]  T. Shintani and M. Kitsuregawa.
+Parallel mining algorithms for generalized association rules with classification hierarchy.
+In Proc.
+of ACM SIGMOD Intal Conf.
+on Management of Data, pages 25a36, 1998.
+[SON95]  A. Savasere, E. Omiecinski, and S. B. Navathe.
+An efficient algorithm for mining association rules in large databases.
+In Proc.
+of the 1995 Intal Conf.
+on Very Large Data Bases, pages 432a444, 1995.
+[ZPOL97] M.J. Zaki, S. Parthasarathy, M. Ogihara, and W. Li.
+New algorithms for fast discovery of association rules.
+In Proc.
+of the 3rd Intal Conf.
+on Knowledge Discovery and Data Mining, pages 283a286, 1997.
+A  Proof Sketch   %%? # 7   %%? # A?  Proof of Lemma 1 Consider any calendar pattern  .
+Suppose    itemset in  B *  :   fi  , its counter  in the -th update of than     , :    fi    7 B * -  since it is not dropped in the last update.
+For each itemset dropped    , its counter          contains all and only the itemsets that are large for at least  fi  Proof of Lemma 2 Suppose there exists a 1-star calendar pattern   *-  for   =      of the basic time intervals covered by  .
+"#"  covered by  such that an itemset fi is not large  w.r.t.
+precise match.
+Then there exists at least one basic time interval   Since   is covered by  , the basic time interval    	  interval   , i.e., it cannot be large for more  of the basic time intervals covered by  .
+Since all large itemsets are processed, for all calendar patterns  "#"  *-  :   basic time intervals are covered by  .
+For each  	  	  *-  covered by   for which fi is not large.
+is also covered by  .
+Then fi is not large for at least one basic time    covered by  , which leads to contradiction.
+fi  Proof of Lemma 3 It suffices to prove that for each pass , if Temporal-Apriori uses a super set of 7 fi  	  fifi	  :        as the set of candidate large -itemsets for  , it has the same output as Direct-Apriori for precise match.
+fi  Consider the algorithm Direct-Apriori.
+Denote the set of candidate large -itemsets generated in phase I as 9 fi  the set of large -itemsets generated in phase II as :    	     , and the output for each star calendar pattern  as : 25       	  :"    fi    ,   fi	 fi  :   	    in output.
+  fi  *-  Consider the algorithm Temporal-Apriori.
+Denote the set of candidate large -itemsets, which is a super set of    fi	   7  :          star calendar pattern  as :  :  Since   	      	    , as 9   ?
+fifi  is the set of    Thus, we have :  :  fi	    "       fi	      :  large -itemsets in  	          "  fi      :  , and the output for each   for each star pattern  .
+fi   	  	    :  by definition, it is easy to see     	    in phase II as :   .
+We need to prove :     	    fi   	    , the large itemsets derived from 9      :     	    for all    	 .
+  .
+fi  	 , let :  	 " : 	 7   fi	   : *2"   	  : 	 .
+Since 9 	 is a super set of 7fifi	    : - , 9 	 is also a super and : set of : 	 .
+When : 	 is computed from 9 	 , all -itemsets in : 	 remain in : 	 since : 	 " : 	 7    	   : - .
+Thus, we have : 	 	 : 	 and then : 	 : .
+By definition, for each fi : , fi is in : 	 for all  	 covered by .
+By lemma 2, fi is also in : *- for all *covered by .
+It is easy to see that if 	 is covered by , then at least one 1-star calendar pattern %- that covers 	 is also covered by .
+It follows that for all 	 covered by , fi is in :  	 , i.e., fi-: .
+This shows :  	 : .
+  Now letas prove        :  fi	            fi       :                .
+Given a basic time interval          	  Proof of Theorem 1  *      :     -  :      fi                                       fi    , we have :  fi	  :           fi                fi                                    Consider the fact :           fi        :    fi                        7fifi	          of         fi        fi          .
+This concludes the proof.
+fi    -  First, the set of candidate large -itemsets generated by TemporalAprioriGen is a super set , since for each 1-star calendar pattern  .
+Second, if the input of HorizontalPrune is a super set of  set, since the output is the intersection of the input and 7   	 , aprioriGen generates a super set of    	    : *- , then its output is also a super  that covers    7     	    :    *            .
+By Lemma 3, we know Temporal-Apriori  has the same output as Direct-Apriori.
+That is, Temporal-Apriori is equivalent to Direct-Apriori.
+Proof of Lemma 4 and Theorem 2    Lemma 4 and Theorem 2 can be proved in the same way as Lemma 3 and  Theorem 2, respectively.
+Proofs are omitted due to space reason.
+26  

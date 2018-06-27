@@ -1,0 +1,241 @@
+Generating Instantiations of Contextual Scenarios of Periodic Events Paolo Terenziani Dipartimento di Informatica, Universita' di Torino Corso Svizzera 185, 10149 Torino, Italy  Abstract.
+In this paper, we consider an expressive formalism to deal with temporal constraints between periodic events which takes into account different components such as frame times, numeric quantification, periods, and qualitative temporal constraints.
+We define the notions of (contextual) concretization of temporal constraints in such a formalism and of (contextual) scenario of a KB of temporal constraints.
+We then use these notions in order to introduce an algorithm which generates an instantiation of events which satisfies a scenario.
+1 Introduction The notion of events that repeat more or less regularly in time (henceforth called periodic events) is an ubiquitous one in many areas, spanning from scheduling and planning to work flow analysis, protocol management, and temporal databases.
+Thus, in recent years, a good deal of research both in AI and in temporal databases focused on the treatment of periodic events, following at least three main streams.
+The first approach focused on the development of formalisms to enable users to introduce user-defined periods (e.g., "the third Tuesday of each month that is a not a vacation"; consider, e.g., [Leban, 86, Soo & Snodgrass, 93, Cukierman & Delgrande, 95]) or dealt with granularity problems in temporal databases [Wang et al., 97].
+The second approach introduced first order or temporal logics in order to model different aspects of periodicity (see, e.g., the survey in [Tuzhilin & Clifford, 95]).
+Finally, the third approach mainly focused on the treatment of temporal constraints between periodic events, mainly considering qualitative constraints, such as "precede" in Ex.1 (consider, e.g., [Ladkin, 86; Morris et al., 96]).
+Ex.1 "breakfast always precedes lunch" Mny of these papers propose specialised formalisms to represent qualitative temporal constraints and proposes algebraic approaches to temporal reasoning in order to check the consistency of a knowledge base of temporal constraints and to infer new constraints from it.
+In [Terenziani, 97a, 97b], these types of formalisms and reasoning procedures have been extended in order to deal also with qualitative constraints that are "perioddependent", in the sense that hold in a specific frame of  time and on a specific (possibly user-defined) period, and to deal with numeric quantification, such as in Ex.2 Ex.2 "Between 29/9/97 and 19/12/97, twice e a c h Monday there is an hour of History (strictly or not) before two hours of Chemistry" On the other hand, despite their importance in practical applications, the problems of formally defining [Morris et al., 96] and of generating or projecting ([Morris et al., 95; Loganantharaj & Gimbrone, 97; Loganantharaj & Kurkovsky, 97]) a scenario for a KB (knowledge base) of temporal constraints have started to be faced only recently.
+Roughly speaking, temporal constraints between periodic events may have different instantiations (henceforth called "concretizations", as in [Morris et al., 95]) at different times.
+For instance, Figure 1 shows a possible concretization of the temporal constraint in Ex.2 in the frame of time between 20/10/97 and 27/10/97.
+As shown in Figure 1, the concretization of a "perioddependent" temporal constraint in a given frame of time could involve multiple "instantiations" of the constraint (e.g., there are two Mondays between 20/10/97 and 27/10/97).
+Moreover, concretization have to consider correlations between events [Morris et al., 96; Terenziani, 97a,97b].
+E.g., Ex.2 does not state that, on Mondays, any hour of History precedes any pair of hours of Chemistry, but that precedence holds between correlated pairs.
+20/10/97 C1 C2 H1  C3C4 H2  20/10/97  C5 C6 H3  27/10/97 C7 C8 Hour of Chemistry Hour of H4 History  27/10/97  Figure 1.
+A possible concretization of the temporal constraint in Ex.2: "Between 29/9/97 and 19/12/97, twice each Monday there is an hour of History (strictly or not) before two hours of Chemistry" Roughly speaking, given a KB of temporal constraints about periodic events, a scenario of KB in a given frame of time could be defined as a concretization of all the constraints in KB.
+Generating an instance of a consistent scenario is very important in many applications, to obtain an instantiation of the activities to be done, and of the temporal constraints between them [Morris et al., 95], or to project the activities in the future [Loganantharaj & Gimbrone, 97; Loganantharaj & Kurkovsky, 97].
+In previous papers, we proposed a formalism to deal with different types of temporal constraints between periodic events (such as, e.g., those in Ex.1 and Ex.2 above), and introduced a polynomial-time algorithm to perform temporal reasoning on a KB of constraints in the formalism and to check its consistency [Terenziani, 97a, 97b].
+In this paper we extend our previous approach by proposing (i) a formal definition of the notions of concretization and of (contextual) scenario (section 4), and of the notion of satisfaction of a scenario by an instantiation of periodic events (called "p-instantiation") (section 5) (ii) a generation mechanism based on the definitions above which generates a p-instantiation which satisfy a scenario (section 6).
+Section 2 introduces some basic ontological notions underlying the meaning of temporal constraints between periodic events, and section 3 presents our formalism (see also [Terenziani, 97a, 97b]).
+2 Basic ontological notions A periodic event can be seen as a collection of instances of events of the same type which do not overlap in time.
+E.g., "in March 1997, John went to the working office XX each Monday" can be seen as the collection of the instances of the event of John going to working office XX which took place on Mondays in March 1997.
+Let I the function from periodic events to instances of events such that, given any periodic event ev*, I(ev*)= {ev1, ... , evn} is the (possibly infinite) set of the instances of ev*.
+Every instance of an event takes place in a time interval, which is a convex set of points between a starting and an ending point.
+Thus, given any instance of event evj, Ext(evi)=ievj where ievj is the maximal convex time interval in which evj happened.
+Thus, a collection of events takes place on a set of time intervals, which are the temporal extents of the instances of events which compose it.
+Periods (e.g., "Mondays") are special cases of periodic events, since the instances occur at definite (regular) times.
+In particular, the function I also applies to periods.
+For example, I(Mondays*) gives as result the set of all Mondays.
+For the sake of brevity we also apply the function Ext to set of instances, intending that it applies to each instance in the set.
+For example, Ext( I (ev*)) denotes the set of time intervals when the instances of ev* took place.
+Let us now take into account the ontological notions needed in order to deal with the semantics of the temporal constraints between periodic events.
+Constraints such as that in Ex.2 locate in time periodic events by pairing each instance (or set of instances) of a periodic event with the instance of period when it happened.
+Following Morris [Morris et al., 96], we call this pairing relation "association", defined as follows: Definition.
+Given a period C*, and given two instances of events e1 and e1', the relation ASSOCC*(e1,e1') holds if and only if e1,e1' happen in the same instance Ci of C*.
+For example, given the period Mondays*, and given an instance Monday k of Mondays* (e.g., September 29, 1997), ASSOCMondayk(e1,e1') holds if and only if both e1,e1' happened on Mondayk.
+A S S O C C * is an equivalence relation (reflexive, symmetric and transitive).
+Definition.
+We indicate as [si]C* the equivalence classes introduced by equivalence relation ASSOCC* (i.e., [si]C* = [sj]C* if and only if ASSOCC*(si,sj) holds) The treatment of qualitative temporal constraints between (numerically quantified) periodic events is quite complex.
+First of all, qualitative constraints hold between sets of instances of events.
+E.g., in Ex.2, a precedence relation is fixed between the temporal extent of an instance of an hour of History and the extent of two instances of an hour of Chemistry.
+We thus introduce the function CV-CB Definition.
+Given a set S={i1, ..., ik} of time intervals, i = CV-CB(S) is the minimal convex time interval which covers all the intervals in S. Moreover, in the usual interpretation, a qualitative relation between two periodic events ev1* and ev2* involves an underlying relation which pairs instances (or collections of instances) of the two events.
+As in [Morris et al., 96], we call this relation correlation.
+Correlation is a relation between instances of periodic events, which holds as a result of some contingent relation in the world between them (see [Morris et al., 96; Terenziani, 97a] for more details).
+For instance, Ex.2 does not state that, on Mondays, any hour of History precedes any collection of two hours of Chemistry, but that precedence holds between correlated pairs.
+In our approach, the relation COR represents correlation: Definition.
+Given two sets of instances of events s1={e1, ... ,eh} and s2={e'1, ... ,e'k}, the relation COR(s1,s2) holds if and only if s1 and s2 are correlated.
+COR is an equivalence relation (reflexive, symmetric and transitive).
+Definition.
+We indicate as [si] the equivalence classes introduced by equivalence relation COR (i.e., [si] = [sj] if and only if COR(si,sj) holds) E.g., in the example in Figure 1, we could have COR({H1},{C1,C2}), COR({H2},{C3,C4}), COR({H3},{C5,C6}), COR({H4},{C7,C8}).
+3 Temporal formalism Our "high-level" temporal formalism has been defined in such a way that temporal constraints such as that in Ex.2 can be expressed, but path-consistency on a knowledge base of temporal specifications in our formalism can be computed in polynomial time.
+The syntax of temporal constraints in our formalism is the following:  (SYN) <Frame_Time> <Num_Quant> EACH <Period_Name> <Num_Quant> <Periodic_Event> <Qual_Rel> <Num_Quant> <Periodic_Event> <Frame_Time> indicates a frame of time (time interval) ranging from a starting point to an ending point, and is represented by a pair of dates (e.g., [29/9/97-19/12/97]).
+The frame time (-[?],+[?])
+indicates the whole time-line.
+<Num_Quant> is a numeric quantifier expressed as "ntimes", where n is a natural number.
+We assume a "strong" interpretation of numeric quantifiers: for example, in our approach, (S1) below involves the cardinality constraint that there are exactly 4 instances of H_Chem* and exactly 2 instances of H_Hist* contained (strictly or not) into each instance of Monday in the frame time [29/9/97 - 19/12/97].
+<Periodic_Event> is the representation of an event repeated in time.
+In this paper, for the sake of simplicity, we use a representation of the form "event_type(e)" (e.g., the predicate H_Chem*(e) is true for each event e of attending an hour of lesson in Chemistry).
+However, the approach we propose is independent of the type of representation used to describe periodic events.
+<Qual_Rel> is a qualitative relation between the temporal extent of two periodic events.
+In our approach, it can be expressed using any relation (ambiguous or not) in Allen's Interval Algebra [Allen, 83].
+<Period_Name> is a user-defined identifier of a period (calendric definition; e.g., "1st-Tuesdays-of-Januarys*").
+In our approach, the definitions of the periods must be provided by the user using a slight adaptation of Leban's language [Leban et al., 87], which we discussed in [Terenziani, 97a].
+Thus, our approach also deals with user-defined periods (calendar-dates).
+E.g., given the definition of Mondays*, Ex.2 can be represented by (S1) in our formalism: (S1) [29/9/97-19/12/97] 2-times EACH Mondays* 1times H_Hist*(e) (BEFORE,MEETS) 2-times H_Chem*(e') While an intuition of the meaning of (S1) is shown in Figure 1, a more accurate description will be provided in the next section, where we will define the concretizations of (S1).
+For the sake of brevity, in this paper we limit the description of our formalism to the essential.
+However, notice that we also deal with "period-independent" qualitative constraints such as those in Ex.1, and with constraints on the number of repetition of events in (userdefined) periods.
+A complete description of our highlevel formalism can be found in [Terenziani, 97b].
+Moreover, in [Terenziani, 97a] we proposed a logical semantics (in F.O.L) for our formalism, we widely discussed the motivations underlying our choice of the high-level formalism, and we proposed the comparisons (e.g., in the expressive power) with others specialised and/or logical approaches to periodic events (see, e.g., the survey in [Tuzhilin & Clifford, 95]).
+KB1 below is the example of KB of temporal constraints we carry on throughout this paper.
+Predicates  H_TOPIC*(e) represent the fact that e is an event of an hour of lesson of TOPIC; we regard each hour of lesson as an independent event.
+We suppose that the user provided the definitions of the periods s/he used in the temporal constraints (Mondays*, Tuesdays* and Mon+Tue* -representing the period Monday plus Tuesday- in KB1), using our adaptation of Leban's language [Terenziani, 97a].
+(KB1) (S1) [29/9/97-19/12/97] 2-times EACH Mondays* 1times H_Hist*(e) (BEFORE,EQUAL) 2-times H_Chem*(e') (S2) [29/9/97-19/12/97]1-times EACH Tuesdays* 2-times H_Chem*(e)(BEFORE,EQUAL) 1-times H_Phys*(e') (S3) [29/9/97-19/12/97]1-times EACH Mon+Tue* 1times H_Math*(e) (BEFORE,EQUAL) 1-times H_Phys*(e')  4 Concretizations and scenarios Intuitively, a concretization of a temporal constraint TC between periodic events is a temporal constraint TC' obtained by "instantiating" TC.
+However, in our highlevel formalism different related components (e.g., period, qualitative temporal constraint) have to be instantiated.
+Thus, we define concretization in an incremental way.
+First (subsection 4.1), we define the concretization of the components of a temporal constraint (i.e., of the period and of the qualitative relation).
+Then, in 4.2 we define the concretization of a whole temporal constraint per se and in 4.3 we specialize such a definition to define a concretization of a temporal constraint in a given period of time.
+Finally, 4.4 proposes an example, and 4.5 defines the notion of a scenario of a KB in a given period.
+4.1 Periods and qualitative relations.
+Definition .
+A concretization ConcP(C*) of a period C* is an instantiation Ci of C* (i.e., Ci ' I(C*)) For example, the first week of September 97 is a concretization of week.
+In the following, for the sake of brevity, we denote each instance of a period with the time interval in which it takes place.
+Thus, we have [1/9/97 7/9/97] ' ConcP (Weeks*).
+Notice also that the same instance may be the concretization of different periods: e.g., October 1st.
+1997 is a concretization of day, of Wednesday, of first-Wednesday-of-each-month, etc.
+A concretization of a (possibly ambiguous) qualitative temporal constraint <Qual-Rel> component of our highlevel temporal constraints is a selection of one of the atomic unambiguous qualitative constraint, and an nconcretization is a selection of n (not necessarily distinct) atomic qualitative constraint (e.g., BEFORE '  Conc Q (BEFORE,MEETS); {BEFORE, MEETS, BEFORE} ' 3-ConcQ(BEFORE, MEETS, EQUAL) Definition .
+A concretization ConcQ(R) of a qualitative constraint R={R1, ...., Rk} (where each Ri 1<=i<=k is one of the 13 atomic relations of Allen's interval algebra) is an atomic relation Rj ' {R1, ...., Rk}.
+A n-concretization n-Conc Q (R) of a qualitative constraint R={R1, ...., Rk} is a set of atomic relations {Rj1, ..., Rjn}, Rji ' {R1, ...., Rk} for 1<= x <= n. 4.2 Concretization of a temporal constraint.
+In order to define concretizations of temporal constraints (of type SYN), we use the following notation.
+We indicate as |s| the cardinality of a set s. Given a set of instances of events s={e 1 , ...., ek } and a period C*, we use [s]C * where s={e1 , ...., ek } as a shorthand for [e1 ]C* = ..... = [ek]C* (i.e., to state that all instances in s are during the very same instance of C*).
+Furthermore, given periodic event ev*, we write si ' I(ev*)n to mean that si is a set of n distinct instances of ev*.
+A temporal constraint in our formalism may have different concretizations, depending on the chosen concretizations for the period, for the qualitative constraint, and for the instances of events.
+One natural way of capturing this fact is to adopt !-formulae of the forms (F1) and (F2) below: (F1) !
+x1, xn [where Cond(x, x1,.., xn)] TC'(x, x1, .., xn) (F2) AND { set-definition } !-formula The first part of (F1) is a declaration of !
+-quantified variables.
+The second part (in square brackets; called "where" part in the following) is a logical formula which defines a set of conditions that the bindings of the variables have to satisfy.
+Finally, the third part (called "TC" -temporal Constraint- part) is the logical formula which represents the concretization of the temporal constraint.
+The intended meaning of the application of a !-formula of the form (F1) to a set of elements a1, .... ,an is the following: the formula can only be applied to elements that satisfy the conditions in the "where" part (otherwise, the result of the application is undefined), and gives as result the formula obtained binding the !
+variables with the elements a1, ..., an and substituting the binding in the TC part.
+The result of a partial application is a !-formula in which only some of the variables have been bound.
+For example, (!
+x,y [where Odd(x) * Even(y)] Even(x*y)) 3, 4 = Even(12) (the bindings are x=3, y=4) (!
+x,y [where Odd(x) * Even(y)] Even(x*y)) 4 = !
+x [where Odd(x)] Even(x*4) (the bindings are y=4)  (F2) represents the AND-ing of the application of a !
+formula like (F1) to each one of the elements in setdefinition.
+We can now define the ("generic") concretization of a temporal constraint in our formalism.
+Definition .
+The concretization ConcTC (TC) of a temporal constraint TC of the form (SYN), i.e., of the form "I n2-times EACH C* n1-times ev1* R n3-times ev2*", where I is a frame time, C* a (user-defined) period, ev1* and ev2* two periodic events and R a qualitative temporal constraint is defined as follows: ConcTC(I n2-times EACH C* n1-times ev1* R n3-times ev2*) = !
+ci, , Ri, s1, ... ,sn2 ,s'1, ... , s'n2, [where ci ' ConcP(C*) * N_S_DUR=(Ext(ci),I) * s1, ... ,sn2 ' I(ev1*)n1 * s'1, ... ,s'n2 ' I(ev2*)n3 * Ri = {Ri , ..., Ri } ' n2-ConcQ(R) * 1 n2 [s1]c = ..... = [sn2]c = [s'1]c = ..... = [s'n2]c * i i i i N_S_DUR=(CV-CB(Ext(s1)),I) *.. * N_S_DUR=(CVCB(Ext(s'n2)),I) * [s1] = [s'1] * ... * [sn2] = [s'n2]] Ri1(CV-CB(Ext(s1)),CV-CB(Ext(s'1))) * ... * Rin2(CV-CB(Ext(sn2)),CV-CB(Ext(s'n2))) *  |{ej \ ej ' [ej]c * ej ' I(ev1*) * i N_S_DUR=(Ext(ej),I)}}| = n1*n2 * |{ej \ ej ' [ej]c * ej ' I(ev2*) * i N_S_DUR=(Ext(ej),I)}}| = n3*n2  This formula reflects the fact that constraints in our formalism may have different concretizations, depending on the concretizations c i of the period, on the concretization Ri of the qualitative constraint and on the concretization (instances) of the events.
+In particular, ci must be a concretization of C* occurring during the frame time (i.e., ci ' ConcP (C*) * N_S_DUR= (Ext(c i),I) where N_S_DUR= stands for Non-Strict-DURing or equal, and N_S_DUR = (i1,i2) is a shorthand for STARTS(i1,i2) [?]
+ENDS(i1,i2) [?]
+DURING(i1,i2) [?]
+EQUAL(i1,i2) of Allen's interval algebra)); Ri = {Ri1, ..., R in2 } must be an n2-concretization of the qualitative constraint R (i.e., Ri = {Ri1, ..., Rin2} ' n2-ConcQ(R) ); there must be n2 sets s1, ... ,sn2 of n1 instances of ev1* (i.e., s1, ... ,sn2 ' I(ev1*)n1 ) and n2 sets of n3 instances of ev2* (i.e., s'1 , ... ,s'n2 ' I (ev2*) n3 ) such that the temporal extent of each set is during the frame time I (i.e., N_S_DUR=(CV-CB(Ext((s1)),I) * ..... * N_S_DUR=(CV-CB(Ext(s'n2)),I) ), and such that all the instances in the sets are associated with ci (i.e., [s1]c = i  ..... = [sn]c = [s'1]c = ..... = [s'n2]c ; in other words, each i  i  i  instance occurs during ci ) and sets must be pairwise correlated (i.e., [s1] = [s'1] * .... * [sn2] = [s'n2]).
+In such a case, the constraints in the concretization are that there are exactly n1*n2 instances of ev1* and exactly n3*n2 instances of ev2* occurring during c i and during I (i.e., |{ej \ ej ' [ej]c * ej ' I(ev1*) * i N_S_DUR=(Ext(ej),I)}}| = n1*n2 * |{ej \ ej ' [ej]c * ej i = ' I(ev2*) * N_S_DUR (Ext(ej),I)}}| = n3*n2) and the atomic qualitative relations Ri1 , ..., Rin2 hold between correlated pair of set of instances of events (i.e., Ri1(CVCB(Ext(s1)),CV-CB(Ext(s'1))) * .... * Rin2(CV-CB(Ext(sn2)),CV-CB(Ext(s'n2))) ).
+4.3 Contextual concretizations In practice, in most applications where temporal constraints between periodic events are involved, the interest is focused on a specific "temporal context" (interval of time).
+Thus, the following notion of "contextual concretization" is a crucial one for the practical applicability of our approach.
+Definition .
+A contextual concretization of a temporal constraint (in the formalism presented in Section 3) in an instance C' of a period can be defined (using application) as follows: Conc{C'}TC(I n2-times EACH C* n1-times ev1* R n3-times ev2*) = AND{ci \ ci ' ConcP(C*) * N_S_DUR=(Ext(ci),Ext(C')) * N_S_DUR=(Ext(c i),I)} (Conc TC (I n2-times EACH C* n1-times ev1* R n3-times ev2*)) ci The contextual concretization of a constraint TC in our formalism is a concretization where the period has been fixed (bounded).
+However, in our approach, we deal with multiple (user-defined) periods (granularities).
+Thus, it may be the case that more than one concretization (instance) of the period C* is contained into the context C'.
+Let S = {x \ x ' ConcP(C*) * N_S_DUR=(Ext(x),Ext(C')) * N_S_DUR=(Ext(x),I)} the set of all such concretizations.
+Conc{C'}TC(TC) is thus obtained by and-ing the application of the concretization ConcTC (TC) to all the instances in S. We can achieve a further step in the process of defining a specific concretization for a temporal constraint by binding also the qualitative constraint, thus obtaining contextual qconcretizations, in which only the instances of events remain to be bound.
+Definition.
+A contextual q-concretization of a temporal constraint in an instance C' of a period can be defined (using application) as follows: QConc{C'}TC(I n2-times EACH C* n1-times ev1* R n3-times ev2*) =  AND{ci \ ci ' ConcP(C*) * N_S_DUR=(Ext(ci),Ext(C')) * N_S_DUR=(Ext(ci),I)} ConcTC (I n2-times EACH C* n1-times ev1* R n3-times ev2*)) ci Ri (where Ri ' n2-ConcQ(R)) 4.4 An example For example, given R={BEFORE,BEFORE} ' 2-ConcQ(BEFORE,MEETS), and since [29/9/97-29/9/97] is the only concretization of Monday in [29/9/97-30/9/97], QConc{[29/9/97-30/9/97]}TC(S1) is equal to (ConcTC(S1)) [29/9/97-29/9/97] {BEFORE,BEFORE} = !
+s1, s2 , s'1, s'2 [where s1, s2 ' I(H_Hist*)1*  s'1, s'2 ' I(H_Chem*)2 * N_S_DUR=(CV-CB(Ext(s1)),[29/9/9719/12/97])*.....* N_S_DUR=(CV-CB(Ext(s'2)),[29/9/97-19/12/97]) * [s1 ] [29/9/97-29/9/97] = [s2 ] [29/9/97-29/9/97] = [s'1][29/9/97-29/9/97] = [s'2][29/9/97-29/9/97] * [s1] = [s'1] * [s2] = [s'2] ] BEFORE(CV-CB(Ext(s1)),CV-CB(Ext(s'1)))* BEFORE(CV-CB(Ext(s2)),CV-CB(Ext(s'2))) * |{ej \ ej ' [ej][29/9/97-29/9/97] * ej ' I(H_Hist*) * N_S_DUR=(Ext(ej),[29/9/97-19/12/97])}| = 2 * |{ej \ ej ' [ej][29/9/97-29/9/97]* ej 'I(H_H_Chem*) = * N_S_DUR (Ext(ej),[29/9/97-19/12/97])}| = 4  Roughly speaking, this formula states that, in the context [29/9/97-30/9/97], and choosing the qualitative relations {BEFORE,BEFORE} between the events, the possible concretizations of (S1) are given by any two sets of one concretization of H_Hist* each, and any two sets of two concretizations of H_Chem* each, such that the temporal extent of each set is during the whole frame time [29/9/9719/12/97], all sets are in the same class [29/9/97-29/9/97] for the association relations (in other words, the temporal extent of each set is during [29/9/97-29/9/97]), and sets of concretizations of H_Hist* and H_Chem* are pairwise correlated.
+In such a case, the concretization of the constraint in (S1) imposes the qualitative constraint BEFORE between correlated pairs, and the cardinality constraints that there are no other instances of H_Hist* and H_Chem* in the context [29/9/97-29/9/97].
+4.5 Scenarios Given a KB of temporal constraints, a scenario is a contextual q-concretization of all the temporal constraints in KB at a given instance of period C' (independent concretizations of different temporal constraint at different instances of periods provide scenarios that are quite useless from the practical point of view).
+Definition.
+Given a KB of temporal constraints, and a period C', a scenario in C' is defined as follows: Scenario{C'}(KB) = AND {TC  '  KB} QConc{C'}TC(TC)  5 P-instantiations and satisfaction We can now introduce the notion of "instantiation" of a set of periodic events (called p-instantiation), and we can define when a p-instantiation satisfies a scenario for a KB of temporal constraints.
+Definition.
+A p-instantiation is a triple <E,Ext,COR> where E is a set of instances of events, Ext is the Ext function, assigning the exact temporal location to the instances of events in E (e.g., expressed as pair of dates), and COR is the correlation between set of instances in E. A p-instantiation in C' is a p-instantiation such that for each e ' E, N_S_DUR=(Ext(e),Ext(C')) holds.
+Definition.
+Given a contextual q-concretization QConc {C'} TC (TC) of a temporal constraint TC in the instance of period C', and given a p-instantiation PI = <E,Ext,COR> in C', PI satisfies QConc{C'}TC(TC) if and only if the set E of instances of events bounds all the {C'} (TC) satisfying both the !
+-variables in QConc TC conditions in the "where" part of QConc{C'}TC(TC) and the constraints in the "TC" part of QConc{C'}TC(TC): - A cardinality constraint |{e\Condition(e)}| = n is satisfied if the number of instances of events e ' E such that Condition (e) is true is exactly n - An association constraint [e] C' (where e ' E) is satisfied if Ext is such that N_S_DUR=(Ext(e),Ext(C') holds.
+- A correlation constraint [e1] = [e2] is satisfied if COR(e1,e2) holds in PI (COR is symmetric and transitive) - A qualitative temporal constraint of the form Ri(CVCB(Ext(Si)),CV-CB(Ext(Sj))) where Si and Sj are two correlated sets of instances of events in E is satisfied if Ext is such that Ri((CV-CB(Ext(Si)),CVCB(Ext(Sj))) is true.
+A set of constraints is satisfied if all the constraints in the set are satisfied.
+Finally, we can define the notion of satisfaction of a contextual scenario.
+Definition.
+A p-instantiation PI=<E,Ext,COR> satisfies a contextual scenario Scenario{C'}(KB) for a KB of temporal constraints if, for each temporal constraint TC in KB, PI satisfies QConc{C'}TC(TC).
+For example, the p-instantiation <E,EXT,COR> in [29/9/97-30/9/97] (29/9/97 is a Monday) satisfies Scenario {[29/9/97-30/9/97]}(KB1), in case ConcQ is always {BEFORE} for all qualitative constraints.
+E= {H_Hist*(H1), H_Hist*(H2), H_Chem*(C1), H_Chem*(C2), H_Chem*(C3), H_Chem*(C4),  H_Chem*(C5), H_Chem*(C6), H_Math*(M1), H_Math*(M2), H_Phys*(P1), H_Phys*(P2)}; Ext(H1)=[29/9/97 at 8:00 - 29/9/97 at 9:00], Ext(H2)=[29/9/97 at 12:30 - 29/9/97 at 13:30], Ext(C1)=[29/9/97 at 9:10 - 29/9/97 at 10:00], Ext(C2)=[29/9/97 at 10:30 - 29/9/97 at 11:30], Ext(C3)=[29/9/97 at 15:00 - 29/9/97 at 16:00], Ext(C4)=[29/9/97 at 16:00 - 29/9/97 at 17:00], Ext(C5)=[30/9/97 at 9:10 - 30/9/97 at 10:00], Ext(C6)=[30/9/97 at 10:30 - 30/9/97 at 11:30], Ext(M1)=[30/9/97 at 12:30 - 30/9/97 at 13:30], Ext(P1)=[30/9/97 at 15:00 - 30/9/97 at 16:00]; COR={<{H1},{C1,C2}>,<{H2},{C3,C4}>, <{M1},{P1}>, <{C5,C6},{M2}>, <{C5,C6},{P2}>}  6 Generating p-instantiations that satisfy scenarios In this section, we describe the algorithm GEN which, given a KB, generates a p-instantiation that satisfies a contextual scenario for KB.
+GEN is based on the definitions in sections 4 and 5.
+For the sake of brevity, the presentation of GEN is only sketched, and we propose only a very simple application example.
+GEN(KB, KB_period, C') 1) check the consistency of KB and infer new temporal constraints from KB.
+Let KB' be the new knowledge base resulting from this step 2) % For each temporal constraint TCi ' KB', compute its contextual concretization Conc{C'}TC (TC i )and the "fragments" in C' it covers % - FOR EACH TCi ' KB' compute CSet(TCi )={Ci1, .., C i n }, the set of the temporal extents of all concretizations of the period C* in TCi in context C' - Let ISet(KB')={I 1, ..., Ik } the set of all intervals obtained using the intervals in CSet(TCi ), for each TCi ' KB', in order to partition the period C' into the finest subintervals (called "fragments") - FOR EACH TCi ' KB', given ISet(KB')={I1, ..., Ik} and given CSet(TCi )={Ci1, .., Cin} compute ISet(TCi )= {{Ii1, .., Iir}, ..., {Iih .., Iik}} where, e.g., {Ii1, .., Iir}is the set of fragments that covers Ci1 and{Iih .., Iik}is the set of fragments that covers Cin 3) % For each fragment Ij , and for each event evk * , compute the number of instances of evk* that have to be instantiated into the interval Ij % FOR EACH Ij ' ISet(KB') - FOR EACH TCi ' KB' , consider its contextual concretization to check whether ISet(TCi ) contains Ij .
+- Let EvSet(Ij ) = {evi*, ..., evj*} the set of all events ev* considered the concretization of a temporal constraint TCi ' KB' such that ISet(TCi ) contains Ij .
+- FOR EACH ev k * ' EvSet(I j ), compute Card(Ij(evk*)), the number of instances of evk* that have to be instantiated into the interval Ij .
+4) % Given the qualitative constraints between events imposed by Conc{C'}TC(TCi ), for each TCi ' KB', and given Card(Ij(evk*)), for each event in KB' and for each fragment, instantiate events in C' % FOR EACH Conc{C'}TC(TCi ) such that TCi ' KB' (TCi ="I n2-times EACH C* n1-times ev1* R n3-times ev2*") FOR EACH Ci ' CSet(TCi ) FOR EACH Ij ' ISet(TCi ) which is (strictly or not) during Ci - Instantiate Card(I j (ev 1 *)) non-overlapping instances of ev 1 * and Card(I j ( e v 2 *)) nonoverlapping instances of ev2* in Ij , respecting the qualitative temporal constraint R The inputs of GEN are a KB of temporal constraints in our formalism, a separate knowledge base KB_period containing the definitions of the user-defined periods in KB (using our adaptation of Leban's language [Leban et al., 87; Terenziani, 97a]), a period of concretization C' (e.g., [29/9/97 - 30/9/97]).
+GEN consists of four main steps.
+The first step is mainly an optimisation, since consistency is already detected when generating pinstantiations (there is no p-instantiation satisfying a contextual scenario for a KB which is inconsistent in C').
+However, generation is computationally more expensive than consistency checking using the (incomplete) polynomial algorithm we proposed in [Terenziani, 97a].
+In our example, (KB1) is checked to be consistent, and is not changed by the temporal reasoning process.
+The second step corresponds to computing the contextual concretizations of all the temporal constraints (t.c.)
+in KB.
+The crucial point is to generate, for each period C* in any t.c., all the concretizations of C* which are (starkly or not) during C' and during the frame time I of t.c.
+(i.e., the set {x \ x ' ConcP (C*) * N_S_DUR=(Ext(x),Ext(C')) * N_S_DUR=(Ext(x), I)}).
+This computation is performed on the basis of the definition of periods in KB_period.
+The algorithm we used is similar to the one in [Chandra et al., 93].
+Given KB1, and the concretization period C'= [29/9/97 - 30/9/97], we have just one concretization of Mondays* in C' (i.e., the day [29/9/97-29/9/97]), of Tuesdays* (i.e., [30/9/97 - 30/9/97]), and of Mon+Tue* ([29/9/97-30/9/97]).
+Thus, we have ISet(KB1)={[29/9/9729/9/97] and [30/9/97 - 30/9/97]}, Iset(S1)={{[29/9/9729/9/97]}}, Iset(S2) = {{[30/9/97-30/9/97]}}, Iset(S3) = {{[29/9/97-30/9/97]}}.
+The computation of the number of instances of each type of event in each fragment at step three require solving a system of equations.
+For each constraint TCi ="I n2-times EACH C* n1-times ev1* R n3-times ev2 *", for each concretization Ci of C* in C', given the set {I1, ...,Ik} of fragments in ISet(KB') which  are contained into Ci, the system contains the equations ev1*(I1)+...+ev1*(Ik)=n1*n2 and ev2*(I1)+ ...+ ev2*(Ik) =n3*n2 where ev*(Ii) is a variable representing the number of concretizations of ev* in the interval Ii.
+For example, from (S2) we have H_Phys*([30/9/97-30/9/97]) = 1 and H_Chem*([30/9/97-30/9/97])=2, while from (S3) we have H_Math*([29/9/97-29/9/97]) + H_Math*([30/9/9730/9/97]) =1 and H_Phys*([29/9/9729/9/97]) + H_Phys*([30/9/9730/9/97]) =1.
+Thus, the overall system of equations admits two solutions, one where the concretization of H_Math* takes place on [29/9/97-29/9/97], and the other with H_Math* on [30/9/97-30/9/97].
+Given one of the solutions to the system of equations, in the fourth step we instantiate the events and assert the COR relations between them, as fixed by the contextual concretizations.
+Notice that the fourth step can be seen a non-deterministic one which (although implicitly) computes the q-concretization of the constraints.
+In fact, during the instantiation process, whenever a qualitative temporal constraint R={R1,...,Rk} in the contextual concretizations has to be considered, one of the atomic relations in {R1,...,Rk} is selected, provided that it is consistent with the temporal locations of the already instantiated events.
+The algorithm implementing the fourth step thus operates by cases, depending on the selected atomic qualitative relation.
+Finally, let us briefly consider the computational complexity of the GEN algorithm.
+First, it is important to notice that the overall algorithm contains two backtracking points.
+The first point correspond to the fact that there may be multiple solutions (i.e., multiple combinations of values for Card(I j (ev i *)), for each fragment Ij and each event evi*) satisfying the equations in step 3 (however, some of them may be inconsistent with the qualitative temporal constraints in the contextual concretizations).
+The second point concerns the choice of the atomic relation in step 4.
+Thus, in the worst case, the generation of p-instantiation is exponential.
+We are currently studying the possibility of introducing optimisations in the GEN algorithm, besides cutting inconsistent qualitative constraints in the pre-computation in step 1.
+7 Comparisons and conclusions Our overall approach is an (algebraic) approach of the third type discussed in the introduction.
+However, unlike other approaches in the AI and database literature, our formalism allows one to deal also with composite types of temporal constraints such as that in Ex.2, where frame time, numeric quantifiers, periods and qualitative relations are considered at the same time (see also footnote 1).
+For example, Morris et al.
+'s algebraic approach [Morris, 95, 96] is very close to ours, but it considers only "period-  independent" constraints between not numerically quantifiers events (see, e.g., Ex.1; however, different forms of quantifications are taken into account by Morris et al.).
+On the other hand, Loganantharaj mainly faced the problem of associating possibilistic distributions to qualitative temporal constraints between periodic events [Loganantharaj & Gimbrone, 95] and to metric constraints concerning the durations of events, which are also expressed using transition rules [Loganantharaj & Gimbrone, 97; Loganantharaj & Kurkovsky, 97].
+However, user-defined periods and "period-dependent" qualitative constraints were not considered by Loganantharaj et.
+al..
+The notions of "concretization" and "n-concretization" of a temporal constraint between periodic events and of scenario have been studied by Morris et al.
+in [Morris et al., 95] considering the language they proposed [Morris et al.., 93].
+Moreover, Morris et al.
+also defined the notion of consistent scenario [Morris et al., 95,96].
+While our definition of n-concretization of a qualitative temporal constraint R (see the definition.
+of n-ConcQ(R) in section 4) is basically taken from their approach, our definition of the concretization of temporal constraints is more elaborate.
+In fact, our formalism is more expressive, since we took into account also numeric quantifiers, frame times and (user-defined) periods.
+Moreover, since our temporal constraints may be period-dependent, we had to introduce the notion of "contextual" concretization, and of "contextual" scenario.
+On the other hand, Loganantharaj et al., considered possibilistic distributions on the duration of events [Loganantharaj & Gimbrone, 97; Logantharaj & Kurkovsky, 97] and faced the problem of projecting the constraints on the durations in the future using the current domain information.
+Finally, it is important to notice that the notions of (contextual) concretizations and scenario we introduced in this paper not only are basic notions in generative approaches, but also they may be used in a "recognition" way: given a KB of temporal constraints, and given a set of observations (i.e., a set of instantiations of activities observed at specific intervals of time), one could check whether these observations respect the temporal constraints in the KB or, in other words, if they are consistent with a scenario for the KB.
+References [Allen, 83] J.F.
+Allen, "Maintaining Knowledge about Temporal Intervals", Comm.
+ACM,.
+vol.
+26, no.
+11, pp.
+832-843, Nov. 1983.
+[Chandra et al., 93] R. Chandra, A. Segev, and M. Stonebraker, "Implementing Calendars and Temporal Rules in Next Generation Databases", Proc.
+Int'l Conf.
+on Data Engineering, Huston, pp.
+264-273, 1994.
+(see  also LBL Tech.
+Report 34229, University of California, Berkeley, 1993).
+[Cukierman, & Delgrande, 95] D. Cukierman, and J. Delgrande, "A Language to Express Time Intervals and Repetition", Proc.
+TIME-95, pp.
+41-48, 1995.
+[Ladkin, 86] P. Ladkin, "Primitive and Units for Time Specification", Proc.
+Fifth National Conf.
+on Artificial Intelligence, pp.
+354-359, Philadelphia, PA, 1986.
+[Leban et al., 86] B. Leban, D.D.
+McDonald, and D.R.
+Forster, "A representation for collections of temporal intervals", Proc.
+Fifth National Conf.
+on Artificial Intelligence, pp.
+367-371, Philadelphia, PA, 1986.
+[Loganantharaj & Gimbrone, 95] R. Loganantharaj, and S. Gimbrone, "Probabilistic Approach for Representing and Reasoning with Repetitive Events", Proc.FLAIRS95., pp.
+26-30, Melbourne, FL, April 1995.
+[Loganantharaj & Kurkovsky, 97] R. Loganantharaj, and S. Kurkovsky, "A new model for projecting temporal distance using fuzzy temporal constraints", In Proc.
+IEA/AIE'97, 1997.
+[Loganatharaj & Gimbrone, 97] R. Loganantharaj, and S. Gimbrone, "Issues on Synchronizing when Propagating Temporal Constraints", AAAI97 Workshop on Spatial and Temporal Reasoning, 1997.
+[Morris et al., 95] R.A. Morris, L. Khatib, and G. Ligozat, "Generating Scenarios from specifications of Repeating Events", Proc.
+of the TIME-95 , pp.
+41-48, 1995.
+[Morris et al., 96] R.A. Morris, W.D.
+Shoaff, and L. Khatib, "Domain Independent Temporal Reasoning with Recurring Events", Computational Intelligence 12(3), 450-477, 1996.
+[Soo & Snodgrass, 93] M. Soo, and R. Snodgrass, "Multiple Calendar Support for Conventional Database Management Systems", Proc.
+Int'l Workshop on an Infrastructure for Temporal Databases, Arlington, Texas, June 1993.
+[Terenziani, 97a] P. Terenziani, "Integrating calendardates and qualitative temporal constraints in the treatment of periodic events", IEEE Transactions on Knowledge and Data Engineering 9(5), 1997.
+[Terenziani, 97b] P. Terenziani, "Qualitative and Quantitative Temporal Constraints about Numerically Quantified Periodic Events", In Proc.
+TIME-97, IEEE Computer Society Press, pp.
+94-101, 1997.
+[Tuzhilin & Clifford, 95] A. Tuzhilin and J. Clifford, "On Periodicity in Temporal Databases", Information Systems, vol.
+20, no.8, pp.
+619-639, December 1995.
+[Wang et al., 97] X. Wang, C. Bettini, A. Brodsky, S. Jajodia, "Logical Design for Temporal Databases with Multiple Granularities", TODS 22(2), pp.
+115-170, 1997.

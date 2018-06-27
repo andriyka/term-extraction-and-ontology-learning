@@ -1,0 +1,270 @@
+An Efficient Algorithm for Minimizing Time Granularity Periodical Representations Claudio Bettini Sergio Mascetti DICo - University of Milan, via Comelico 39, 20135 Milan, Italy {bettini,mascetti}@dico.unimi.it Abstract This paper addresses the technical problem of efficiently reducing the periodic representation of a time granularity to its minimal form.
+The minimization algorithm presented in the paper has an immediate practical application: it allows users to intuitively define granularities (and more generally, recurring events) with algebraic expressions that are then internally translated to mathematical characterizations in terms of minimal periodic sets.
+Minimality plays a crucial role, since the value of the recurring period has been shown to dominate the complexity when processing periodic sets.
+1 Introduction Periodicity is a property used to describe and reason about temporal phenomena, and it has been the subject of research in knowledge representation (see e.g., [8, 12]), in databases, (see e.g., [7, 14, 13, 11]), and in temporal logic (see e.g., [15]).
+Periodicity can be used, for example, to represent recurring events in a knowledge base, or to store data with a recurring validity period in a database.
+Periodicity in particular plays a relevant role for the finite representation of time granularities; for example, the set of Mondays can be represented by a specific date for one Monday and by a recurring period of one week (7 days).
+Considering that months have different lengths, years have leap years and their exceptions, and that granularities also include non standard ones like banking days or academic semesters, it is quite clear that the recurring period can become large and possibly difficult to identify.
+Several symbolic formalisms have been proposed in the literature to represent granularities without having the user to explicitly give the formulas defining the periodicity.
+For example, the slicing and dicing operators proposed in [6] can be used to represent the set of all second and third week of each month of January by the expression [2,3]/Weeks:during:January.
+Simi-  larly, the expression all.Years + {2,4}.Months + {1}.Days  2.Days in the formalism proposed in [10] denotes the first 2 days of February and April of each year.
+Similar, but more expressive formalisms are defined in [1], which is an extension of [6], and in [9] that introduces a new rich set of algebraic operators.
+A mapping from the algebraic expressions to the corresponding mathematical periodic representations is not provided in the above papers.
+A mapping from the algebra in [9] is provided in [3].
+A mapping from the algebras in [6] and [10] is embedded in the proofs of [1].
+However, these mappings do not guarantee to return a minimal representation, i.e., a representation using the smallest possible period value, and devising such a minimal mapping turns out to be a difficult task.
+On the other side, the period value greatly affects the performance of operations on periodic sets.
+For example, the GSTP system for granularity constraint reasoning ([2]) performs constraint satisfaction by applying operations on granularities represented as sets of periodic sets of integers.
+The complexity is dominated by the least common multiple of the period values of the involved granularities.
+A minimal periodical representation is not only desirable for processing granularities, but it would also provide a common low-level representation for expressions specified by users in their favorite symbolic formalism.
+The technical contribution of this paper is an efficient algorithm to reduce the periodic representation of a time granularity to a minimal representation.
+An immediate application of the algorithm is in a post-processing step in the conversion from an algebraic specification of a time granularity to its mathematical periodic representation.
+From a practical point of view, this result allows users to intuitively define granularities (and more generally, recurring events) and having the system processing the underlying periodic sets as efficiently as possible.
+The algorithm has a worst case complexity of O(n3/2 ) where n is the period of the input granularity representation.
+The rest of the paper is organized as follows: in Section 2  we formally introduce time granularities and other notions that are needed to formulate our technical results.
+In Section 3 we present the algorithm for period minimization, and in Section 4 we show its applications and briefly report on its implementation.
+Section 5 concludes the paper.
+Intuitively, H  G means that each granule of G is a union of some granules of H. For example, day  week since a week is composed of 7 days and day  b-day since each business day is a day.
+Granularities are said to be bounded when L has a first or last element or when G(i) = [?]
+for some i [?]
+L. In this paper, for simplicity, we assume that all granularities are unbounded.
+We assume the existence of an unbounded bottom granularity, denoted by [?]
+which is full-integer labeled and groups into every other granularity in the system.
+Since we are particularly interested in granularities which can be expressed as periodic repetitions of granules of other granularities (in particular a bottom granularity), we formally define the following relationship2  2 Periodic Representation of Granularities A comprehensive formal study of time granularities and their relationships can be found in [4].
+In this paper, for lack of space we only introduce notions that are essential to show our results.
+In particular, we report here the notion of labeled granularity which was proposed for the specification of a calendar algebra [9] 1 .
+Granularities are defined by grouping sets of instants into granules.
+For example, each granule of the granularity day specifies the set of instants included in a particular day.
+A label is used to refer to a particular granule.
+The whole set of time instants is called time domain, and for the purpose of this paper the domain can be an arbitrary infinite set with a total order relationship, <=.
+Definition 3 A labeled granularity H groups periodically into a labeled granularity G if H groups into G and there exist positive integers N and P such that (1) for each label i of G, i + N is a label of G unless i + N is greater than the greatest k label of G, and (2) for each label i of G, if G(i) = r=0 H(jr ) and G(i + N ) is a non empty granule  of G then G(i + N ) = kr=0 H(jr + P ), and (3) if G(s) is the first non-empty granule in G (if it exists), then G(s + N ) is non empty.
+Definition 1 A labeled granularity is a pair (L, G), where L is a subset of the integers, and G is a mapping from L to the subsets of the time domain such that for each pair of integers i and j in L with i < j, if G(i) = [?]
+and G(j) = [?
+], then (1) each element in G(i) is less than every element of G(j), and (2) for each integer k in L with i < k < j, G(k) = [?].
+The groups periodically into relationship is a special case of the group-into relationship characterized by a periodic repetition of the "grouping pattern" of granules of H into granules of G. Its definition may appear complicated but it is actually quite simple.
+Since H groups into G, any granule G(i) is the union of some granules of H; for instance assume it is the union of the granules H(a1 ), H(a2 ), .
+.
+.
+, H(ak ).
+Condition (1) ensures that the label i + N exists (if it is not greater than the greatest label of G) while condition (2) ensures that, if G(i + N ) is not empty, then it is the union of H(a1 + P ), H(a2 + P ), .
+.
+.
+, H(ak + P ).
+Condition (3) simply says that there is at least one of these repetitions.
+We call the parameters P and N in Definition 3, a period and its associated period label distance, respectively.
+We also denote by R the number of granules of G corresponding to each group of P consecutive granules of [?].
+More formally, R is equal to the number of labels of G greater than or equal to i and smaller than i + N where i is an arbitrary label of G. Note that R is not affected by the value of i.
+Note that the period is an integer value.
+For simplicity we also use the expression "one period of a granularity G" to denote a set of R consecutive granules of G. In general, the periodically-groups-into relationship guarantees that granularity G can be finitely described (in  When L is exactly the integers, the granularity is called "full-integer labeled".
+When L = Z+ we have the same notion of granularity as used in several applications (e.g., [4]).
+However, in general, the set L of labels can be an arbitrary subset of (possibly noncontiguous) integers and these labels are used to identify granules.
+Note that each labeled granularity can use a different set of labels.
+For example, following this labeling schema, if we assume to map day(1) to the subset of the time domain corresponding to January 1, 2001, day(32) would be mapped to February 1, 2001, b-day(6) to January 8, 2001 (the sixth business day), and month(15) to March 2002.
+Several interesting relationships can be defined among granularities.
+The first of these is called group into and defines a partial order over the set of all granularities.
+Definition 2 If G and H are granularities, then H is said to group into G, denoted H  G, if for each non-empty granule G(j), there exists  a (possibly infinite) set S of labels of H such that G(j) = i[?
+]S H(i).
+1 Labeled granularities are an extension of the more standard notion of granularities provided in [4].
+2 This is simply an extension to labeled granularities of the analogous relation defined for "regular" granularities (see e.g., [4]).
+2  terms of granules of H), providing the following information: (i) a value for P and N ; (ii) the set LG of labels of G in one period of G; (iii) for each j [?]
+LG , the finite set Sj of labels of H, describing the composition of G(j); (iv) the labels of first and last non-empty granules of G, if their values are not infinite.
+In the following, we call explicit granules the granules that have a label in LG .
+A granularity G can have several periodical representations in terms of the bottom granularity; Indeed if P is a period value for G, then any multiple of P is also a period for G. Moreover, for each period value, different sets of consecutive granules can be used to describe the explicit granules contained in one period.
+Among all possible pairs (P, N ) characterizing a periodically-groups-into relationship, there exist a pair (P  , N  ) such that P  is the smallest period value in all pairs.
+The value P  is called the minimal period for the G and any representation adopting that value for the period is called minimal.
+In order to distinguish different representations of the same granularity, the notation "G1 ", "G2 ", .
+.
+.
+is used (read "representation 1 of G", "representation 2 of G", .
+.
+.
+).
+given granule z of another granularity G. For example, we may wish to find the month (an interval of the absolute time) that includes a given week (another interval of the absolute time).
+This transformation is obtained with the up operation.
+Formally, for each label z [?]
+LG , zH G is undefined if  z  [?]
+LH s.t.
+G(z) [?]
+H(z  ) ; otherwise, zH G = z ,   where z is the unique index value such that G(z) [?]
+H(z ).
+The uniqueness of z  is guaranteed by the monotonicity of granularities.
+The notation zH is used when the source granularity can be left implicit (e.g., when we are dealing with a fixed set of granularities having a distinguished bottom granularity).
+Another direction of the above transformation is the down operation: Let G and H be granularities such that H G  H, and z an integer.
+Define  	z G as the set S of labels of granules of G such that j[?
+]S G(j) = H(z).
+This function is useful for finding, e.g., all the days in a month.
+Example 1 Figure 1 shows how the same granularity can be represented using (1) period equal to 4 and the granules labeled with 1 and 2 as the explicit granules; (2) period equal to 4 and the granules labeled with 2 and 3 as the explicit granules or (3) period equal to 8 and the granules labeled with 2, 3, 4 and 5 as the explicit granules.
+In the figure, the dotted curly brackets represent the explicit granules.
+In this section we present an algorithm that, given a granularity representation G1 , computes the minimal period for G; in Section 3.4 we show how, given this value, a full characterization of a minimal representation can be obtained.
+The input is a periodical representation G1 in terms of the bottom granularity; i.e.
+the period PG1 , the period label distance NG1 , and the set of sets Sk with k = 0 .
+.
+.
+NG1 - 1 such that, for an arbitrary a [?]
+Z, Sk = 	k + a G if k [?]
+LG1 , Sk = [?]
+otherwise.
+Note that, given this representation, the number R of granules in one period can be trivially computed.
+^  3 An Algorithm for Period Minimization  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16  G  3.1 The algorithm  G1 G2 G3  1  2  3  4  5  6  7  8  1  2  3  4  5  6  7  8  1  2  3  4  5  6  7  8  1  2  3  4  5  6  7  8  The main idea of the algorithm is that if G1 is not minimal, then there exists a minimal representation G2 such that PG1 = PG2 * m with m [?]
+N+ .
+Therefore, the goal of the algorithm is finding m: once it is found the output is simply PG1 1 m .
+If G is minimal, then m = 1.
+Clearly, m must be a divisor of PG1 and we will prove that m must also be a divisor of NG1 and RG1 .
+Hence, the algorithm first computes the set S of possible values of m, then, for each n [?]
+S, it checks if there exists a periodical P N representation G3 such that PG3 = nG1 and NG3 = nG1 .
+Since the value of PG3 is inversely proportional to the value of n, the algorithm starts considering the integers in S from the biggest down to the smallest.
+The execution terminates when the first representation G3 is found.
+A non trivial part of the algorithm is checking if G can be represented using a period P and a period label distance N .
+In general, this requires to prove that P and N satisfy the three conditions of Definition 3; however in this particular  Figure 1.
+Different periodical representations of the same granularity  2.1 Granularity Conversions When dealing with granularities, we often need to determine the granule (if any) of a granularity H that covers a 3  For instance, 1G = 1 and 1 + P G = 7G = 4 = 1 + N ; 4G is undefined and 4 + P G = 10 is undefined.
+Algorithm 1 minimizePeriod * Input: a periodical representation G1 ; * Output: the minimal period for G;  ^  * Method: 1: 2: 3: 4: 5: 6: 7: 8: 9: 10: 11: 12: 13: 14: 15:  compute the set S whose elements are gcd(PG1 , NG1 , RG1 ) and its factors.
+b := min(	min(LG1 ) G ); t := max(	max(LG1 ) G ) for all n [?]
+S, from the biggest down to the smallest do P := PG1 /n; N := NG1 /n; failed := false for (k = b; k < t [?]
+failed=false; k++) do if (kG is undefined) then if (k + P G is defined) then failed := true else if (k + P G is undefined) then failed := true else if (k + P G = kG + N ) then failed := true end if end for if (failed= false) then return P end if end for return PG1  G G1 n=6 n=3 n=2    undefined kG + N  if kG is undefined otherwise  1  2  3  4  5  6  7  8  9  1  2  3  4  5  6  7  8  9  1  2  3  4  5  6  7  8  9  1  2  3  4  5  6  7  8  9  1  2  3  4  5  6  7  8  9  Figure 2.
+Graphical representation of the granules involved in Example 2  instance of the problem, it is known that G admits the periP 1 odical representation G1 and that [?
+]k [?]
+N+ s.t.
+P = G k N and N = kG1 .
+Therefore, it can be derived that the third condition of Definition 3 is always satisfied and the other two conditions are verified if and only if [?
+]k [?]
+K: k + P G =  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18  3.2 Correctness Theorem 1 Given a periodical representation of granularity G, the algorithm minimizePeriod computes the minimal period for G. Proof.
+To prove the theorem it is necessary to show three intermediate results.
+(1)  Lemma 1 Given a granularity G, [?
+]l, l [?]
+R+ s.t.
+for each P P representation Gi of G, NGii = l and RGii = l .
+where K = {j [?]
+L[?]
+|min(	min(LG1 ) G ) <= j < max(	max(LG1 ) G )}.
+Note that, since L[?]
+= Z, K is an integers interval and, by definition of K and L, |K| <= P .
+Therefore, the problem can be solved by verifying (1) with k ranging on a finite set.
+G  G  Lemma 2 If G1 and G2 are two periodic representations of granularity G and G1 is minimal, then [?
+]a [?]
+N+ s.t.
+(i)PG2 = aPG1 , (ii)NG2 = aNG1 ; (iii)RG2 = aRG1 .
+Example 2 Figure 2 shows granularity G and its nonminimal periodical representation G1 (the dotted curly bracket indicates the explicit granules of G1 ).
+Since PG1 = 12 and NG1 = RG1 = 6, the algorithm derives S = {2, 3, 6}.
+It is not possible to represent G with a period P = 12/6 = 2 and a period label distance N = 6/6 = 1 since 2G is defined while 2 + P G = 4G is undefined.
+Analogously, it is not possible to represent G with a period P = 12/3 = 4 and a period label distance N = 6/3 = 2 since 2G is defined while 2 + P G = 2 + 4G is undefined.
+However it is possible to represent G with a period P = 12/2 = 6 and a period label distance N = 6/2 = 3;  Lemma 3 Let G be a granularity, G1 one of its possible representations and n a positive integer.
+It is possible to P represent G with a period P = nG1 and a period label N distance N = nG1 if and only if Condition (1) in Section 3.1 is verified.
+Assuming G1 is the representation of G given as input to the algorithm, from Lemma 2 follows that if there exists a minimal representation G2 s.t.
+PG2 < PG1 , then [?
+]n [?]
+N+ s.t.
+n > 1, PG1 = nPG2 , NG1 = nNG2 and RG1 = 4  nRG2 .
+Clearly the set of possible values for n is the set S containing gcd(PG1 , NG1 , RG1 ) and its factors.
+The condition P = PG1 /n with n [?]
+S is necessary but not sufficient for the existence of a periodical representation that has P as the period.
+We now show that the algorithm correctly verifies if there is a periodical representation having PG1 /n as the period.
+For each n [?]
+S, the value of the variable failed is first set to false; then Condition (1) is checked for each k [?]
+K, and, if the condition is not satisfied, then the value of failed is set to true.
+Therefore if failed = false when the for cycle terminates, then Condition (1) is verified and, by Lemma 3, there exists a periodical representation having PG1 /n as period.
+Finally we show that it is correct to stop the evaluation of values in S as soon as a valid representation is found.
+Indeed, let S  [?]
+S be the set s.t.
+for each i [?]
+S  there exists a representation of G having PG1 /i as period.
+Then the representation having P = PG1 /max(S  ) as period is minimal.
+Suppose by contradiction that P is not the minimal representation, then [?
+]P  s.t.
+P  < P and P  is the period of the minimal representation of G. From Lemma 2 P P follows that [?
+]m, n [?]
+N+ s.t.
+P  = m ; and P = nG1 ; Then P G1 P  = m*n .
+This leads to a contradiction since m * n [?]
+S  , m * n > n and n = max(S  ).
+The last step of the algorithm is correct since if it is not possible to identify a representation for any n [?]
+S, then the representation given as input is minimal and its period is returned.
+  In the worst case, the number of times the algorithm performs the innermost for cycle (Algorithm 1, line 5) is |S|.
+By definition of S, it follows that |S| < d(PG1 ) where d(n) indicates the number of divisors of n. The innermost for cycle performs, for each k from b to t, two up operations (*).
+By definition of b and t, it follows that t - b <= PG1 , and since the up operation can be executed in constant time, the for cycle can be performed in time O(PG1 ).
+As well known in number theory, [?]
+if d(n) is the number of divisors of n, then, d(n) < 2 n. Hence, the for  cycle is always executed a number of times less than 2 PG1 , then the thesis follows.
+ Note that a better upper bound for the dimension of S can be found.
+Indeed, let g = gcd(PG1 , NG1 , RG1 ), then |S| = d(g) - 1 4 .
+Clearly g <= PG1 and, since g is a divisor of PG1 , d(g) <= d(PG1 ).
+Despite a detailed average-case analysis of time complexity is out of the scope of this paper, note that, in most practical applications of the algorithm, g << PG1 ; Therefore, d(g) n<< d(PG1 ).
+Moreover, Theorem 318 in [5] states: " i=1 d(n) ~ n ln n"; hence, in the average case, |S| << d(PG1 ) where d(PG1 ) ~ ln(PG1 ).
+3.4 Characterization of a minimal representation Here we show how, given a granularity G, its representation G1 and its minimal period P , it is possible to fully characterize a minimal representation G2 of G. Clearly PG2 = P and, from Lemma 2, NG2 = NG1 * P/PG1 .
+The set of the explicit granules of G2 is the set of granules of G having labels in LG2 = {i [?]
+LG1 |min(LG1 ) <= i < min(LG1 ) + NG2 }.
+Since LG2 [?]
+LG1 , the composition of each explicit granule G(j) with j [?]
+LG2 in terms of [?]
+is the same provided in G1 .
+Finally, note that if G is bounded, the value of the bounds is the same independently from the representation.
+3.3 Time complexity analysis Before presenting our formal result on the time complexity of the algorithm minimizePeriod, we show how it is possible to perform the up operation (*) in constant time.
+Indeed, from the explicit granules of G, it is possible to create an array A of size PG1 that represents how the granules of [?]
+are mapped into the explicit granules of G1 .
+If b = min(	min(LG1 ) G ), then, for each j = 0 .
+.
+.
+PG1 - 1, A[j] = null if b + jG is undefined, A[j] = b + jG G otherwise3 .
+Using this data structure for each  i,fi i can i-b be computed as A[j] + aNG1 where a = P 1 and j = G i - b - aPG1 .
+4 Implementation and applications In the last years, an application for performing temporal constraint reasoning with granularities has been developed at the University of Milan, and it is currently available as a web service (GSTP, see [2]).
+The system still misses a user friendly formalism and interface to define new granularities.
+Recently, the GRC (Granularity Representation Converter) application has been integrated with GSTP; its task is to perform conversions from the Calendar Algebra of [9] to the periodical representation, following the results in [3].
+GRC allows users to specify the granularities appearing in the constraints by Calendar Algebra expressions.
+Since  Theorem 2 The worst case time complexity of the algo3 rithm minimizePeriod is O(n 2 ) where n is the period of the input periodical representation.
+[?]
+Proof.
+The set S can be computed [?]
+in time O( n) by considering each integer from 2 to n and checking if it is a divisor of P , N and R. 3 Note  4 The "-1" comes from the consideration that the value 1 is not included in S.  that A can be built in time O(PG1 ).
+5  the performance of GSTP is strongly affected by the period value of the granularities appearing in the constraints, a central task of GRC is to generate minimal representations.
+Because the results in [3] do not guarantee minimality, the implementation of the minimizePeriod algorithm becomes an essential module of GRC.
+A stand alone version of the software has been realized too, and it is mainly used for testing the correctness of the implementation and its performance.
+The empirical performance results we obtained confirm an almost linear behavior.
+To give an idea of the actual performance, we consider the representation of a granularity involving leap years and leap year exceptions.
+In this case, the input representation has a period of 400years in terms of hours (about 3.5millions of hours), and the algorithm runs in less than a second on a standard PC (a Pentium M 1,7 Ghz).
+[3] C. Bettini, S. Mascetti, X. Wang.
+Mapping Calendar Expressions into Periodical Granularities.
+In Proc.
+of 11th International Symposium on Temporal Representation and Reasoning, pp.
+96-102, IEEE Computer Society, 2004.
+[4] C. Bettini, X. Wang, S. Jajodia, Solving MultiGranularity constraint networks, Artificial Intelligence, 140(1-2):107-152, 2002.
+[5] G. H. Hardy, E. M. Wright, An Introduction to the Theory of Numbers.
+Oxford University Press, 1960.
+[6] B. Leban, D. Mcdonald, and D. Foster, A representation for collections of temporal intervals, in Proc.
+of the American National Conference on Artificial Intelligence, pp.
+367-371, AAAI Press, 1986.
+[7] F. Kabanza, J.-M. Stevenne, P. Wolper.
+Handling Infinite Temporal Data.
+In Proc.
+of ACM PODS, pp.
+392- 403, 1990.
+5 Conclusions and future works We presented an algorithm that, given a periodic representation of a time granularity G, computes the minimal period, and hence provides a minimal representation of G. The algorithm can be used to ensure the minimality of representations that are directly generated by a user or that are the result of a conversion from an algebraic expression.
+As a future work, we are planning to implement a graphical user interface that supports the user in the definition of calendar algebra expressions; The minimizePeriod algorithm will be used to ensure minimality of the underlying periodical representations.
+Analogous tools may be developed, by using the same algorithm, for other symbolic formalisms (e.g., [6, 10]).
+The various tools will have the advantage of interoperability, since they will be based on a common underlying periodic representation.
+[8] Robert A. Morris, William D. Shoaff, Lina Khatib.
+Domain-Independent Temporal Reasoning with Recurring Events.
+Computational Intelligence, 12: 450-477, 1996.
+[9] P. Ning, X. Wang, S. Jajodia.
+An Algebraic Representation of Calendars.
+Annals of Mathematics and Artificial Intelligence 36(1-2): 5-38, 2002.
+[10] M. Niezette and J. Stevenne, An efficient symbolic representation of periodic time, in Proc.
+of International Conference on Information and Knowledge Management, pp.
+161-168, ACM Press, 1992.
+[11] P. Revesz, M. Cai Efficient Querying of Periodic Spatiotemporal Objects, in Lecture Notes in Computer Science, Volume 1894, Page 396, Springer, 2000.
+6 Acknowledgements  [12] Paolo Terenziani, Integrating Calendar Dates and Qualitative Temporal Constraints in the Treatment of Periodic Events.
+IEEE Trans.
+on Knowledge and Data Engineering, 9(5): 763-783, 1997.
+This work has been partially supported by Italian MIUR (FIRB "Web-Minds" project N. RBNE01WEJT 005).
+The authors also wish to thank Lavinia Egidi for her support on some issues in number theory.
+[13] D. Toman, J. Chomicki Datalog with Integer Periodicity Constraints, in Journal of Logic Programming, 35:3, 263-90, 1998.
+References  [14] Alexander Tuzhilin, James Clifford.
+On Periodicity in Temporal Databases.
+Information Systems, 20(8): 619- 639, 1995.
+[1] C. Bettini, R. De Sibi.
+Symbolic Representation of User-Defined Time Granularities, Annals of Mathematics and Artificial Intelligence, 30(1-4):53-92, 2000.
+[15] Pierre Wolper.
+Temporal Logic Can Be More Expressive.
+Information and Control, 56(1/2): 72-99, 1983.
+[2] C. Bettini, S. Mascetti.
+V. Pupillo A system prototype for solving multi-granularity temporal CSP.
+CSCLP 2004, LNAI 3419, pp.
+142-156, Springer, 2005.
+6

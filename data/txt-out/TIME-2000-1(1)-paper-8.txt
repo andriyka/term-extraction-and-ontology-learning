@@ -1,0 +1,364 @@
+Querying Multiple Temporal Granularity Data Isabella Merlo1  Elisa Bertino2  Elena Ferrari 2  Shashi Gadia3  Giovanna Guerrini1  1 Dipartimento  di Informatica e Scienze dellaInformazione UniversitaE di Genova - Italy fmerloisa,guerrini g@disi.unige.it  2Dipartimento  di Scienze dellaInformazione UniversitaE degli Studi di Milano - Italy fbertino,ferrarie g@dsi.unimi.it Abstract  Managing and querying information with varying temporal granularities is an important problem in databases.
+Although there is a substantial body of work on temporal granularities for the relational data model [11], a comprehensive framework is lacking for the object-oriented paradigm.
+To the best of our knowledge, a formal treatment of temporal queries with multiple granularities has not been considered in the literature.
+In this paper we make a step in this direction.
+We formally introduce the syntax and semantics of expressions involving data with multiple granularities, comparison between data with different granularities, and conversion of data from one granularity to another.
+We believe that this is an important step towards the development of an object-oriented query language that supports multiple granularities.
+Keywords: temporal granularities, temporal object databases, temporal object query languages.
+1.
+Introduction Managing and relating temporal information at different time units is an important issue in many applications and research areas, among them temporal databases.
+The introduction of different temporal granularities [3], to store the historical information in a temporal database has a twofold advantage.
+The use of the appropriate granularities to represent data can save storage and allows one to establish relevant integrity constraints so that data cannot be changed more often than the specified granularity.
+Some interesting issues arise in extending a database model to store and query data with multiple granularities.
+3Department  of Computer Science Iowa State University - Iowa gadia@cs.iastate.edu  The introduction of temporal granularities in both the relational and the object-oriented database model, has been investigated in previous works [8, 9, 10, 11, 12].
+TSQL-2 [11], a standard for the relational model, provides limited facilities for querying temporal data with varying granularities.
+To the best of our knowledge, no extensive work has been done to formally define how temporal data with different granularities can be queried in the object-oriented context.
+The proposals for temporal object-oriented query languages [5, 6] do not support facilities for querying data with different granularities.
+In particular a consolidated standard definition does not exist for the object-oriented data model, even though a preliminary definition can be found in our previous work [8].
+Recently, we have developed an extension of [8] which has been submitted for publication [1].
+In this paper we make a step towards the formal treatment of granularities for object-oriented databases.
+We define the syntax and the semantics of expressions involving data with multiple temporal granularities.
+The temporal model we refer to throughout the paper is an extension of an ODMG-compliant object-oriented model [4].
+This model has been presented in our previous work [8].
+The expressions we introduce in this paper are an extension of OQL [4] binary expressions.
+They can be regarded as a step forward the definition of an object-oriented query language for querying multiple temporal granularity data.
+The semantics of comparisons and conversions of data with different granularities is formally defined in the paper.
+In order to answer complex queries, the expressions include several types of comparison operators.
+For instance, it is possible to answer if a given inequality/equality always or sometimes holds, as well as to determine when it holds.
+Finally, several different types of conversions for data from one granularity to another are considered.
+The remainder of this paper is organized as follows.
+Sec-  tion 2 introduces some preliminary concepts.
+In Section 3 the syntax of expressions is presented.
+The corresponding semantics is formally defined in Section 4.
+Section 5 presents an advanced form of expressions, in which conversions among granularities are associated with operators, in order to increase the expressive power of the expressions.
+Section 6 shows how the defined expressions can be used in OQL queries.
+Finally, Section 7 concludes the paper.
+2.
+Preliminaries In this section we introduce, as a background, some preliminary concepts on temporal granularities and on the set of types and values of the expressions of our language.
+Those notions are mainly taken from two previous papers [3, 8].
+2.1.
+Multiple Granularities Issues concerning temporal granularities are a recent research topic in the temporal database area.
+One of the best known work dealing with temporal granularities is the glossary of time granularity concepts [3].
+In the glossary all the main concepts concerning temporal granularities are formally defined without referring to any particular data model.
+To be as general as possible we refer to those definitions.
+As suggested in the glossary, one of the first notion to be fixed in a temporal context is the time domain, that is, the set of primitive temporal entities used to define and interpret time-related concepts.
+In our context the time domain is the pair (IN,), where IN is the set of natural numbers and represents the set of time instants, and  is the order on IN.
+Temporal granularities are formally defined as follows.
+Definition 1 (Granularity)[3].
+Let IS be an index set, that is, a set of positive integers, and 2IN be the power set of the time domain.
+A granularity G is a mapping from IS to 2IN such that both the following conditions hold: (1) if i < j and G(i) and G(j ) are non-empty, then each element of G(i) is less than all elements of G(j ); (2) if i < k < j and G(i) and G(j ) are non-empty, then G(k) is non-empty.
+2 Intuitively a granularity defines a countable set of granules, each granule G(i) is identified by an integer.
+The first condition in Definition 1 states that granules in a granularity do not overlap and that their index order is the same as their time domain order.
+The second condition states that the subset of the index set that maps to non-empty subsets of the time domain is contiguous.
+Figure 1 graphically illustrates those concepts.
+The usual collections days, months, weeks and years are granularities.
+For readability, we use a atextual representationa for each non-empty granule, termed as label, which is more descriptive than the granule index.
+For example, throughout the paper, days are in the form mm=dd=yyyy, months are in the form mm=yyyy and so on.
+A finer than relationship can be defined among temporal granularities, with the following meaning.
+Definition 2 (Finer Than Relationship)[3].
+A granularity G is said to be finer than a granularity H , denoted G  H , if for each index i, there exists an index j such that G(i)  H (j ).
+2 For example, days is a granularity finer than months (days  months).
+In the following the finer than relationship will be used to define comparison operators between values at different granularities.
+Note that the finer than relationship establishes a partial order on a set of granularities G. Finally, we introduce the notion of temporal element with respect to a granularity.
+The notion of temporal element is formally introduced in [7].
+A temporal element is a finite union of intervals.
+Intuitively, every subset of the set of granules associated with a granularity G is a temporal element.
+Thus, in what follows, given a granularity G, a temporal element TG with respect to such granularity is defined as TG = fG(i) j i 2 I; I  ISg.
+2.2.
+Temporal Types and Values In this section, temporal types related to different granularities and the notion of set of values of a given type are formally defined according to the set of temporal types.
+In what follows we do not discuss the set of object types, set of literal types, and so on, of our type system, because they are not relevant in the present context.
+We refer the interested reader to [8, 1] for a detailed description of the reference model.
+In [8, 1] object types can be defined through classes and temporal information is associated with attributes.
+We consider a classical notion of class [2] where, in order to store temporal information, the type of an attribute can be temporalG (t).
+Thus, in what follows the terms class and object type are used as synonyms.
+We assume that a set ST of types is given.
+Such set includes object and literal types.1 For each type t 2 ST and granularity G 2 G , a corresponding temporal type, temporalG (t), is defined.
+Intuitively, instances of type temporalG (t) are partial functions from granules of G to instances of type t. 1 Example of types belonging to  ST  are integer, person, and so on.
+1  2  3  {  {  IN  0  {  IS  {  Example of a granularity G  G(1)  G(2)  G(3)  G(4)  Violation of the first condition of Definition 1 i  IN G(i)  j  {  IS  G(j)  .....  ..... ....
+Violation of the second condition of Definition 1 ....  IS  ....
+IN  i  k  j  ....  .... G(i)  G(j)  overlapping  Figure 1.
+Graphical representation of granularities Definition 3 (Temporal Types)[8].
+Let t2 ST be a type and G 2 G be a temporal granularity, then temporalG (t) is the temporal type corresponding to type t and granularity 2 G. Note that, according to the previous definition, temporal types cannot be nested.
+That is, if t2 ST is a type and G and H 2 G are two granularities, temporalG (temporalH (t)) is not a legal type of our model.
+Example 1 Let integer and person be two types in ST , and let years and months be two granularities in G , then examples of temporal types are temporalyears (integer) and temporalmonths (person).3 Temporal types, defined with respect to a given granularity, are particularly meaningful in the context of databases.
+If an attribute a of an object o has type temporalG (t), then such attribute cannot vary more than once for each granule of G. Therefore, given a granule G(i), the value of the attribute is the same for each instant t 2 G(i).
+In the following, the whole set of the types provided by our model is denoted as T .
+T is an extension of the set of given types ST , with temporal types.
+Each type t2 ST still belongs to T , that is, ST  T .
+T is partitioned into three disjoint sets, that is, T = T T [ OT T [ LT T , where T T is the set of temporal types, OT T is the set of object types, and LT T is the set of literal types.
+In what follows, we define the set of legal values supported by our model.
+Let OID be the set of possible object identifiers.
+We define a function  : OT T  IN !
+2OID , that, given an object type t and a time instant t, returns the  set of identifiers of objects belonging to type t at time t. In what follows, given a literal type t, dom(t) denotes the set of values of that type.
+We define the set of legal values of each type t 2 T by using three functions, namely Eval, EvalG and T Eval, formally defined as follows.
+Definition 4 (Legal Values of a Non-Temporal Type with Respect to the Time Domain)[8].
+Let t 2 T n T T be a nontemporal type and t 2 IN be a time instant, then Eval(t; t) denotes the extension of type t at time t:  Eval(t; t) =    dom(t) (t; t)  if t 2 LT T if t 2 OT T  2  Note that, according to the previous definition, only object types have extents which depend on time.
+Intuitively, the set of values of a literal type does not change over time since no literal value can be explicitly created or deleted, whereas objects belonging to object types are dynamically created and deleted, thus an object type extent depends on the considered instant.
+When dealing with temporal granularities, function Eval is generalized to a granularity G through the following definition.
+Definition 5 (Legal Values of a Non-Temporal Type with Respect to a Granule)[8].
+Let t 2 T n T T be a nontemporal type, G be a granularity and i 2 IS be an index, then EvalG (t; i) denotes the extension of type t with respect to the granule identified by i:  T EvalG (t; i) = t2G i Eval(t; t) ( )  where G(i) is the set of time instants corresponding to granule i with respect to granularity G. 2 Example 2 Let department be an object type such that Evalyears (department, 1997)2 = fd1,d2 , d3 g. Then, for each instant belonging to 1997, d1,d2 , and d3 must exist.
+Formally, Evalyears (department, 1997) = T Eval (department, t), where I denotes the set of int2I stants corresponding to 1997, years(1997) = I  IN.
+The idea is that if a department exists only during a portion of a year, it does not belong to the extent of the object type department of that year.
+3 We are now ready to define the set of legal values for temporal types with respect to a given time instant t 2 IN.
+Intuitively, a legal value of a temporal type temporalG (t) is a partial function from granules of G to legal values of type t. Definition 6 (Temporal Type Legal Values)[8].
+Let temporalG (t) 2 T T be a temporal type and t 2 IN be a time instant, then T Eval(temporalG (t); t) denotes the set of legal values of type temporalG (t) at instant t:  T Eval(temporalG (t); t) = ff jf = f  G such that f : 2IN !
+Si2IS EvalG (t; i) is a partial function such that for each i 2 IS if f(G(i)) is defined then f(G(i)) 2 EvalG (t; i)g 2  Note that the set of legal values of a temporal type does not depend on the particular time instant.
+Formally we can state that:  S t2IN T Eval(temporalG (t); t) = T Eval(temporalG (t); t), for each t 2 IN  Thus, in the following we will omit the time instant argument.
+Since the set of values of a given temporal type does not depend on time, we can extend function EvalG (Definition 5) to temporal types as follows:  T EvalG (temporalH (t); i) = t2G i T Eval(temporalH (t); t) = T Eval(temporalH (t); t) ( )  The following example clarifies the above definitions.
+Example S 3 Let department be an object type such that: D = i2IS Evalyears (department, i) = fd1,d2 , d3, .
+.
+.
+, dng.
+Then, according to Definition 6:  T Eval(temporalyears (department), t) = ff jf = f  years such that f : 2IN !
+D is a partial function such that for each i 2 IS if f(years(i)) is defined then f(years(i)) 2 Evalyears (t, i)g  2 For simplicity, the label 1997 is used instead of the index sponding to such granule.
+i corre-  Examples of functions, denoted as sets of pairs, in T Eval(temporalyears (department), t) are: fh1992; d1i; h1993; d4ig and fh1995; d2 i; h1998; d2ig.
+In those functions 1992, 1993, and so on, are the labels in the form yyyy, denoting years.
+3  3.
+Expressions In this section we present the formal syntax of expressions that can be built in our language.
+Such expressions can be used in querying data, similarly to expressions used in OQL queries.
+We restrict ourselves to the expressions that can be built starting from temporal values involving integers and booleans.
+Such expressions are simple, but they allow one to focus on temporal aspects.
+The extension to general types of expressions, involving for example characters, can be easily done.
+Thus, we consider temporal values whose inner type is integer or boolean, that is, values belonging to the temporal types temporalG (integer) and temporalG (boolean), G 2 G .
+The BNF grammar of temporal expressions is given in Figure 2.
+Such expressions are a generalization of OQL binary expressions involving integers and booleans [4].
+Terminal symbols in Figure 2 have the following meaning.
+Symbol var denotes an object-denoting variable.
+Symbol class name denotes a class name.
+Symbols int value and bool value denote an element belonging to dom(integer) and dom(boolean), respectively.
+For example, 1 or 138 for int value and true or false for bool value.
+Symbols int temp value and bool temp value denote a temporal value whose inner type is integer and boolean, respectively.
+That is, int temp value represents functions belonging to the following set:  T Eval(temporalG (integer)) = ff jf = f  G such that f : 2IN !
+dom(integer) is a partial function such that for each i 2 IS if f(G(i)) is defined then f(G(i)) 2 dom(integer)g. Similarly, bool temp value represents functions belonging to the set T Eval(temporalG (boolean)).
+Finally, square brackets denote optional symbols, whereas parenthesis denote the arbitrary repetition of what is in between.
+Let v be a temporal value.
+Since v is a partial function, there may exist i 2 IS such that v(G(i)) =?.
+We consider such unknown information as null values in OQL.
+Thus, they are considered as zero in integer expressions and three-values logics is adopted for boolean expressions.
+In Figure 2 the syntax of path expressions denoting object navigation is defined.
+We consider path expressions where attribute domains are correct with respect to type checking.
+That is, let o be an object of class c and let o:a1:a2  hexpi ::= hint expi j hbool expi j htemp expi hint expi ::= int value j int temp value j path exp j hint expi hop inti hint expi hpath expi ::= var f .attribute name g hop inti ::= + j - j * j / j mod hbool expi ::= bool value j bool temp value j path exp j hint expi hop bool inti hint expi j hbool expi hop booli hbool expi hop bool inti ::= j j<j< j>j> j A j A j<Aj< A j>Aj> A j S j S j<S j< S j>S j> S hop booli ::= and j or htemp expi ::= hint expi hop temp inti hint expi hop temp inti ::= T j T j<T j< T j>T j> T = !
+=  =  !
+=  =  = =  =  !
+=  =  =  =  !
+=  =  =  =  Figure 2.
+BNF grammar of expressions be a path expression, than the attribute domain of a1 in c is an object type, and the attribute domain of a2 is an integer, boolean, or temporal type according to the expression in which o:a1:a2 appears.
+We do not discuss in detail the syntax and semantics of path expressions since it is out of the scope of this work.
+Besides path expressions, in Figure 2 three different types of expressions can be distinguished: integer, boolean, and temporal expressions.
+All of them can involve temporal values.
+Integer expressions and boolean expressions involving aclassicala (that is, static) values have the usual semantics of classical integer and boolean expressions.
+In addition, we allow temporal values in integer and boolean expressions.
+The intuitive meaning of such expressions is the evaluation apoint to pointa, that is, ainstant to instanta in our context, of the expression.
+For each boolean operator op on integers we introduce three operators: 1. the always operator (opA ), whose intuitive meaning is to evaluate whether the relationship denoted by op always holds for the time period in which the two values are defined; 2. the sometimes operator (opS ), whose intuitive meaning is to evaluate whether the relationship denoted by op sometimes holds for the time period in which the two values are defined; 3. the temporal operator (opT ), whose intuitive meaning is to answer the following question: awhen the relationship denoted by op holds?a The first and the second kind of operators are a generalization of boolean expressions and the result of their evaluation is always true or false.
+By contrast, the third class of operators are the extension to a temporal context of boolean expressions and the result of their evaluation is a temporal  element, thus, the expressions in which such operators appear are called temporal expressions.
+In what follows we present an example to clarify the previous concepts.
+Example 4 Let employee be a class with a temporal attribute salary of type temporalmonths (integer), and let o1 and o2 be two employee objects representing two married persons.
+Let o1 .salary= fh01=1999; 100i; h02=1999; 150i; h03=1999; 300ig and let o2.salary= fh01=1999; 400i; h03=1999; 50ig.
+If we are interested in knowing the family income, that is, the sum of the two salaries, we have to compute the value of the integer expression o1.salary + o2 .salary.
+If we are interested in knowing which one of the two makes more money for each month, we have to compute o1.salary > o2.salary.
+If we are interested in knowing if the husband, say o1, makes always more money than the wife, say o2 , we should compute o1.salary >A o2 .salary.3 Finally, if we are interested in knowing when o1 made more money than o2 we have to compute o1.salary >T o2 .salary.
+The resulting values of the presented expressions can be found in Example 5.
+3 Some implications can be established among the different operators.
+For instance, if v1 and v2 are two temporal values and v1 opA v2 evaluates true, then v1opS v2 evaluates true.
+In what follows we denote with O the set of classical comparison operators defined for integers, that is, O = f=; !
+=; <; <=; >; >=g.
+Sets OA , OS , and OT denote the always, sometimes, and temporal counterparts of the set O.
+In the following section we will elaborate on the semantics of expressions formally defining which is the result of each expression of Example 4, even in the case in which the values are expressed with respect to different time granularities.
+3 We do not report the sometimes operator since it is similar to the always one.
+Eint v1 opv2 [[  Eint e1 ope2 [[  8 > > > > > > > < ]] =  ]] =  Ebool v1opA v2 Ebool e1opA e2  ( )  (  ( ))  ( )  (  ( ))  ( )  [[  [[  (  (  [[  Eint > > > > Eint > > > > :  (  ( ))  ) ]]  RH v1 opv2 (  )  ]]  RK v1 opRK v2 (  ]] =  [[  ]] =  [[  ]] =  [[  ]] =  )  (  [[  ]]  [[  (  )  (  [[  [[  (  ))  )  (  (  (  (  (  (  ))  (  (  ))  (  (  )  ))  ))  (  (  (  ))  (  ))  (  ))  [[  ]] =  (  (  ))  (  ( )) =  ]] =  (  (  ))  (  ( )) =  [[  [[  [[  ]] =  (  (  ))  (  ( )) =  [[  ]] =  (  (  ))  (  ( )) =  ]]  [[  ( )  (  ( ))  ( )  (  ( ))  ( )) =  (  ( )) =  (  [[  (  )  ) ]]  )  ]] =  [[  [[  ]]  (  ( )) =  ]]  (  (  (  (  [[  ))  ))  ) ]]  (  (  Figure 3.
+Semantics of expressions  ))  ))  (  (  ))  ))  (  ]] ]]  (  (  (  (  (  (  )  (  ]] =  (  (  =  (  ( )) =  ]] ]]  (  (  (  ]] ]]  (  [[  ))  (  [[  ]]  [[  Etemp e1 opT e2  (  (  [[  [[  [[  ) ]]  v 2 dom integer v 2 T Eval temporalG integer 2 T Eval temporalG integer and v2 2 dom integer 2 dom integer and v2 2 T Eval temporalG integer 2 T Eval temporalG integer , v 2 T Eval temporalH integer , GH v 2 T Eval temporalG integer , v 2 T Eval temporalH integer , H G v 2 T Eval temporalG integer , v 2 T Eval temporalH integer , G  H , H  G, K  G, and K  H v v v v v  if 1 , 2 if 1 , 2 if 1 if 1 if 1 2 and if 1 2 and if 1 2  ]]  ( )  Etemp v1 opT v2  ( ))  ?
+otherwise Eint e1 opint Eint e2  true if Ebool v1 opv2 v, v 2 T Eval temporalG boolean , and 8 i s:t: v G i 6 ?
+v G i true v, v 2 T Eval temporalG boolean , and 9 i s:t: v G i false false if Ebool v1 opv2 ?
+otherwise Ebool Eint e1 opA Eint e2  true if Ebool v1opv2 v, v 2 T Eval temporalG boolean , and 9 i s:t: v G i 6 ?
+v G i true false if Ebool v1opv2 v, v 2 T Eval temporalG boolean , and 8 i s:t: v G i false ?
+otherwise Ebool Eint e1 opS Eint e2 8 fG i j v1 G i opboolv2 G i trueg if v1, v2 2 T Eval temporalG integer > fG i j v1 G i opboolv2 trueg > if v1 2 T Eval temporalG integer and v2 2 dom integer > if v1 2 dom integer and v2 2 T Eval temporalG integer fG i j v1 opbool v2 G i trueg > > if v1 2 T Eval temporalG integer , < Ebool v1 opT RG v2 v2 2 T Eval temporalH integer , and G  H Ebool RH v1 opT v2 if v1 2 T Eval temporalG integer , > v2 2 T Eval temporalH integer , and H  G > Ebool RK v1 opT RK v2 if v1 2 T Eval temporalG integer , > > v2 2 T Eval temporalH integer , > > G  H , H  G, K  G, and K  H : ?
+otherwise Ebool Eint e1 opT Eint e2  [[  Ebool v1opS v2 Ebool e1opS e2  v1 opint v2  fhG i ; v1 G i opint v2 G i i j i 2 ISg fhG i ; v1 Ginti opint v2i j i 2 ISg fhG i ; v1 op v2 G i i j i 2 ISg Eint v1 opRG v2  ))  ))  (  )  ))  4.
+Semantics of Expressions In what follows we focus on expressions involving temporal values.
+The semantics of the ones in which no temporal value appears is obvious and is the one supported by OQL.
+Reasoning on temporal values we have to consider that they can be defined with respect to different granularities.
+One idea could be to force temporal values appearing in an expression to be expressed with respect to the same granularity.
+We believe that this is too restrictive.
+In addition, it is not coherent with the subtyping relationship among temporal types we have defined in [8].
+In [8] the subtyping relationship establishes that a type t2 is a subtype of a type t1, t1 = temporalG (t01 ), t2 =temporalH (t02 ), if t02 typet01 and G  H .
+Usually, in programming languages, values belonging to different types can appear in the same expression.
+In addition, temporal information expressed with respect to different granularities can be compared in several interesting ways, increasing the expressive power of our language.
+Thus, we believe that expressions involving temporal types related to different granularities have to be managed properly.
+The semantic domain Exp is the set of well-formed expressions defined according to the BNF grammar of Figure 2.
+Such domain can be partitioned into three disjoint sets, that is, Exp = Expint [ Expbool [ Exptemp, where Expint is the set of integer expressions, Expbool is the set of boolean expressions, and Exptemp is the set of temporal expressions.
+In giving the semantics, we reason on each type of expression separately.
+We define three semantics functions, one for each kind of expressions.
+ Eint : Expint !
+T Eval(temporalG (integer)) [ dom(integer) gives the semantics of integer expressions;   Ebool : Expbool !
+T Eval(temporalG (boolean)) [ dom(boolean) gives the semantics of boolean expressions;   Etemp  : Exptemp !
+fTG j TG is a temporal elementg gives the semantics of temporal expressions.
+A formal definition of such functions is reported in Figure 3.
+In Figure 3, v1 and v2 denote values.
+They represent integer, boolean or temporal values according to the expression that is under evaluation.
+Similarly, e1 and e2 denote more complex expressions.
+Symbol op denotes an integer or boolean operator depending on the semantic function which is being defined.
+In addition opA , opS , and opT denote always, sometimes and temporal operators.
+The interpretation of an operator is denoted as opint and opbool for integer and boolean operators, respectively.
+RG, RH , and RK denote  different kinds of relaxing functions, which are formally defined in Definition 7.
+Note that, in Figure 3, the definition of function Ebool for expressions of type v1 op v2 or e1 op e2 op 2 O is not presented, because it is equal to the one for integer expressions, where the operation interpretation is opbool and the type integer is substituted by boolean.
+We do not have specified the semantics of values that are expressions as well, since it is trivial.
+For instance, the semantic evaluation of an integer value is the value itself.
+Similarly, the semantics of path expressions is not discussed, since it is not relevant for the presented work.
+The semantic function Eint for the standard operators belonging to O computes the evaluation of the expression agranule per granulea, if the two values are expressed with respect to the same granularity.
+If the two values are expressed with respect to different granularities and the type of one value is subtype of the type of the other, function Eint arelaxesa, through a relaxing function R, the value belonging to the most specific type to the type of the less specific value before the expression is evaluated.
+A relaxing function, given a temporal value of type t2 = temporalH (t02) arelaxesa the value to a finer granularity G. Definition 7 (Relaxing Function).
+Let t1 = temporalG (t01) and t2 = temporalH (t02) be two temporal types such that, t02 type t01 and G  H .
+A relaxing function R is a partial function defined as:  R : T Eval(temporalH (t0 )) !
+T Eval(temporalG (t0 )) 2  1  that maps values of type temporalH (t02 ) into values of type temporalG (t01).
+2 Given a temporal granularity H , for each granularity G such that G  H , a relaxing function exists.
+In what follows, we denote each of those relaxing functions as RG .
+Note that, in Definition 7, t2 is a subtype of t1 , according to the subtype relationship we have defined in [8], thus the relaxing function can be seen as a casting up operation on the type of the given value.
+In case the two values are expressed with respect to different granularities that are in some way comparable, that is, there exists a granularity K that is finer than both then two value granularities, the semantic functions arelaxa the two values to such granularity K .4 If none of the previous conditions is verified an undefined value is returned, that corresponds to an error detection.
+Function Ebool on always and sometimes operators computes whether the considered inequality always or sometimes holds.
+Note that we consider the intersection of the domains of the functions representing the values, that is, 4 If  K exists, then it is the greatest lower bound of H and G in G .
+when both of them are defined, and we do not force the domain to be the same.
+This is in accordance with our intuition.
+If one asks: have John and his son always lived in the same house?
+The answer is yes if they have lived in the same house after Johnas son was born.
+In this case the domain of the temporal function corresponding to the value storing the history of the address of Johnas son is strictly included in the domain of the temporal function corresponding to the value storing the history of the address of John.
+Finally, function Etemp computes the temporal element in which the considered inequality holds.
+In the following example we give the semantics of the temporal expressions of Example 4.
+In addition the semantics of some expressions involving values related to different granularities is given.
+Example 5 According to the semantic functions defined in Figure 3, the semantics of the expressions of Example 4 is the following.
+We recall that o1 .salary= fh01=1999; 100i; h02=1999; 150i; h03=1999; 300ig and o2.salary= fh01=1999; 400i; h03=1999; 50ig.
+Eint [[ o :salary + o :salary ]] = fh01=1999; 500i; h02=1999; 150i; h03=1999; 350ig Ebool [[ o :salary > o :salary ]] = fh01=1999; falsei; h03=1999; trueig Ebool [[ o :salary >A o :salary ]] = false Ebool [[ o :salary >S o :salary ]] = true Etemp [[ o :salary >T o :salary ]] = f03=1999g 1  2  1  2  1  2  1  2  1  fdays(i) j r:temperature(days(i)) <bool c:temperature(days(i))g = f02=12=1999; 03=12=1999; :::g where Rdays(r:temperature) = fh01=12=1999; 5i; h02=12=1999; 5i; h03=12=1999; 5i; h04=12=1999; 5i;:::; h01=01=2000; 7i; h02=01=2000; 7i; :::g.  3  In the previous example, of course, one can argue that if the temperature of a region has been stored with respect to months, it is not realistic to deduce that the temperature in such region was the same for every day of the month.
+This problem is strictly correlated with temporal granularity issues.
+In fact, storing the value of an attribute with respect to a granularity is somehow deciding the temporal precision associated with the information.
+If the attribute granularity is months, then for each granularity finer than months, such as, for instance, days this information is imprecise.
+However, since a value has been associated with each month, this information is the only one we have aclosera to the value of each day.
+Consider, for example, the value of the temperature of a region stored monthly, probably such value is an average value, thus, it is realistic to deduce that every day the value of the temperature has been very close to the stored value.
+This implies that arelaxinga the value to the granularity days is a reasonable choice and allows one to compare this value with the ones of the cities.
+2  Consider now two classes region and city.
+Suppose that class region has a temporal attribute temperature of type temporalmonths (integer) storing the value of the temperature5 in that region for each month, according to some formula.6 Moreover, suppose that class city has a temporal attribute temperature of type temporaldays (integer) storing the value of the temperature in a city for each day.
+Let r and c be two objects belonging to region and city, respectively, such that r.temperature = fh12=1999; 5i; h01=2000; 7i; :::g and c.temperature = fh01=12=1999; 5i; h02=12=1999; 10i; h03=12=1999; 8i; h04=12=1999; 1i;:::g.7 Suppose that c is a city in region r and that we are interested in knowing when such city has had a temperature greater than the value of its region, we should compute r.temperature <T c.temperature, whose semantics is  Etemp [[ r:temperature <T c:temperature ]] = Etemp [[ Rdays(r:temperature) <T c:temperature ]] = 5 Temperatures are expressed in Celsius degrees.
+6 For example, that value is computed considering different tempera-  tures at different time of the month in different established places.
+7 We do not report all the values for lack of space.
+5.
+Advanced Expressions In order to convert values from a given granularity into values of a coarser granularity in a meaningful way, in [8] we have introduced coercion functions, whose formal definition is the following.
+Definition 8 (Coercion Function)[8].
+Let t1 = temporalG (t01) and t2 = temporalH (t02) be two temporal types such that, t02 type t018 and H  G. A coercion function C is a partial function defined as:  C : T Eval(temporalH (t0 )) !
+T Eval(temporalG (t0 )) 2  1  that maps values of type temporalH (t02 ) into values of type temporalG (t01).
+2 In [8], coercion functions were associated with an attribute definition allowing one to specialize attribute domains in a type with a granularity finer than the one in the attribute domain to be redefined.
+In this paper such functions will be used to increase the expressive power of comparison operators.
+8  type denotes the subtyping relationship.
+A large variety of coercion functions could be devised.
+We have developed a simple language for defining coercion functions.
+The syntax in BNF form of coercion functions is given in Figure 4.
+With reference to Figure 4 terminal symbol index denotes an element in IS , and meth inv denotes a method invocation.
+As specified in the BNF grammar of Figure 4, depending on how the value of a granule G(j ) is computed with respect to the values of the granules H (i), such that H (i)  G(j ), coercion functions can be classified into three categories: selective, aggregate and user-defined coercion functions.
+The formal definition of coercion function classification can be found in [8].
+In Figure 4 terminal symbols first, last and Proj(index) denote selective coercion functions of obvious meaning, whereas min, max, avg and sum denote the well-known SQL aggregate functions.
+Let fi1 ; : : :; ik g be the set of indexes such that H (ik )  G(j ) and let v be a temporal value of type temporalH (t) such that v(H (ik )) = vk .
+Then, intuitively, in case of selective coercion functions, one of the possible values among fv1; : : :; vk g is chosen for a generic granule j .
+In case of aggregate coercion functions, an aggregate function, such as the average or the sum, is applied to the values fv1 ; : : :; vk g to compute the value of granule j .9 In case of user-defined coercion functions, the method to convert from one granularity to the other is completely specified by the user.
+Example 6 Let t2 = temporalmonths (integer) such that fh02=1998; 4i; h04=1998; 5i; h09=1998; 3ig 2 T Eval(t2 ).
+Moreover, let t1 = temporalyears (integer).
+An example of the application of an aggregate coercion function which maps values of type t2 into values of type t1 is fh1998; 1ig = avg(fh02=1998; 4i; h04=1998; 5i; h09=1998; 3ig).
+Moreover an example of the application of a selective coercion function which maps values of type t2 into values of type t1 is fh1998; 3ig = last(fh02=1998; 4i; h04=1998; 5i; h09=1998; 3ig).
+3 Note that actually, since we consider expressions involving boolean and integer values, the inner type in coercion functions can be integer or boolean.
+Thus, in what follows, given a coercion function C , and two granularities G and H such that H  G, we denote with CH !G the coercion function that coerces values with respect to granularity H into values of granularity G. For instance, the coercion function avg used in Example 6 is, more precisely, the avgmonths!years function.
+Coercion functions add expressive power to our operators.
+We attach coercion function information to the operators in order to compute a more complex comparison operator.
+In addition to the coercion function, we optionally attach the granularity information to which this comparison 9 Obviously, these functions apply in case of set of values for which such functions are defined, such as, for example integers.
+has to refer.
+We call this new type of expressions advanced expressions.
+The BNF grammar and the semantics of such expressions can be found in Figure 4 and Figure 5, respectively.
+In the BNF grammar of Figure 5 the optional terminal symbol gran denotes an element in the set G .
+For each operator op 2 O[OA [OS [OT , we consider the advanced, opC operator to which the coercion function is attached.
+When an operator opC is applied to two values, first the coercion of the value expressed with respect to the finer granularity is computed, so that the two values are expressed with respect to the same granularity.
+Then the expression is evaluated according to the semantics defined in Figure 3.
+The coercion function C can be complemented with a granularity K , denoted as opC;K .
+In this case both the considered values have to be coerced to the granularity K which has to be coarser than the granularities of the two values.
+After that, the two values are expressed with respect to the same granularity, thus the expression can be evaluated according to the semantics defined in Figure 3.
+The following example clarifies those concepts.
+Example 7 Consider again objects o1 and o2 of Example 4.
+If we are interested in knowing whether the average salary of the wife and the husband is always the same for every ;years o .salary.
+year we should compute o1 .salary=avg 2 A The semantic evaluation of that expression is:  Ebool [[ o :salary =A ;years o :salary ]] = Ebool [[ avgmonths!years (o :salary) = avg  1  2  :  1  avgmonths!years (o2 salary) ]] =  false  since avgmonths!years (o1:salary) = fh1999; 46ig and avgmonths!years (o2 :salary) = fh1999; 37ig.
+Consider again the two objects r and t of Example 5.
+If we are interested in knowing when the maximum temperature of region r is greater than the maximum temperature of city c for a whole month, we should compute the value of r.temperature <max T c.temperature.
+Suppose that maxdays!months(c.temperature) = fh12=1999; 10i; h01=2000; 11i;:::g, then the semantic evaluation of the previous expression is the following:  Etemp [[ r:temperature <T c:temperature ]] = Etemp [[ r:temperature <T max  : : months i months i g f = ; =  maxdays!months (c temperature) ]] = r temperature( ( )) c temperature( ( )) = 12 1999 01 2000  fmonths(i) j :  We recall that r.temperature =  h01=2000; 7i:::g.  <bool ;:::g  fh12=1999; 5i; 3  hcoerc funci ::= hselective coerc funci j haggregate coerc funci j huser-def coerc funci hselective coerc funci ::= first j last j Proj(index) haggregate coerc funci ::= min j max j avg j sum huser-def coerc funci ::= meth inv had expi ::= had exp booli j had exp tempi had exp booli ::= hint expi hop bool intihcoerc funci;[gran] hint expi had exp tempi ::= hint expi hop temp intihcoerc funci;[gran] hint expi  Figure 4.
+BNF grammar of coercion functions and advanced expressions  Ebool v1 opC v2 [[  Ebool e1 opC e2 [[  ]] =  ]] =  [[  [[  C v1 opv2 (  )  v1 opC v2 (  v 2 T Eval temporalG integer , v 2 T Eval temporalH integer and GH if v1 2 T Eval temporalG integer , v2 2 T Eval temporalH integer and HG if 1 2  ]]  Etemp v1 opCT v2  [[  (  ) ]]  ))  ))  (  (  ))  (  ))  [[  ]]  [[  (  ]] ]]  )  (  v 2 T Eval temporalG integer , v 2 T Eval temporalH integer and G  K and H  K  if 1 2  ) ]]  ?
+(  (  (  ))  (  ))  otherwise  C;K Eint [[ e2 ]] ]] = Ebool [[ Eint [[ e1 ]] op  ]] =  Etemp v1 opC;K T v2  (  (  otherwise  [[  Etemp [[ e1 opCT e2 ]]  (  (  Ebool Eint e1 opC Eint e2 ( Ebool CG!K v1 opC;K CG!K v2  ]] =  Ebool [[ e1 opC;K e2 ]]  [[  [[  ?
+Ebool v1 opC;K v2  [[  8 Ebool > > < Ebool > > :  8 Etemp > > < Etemp > > : ?
+[[  [[  C v1 opT v2 (  )  v1 opT C v2 (  ]]  ) ]]  v 2 T Eval temporalG integer , v 2 T Eval temporalH integer and GH if v1 2 T Eval temporalG integer , v2 2 T Eval temporalH integer and H G if 1 2  (  Etemp [[ e1 opC;K T e2 ]]  ))  (  (  ))  (  (  ))  (  ))  otherwise  C = Etemp [[ Etemp [[ e1 ]] opT Eint [[ e2 ]] ]] 8 < Etemp [[ CG!K (v1 )opC;K T CH !K (v2) ]] ]] =  (  (  :?
+v 2 T Eval temporalG integer , v 2 T Eval temporalH integer and G  K and H  K  if 1 2  otherwise  C;K Eint [[ e2 ]] ]] = Etemp [[ Eint [[ e1 ]] op T  Figure 5.
+Semantics of advanced expressions  (  (  (  (  ))  ))  6.
+Illustrative Examples  select struct(n:c.name, r:(c.nbr_tourists/c.population)) from cities c where c.is_in.name = "Liguria"  In this section we present some examples of OQL queries using our expressions.
+Classes are defined in ODL syntax [4].
+Example 8 Let geo item be a class storing statistic information concerning geographical entities, which can be regions or cities.
+For each geographical item we are interested in representing the name, the temperature, and the population.
+The name does not change over time, whereas information related to the temperature and the population vary over time.
+Such information are stored according to different granularities.
+The temperature is stored monthly and the stored value is computed considering different temperatures at different times of the month in different established places.
+The population value is stored every year according to some average.
+The result of this query is a bag of structs where the first value is of type string and the second value is of type temporalmonths (integer).
+The temporal value is expressed in months, since the value of c.population is converted into months, then for each month the ratio is computed.
+  select distinct struct(c:c.name,r:c.is in.name) from cities c where forall t in (select k from cities k where c.is in=k.is in) c.nbr tourists >=A t.nbr tourists  The result of the previous query returns a set of structures with two fields where both values are of type string.
+The first field represents those cities where the number of tourists is always, that is, for each month, greater than the number of tourists in all the other cities of the same region.
+f  class geo item (extent geo items) attribute string name; attribute months(integer) temperature; attribute years(integer) population;  temporal temporal  g  Geographical objects are specialized into two classes region and city.
+Each class represents a subclass of the class geo item.
+In addition, each class inherits all the attributes of the class geo item and defines some additional  attributes.
+class region extends geo item (extent regions) attribute set<city> tourist cities; attribute set<city> art cities; attribute set<city> fun cities;  f  g  f  class city extends geo item (extent cities) attribute region is in; attribute months(integer) nbr tourists; attribute days(integer) nbr museums; attribute weeks(integer) nbr expositions; attribute days(integer) nbr concerts; attribute days(integer) nbr discos; attribute years(integer) nbr cinemas; attribute days(integer) nbr theater shows; attribute days(integer) nbr markets;  temporal temporal temporal temporal temporal temporal temporal temporal  g  For each region, information related to the sets of tourist, art and fun cities are stored in the database.
+For what concerns cities, statistic tourist information are stored, such as, for instance, the number of open museums, the number of expositions, and so on, each one with a different granularity.
+The following are OQL queries in which the operators we introduced are used.
+  Return the ratio of the number of tourists with respect to the population of all the cities of region Liguria.
+Return the most touristic cities of each region.
+  Suppose we are interested in knowing which are the fun cities, where for fun cities we mean cities with an average number of museums which is always less than the average number of discos for each year, a maximum number of concerts which is always greater than or equal to the number of theater shows for every week, and a number of markets which is sometimes greater than the number of expositions.
+The following query finds out those cities: select c from cities c avg ;years where c.nbr museums <A c.nbr discos and max;weeks c.nbr concerts >=A c.nbr theater shows and c.nbr markets >S c.nbr expositions  3  7.
+Conclusions In this paper we have addressed the problem of representing and querying temporal data with multiple granularities.
+The issue of how to compare values with different granularities has been investigated and an extension of OQL-like expressions to facilitate such comparisons has been presented.
+The syntax of such expressions with the formal semantics have been defined.
+Finally, problems related to conversions of data from one granularity to another have been investigated and appropriate solutions to these problems have been presented.
+This work is being extended in several directions.
+We are currently working on an extension of OQL path expressions to facilitate navigation among temporal objects whose  attribute values are objects.
+We plan to provide an object query language to query temporal data with multiple granularities.
+Such a language will include temporal clauses using different granularities.
+The formal semantics of those clauses is currently under investigation.
+Finally, we will address issues related to the implementation of the extension we proposed on top of an object-oriented database supporting an OQL compliant query language.
+References [1] E. Bertino, E. Ferrari, G. Guerrini, and I. Merlo.
+An ODMG Compliant Temporal Object Model Supporting Multiple Granularity Management.
+Technical Report DISI-TR-00-08, Dipartimento di Informatica e Scienze dellaInformazione, UniversitaE di Genova, 2000.
+Submitted for publication.
+[2] E. Bertino, G. Guerrini, and I. Merlo.
+Formalizing the ODMG Object Model.
+Technical Report DISI-TR-99-04, Dipartimento di Informatica e Scienze dellaInformazione, UniversitaE di Genova, 1999.
+Submitted for publication.
+[3] C. Bettini, C. Dyreson, W. Evans, and R. Snodgrass.
+A Glossary of Time Granularity Concepts.
+In Temporal Databases: Research and Practice, number 1399 in Lecture Notes in Computer Science, pages 406a413, 1998.
+[4] R. Cattel, D. Barry, D. Bartels, M. Berler, J. Eastman, S. Gamerman, D. Jordan, A. Springer, H. Strickland, and D. Wade.
+The Object Database Standard: ODMG 2.0.
+Morgan-Kaufmann, 1997.
+[5] C. Combi, G. Cucchi, and F. Pinciroli.
+Applying ObjectOriented Technologies in Modeling and Querying Temporally Oriented Clinical Databases Dealing with Temporal Granularity and Indeterminacy.
+IEEE Transactions on Information Technology in Biomedicine, 1(2):100a127, 1997.
+[6] L. Fegaras and R. Elmasri.
+A Temporal Object Query Language.
+In IEEE Proc.
+Fifth International Workshop on Temporal Representation and Reasoning, IEEE Computer Society Press, pages 51a59, 1998.
+[7] S. Gadia.
+A homogeneous relational model and query languages for temporal databases.
+ACM Transactions on Database Systems, 13(4):418a448, 1988.
+[8] I. Merlo, E. Bertino, E. Ferrari, and G. Guerrini.
+A Temporal Object-Oriented Data Model with Multiple Granularities.
+In C. Dixon and M. Fischer, editors, IEEE Proc.
+Sixth International Workshop on Temporal Representation and Reasoning, IEEE Computer Society Press, pages 73a81, 1999.
+[9] M. T. Ozsu, R. Peters, D. Szafron, B. Irani, A. Lipka, and A. Munoz.
+TIGUKAT: A Uniform Behavioral Objectbase Management System.
+VLDB Journal, 4(3):445a492, 1995.
+[10] E. Rose and A. Segev.
+TOODM - A Temporal ObjectOriented Data Model with Temporal Constraints.
+In Proc.
+Tenth Intal Conf.
+on the Entity-Relationship Approach, pages 205a229, 1991.
+[11] R. T. Snodgrass.
+The TSQL2 Temporal Query Language.
+Kluwer Academic Publisher, 1995.
+[12] G. Wuu and U. Dayal.
+A Uniform Model for Temporal and Versioned Object-Oriented Databases.
+In A. Tansel, J. Clifford, S. Gadia, S. Jajodia, A. Segev, and R. Snodgrass, editors, Temporal Databases: Theory, Design, and Implementation, pages 230a247.
+Benjamin/Cummings, 1993.

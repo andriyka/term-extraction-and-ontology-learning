@@ -1,0 +1,452 @@
+TALplanner: An Empirical Investigation of a Temporal Logic-based Forward Chaining Planner Patrick Doherty Dept of Computer and Information Science Linkoping University SE-581 83 Linkoping, Sweden patdo@ida.liu.se  Abstract We present a new forward chaining planner, TALplanner, based on ideas developed by Bacchus [5] and Kabanza [11], where domain-dependent search control knowledge represented as temporal formulas is used to effectively control forward chaining.
+Instead of using a linear modal tense logic as with Bacchus and Kabanza, we use TAL, a narrative-based linear temporal logic used for reasoning about action and change in incompletely specified dynamic environments.
+Two versions of TALplanner are considered, TALplan/modal which is based on the use of emulated modal formulas and a progression algorithm, and TALplan/non-modal which uses neither modal formulas nor a progression algorithm.
+For both versions of TALplanner and for all tested domains, TALplanner is shown to be considerably faster and requires less memory.
+The TAL versions also permit the representation of durative actions with internal state.
+1.
+Introduction Recently, Bacchus and Kabanza et al.
+[3, 4, 5, 11] have been investigating the use of temporal logics to express search control knowledge for planning.
+In the approach, they utilize domain-specific control knowledge represented as formulas in a first-order modal tense logic to effectively control a forward-chaining planner.
+The approach is implemented in the TLplan system.
+Empirical results for a number of test domains have demonstrated impressive improvements in planning efficiency when compared to many recent planners such as BLACKBOX [14] and IPP [15] (See [5] for comparisons).
+BLACKBOX and IPP were the best performers in the AIPS'98 planning competition [1].
+In the past few years, we have been developing a family of temporal logics for reasoning about action and change  Jonas Kvarnstrom Dept of Computer and Information Science Linkoping University SE-581 83 Linkoping, Sweden jonkv@ida.liu.se  in incompletely specified dynamic worlds.
+These logics are collected under the acronym TAL (Temporal Action Logics) [10, 6, 7, 8, 13, 12].
+More recently, we have begun to apply these logics in the WITAS UAV project1 , one aspect of which is the design, specification and implementation of a hybrid deliberative/reactive system architecture for the command and control of an autonomous unmanned aerial vehicle (UAV).
+A fundamental requirement of the architecture is the ability to generate plans in a timely and/or any-time manner and to be able to dynamically update control knowledge as observations are made during plan generation.
+In order to satisfy this requirement, we have begun experimentation with a forward chaining planner in the spirit of TLplan which we call TALplanner.
+Instead of using a modal tense logic to represent domain-specific control knowledge, we use TAL, which is a first-order logic with explicit time which is used to reason about narratives.
+In fact, a narrative may be viewed as a plan, and TALplanner generates narratives given goals and control knowledge specified in TAL.
+Modal formulas can be emulated using macros in a surface language.
+TAL provides a solid basis for experimentation with forward-chaining planners because of its rich expressivity.
+Actions with duration, contextdependent actions, non-deterministic actions, delayed effects of actions [13], concurrent actions [12], incompletely specified timing of actions, and side-effects of actions [10] can all be expressed.
+In addition, robust solutions to the frame [6], ramification [10] and qualification [8] problems exist when reasoning in restricted domains in incompletely specified environments.
+As a first step in exploring the design space of planners for our UAV project, we have implemented TALplanner and compared its performance with TLplan.
+We have used the test domains provided with TLplan (also used 1 Wallenberg Information Technology and Autonomous Systems Laboratory (WITAS).
+in AIPS'98 [1] planning competition) in our comparisons.
+TALplanner's performance is shown to be markedly better than TLplan both in terms of time and memory.
+While TLplan is implemented in C, TALplanner is implemented in Java, an interpreted language.
+Although TALplan/modal is similar to TLplan in many respects, the implementation techniques of both TALplan/modal and TALplan/nonmodal are quite different.
+In addition, both of the TALbased planners permit the representation of durative actions with internal state.
+The latter requires modification of the original TLplan algorithm.
+The main contribution in this paper is the integration of a well-developed and highly expressive temporal logic for reasoning about action and change with a well-developed and highly promising logical approach to a forward-chaining plan synthesis technique.
+The intent of this paper is to verify the adequacy of the technique and provide a basis for continued development of the approach in the context of TAL.
+We demonstrate this by extending the algorithm for durative actions with internal state.
+In the remainder of the paper, we will briefly describe TAL and the representation of temporal narratives, the planning task and its representation in TAL, an example, the use of modal and non-modal control formulas, and finally, the empirical test results and comparison with TLplan.
+2.
+TAL: Temporal Action Logics The basic approach we use for reasoning about action and change is as follows.
+First, represent a temporal narrative description as a set of narrative statements in a surface language L(ND), which is a high-level language for representing observations, action types (plan operators), action occurrences (instantiations of plan operators), dependency constraints, domain constraints, and timing constraints related to actions and their durations.
+Second, translate the narrative statements represented in L(ND) into the base language L(FL), which is an order-sorted first-order language with a linear, discrete time structure.2 Third, minimize potential spurious change via a circumscription axiom which is easily reducible to a first-order formula via syntactic transformation.
+The intent of the minimization is to deal with the well known frame, qualification and ramification problems.
+Finally, use the resulting logical theory to reason about the narrative.
+Narrative statements in L(ND) are always labeled in a narrative description N and a set of syntactic restrictions are normally associated with each labeled class of statements.
+In the following we denote the narrative statements in N of statement class: action type, observation, dependency constraint, domain constraint, action occurrence, and 2 In the remainder of the paper, we will use Trans() to denote the translation procedure.
+schedule, as Uacs , Uobs , Udepc , Udomc , Uocc and Uscd with labels acs, obs, dep, dom, occ and scd, respectively.
+The sets of formulas in L(FL) corresponding to the 2nd-6th narrative statement classes in N are denoted by Gobs , Gdepc , Gdomc , Gocc and Gscd , respectively.
+In the translation process Trans() from L(ND) to L(FL), an action type in Uacs corresponding to an action occurrence in Uocc is instantiated, resulting in a schedule statement in Gscd .
+Given a narrative description U in L(ND), the corresponding theory [?]
+in L(FL) is G [?]
+Gfnd , where G = Gobs [?]
+Gocc [?]
+Gdomc [?]
+Gdepc [?]
+Gscd , and Gfnd are the foundational axioms associated with TAL narratives and contain unique names axioms, temporal structure axioms, etc.
+Let G0 be the result of applying a circumscription policy to Gdepc [?]
+Gscd in G to filter spurious change from the theory [?]
+and [?
+]0 = G0 [?]
+Gfnd , then any formula a is entailed by the narrative U iff [?
+]0 |= a.
+See Kvarnstrom and Doherty [16] for a WWW accessible implementation of TAL, and Doherty et al.
+[7] for a detailed overview of TAL.
+3.
+The Planning Task For the planning task, the basic idea is to generate a temporal narrative description Np in L(ND), given a goal narrative description GN in an extended surface language L(ND)* as input to the planning algorithm.
+The goal narrative description contains an intended goal statement Uigoal , a set of goal domain constraint statements Ugdom and a set of goal control statements Ugctrl , in addition to action types, observations, domain and dependency constraints found in standard narrative descriptions.
+The goal control and goal domain constraint statements represent the domain dependent control knowledge that will be used in the planning algorithm to achieve the intended goal.
+If the planning algorithm is successful in achieving the goal then the output Np of the planner is (GN \ (Uigoal [?]
+Ugctrl [?]
+Ugdom )) [?]
+Uocc , where Uocc is the sequence of action occurrences with timing (planning steps) generated by the planning algorithm.
+The planning algorithm is sound in the following sense.
+If the algorithm generates a narrative description Np as output given GN as input then [?
+]0Np |= Trans([t]Uigoal ), where [?
+]0Np is the circumscribed logical theory in L(FL) corresponding to Np , and [t] is the end timepoint of the last action occurrence in Uocc .
+Completeness of the planning algorithm is a more difficult issue and dependent on the nature of the control knowledge used for each domain.
+Observe that Uigoal [?]
+Ugctrl [?]
+Ugdom is only used in the plan synthesis algorithm.
+3.1.
+Extensions to L(ND) An atemporal narrative formula is defined inductively using the set of atemporal atomic expressions and isvalue  expressions in L(ND) as the base class and using the standard logical connectives, quantifiers and delimiters in the normal manner (see [7]).
+A goal expression has the form goal(ps), where ps is any atemporal narrative formula.
+A goal domain constraint in L(ND)*Goal has the same syntax as an L(ND) domain constraint, but may also contain goal expressions.
+A goal control formula in L(ND)*Control may contain goal expressions and temporal modal operators applied to atemporal narrative formulas.
+No other temporal expressions are allowed in the formula.
+L(ND) is extended to L(ND)* by adding three new labeled classes of narrative statements used only in goal narratives: intended goal statements (Uigoal , an atemporal narrative formula, labeled igoal), goal domain constraint statements (Ugdom [?]
+L(ND)*Goal , labeled gdom), and goal control statements (Ugctrl [?]
+L(ND)*Control , labeled gctrl).
+Assume a goal narrative GN with intended goal Uigoal = {ph}.
+When recursively evaluating statements in Ugctrl [?]
+Ugdom in the plan synthesis algorithm, the meaning of a goal expression goal(ps) in such statements is determined by checking whether ph |= ps (whether ps is true in all models (goal states) satisfying ph).
+In the plan synthesis algorithm, it is sometimes necessary to check whether a formula in L(F L) with possible goal expressions entails another formula in L(F L) with possible goal expressions.
+In this case, the formulas are evaluated in the same way as in L(F L) after evaluating the goal expressions in the manner above and replacing them with true or false.
+We use the following notation to describe this evaluation process Trans* (ph) |=* Trans* (ps).
+can be context dependent or non-deterministic, may have variable duration, and explicit point-based temporal constraints may be used.
+This permits the representation of many types of plan operators such as those used in STRIPS and ADL.
+In addition, side-effects represented using dependency and domain constraints, and real concurrency are expressible.
+Different degrees of incompleteness in the domain specification such as incomplete initial state or observations in states other than the initial state are also expressible.
+All these properties have a corresponding formal semantics.
+Obviously, the expressivity associated with TAL does not automatically induce efficient implementations of plan synthesis algorithms.
+On the contrary, one must restrict TAL's expressiveness in various ways.
+For the purposes of this paper, we begin at the lower rungs of the ladder of expressivity.
+In the current implementation of TALplanner, the following restrictions apply: * The set of values a fluent can have in L(FL) must be finite.
+* The initial state of a goal narrative must be completely specified.
+* Action types are deterministic, but may be contextdependent.
+* No domain or dependency constraints are permitted in narratives.
+In addition, we allow:  3.2.
+Experimental Methodology  * Durative actions with internal state changes are permitted.
+TAL is an expressive logic for reasoning about action and change and has a formal declarative semantics.
+Consequently, it provides an ideal basis for experimentation with plan synthesis based on the use of declarative domaindependent control knowledge and for formally verifying the correctness of generated plans.
+The efficiency of the plan synthesis algorithm is primarily dependent on how efficiently one can check whether a narrative formula is entailed by a partially developed narrative or whether a goal expression is entailed by the intended goal in a narrative, which in turn depends on how well one can reuse previous work done when checking other partially developed narratives.
+Tradeoffs between efficiency of the plan synthesis algorithm and expressivity of the plan representation language can be studied by placing or relaxing syntactic constraints on the different classes of narrative statements and using analysis tools from from descriptive complexity or applying various model checking techniques, for instance.
+As already stated, TAL, as a formalism for reasoning about action and change, is highly expressive.
+Action types  * Disjunctive goals are allowed.
+Note that the TALplanner algorithms currently permit the use of restricted classes of domain and dependency constraints at the risk of generating inconsistent narratives.
+This could be avoided by introducing a consistency check in the GoodPlan algorithm in Section 5.1.
+Due to the computational complexity this implies, we leave this topic for future research.
+3.3.
+A Goal Narrative Example In the remainder of this paper, we will use the blocks domain described in Bacchus [5] and used as a test domain in [1].
+In TAL, [t] a means that a holds at t. Action Vn type specifications of the form [t1 , t2 ]action(x) i=1 ([t1 ]ai - R([t2 ]bi )) [?]
+phi define what happens when action is invoked with the arguments x between times t1 and t2 : For each i, if ai holds at t1 , then bi must hold at t2 .
+If 1 < i then the  action is context dependent and each ai is a specific precondition (context).
+phi denotes a context dependent constraint on the action's duration.
+For example, for singlestep actions, all phi have the form t2 = t1 + 1.
+We define Preconds([t1 , t2 ]action(x)) = {ai | 1 <= i <= n}.
+The following goal narrative GN in L(ND)* is essentially what is provided as input to the planner.3 This particular example is quite small, containing only six blocks, AA-FF.
+Other examples tested contain up to 1000 blocks.
+It contains a specification of action types (acs), observations about the initial state (obs), goal domain constraints (gdom), an intended goal statement (igoal), and goal control statements about the blocks domain (gctrl).
+Recall that L(ND)* is a high-level language designed to support the definition of complex narratives.
+Many of the operators in the narrative, such as the modal operators, are simply syntactic sugar (macros) and are reduced in the transformation to L(FL).
+[t1 , t2 ] putdown(b) [t1 ] holding(b) - R([t2 ] !holding(b) [?]
+ontable(b) [?]
+clear(b) [?]
+handempty) [?]
+t2 = t1 + 1 acs2 [t1 , t2 ] pickup(b) [t1 ] ontable(b) [?]
+clear(b) [?]
+handempty - R([t2 ] holding(b) [?]
+!ontable(b) [?]
+!clear(b) [?]
+!handempty) [?]
+t2 = t1 + 1 acs3 [t1 , t2 ] stack(b1 , b2 ) [t1 ] holding(b1 ) [?]
+clear(b2 ) - R([t2 ] !holding(b1 ) [?]
+!clear(b2 ) [?]
+on(b1 , b2 ) [?]
+clear(b1 ) [?]
+handempty) [?]
+t2 = t1 + 1 acs4 [t1 , t2 ] unstack(b1 , b2 ) [t1 ] on(b1 , b2 ) [?]
+clear(b1 ) [?]
+handempty - R([t2 ] holding(b1 ) [?]
+clear(b2 ) [?]
+!on(b1 , b2 ) [?]
+!clear(b1 ) [?]
+!handempty) [?]
+t2 = t1 + 1 obs1 [?
+]b1 , b2 [[0] on(b1 , b2 ) - b1 = BB [?]
+b2 = AA [?]
+b1 = AA [?]
+b2 = EE] obs2 [?
+]b[[0] ontable(b) - b = EE [?
+]b = CC [?
+]b = DD [?
+]b = FF] obs3 [0] handempty [?]
+[?
+]b[!holding(b)] obs4 [?
+]b[[0] clear(b) - b = BB [?]
+b = CC [?]
+b = DD [?]
+b = FF] igoal1 ontable(AA) [?]
+ontable(BB) [?]
+on(FF, EE) gdom1[?
+]t, b[[t] goodtower(b) - [t] clear(b) [?]
+!goal(holding(b)) [?]
+[t] goodtowerbelow(b)] gdom2[?
+]t, b[[t] goodtowerbelow(b) - [t] ontable(b) [?]
+![?
+]b2 [goal(on(b, b2 ))] [?]
+[?
+]b2 [[t] on(b, b2 ) [?]
+!goal(ontable(b)) [?]
+!goal(holding(b2 )) [?]
+!goal(clear(b2 )) [?]
+[?
+]b3 [goal(on(b, b3 )) - b3 = b2 ] [?]
+[?
+]b3 [goal(on(b3 , b2 )) - b3 = b] [?]
+[t] goodtowerbelow(b2 )]] gctrl1 2[?
+]b[clear(b) [?]
+goodtower(b) - (clear(b) [?]
+[?
+]b2 [on(b2 , b) [?]
+goodtower(b2 )])] gctrl2 2[?
+]b[clear(b) [?]
+!goodtower(b) - (![?
+]b2 [on(b2 , b)])] gctrl3 2[?
+]b[ontable(b) [?]
+[?
+]b2 [goal(on(b, b2 )) [?]
+!goodtower(b2 )] - (!holding(b))] acs1  If the goal narrative GN above is provided as input to the planning algorithm, the output Np will be: 3A  narrative preamble (not included here) is also part of a narrative and contains type information for the fluents and actions in the narrative.
+acs1-4, obs1-4: Same as above occ1 [0, 1] unstack(BB, AA) occ2 [1, 2] putdown(BB) occ2 [2, 3] unstack(AA, EE) occ2 [3, 4] putdown(AA) occ2 [4, 5] pickup(FF) occ2 [5, 6] stack(FF, EE)  It is easily observable that Np entails the intended goal Uigoal at time 6.
+In Section 5, we describe how the plan sequence Gocc is generated given an initial goal narrative GN .
+Before doing this, we will consider the use of modal formulas in TAL.
+In the rest of the paper, let GN be a goal narrative.
+4.
+Modal Formulas in TAL From a semantic perspective, temporal modalities in TAL are simply viewed as a special type of macro-operator in the extended surface language L(ND)* .
+Given a formula ph in L(ND)*Control containing temporal modal operators, the formula [t ] ph, where t is the timepoint where ph is intended to hold, can be translated into a formula in the base language L(FL) without temporal modal operators.
+Modal formulas are used in the following ways: * TALplan/modal - Control formulas in a goal narrative may contain modal operators.
+The control formulas are progressed in the TALplan/modal planner using a progression algorithm.
+* TALplan/non-modal - Control formulas in a goal narrative may contain modal operators.
+The control formulas are transformed into a formula in L(ND)* without temporal modalities before being used in the TALplan/non-modal planner.
+This planner is designed in a different manner and contains no progression algorithm.
+There are four specific temporal operators, U (until), 3 (eventually), 2 (always), and  (next), but all of them may be defined in terms of the U operator.
+As in Kabanza [11], the first three temporal operators can be indexed with closed, open or semi-open intervals.
+The meaning of a formula containing a temporal operator is dependent on the point n (the current state) in which it is evaluated.
+* ph U[t,t 0 ] ps - ph must hold from n until ps is achieved at some timepoint in [t + n, t 0 + n].
+* 3[t,t 0 ] ph [?]
+true U[t,t 0 ] ph - Eventually ph will be true at a timepoint in [t + n, t 0 + n].
+* 2[t,t 0 ] ph [?]
+!3[t,t 0 ] !ph - ph must always be true at all points in the interval [t + n, t 0 + n].
+* ph [?]
+true U[1,1] ph.
+The following abbreviations are also used:  * ph U ps [?]
+ph U[0,[?]]
+ps, 3 ph [?]
+3[0,[?]]
+ph, 2 ph [?]
+2[0,[?]]
+ph, [t, t 0 ] < 0 [?]
+t < 0 [?]
+t 0 < 0.
+The translation function TransModal takes a timepoint and a modal control formula as input and returns a formula in L(ND)* without temporal modalities as output.
+In the following, Q is a quantifier and [?]
+is a binary logical connective.
+Inputs: A formula g [?]
+L(ND)*Control and a timepoint n where g is intended to be evaluated.
+Output: A formula in L(ND)* without temporal modalities.
+1 2 3 4 5 6 7 8  procedure TransModal(n, g) if g = goal(ph) then return goal(ph) if g contains no modalities then return [n] g if g = Qx.ph then return Qx.TransModal(n, ph) if g = ph [?]
+ps then return TransModal(n, ph) [?]
+TransModal(n, ps) if g = !ph then return !TransModal(n, ph) if g = (ph U[t,t 0 ] ps) then return ([?
+][t : n + t <= t <= n + t 0 ] (TransModal(t, ps) [?]
+[?
+][t0 : n <= t0 < t]TransModal(t0 , ph)))  The algorithm TransModal provides the meaning of the temporal modalities in TAL, a linear, discrete temporal logic, which correspond to their intuitive meaning in a linear tense logic.
+5.
+TALplanner: A Forward Chaining Planner The algorithm described below is based on a combination of those found in Bacchus [5] and Kabanza [11].
+The distinction is that the algorithms are modified for the TAL family of logics and the notion of a narrative.
+In addition, the cycle check is done in a different place.
+The implementation of the algorithm also differs.
+Two of the major differences are the use of lazy evaluation in the node expansion algorithm in TALplanner and the method used to evaluate formulas in states.
+The method used is the same as that used in VITAL [16].
+5.1.
+The TALplan/modal Algorithm Inputs: An initial goal narrative GN , a sentence a [?]
+L(ND)*Goal , and a sentence g [?]
+L(ND)*Control .
+Output: A narrative plan Np which entails the goal a.
+1 2 3 4 5 6 7 8 9 10  procedure TALplan/modal(a, g, GN ) acc - {} // Accepted final states Open - {(g, 0, 0, GN )} while Open 6= [?]
+do (ph, t, t 0 , GN ) - Choose(Open) Open - Open \ (ph, t, t 0 , GN ) ph+ - Progress goal(ph, t, t 0 , GN ) if ph+ 6= false then if GoodPlan(a, t 0 , GN ) then return GN \ (Uigoal [?]
+Ugctrl [?]
+Ugdom )  11 12 13 14  if (state at time t 0 for GN ) 6[?]
+acc then acc - acc [?]
+{(state at time t 0 for GN )} Open - Open [?]
+{(ph+ , t1 , t2 , GN 0 ) | (GN 0 , [t1 , t2 ] a) [?]
+Expand(t 0 , GN )}  Different implementations of Choose provide different search algorithms.
+For example, in the empirical tests we use depth-first search.
+Different implementations of Expand provide for the possibility of using different lookahead, decision-theoretic and filtering mechanisms for choice of actions.
+Different implementations of GoodPlan provide for different criteria for evaluating plans which satisfy the goal, in terms of resource usage etc.
+Inputs: A timepoint t and a goal narrative GN .
+Output: A set of pairs (GNi0 , [t, ti0 ] ai ), where for all i, GNi0 = GN [?]
+{[t, ti0 ] ai } (that is, the old narrative with a new action occurrence added).
+1 2 3 4 5 6 7 8 9  procedure Expand(t, GN ) Succ - {} for all a(x) [?]
+ActionTypes(GN ) do for all [t, t 0 ] a(c) [?]
+Instantiate(t, a(x)) do for all ph [?]
+Preconds([t, t 0 ] a(c)) do if Trans(GN \(Uigoal [?
+]Ugctrl [?
+]Ugdom )) |= Trans([t ] ph) then Succ - Succ [?]
+{(GN [?]
+{[t, t 0 ] a(c)}, [t, t 0 ] a(c))} return Succ  Inputs: A sentence a [?]
+L(ND)*Goal , a timepoint t and a goal narrative GN .
+Output: true iff GN satisfies a at timepoint t .
+1 procedure GoodPlan(a, t, GN ) 2 if Trans(GN \ (Uigoal [?]
+Ugctrl [?]
+Ugdom )) |= Trans([t ]a) then return true 3 else return false  5.1.1.
+Progression of modal formulas.
+Assume that an action a occurs in interval [t, t2 ] where the state associated with timepoint t is the current state from which one is progressing.
+Assume further that GN is a partial narrative containing the action occurrence [t, t2 ] a and where there are no other action occurrences [t 0 , t02 ] a0 in GN where t02 > t .
+The following algorithm can be used for progressing a formula ph from t to t2 .
+Inputs: A timepoint t corresponding to the current state, a timepoint t2 >= t corresponding to the successor state, a formula ph [?]
+L(ND)*Control labeling the current state, and a goal narrative GN .
+Output: A new formula ph+ labeling the successor state.
+Algorithm Progress goal(ph, t, t2 , GN ) 1. t = t2 : ph+ = ph 2. ph contains no temporal modalities: if Trans* (GN \ Ugctrl ) |=* Trans* ([t ] ph) then ph+ - true else ph+ - false 3. ph = !ph1 : ph+ - !Pg(ph1 , t, t2 , GN ) 4. ph = ph1 [?
+]ph2 : ph+ - Pg(ph1 , t, t2 , GN )[?
+]Pg(ph2 , t, t2 , GN )  5. ph = ph1 U[t1 ,t2 ] ph2 : if [t1 , t2 ] < 0 then ph+ - false else if 0 [?]
+[t1 , t2 ] then ph+ - Pg(ph2 , t, t2 , GN ) [?]
+(Pg(ph1 , t, t2 , GN )[?
+]Pg(ph1 U[t1 -1,t2 -1] ph2 , t +1, t2 , GN )) else ph+ - Pg(ph1 , t, t2 , GN ) [?]
+Pg(ph1 U[t1 -1,t2 -1] ph2 , t + 1, t2 , GN )  The result of Progress goal (abbreviated Pg) is simplified using the rules !false = true, (false [?]
+a) = (a [?]
+false) = false, (false [?]
+a) = (a [?]
+false) = a, !true = false, (true [?]
+a) = (a [?]
+true) = a, and (true [?]
+a) = (a [?]
+true) = true.
+Since , 2, and 3 can be defined in terms of U , the algorithm above suffices, although adding the following cases to the algorithm might be useful for clarity and efficiency: 6. ph = 3[t1 ,t2 ] ph1 : if [t1 , t2 ] < 0 then ph+ - false else if 0 [?]
+[t1 , t2 ] then ph+ - Pg(ph1 , t, t2 , GN ) [?]
+Pg(3[t1 -1,t2 -1] ph1 , t + 1, t2 , GN ) else ph+ - Pg(3[t1 -1,t2 -1] ph1 , t + 1, t2 , GN ) 7. ph = 2[t1 ,t2 ] ph1 : if [t1 , t2 ] < 0 then ph+ - false else if 0 [?]
+[t1 , t2 ] then ph+ - Pg(ph1 , t, t2 , GN ) [?]
+Pg(2[t1 -1,t2 -1] ph1 , t + 1, t2 , GN ) else ph+ - Pg(2[t1 -1,t2 -1] ph1 , t + 1, t2 , GN ) 8. ph = ph1 : if t + 1 = t2 then ph+ - ph1 else ph+ - Pg(ph1 , t + 1, t2 , GN )  The following theorem provides a semantic justification for the use of the progression algorithm.
+Theorem 1 Trans* (N ) |=* Trans* (TransModal(n, ph)) iff Trans* (N ) |=* Trans* (TransModal(t2 , Progress goal(ph, n, t2 , N ))) 5.1.2.
+Action Duration and Internal State.
+In [5], Bacchus and Kabanza use a first-order version of LTL [9], linear temporal logic, and restrict their algorithm to single step actions.
+In [4], they use a first-order version of MITL [2], metric interval temporal logic, where actions may have duration.
+In the latter case, although actions have duration, they have no internal state.
+In other words, a plan step may have duration, but there are no states or state changes between the initiation state and the effect state.
+This is reflected in the model structure for the logics and the progression algorithm.
+On the other hand, TAL actions with duration have internal state and one can express change in fluent values within an action's duration.
+Consequently, the Progress goal algorithm proposed in [4] has to be modified to reflect progression within an action's duration.
+In this case, we replace the original step 5 in [4] (reformulated for TAL): 5. ph = ph1 U[t1 ,t2 ] ph2 : if [t1 , t2 ] < 0 then ph+ - false else if 0 [?]
+[t1 , t2 ] then ph+ - Pg(ph2 , t, t2 , GN ) [?]
+(Pg(ph1 , t, t2 , GN ) [?]
+ph1 U[t1 ,t2 ]-(t2 -t ) ph2 ) else ph+ - Pg(ph1 , t, t2 , GN ) [?]
+ph1 U[t1 ,t2 ]-(t2 -t ) ph2  with its modification for actions with internal state in step 5 of the current algorithm (Section 5.1.1).
+Steps 6-7 are also modified accordingly.
+5.2.
+The TALplan/non-modal Algorithm The non-modal version of the TALplan algorithm does not progress control formulas.
+Instead, it translates them into control formulas with no temporal modal operators using the TransModal+ algorithm (see below).
+Inputs: An initial goal narrative GN , a sentence a [?]
+L(ND)*Goal , and a sentence g [?]
+L(ND)*Control .
+Output: A narrative plan Np which entails the goal a.
+1 2 3 4 5 6 7 8 9 10 11 12 13  procedure TALplan/non-modal(a, g, GN ) acc - {} // Accepted final states Open - {(TransModal+ (0, g), 0, 0, GN )} while Open 6= [?]
+do (ph, t, t 0 , GN ) - Choose(Open) Open - Open \ (ph, t, t 0 , GN ) if not Trans* (GN \ Ugctrl ) |=* !Trans* (ph(t 0 )) then if GoodPlan(a, t 0 , GN ) then return GN \ (Uigoal [?]
+Ugctrl [?]
+Ugdom ) if (state at time t 0 for GN ) 6[?]
+acc then acc - acc [?]
+{(state at time t 0 for GN )} Open - Open [?]
+{(ph, t1 , t2 , GN 0 ) | (GN 0 , [t1 , t2 ] a) [?]
+Expand(t 0 , GN )}  One of the main advantages of using TALplan/nonmodal is that since it does not store multiple progressed control formulas, the algorithm uses much less memory (see Section 6 and Table 1).
+The translation function TransModal+ is similar to TransModal.
+The differences are due to the fact that formula progression is not used in TALplan/non-modal.
+The function takes a timepoint and a modal control formula as input and returns a formula in L(ND)* without temporal modalities as output.
+In the following, Q is a quantifier and [?]
+is a binary logical connective.
+Assuming GN is a goal narrative in L(ND)* with at least one action occurrence, t* is the ending timepoint of the last action occurrence in GN .
+Inputs: A formula g [?]
+L(ND)*Control and a timepoint n where g is intended to be evaluated.
+Output: A formula in L(ND)* without temporal modalities, parameterized by t* .
+1 procedure TransModal+ (n, g) 2 if g = goal(ph) then return n <= t* - goal(ph) 3 if g contains no modalities then return n <= t* - [n] g 4 if g = Qx.ph then return n <= t* - Qx.TransModal+ (n, ph) 5 if g = ph [?]
+ps then return n <= t* - (TransModal+ (n, ph) [?]
+TransModal+ (n, ps)) 6 if g = !ph then return n <= t* - !TransModal+ (n, ph) 7 if g = (ph U[t,t 0 ] ps) then return (n + t 0 <= t* ) - ([?
+][t : n + t <= t <= n + t 0 ] (TransModal+ (t, ps) [?]
+[?
+][t0 : n <= t0 < t] TransModal+ (t0 , ph)))  6.
+Empirical Results We have tested TALplanner in the blocks world as well as in the movie, gripper, logistics, mystery, mystery prime and grid domains from Round 1 of the AIPS 1998 Planning Competition [1].
+We compared the results to TLplan in three of the domains: The blocks world, the logistics world, and the movie world.
+For all of these domains, the general setup (operators, predicates and control rules) and many of the actual problems (initial state, goal, and objects in the domain) have been taken from the TLplan distribution.
+All tests were run on the same 333 MHz Pentium II computer running Windows NT 4.0 SP3, using 256 MB of memory.
+For TLplan, we used the precompiled version that can be downloaded from http://www.lpaig.uwaterloo.ca/~fbacchus.
+For TALplanner, we used JDK 1.2 (http://java.
+sun.com).
+In all cases, we made sure that the computer was very lightly loaded and that it was never swapping.
+Note that for this experiment, TALplanner tried different operators in exactly the same order as TLplan, in order to avoid random differences in the amount of time and memory needed by the planners.
+For the standard blocks world, we created ten different test scenarios using between 25 and 1000 blocks.
+In all cases, TLplan used the world definition and control rules from domains/Blocks/4OpsBlocksWorld.tlp in the TLplan distribution, and TALplanner used the corresponding TAL world definition and control rules seen in the example scenario in Section 3.3.
+Table 1 contains the results.
+The Worlds column contains the number of worlds that were created by TLplan.
+This is equal to the number of narratives that were added to Open in TALplanner.
+Plan shows the length of the resulting plan, and the remaining columns show times (in seconds) and memory usage (in kilobytes).
+For the logistics world, in which objects can be transported within cities by truck and between airports by airplane, we tested the 30 scenarios from the TLplan distribution that were originally from [1].
+TALplanner was always faster than TLplan, in several cases 30-75 times faster.
+The movie world, which does not use control formulas, gave similar results, mainly as a result of lazy evaluation in TALplanner.
+Due to space limitations, the exact results of these and additional domains will be presented in a forthcoming report.
+In each case, TALplanner outperformed TLplan, both for modal and for non-modal control formulas.
+For the smaller scenarios, TALplanner needs more memory than TLplan, since it needs the Java Virtual Machine.
+However, TALplanner itself uses less memory than TLplan.
+Therefore, TALplanner could handle larger scenarios than TLplan, which could not handle the three largest scenarios  without swapping.
+In comparing TALplanner with TLplan, we believe that the primary reason for the speedup is simply due to various code optimizations used in TALplanner.
+More interesting is the comparison between the modal and non-modal versions of TALplanner.
+Using modal control formulas was slightly slower than non-modal formulas for the smallest scenarios and for one of the largest scenarios.
+For most scenarios, modal control formulas were faster than non-modal.
+We conjecture that the reason for this is the use of optimization techniques related to evaluating universally quantified control formulas where a node in the search space has many children.
+In the non-modal version the same evaluation has to be done for each child, whereas for the modal version similar evaluations need only be done once.
+The non-modal version also uses less memory than the modal version since there is no need to store additional progressed formulas.
+7.
+Conclusions Bacchus [5] and Kabanza [11] have proposed a novel progressive planning technique based on the use of a modal tense logic to represent domain-dependent knowledge for controlling search.
+The technique has proven to be extremely successful for several application domains.
+The work presented in this paper, without claiming any novelty in terms of the basic technique, verifies the results shown by TLplan.
+We do this by introducing a new forward chaining planner, TALplanner.
+Two versions were considered, TALplan/modal which is based on the use of modal formulas and a progression algorithm, and TALplan/non-modal which does not use modal formulas or a progression algorithm.
+TALplan/modal is most similar to the work of Bacchus and Kabanza, while TALplan/non-modal is considerably different in design.
+We showed how temporal modalities could be emulated in TAL, a nonmonotonic temporal logic for reasoning about action and change.
+Both versions of TALplanner were empirically tested against TLplan and in both cases and for all domains, TALplanner was shown to be considerably faster and required less memory.
+The novelty of our approach is the integration of TAL with the forward chaining plan paradigm.
+Due to its considerable expressivity, TAL is an ideal candidate for continuing research with TALplanner, especially in the context of planning in incompletely specified dynamic environments with variable time constraints for acting.
+We demonstrated this by extending the original algorithms so planning can be done using durative actions with internal state.
+We are currently working on extensions to TALplanner related to the use of nondeterministic plan operators, concurrent plan operators, dependency and domain constraints, and incomplete initial states.
+Blocks 1 2 3 4 5 6 7 8 9 10  25 50 70 100 140 280 460 640 820 1000  Plan length 16 70 106 160 232 580 580 1228 1908 2232  Worlds created 344 2295 4361 8945 17829 74297 178697 365069 463779 718281  TLplan time (s) memory (k) 0.110 3104 1.963 5672 7.501 8752 37.254 14912 185.497 27532 4297.750 104464 32303.100 178884  TALplan/modal time (s) memory (k) 0.110 6640 1.603 6792 4.677 7516 14.441 7772 39.246 9372 394.196 21308 3208.159 39528 5862.197 68464 10487.159 95620  TALplan/non-modal time (s) memory (k) 0.060 6612 1.302 6644 4.406 6644 14.060 6644 41.940 7208 474.012 8536 1899.992 9840 7679.733 14284 12837.629 18732 25028.509 24264  Table 1.
+Blocks world results  8.
+Acknowledgments This research is supported in part by the Wallenberg Foundation, the Swedish Research Council for Engineering Sciences (TFR) and the ECSEL/ENSYM graduate studies program.
+References [1] AIPS98.
+Artificial Intelligence Planning Systems: 1998 Planning Competition.
+http:// ftp.cs.yale.edu/pub/mcdermott/ aipscomp-results.html, 1998.
+[2] R. Alur, T. Feder, and T. Henzinger.
+The benefits of relaxing punctiality.
+In 10th ACM Symposium on Principles of Distributed Computing, pages 139-152, 1991.
+[3] F. Bacchus and F. Kabanza.
+Using temporal logic to control search in a forward chaining planner.
+In M. Ghallab and A. Milani, editors, New Directions in AI Planning, pages 141-153.
+ISO Press, 1996.
+[4] F. Bacchus and F. Kabanza.
+Planning for temporally extended goals.
+Annals of Mathematics and Artificial Intelligence, 22:5-27, 1998.
+[5] F. Bacchus and F. Kabanza.
+Using temporal logics to express search control knowledge for planning.
+Artificial Intelligence, 1998.
+Submitted for publication.
+[6] P. Doherty.
+Reasoning about action and change using occlusion.
+In Proceedings of the 11th European Conference on Artificial Intelligence, pages 401-405, 1994.
+[7] P. Doherty, J. Gustafsson, L. Karlsson, and J. Kvarnstrom.
+TAL: Temporal Action Logics, language specification and tutorial.
+Linkoping Electronic Articles in Computer and Information Science, 3(15), 1998.
+Submitted to ETAI.
+http://www.ep.liu.se/ea/cis/1998/015/.
+[8] P. Doherty and J. Kvarnstrom.
+Tackling the qualification problem using fluent dependency constraints: Preliminary report.
+In Proceedings of the 5th International Workshop on Temporal Representation and Reasoning (TIME'98), 1998.
+[9] E. A. Emerson.
+Handbook of Theoretical Computer Science, volume B, chapter Temporal and Modal Logic.
+MIT, 1990.
+[10] J. Gustafsson and P. Doherty.
+Embracing occlusion in specifying the indirect effects of actions.
+In Proceedings of the 5th International Conference on Principles of Knowledge Representation and Reasoning, pages 87-88, San Francisco, 1996.
+Morgan Kaufmann Publishers.
+[11] F. Kabanza, M. Barbeau, and R. St-Denis.
+Planning control rules for reactive agents.
+Artificial Intelligence, 95:67-113, 1997.
+[12] L. Karlsson and J. Gustafsson.
+Reasoning about concurrent interaction, 1998.
+Accepted for publication in Journal of Logic and Computation.
+[13] L. Karlsson, J. Gustafsson, and P. Doherty.
+Delayed effects of actions.
+In Proceedings of the 13th European Conference on Artificial Intelligence, 1998.
+[14] H. Kautz and B. Selman.
+Blackbox: A new approach to the application of theorem proving to problem solving.
+System available at http://www.research.att.com/ ~ kautz.
+[15] J. Koehler, B. Nebel, J. Hoffmann, and Y. Dimopoulos.
+Extending planning graphs to an ADL subset.
+In European Conference on Planning, pages 273-285, 1997.
+System available at http://www.informatik.
+uni-freburg.de/~ koehler/ipp.html.
+[16] J. Kvarnstrom and P. Doherty.
+VITAL.
+An on-line system for reasoning about action and change using TAL, 1997.
+Available at http:// anton.ida.liu.se/vital/vital.html.

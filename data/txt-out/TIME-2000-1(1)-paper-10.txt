@@ -1,0 +1,350 @@
+Resolution for Branching Time Temporal Logics: Applying the Temporal Resolution Rule Alexander Bolotov and Clare Dixon Department of Computing and Mathematics Manchester Metropolitan University Manchester M1 5GD, UK.
+A.Bolotov,C.Dixon@doc.mmu.ac.uk Abstract In this paper we propose algorithms to implement a branching time temporal resolution theorem prover.
+The branching time temporal logic considered is Computation Tree Logic (CTL), often regarded as the simplest useful logic of this class.
+Unlike the majority of the research into temporal logic, we adopt a resolution-based approach.
+The method applies step and temporal resolution rules to the set of formulae in a normal form.
+Whilst step resolution is similar to the classical resolution rule, the temporal resolution rule resolves a formula, , that must eventually occur with a set of formulae that together imply that can never occur.
+Thus the method is dependent on the efficient detection of such sets of formulae.
+We present algorithms to search for these sets of formulae, give a correctness argument, and examples of their operation.
+1 Introduction Since it was first proposed in [13] temporal logics have been used extensively in the specification and verification of properties of concurrent and distributed systems [9].
+If in this application the ability to refer to a range of possible execution paths is important then the power of the language of branching-time logics is essential [9].
+It has been observed that most correctness properties of concurrent programs (that do not deal with fairness) can be expressed in the family of branching time logics called Computation Tree Logics.
+The core logic we concentrate on is a Computation Tree Logic (CTL) [4] often regarded as the simplest useful logic of this family.
+There are several extensions of CTL of which CTL is the most powerful [8].
+Much of the research on the verification of concurrent and distributed systems has centered around the modelchecking technique utilising CTL [9].
+Here the satisfiability  of a CTL formula is checked with respect to a model derived from a finite-state program [9].
+The underlying research on decision procedures for branching time temporal logics has mostly involved tableau or automata methods [8] with an obvious lack of research into deductive proof methods.
+For propositional linear-time temporal logics (PLTL) a clausal resolution method [10] has been developed.
+This resolution approach has been extended to CTL in [2, 3].
+Its key elements consist of translation to a normal form and a variety of resolution rules.
+The normal form is a set of formulae which utilize only anexta, aalwaysa and asometimea temporal operators (all other operators are subsumed within this representation).
+Two types of resolution rules are distinguished, namely, resolution within states known as step resolution, and resolution over states known as temporal resolution.
+The latter applies when a proposition  occurs at all future moments (known as a loop in ), and if  is also constrained to be false at some point in the future.
+The efficient search for such loops is crucial to the temporal resolution method.
+In the linear-time case, several algorithms for detecting loops have been developed [5, 6].
+In this paper we select one of these loop detection algorithms and extend it to apply to the branching time logic CTL.
+The remaining of the paper is organized as follows.
+In 2 we overview the logic CTL.
+In 3 a clausal resolution method is outlined.
+Algorithms to apply the temporal resolution rule and examples of their operation are given in 4.
+A correctness argument is outlined in 5.
+Finally, in 6 we consider related work and in 7 provide concluding remarks.
+2 The logic CTL Here we summarize the syntax and semantics of the core logic, CTL.
+2.1.
+Syntax and semantics of CTL In the language of CTL we utilize only future-time (always),  (sometime), (next time),  operators (until) and  (unless).
+Additionally, we use path quantifiers A (on all future paths) and E (on some future path).
+The syntax of CTL distinguishes state ( ) and path (fi ) formulae.
+These are defined inductively as follows, where  is any well-formed formula of propositional logic, including classically defined constants fi and fi .
+ fi      fi    fi    fi    fi   fi Afi fi E fi  fi  fi  fi    fi     Well formed formulae of CTL are state formulae.
+Thus, each CTL formula has a structure where any temporal operator can only be followed by a path operator or a classical operator, while any path operator can only be followed by a temporal operator.
+An example of a CTL formula is E  E  meaning athere is a path on which  eventually holds and there is a path on which  always holdsa.
+It follows that CTL is weaker than linear-time temporal logic in its expressive capabilities within a path, but is more expressive in that it can quantify over paths themselves.
+As an example of its restricted nature, note that no formula de are satisfied on scribing the property aboth  and the same specific patha can be constructed using CTL syntax.
+For the detailed description of CTLas theoretical properties, subsystems and extensions see [8].
+Before continuing with the semantics of CTL we introduce some notation.
+We interpret a well-formed formula of CTL in a tree-like model structure 	   	  	 , where  is a set of states,       is a binary relation over  and  is an interpretation function mapping atomic propositional symbols to truth values at each state.
+A path,  , over  , is a sequence of states  	  	  	    such that for all   	 fi 	 fi fi   .
+A path Az is called a fullpath.
+Given a path  and a state fi   	    we term a finite subsequence   	  	    	 fi a prefix of a path   and an infinite sub-sequence of states  fi 	 fi  	 fi  	    a suffix of a path   abbreviating these respectively with fi   	  	 fi fi (or simply as  	 fi  when it is clear which path this prefix belongs to) and    	 fi fi.
+We assume that a CTL model 	 satisfies the following conditions: 1. there is a designated state,  fi   , a root of a structure (i.e.
+for all 	  fi 	 fi    fi), 2. every state belongs to some fullpath, i.e.
+a path starting at fi , A" It is known that if linear-time temporal logic is interpreted over discrete linear models with finite past and infinite future then adding past-time operators does not give more expressiveness [11].
+3. tree structures are of at most countable branching, 4. every state should have a successor state, and, 5. every path is isomorphic to  .
+Below we define the satisfaction relation afia which evaluates well-formed CTL formulae at a state   in a model 	.
+Postulates s1-s7 define satisfaction relation for the CTL formulae at states while p1-p6 determine evaluation of their subformulae along paths.
+s1  		   fi  s2 s3 s4 s5 s6 s7 p1 p2     fi	 .
+  fi   		   fi .
+  fi     		   fi  and  		   fi  .
+  fi     		   fi  or  		   fi  .
+  fi     		   fi  or  		   fi  .
+  fi A  	  		   fi  .
+  fi E     		   fi  .
+  fi   		   fi 	 .
+  fi  fi       		   	 fi fi fi  .
+  fi  fi       		   	 fi fi fi  .
+  fi   		   	  fi fi  .
+  fi    fi       		   	 fi fi fi           		   	  fi fi .
+  fi     		   fi   		   fi    .
+  fi fi 	            fi               fi  fi     fi         p3            p4 p5              p6      fi         fi  A well-formed formula,  , is satisfiable if, and only if, there exists a model 	 such that  		  fi  fi  .
+A wellformed formula,  , is valid if, and only if,  is satisfied in every possible model, i.e.for each 	,  		  fi  fi  .
+Recall that well-formed CTL formulae are state formulae and due to the syntactic requirement (see above) when we evaluate a CTL formula, for example, A  , we reduce the problem  		    fi A  , following s6 above, to the evaluation of  along each path   .
+This, acording to p4, means  		    	   fi  .
+Since  must be a state formula, applying p1, we obtain from the latter  		   fi  .
+Now, if  contains another temporal operator, then this operator will again be preceded by a path operator indicating a specific path context.
+For example, if   E  then the problem  		    fi E  will be reduced, according to s7, to evaluating  along some path  AVA" , etc.
+2.2.
+Closure properties of CTL models When trees are considered as models for distributed systems, paths through a tree are viewed as computations.
+The natural requirements for such models would be suffix and fusion closures.
+The former means that every suffix of a path is itself a path.
+The latter requires that a system, following the prefix of a computation  , at any point  fi   , is able to follow any computation   originating from  fi .
+Finally, we might require that if a system follows a computation for an arbitrarily long time, then it can follow a computation forever.
+This corresponds to limit closure property, meaning that for any fullpath  Az and any paths   	     (      ) such that Az has the prefix fi 	 fi ,  has the prefix fi 	  ,  has the prefix  	   etc, the following holds (see Figure 1):  The language for indices is based on the set of terms      	    	 	   fi     		   fi    Az    fi  	  fi      iff    Definition 1 (Separated Normal Form for CTL) Given a CTL formula  , the separated normal form for F, SNF (F), is a set of clauses of the form      fi  Thus, E  means that  holds on some path labelled as   .
+Indices of the type   fi aim to capture limit closure property.
+Once the translation to SNF  has been carried out, all SNF clauses containing a aEa quantifier are labelled with some index (for more details see [2]).
+Further, an additional operator,   , which effectively identifies the initial state, is introduced:  A fiAz  	  fi   fi  where each of the afi   a is further restricted as in Figure 2, where each   , fi or  is a literal, fi or fi , and      is some index.
+       there exists an infinite path  that is a limit of the prefixes fi 	 fi 	 fi 	  	  	     .
+In the following we assume that tree-like models of CTL are suffix, fusion and limit closed  .
+    3.
+The temporal resolution method for CTL Here we review the temporal resolution method for CTL [3, 2] whose main components are translation into the clausal normal form and application of resolution rules.
+3.1.
+A normal form for CTL The basic idea behind the normal form for CTL called Separated Normal Form (SNF  ) is to identify the core operators and generate formulae relevant to either the first state in a model, or to all subsequent states in a model.
+The transformation procedure uses fixpoint unwinding and subformula renaming in order to reduce an arbitrary formula to SNF .
+To preserve a specific path context indices are used.
+Az A variety of difficult problems concerning branching-time logics are due to the limit closure property, resulting, for example, in the case of CTL , in the absence of a complete axiomatization.
+   A fi    E fi    Figure 1.
+Limit closure            fi          an initial clause  fi    fi  fi  an A step clause  fi  a E step clause    fi      A      E   fi  an A sometime clause 	   fi     a E sometime clause  Figure 2.
+Form of SNF Clauses The natural intuition here is that the initial clauses provide starting conditions while step and sometime clauses constrain the future behaviour.
+For example, a step clause A   A fi means afor any fullpath  and any state       fi, if  is satisfied at a state  then  must be satisfied at the moment, next to  , along each path which starts from   a.
+Similarly, interpreting A   E  fi fi, we use the information that aEa is associated with the index   : afor any fullpath  and any state       fi, if  is satisfied at a state  then  must be satisfied at the moment, next to   , along some path associated with    which departs from   a.
+Finally, A   E 	fi  fi means afor any fullpath  and any state       fi if  is satisfied at a state  then  must be satisfied at some state, say fi   fi, along some path   associated with the limit closure of    which departs from   a.
+All the other operators are subsumed within this representation.
+For example, the aA a operator is represented by a (possibly infinite) sequence of aA a operations (see [3]).
+For convenience we will omit the outer aA a connective that surrounds the conjunction of clauses and drop the conjunction considering the set of clauses.
+a constant fi to indicate this situation and, for example, the conclusion of SRES 2 rule, when resolving fi  A and fi  A  , will be fi  A fi .
+Once a contradiction within a state(s) is found, as for example, fi  A fi , then we simplify it applying the following rule:  3.2.
+Resolution rules for CTL  The step resolution process terminates when either no new resolvents are derived, or    fi is derived.
+Once step resolution has been applied, the temporal resolution rule can be invoked.
+The basic idea here is to resolve a set of formulae containing a loop in , i.e.a situation when  occurs at all future moments along some (E-loop in ) or every path (an A-loop in ) from a particular point in a CTL model, with the formula containing a , provided that both refer to the same path.
+Thus, identification of loops within given set of SNF  clauses, similar to PLTL, is the crucial part of the temporal resolution method in CTL.
+As in PLTL, some loops might be given directly as a set of SNF clauses; in other cases loops might be more difficult to detect.
+One of the benefits of the normal form is that it allows us to identify ahiddena loops within some set of clauses.
+Once a set of SNF clauses,  , has been obtained, a resolution method is applied to  .
+Here we repeatedly apply astepa and atemporala resolution rules, together with various simplification steps.
+3.2.1 Step resolution.
+Step (classical) resolution can be used between formulae that refer to the initial moment of time or same next moment on some or all paths.
+The corresponding step resolution rules are given below SRES 1                    SRES 2  fi  fi  fi        fi    fi    fi  A A A     SRES 3  fi  fi  fi      A E E    fi    fi    fi     fi fi  SRES 4  fi  fi  fi      E E E    fi    fi    fi    fi fi fi  where  is a literal and    is an index.
+When an empty clause is generated on the right hand side of the conclusion of the resolution rule, we introduce  fi fi     P fi fi  where P is either of path quantifiers.
+The conculsion, fi  fi , in turn, requires that fi must never be satisfied in any moment in time.
+This is reflected in generating extra constraints by applying the following rule:  fi        fi  fi fi A fi  3.2.2.
+Loops in CTL.
+Loops in CTL are defined on sets of merged clauses, which are, in turn, generated from step clauses.
+Merging  fi  fi  fi      A A A       fi  fi  fi  fi      A E E        fi  fi  fi  fi  fi      E E E         fi  fi  fi  fi  fi  Note that, similar to SRES 4, we allow merging of two E step clauses if both existential path quantifiers refer to the same path.
+Definition 2 (Loop in CTL) A loop in  is a set of merged clauses (possibly labelled) of the form  fi     Pfi  fi   P      then P ,          fi fi  fi  fi               !.
+ fi    the following formulae are satisfied       !fi, P only involves one aEa quantifier labelled by      or every P  which involves the aEa quantifier has the same label      then        fi and we have a E-loop in  on the path    fi, otherwise   if for all   we have indicated a E-loop in  on the path   fi, where    is a new index.
+For this set of merged clauses, each right hand side implies one or more left hand sides from the side condition on loops.
+Each right hand side implies .
+Hence, once one of the left hand sides is satisfied, a literal  holds at all future moments on some or all paths (dependent on the type of the path quantifier).
+As a simple example consider the following set of clauses (where the first clause on its own gives us a loop in ).
+fi  A 	     E  fi (1) By merging both clauses, we obtain    fi    In each of the states          along the path  fi     	  E      	  A,    is empty, and we have an A-loop in    fi        !fi, P is the aAa path quantifier   E          We will abbreviate such loop by P P  fi , where  	   fi        , for all  where fi    and fi    if for all   fi  Az  Figure 3.
+Effects of limit closure in CTL: Eloop   	 fi 	     is a path, and each state along this path satisfies   , which gives us the desired E-loop in .
+3.2.3.
+Temporal resolution rules.
+Now, using the expressions fi  A A  and fi  E E  as abbreviations for sets of SNF clauses which together represent these formulae, temporal resolution rules for CTL are defined as follows.
+TRES 1  fi        A A  A Afi  fi  TRES 2 fi  fi    (2)  which gives us additionally a E-loop, in , which is linked to the limit closure property of CTL.
+Consider a model 	 given in Figure 3, where we arbitrarily chose a fullpath  and let    be the first moment along  which satisfies   .
+Therefore, there is a path   associated with    such that fi , the successor of   on this path, satisfies   .
+Formula (2) means afor any fullpath and any state     fi, if  is satisfied at  then E fi fi is satisfied at  a.
+Due to the fusion closure property, there is a fullpath fi 	   A  (a concatenation of  fi 	   and  ).
+Thus, setting  fi 	   A  and    , we conclude that  		 fi  fi E   fi fi .
+Therefore, there is a path  associated with    such that there is a state, next to fi , say  , on this path which satisfies   , etc.
+Hence, according to the limit closure property, the sequence      A A  E 	fi  Efi  fi 	fi   TRES 3  fi        E E  	fi  A Afi  fi  TRES 4  fi        E E  	fi  E 	fi  Efi  fi 	fi   In each case the resolvent ensures that once  has been satisfied, the conditions, fi , for triggering a -formula are  not allowed to occur, i.e., fi must be false, until the eventuality () has been satisfied.
+Although it might be surprising that resolving an A with a E-loop in  results in an Aformula, if the premises of temporal resolution in this case are satisfiable, the satisfiability of the conclusion of TRES 3 is guaranteed by the limit closure property (the corresponding proof is given in [2]).
+This system of resolution rules is a complete deductive method for the logic CTL ( [2, 3]).
+4.
+Applying CTL Temporal Resolution The clausal resolution approach to linear-time logic has been shown to be particularly amenable to efficient implementation [5, 6].
+Here we concentrate on one of these algorithms, the Breadth-First Search approach [6], and modify it for use in our branching time setting.
+4.1.
+Overview of the Loop Detection Method in CTL While in PLTL we have only one temporal resolution rule, in the branching-time framework, a variety of such rules are defined.
+Depending on the type of a path quantifier in the asometimea SNF  clause, we look for different types of loops.
+In particular, given A, we search for a set of clauses that together imply either A A  or E E  (labelled by any   ), which can be used to apply TRES 1 and TRES 3.
+When we are resolving with a asometimea formula containing E labelled by   fi, then we search for a set of clauses that together imply either A A  or E E  fi to apply TRES 2 or TRES 4.
+In the latter case use of indices is crucial.
+The Breadth-First Search Algorithm constructs a sequence of nodes that are labelled with formulae in Disjunctive Normal Form.
+This represents the left hand sides of clauses used to expand the previous node which have been disjointed and simplified.
+Clauses are selected for use in the algorithm if they generate the required literal at the next moment in time and their right hand side implies the previous node.
+The former ensures the required literal holds and the latter gives the looping required so that the literal always holds.
+If we build a new node that is equivalent to the previous one, using this approach, then we have detected a loop.
+However, if we cannot create a new node then we terminate without having found a loop.
+4.2.
+Breadth-first A-loop search algorithm Given a set,  , of SNF clauses we develop an algorithm to detect an A-loop in  by constructing a set of nodes "fi 	 " 	    	 " labelled by formulae  fi 	    	 , where each      !fi is in DNF and the label,   , of the terminating node "  satisfies the following condition:   A A .
+Thus, to detect an A-loop in  follow the steps below.
+(1) Search for all SNF  clauses of the form #   A , for    to $, disjoin the left hand sides and make the label fi , of the top node " fi equivalent to this, i.e.
+"fi   #  	  fi    Simplify "fi .
+If  "fi  fi we have found a loop.
+(2) Given a node "  , build node "  for   	 	    by looking for clauses or combinations of clauses of the form fi  A fi  fi, for    to % where  fi  " .
+Disjoin the left hand sides so that  "       fi fi  fi  and simplify as previously.
+(3) Repeat (2) until one of the conditions (a)-(c) holds: (a)  "  fi .
+We have found a A-loop and return the label of the terminating node, fi .
+(b)  "  " .
+We have found a A-loop and return the label of the terminating node, DNF formula "  .
+(c)  "  is empty.
+Terminate - no loop has been found.
+4.3.
+Breadth-first E-loop search algorithm To detect a E-loop in  do the following.
+(1) Search for all the clauses of the form #   A , or #  E  fi  , for    to $, disjoin the left hand sides, make the top node " fi equivalent to this and label " fi with Ind, i.e.
+  "fi     	  fi  #    where Ind is a set of all indices     occurring within #  E  fi  .
+Simplify "fi .
+If  "fi  fi we terminate having found a loop.
+  Not surprisingly, the detection of a A-loop is almost identical to that of Breadth-First Search in linear-time temporal logic.
+However, with the detection of an E-loop we must take care when combining clauses (see below).
+Az To simplify the presentation below, since a label   of a node    uniquely identifies this node, instead of saying aa label    A" fi    fi   of a node  a we will use the expression   A" fi    fi  .
+(2) Given a node "    , build a node "     for   	 	    by looking for combinations of clauses of the form fi  A fi  fi or fi  E fi  fi fi  for    to % where  fi  " .
+Disjoin the left hand sides so that     fi    "    fi fi  fi  step (2) of the E-loop search algorithm (i.e.
+all the pairs of clauses can be merged and the right hand side contains  as a conjunct and also implies " fi ).
+So we disjoin the literals on the left hand sides of the merged clauses 6+1, 7+2 and 8+3 to obtain node  "      where Inda is a set of all indices     occurring within fi  E fi  fi fi  .
+Simplify " as previously.
+  (3) Repeat (2) until one of the conditions (a)-(c) holds: (a)  "  fi .
+We terminate having found a E-loop on path    and return the label of the terminating node, fi , provided that the following condition () is satisfied  if    is the only element of   then we have found a E-loop in  on the path   fi, else  (c)  "   &  fi  E      fi      fi     &  fi  fi   we cannot now combine it with clause 1 as it has a different path index.
+We can, however, merge it with either clause 2, 3 or 4 to give  &    $fi &    'fi &    (fi          &    fi &    fi &     fi  E E E    fi     fi  fi   The first two left hand sides will be removed via simplification to leave node "  as  "  &    (fi  $  'fi  is empty.
+Terminate - no loop has been found.
+In a particular case of the E-loop detection algorithm, given a sometime clause labelled by   fi we search for a loop on the path   fi.
+Thus, we only apply merging to those step clauses containing aEa quantifier which are labelled by   .
+This will guarantee that if the algorithm terminates by finding a E-loop in , this loop will occur on the desired path   fi.
+&  fi  $  'fi  Note that merged clause 7+1 would be removed via simplification.
+3.
+Clauses 7+2 and 8+3 still satisfy the expansion criteria so we can add $  ' to our new node.
+However if we merge clauses 5 and 6 to give   we have found a E-loop in  on the path    fi, where     is a new index.
+(b)  "  " .
+We terminate having found a E-loop and return the label of the terminating node, DNF formula " provided that condition  above is satisfied;        fi   fi     4.
+Now only clauses 7+2 and 8+3 satisfy the expansion criteria so the new node is  "  $  'fi  fi     5.
+The same thing happens when we construct the next node so we obtain  "  $  'fi   and terminate with the loop $  'fi  E fi  4.4.
+Examples Example 1.
+Consider the following set of SNF  clauses in which we are looking for a loop:   	       & $ ' (       E A A A       fi           &  fi $ '       E A A E   & $ $  fi   fi   Noting that here A-loop searching algorithm detects a loop $  A A , we will construct a E-loop.
+1.
+The clauses 1a4 have either A  or E  on their right hand side.
+We disjoin their left hand sides and simplify to give the top node  "fi  &  $  '  (fi  fi     2.
+To build the next node, " , we see that the merged clauses 6+1, 7+2 and 8+3 satisfy the expansion criteria in  E  fi  fi   .
+Example 2.
+Consider the following set of SNF  clauses        	     E A               fi     A E    fi   It is not immediately obvious that this set of SNF  clauses contains a E-loop in , namely,    E E .
+1.
+The clauses 1 and 2 have either A  or E  on their right hand side, hence, we disjoin their left hand sides and simplify to give the top node  "fi    2.
+To build the next node, 1+3 and 2+4, to obtain       E E  "    fi  fi     , we derive merged clauses  fi   fi  fi  fi     These satisfy the expansion criteria, so we add   to the new node.
+Note that while we can not merge clauses 1 and 4 as they are labelled by different indices, we can, additionally to the merging 1+3 and 2+4, obtain a merged clause 2+3.
+However, its left hand side will be removed via simplification to leave node " as  "       fifi fi   fi   5.
+Correctness of the loop searching for CTL Here we outline the soundness and completeness of the loop detection algorithms.
+The following lemma is useful.
+Lemma 1 Given a series of nodes "  , for   , output by a Breadth-First A-Search for a loop in  then    fi A  3.
+Now, as "  "fi we terminate the searching with the loop   fi  E E  	fi   , where     is a new index.
+  The model, 	, (Figure 4), which satisfies the set of clauses given in Example 2, in particular, represents this loop.
+Pick a fullpath  and a state     that is the first state satisfying   .
+"    A    "  fifi  PROOF :  For  *  in step (2) of the algorithm, given node "  , we select clauses fi  A fi  fi, for    to %, where fi fi  " and the new node "  is the disjunction of the fi s. Therefore, for each  fi , fi fi  A " and fi fi  A .
+Hence, we obtain fi A  "    A  "  fi    as required.
+(END)  fi    satisfies    and E 	          satisfies    and E 	    satisfies  and E 	                  fi A PROOF :       fi     fi  Afi   satisfies    and E 	     E  Lemma 2 Given a series of nodes "  , for   , output by a Breadth-First E-Search for a loop in  then           Az  Figure 4.
+E-loop in a combination of step clauses with different labels  Suppose that  		   fi .
+Thus, according to merged clause 1+3,  		   fi E   fi fi  , i.e.there must be a path  associated with   	 , such that fi   , the successor of  along  , satisfies  .
+Hence,  		 fi  fi and therefore, according to merged clause 2+4,  		  fi  fi E   fi fi  .
+Therefore, we must have in the model a path  (possibly different from    	 fi fi), associated with      such that there is a state    , the successor of fi , which satisfies   .
+Now, considering  , we apply the same reasoning as in the case of  , etc.
+Thus, there is a path )  , the limit closure of the prefixes  	 fi 	 fi 	  	  	  	    such that  		 )  fi E .
+Hence,  		   fi E E  as desired.
+    "    E    "  fifi  Similar to the A-loop (END)  Theorem 1 [(Soundness)] Let   be a set of step clauses and  be the literal we are searching for a loop in.
+For any DNF formula # output by a Breadth-First A-Search (respectively a Breadth-First E-search), on  , fi #  A  A    respectively #  E    E  fi  PROOF : We prove this for the A-Search and the E-Search is similar.
+From the termination conditions of the algorithm given in 4.2 and 4.3 we know that either #  fi from step (1) or step (3a), or "   " from step (3b).
+For the former either the clause fi  A  is in the clauseset or there are clauses in the clause-set that together imply this.
+Again, due to the implicit A -operators surrounding SNF clauses, the clause fi  A  holds in all states on all paths.
+Therefore, fi fi  A A  holds as required.
+Otherwise "   " and from Lemma 1 we have fi A "  A "  fifi.
+Thus, if we terminate with # then fi A #  A #  fifi and fi #  A A  as required.
+(END)  Theorem 2 [(Completeness)] Let   be a set of step clauses and  be the literal we are searching for a loop in.
+For any set of clauses       that together imply an Aloop, i.e.
+fi #  A A , (respectively a E-loop, i.e.
+fi #  E E ) the Breadth-First A-Search (respectively E-Search) applied to   outputs a DNF formula #  and #  #  .
+PROOF : As we only use A step clauses for the Aloop, completeness for the A-loop can be shown as in the linear-time case [6].
+Extract all A step clauses from  , delete the path quantifier and let the set of (linear-time) clauses be    .
+Note also that the BreadthFirst A-Search algorithm is identical to that of BreadthFirst Search algorithm for linear-time temporal logic if the path quantifiers are deleted.
+To show completeness in the linear-time case a graph is constructed from the clauses in   , whose nodes are valuations of all the propositions in    .
+Paths through the graph represent all possible models of    .
+It is shown that if a loop exists in   , # , then this is represented in the graph of    by a terminal subgraph where the required literal  holds at each node.
+More specifically # is satisfied by each node (a valuation) in the subgraph.
+The completeness proof shows that each step in the Breadth-First Search algorithm corresponds to an operation on the graph.
+If the Breadth-First Search algorithm detects a loop returning the DNF formula #  then this corresponds to the terminal subgraph representing the largest most comprehensive loop in    .
+For more details see [5].
+The proof for E-loops is similar but we must construct a graph as described above for each apatha through the branching tree structure.
+(END)  6.
+Related work Automata-theoretic methods for CTL extend those developed for PLTL [1, 8].
+To test formulae of PLTL finite automata on infinite strings are used, the appropriate type of automata in the branching-time setting are finite automata on infinite trees, i.e.
+when automaton visits a state it reads an input tree rather then an input word.
+Given a CTL formula , a run of the automaton constructed for is considered successful if it meets certain requirements known as aacceptance conditionsa.
+This is also known as checking automaton for (non)emptiness.
+If the acceptance condition is satisfied then a state structure of a successful run is not empty and it gives a model for .
+Alternatively, a run is unsuccessful.
+If the automaton does not have a successful run then is not satisfiable.
+Note that although the structure of the normal form described in this work is close to alternating tree automata used in [1], there is no direct method of testing these automata for (non)emptiness.
+On the contrary, clausal resolution method is effectively applied to a set of clauses of normal form.
+Tableau-based method for CTL are outlined in [8].
+Using tableau methods, to show that a formula is valid, we negate and apply tableau algorithm.
+The algorithm systematically constructs a structure from which a model can be generated.
+If the structure is empty then no model can be constructed, the negated formula is unsatisfiable and the  original formula is valid.
+The incremental method of the construction of the tableau [8] has been essentially used in showing completeness of the resolution method for CTL [2].
+Proof methods for particular modal logics are given in several papers, for example [12, 14].
+Ohlbach takes a resolution based approach removing modal operators and replacing them with world path arguments to predicate and function symbols, i.e.
+a modal diamond (possibility) is replaced by & meaning there is an accessible world & from here.
+Similarly here we annotate E rules with an index to denote which path we are referring to.
+Ohlbach requires sophisticated unification algorithms dependant upon the properties of the paths concerned.
+In the CTL resolution system matching indices is trivial.
+Temporal logics are hard to reason about due to the interand operators encoding, in case action between the of linear-time temporal logic, a simple form of induction i.e.
+        fifi      The formulation of induction extended to branching-time temporal logic, which can be found in the axiomatization of CTL [8], is given by a set of formulae of a complex structure, for example, A        E  fifi    A fi  The complex resolution rule, and search method described in this paper is required to deal with the above induction principle.
+Note that induction in branching-time logic is additionally complicated by the limit closure property of the underlying tree models and in case of the full branchingtime logic, CTL , represents a main difficulty in axiomatizing the latter.
+One of the benefits of the clausal resolution technique is the possibility of invoking a variety of well-developed methods and refinements used in the framework of classical logic.
+For example an initial investigation into the development of the set of support for classical logics [15] to that for linear-time temporal logics has been made in [7].
+The refinement of this strategy is ongoing work and could potentially be adapted to the branching framework.
+7 Conclusions As we have already mentioned, most of the research on the proof methods for branching-time logics has been concentrated around the tableau or automata methods [8].
+In this paper we have investigated the application of the clausal resolution method for CTL [2, 3].
+The authors know of no other clausal resolution methods developed for branchingtime logics.
+Searching for a loop is the crucial part of the  resolution technique.
+We have described breadth-first algorithms of identifying A-loops and E-loops and sketched the correctness argument.
+This, together with the algorithm for the clausal resolution for CTL [2], makes the resolution method developed practically suitable for implementation.
+However, ways to improve the application of the temporal resolution rule must be further investigated.
+Here, although we have formulated one method of searching for a loop, this is only the starting point.
+The work to be done in this direction concerns, in particular, development of the strategies of the preferred loops to find first, reduction of the search graphs and loop subsumption algorithms.
+Again, we expect here to incorporate the related results obtained for PLTL [5, 6].
+Also, taking into account that in branchingtime logics we deal with path quantifiers, it might be useful to investigate parallels between loop searching techniques and (rather simple in this case) unification algorithms used in the resolution technique for predicate logic.
+Acknowledgements This work has been partially supported by funding from HEFCE, under a PhD studentship and EPSRC, under research grant GR/L87491.
+Both authors would like to thank Michael Fisher for his advice and comments on this work.
+We are also grateful to anonymous referees for their useful suggestions on improving the presentation.
+References [1] O. Bernholtz, M. Vardi, and P. Wolper.
+An automatatheoretic approach to branching-time model checking.
+In Computer Aided Verification.
+Proceedings of 6th International Workshop, volume 818 of Lecture Notes in Computer Science.
+Springer-Verlag, 1994.
+[2] A. Bolotov.
+Clausal Resolution for Branching-Time Temporal Logic.
+PhD thesis, The Manchester Metropolitan University, 1999, (submitted).
+[3] A. Bolotov and M. Fisher.
+A clausal resolution method for ctl branching time temporal logic.
+Journal of experimental and theoretical artificial intelligence, (11):77a93, 1999.
+[4] E. M. Clarke and E. A. Emerson.
+Using Branching Time Temporal Logic to Synthesise Synchronisation Skeletons.
+Science of Computer Programming, pages 241a266, 1982.
+[5] C. Dixon.
+Search Strategies for Resolution in Temporal Logics.
+In M. A. McRobbie and J. K. Slaney, editors, Proceedings of the Thirteenth International Conference on Automated Deduction (CADE), volume 1104 of Lecture Notes in Artificial Intelligence, pages 672a687, New Brunswick, New Jersey, July/August 1996.
+Springer-Verlag.
+[6] C. Dixon.
+Temporal resolution using a breadth-first search algorithm.
+Annals of Mathematics and Artificial Intelligence, 22, 1998.
+[7] C. Dixon and M. Fisher.
+The Set of Support Strategy in Temporal Resolution.
+In Proceedings of TIME-98 the Fifth International Workshop on Temporal Representation and Reasoning, Sanibel Island, Florida, May 1998.
+IEEE Computer Society Press.
+[8] E. A. Emerson.
+Temporal and Modal Logic.
+In J. van Leeuwen, editor, Handbook of Theoretical Computer Science: Volume B, Formal Models and Semantics., pages 996a 1072.
+Elsevier, 1990.
+[9] E. A. Emerson.
+Automated reasoning about reactive systems..
+In Logics for Concurrency: Structures Versus Automata, Proc.
+of International Workshop, volume 1043 of Lecture Notes in Computer Science.
+Springer-Verlag, 1996.
+[10] M. Fisher.
+A Resolution Method for Temporal Logic.
+In Proc.
+of the XII International Joint Conference on Artificial Intelligence (IJCAI), 1991.
+[11] D. Gabbay, A. Phueli, S. Shelah, and J. Stavi.
+On the temporal analysis of fairness.
+In Proceedings of 7th ACM Symposium on Principles of Programming Languages, 1980.
+[12] H.-J.
+Ohlbach.
+A Resolution Calculus for Modal Logics.
+Lecture Notes in Computer Science, 310:500a516, May 1988.
+[13] A. Pnueli.
+The Temporal Logic of Programs.
+In Proc.
+of the Eighteenth Symposium on the Foundations of Computer Science, 1977.
+[14] L. A. Wallen.
+Matrix Proof Methods for Modal Logics.
+In Proc.
+IJCAI-87, pages 917a923, Milan, Aug. 1987.
+[15] L. Wos, G. Robinson, and D. Carson.
+Efficiency and Completeness of the Set of Support Strategy in Theorem Proving.
+J. ACM, 12:536a541, Oct. 1965.

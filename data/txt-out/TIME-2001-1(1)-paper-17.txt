@@ -1,0 +1,329 @@
+Reasoning about agents in the KARO framework U. Hustadt1 , C. Dixon1 , R. A. Schmidt2 , M. Fisher1 , J.-J.
+Meyer3 , and W. van der Hoek3 1 Department of Computer Science, University of Liverpool, UK.
+{U.Hustadt,C.Dixon,M.Fisher}@csc.liv.ac.uk.
+2 Department of Computer Science, University of Manchester, UK.
+schmidt@cs.man.ac.uk.
+3 Department of Computer Science, University of Utrecht, The Netherlands.
+{jj,wiebe}@cs.uu.nl.
+Abstract This paper proposes two methods for realising automated reasoning about agent-based systems.
+The framework for modelling intelligent agent behaviour that we focus on is a core of KARO logic, an expressive combination of various modal logics including propositional dynamic logic, a modal logic of knowledge, a modal logic of wishes, and additional non-standard operators.
+The first method we present is based on a translation of core KARO logic to first-order logic combined with first-order resolution.
+The second method uses an embedding of core KARO logic into a combination of branching-time temporal logic CTL and multi-modal S5 plus a clausal resolution calculus for these combined logics.
+We discuss the advantages and shortcomings of each approach and suggest ways to extend each variant to cover more of the KARO framework.
+1.
+Introduction The use of agents is now seen as an essential tool in representing, understanding and implementing complex software systems.
+In particular, the characterisation of complex components as intelligent or rational agents allows the system designer to analyse applications at a much higher level of abstraction [1, 2].
+In order to describe and reason about such agents, a number of theories of rational agency have been developed, for example the BDI [3] and KARO [4] frameworks.
+Usually, these frameworks are represented as complex multi-modal logics.
+These logics, in addition to their use in agent theories, where the basic representation of agency and rationality is explored, form the basis for agent-based formal methods.
+In both these uses, the notion of proof is important.
+In agent theories, theorem proving allow us to examine properties of the overall theory and, in some cases, to characterise computation within that theory.
+In agent-based formal methods, theorem proving is clearly important in developing verification techniques.
+The leading agent theories and formal methods in this area all share similar logical properties.
+Usually, the agent theories used have:  an informational component, being able to represent an agentas beliefs (by the modal logic KD45) or knowledge  (by the modal logic S5),  a dynamic component, allowing the representation of dynamic activity (by temporal or dynamic logic), and,  a motivational component, often representing the agents desires, intentions or goals (by the modal logic KD).
+Thus, the predominant approaches use particular combinations of modal logics.
+The particular agent theory that we consider here, the KARO framework (for Knowledge, Abilities, Results and Opportunities) [4], combines actions (via propositional dynamic logic PDL), knowledge, and wishes.
+While proof methods have been developed for other agent theories like the BDI framework [5], no such methods exist for the KARO framework.
+Thus, our aim in this paper is to examine possible approaches to the development of automated proof methods for the KARO framework.
+We study two approaches to the problem of proof in this complex system:  proof methods for the fusion of PDL and S5(m) based upon translation to classical logic and first-order resolution; and  representation of KARO in terms of the fusion of CTL and S5(m) and proof methods by direct clausal resolution on this combined logic.
+These approaches both show how we can verify properties of agent-based systems represented in the KARO theory of rational agents, but there are fundamental differences in the techniques used.
+The first approach involves translating all modal and dynamic logic aspects into classical logic and then carrying out proof by defining specific orderings on classical resolution.
+The second approach retains the nonclassical structure and develops appropriate resolution rules for the combined logic.
+In addition, branching-time temporal logic, rather than propositional dynamic logic, is used to represent the agentas dynamic behaviour.
+2.
+Basic KARO Elements The KARO logic [6, 7] is a formal system that may be used to specify, analyse and reason about the behaviour of rational agents.
+Concerning the informational attitudes of agents, in the basic framework [6], it can be expressed that agent i knows a fact ' (written as Ki ').
+The modality Ki is a standard S5 modality.
+Consequently, the in-  formational component of KARO is a multi-modal S5(m) logic.
+In the full system we also consider beliefs; these epistemic and doxastic attitudes were extensively studied in [8].
+On an equal footing with these informational attitudes, the language encompasses a dynamic component.
+Starting with some atomic actions Acat , KARO allows for composite actions such as sequential composition  ;  , testing '!, conditionals (if ' then  else  ), repetition (while ' do ) and we also investigated (cf.
+[9]) several notions of choice ( +  ).
+The framework is especially fit to reason about the preconditions for such actions: one can express whether agent i is able to perform action  (Ai ) or has the opportunity to do  (Oi ), and also that ' is a result of doing  ([doi ()]').
+In this paper we concentrate on one particular variant of the KARO framework and define a core subsystem for which we are able to provide sound, complete, and terminating inference systems.
+Formally, the logic we consider is an extended modal logic given by the fusion of a PDL-like logic and multimodal S5 and KD.
+The language of the KARO framework is defined over three primitive types: (i) a countably infinite set of propositional variables, (ii) a set Ag of agent names (a finite subset of the positive integers), and (iii) a countably infinite set Acat of atomic actions.
+Formulae are defined inductively as follows.
+ > is an atomic propositional formula;  ' _ and :' are propositional formula provided ' and are propositional formulae;  Ki ' (knowledge), [doi ()]' (achievement of results by actions), Ai  (ability), Oi  (opportunity), Wsi ' (selected wish), and i ' (implementability) are propositional formulae, provided i is an agent name,  is an action formula and ' is a propositional formula;  id (skip) is an atomic action formula;   _  (non-deterministic choice),  ;  (sequencing), '!
+(confirmation or test), (n) (bounded repetition), and ?
+(unbounded repetition) are action formulae, provided  and  are action formulae, ' is a propositional formula, and n is a natural number.
+Implicit connectives include the usual connectives such as ?, ^, !, : : : for propositional formulae, the duals of Ki , Oi and [doi ()] (denoted by hdoi ()i), as well as  PracPossi (; ') = hdoi ()i' ^ Ai ,  Cani (; ') = Ki PracPossi (; '),  Cannoti (; ') = Ki :PracPossi (; '), = :' ^ Wsi ' ^ i ', and  Goali '  Intendi (; ') = Cani (; ') ^ Ki Goali '.
+The semantics of KARO logic is based on interpretations which are tuples M = (W; V; D; I; M ), where: (i) W is a non-empty set of worlds, (ii) V maps propositional variables to subsets of W , (iii) for every i 2 Ag and every a 2 Acat , D contains a binary relation r(i;a) on W and a subset c(i;a) of W , (iv) I contains an equivalence relation  Ki on W for each agent i 2 Ag, and (v) M contains a serial relation relation Wi on W for each agent i 2 Ag.
+Following the characterisation of agent theories in the introduction, D, I , and M comprise the dynamic, informational, and moti-  vational components in the semantics of KARO logic.
+The relations r(i;a) and sets c(i;a) are extended to Ag  Ac-sorted relations r(i;a) and sets c(i;a) in a way standard for dynamic logic [6].
+We state only the cases for the composition of actions and confirmation.
+r(i; ; ) = f(u; w) j 9v 2 W: (u; v) 2 r(i;) ^ (v; w) 2 r(i;) g r(i;'!)
+= f(u; w) j u = w ^ M; w j= 'g and  c(i; ; ) = fw j c(i;) (w) ^ 8v 2 W:(w; v) 2 r(i;) ^ v 2 c(i;) g c(i;'!)
+= fw j M; w j= 'g: The semantics of well-formed formulae of the KARO logic is defined as follows.
+M; w j= > iff w 2 V (p) M; w j= p iff M; w 6j= ' M; w j= :' M; w j= ' _ iff M; w j= ' or M; w j= M; w j= [doi ()]' iff 8v 2 W:(w; v) 2 r(i;) !
+M; v j= ' M; w j= Ai  iff w 2 c(i;) iff M; w j= hdoi ()i> M; w j= Oi  M; w j= Wsi ' iff 8v 2 W:(w; v) 2 Wi !
+M; v j= ' iff 8v 2 W:(w; v ) 2 Ki !
+M; v j= ' M; w j= Ki ' M; w j= i ' iff 9k 2 N 9a1 ; : : : ; ak 2 Acat : M; w j= PracPossi (a1 ; : : : ; ak ; ') If M; w j= ' we say ' holds at w (in M) or ' is true in w. A formula ' is satisfiable iff there is an interpretation M and a world w such that M; w j= '.
+Even though the logic defined above does not include all the features of the KARO framework, we refer to it as the KARO logic.
+In this paper we make the following simplifying assumptions: (i) we assume Ai  = Oi , (ii) we exclude the unbounded repetition operator ?
+, wishes Wsi ', and implementability i ', and (iii) there is no interaction between the dynamic and informational component.
+This fragment of the KARO logic is called the core KARO logic.
+In Section 5 we will discuss in how far these simplifying assumptions can be relaxed.
+3.
+Proof by Translation The translation approach to modal reasoning is based on the idea that inference in (combinations of) modal logics can be carried out by translating modal formulae into  hdoi ()i ) :[doi ()]: [doi ( _  )] ) [doi ()] ^ [doi ( )] [doi ( ;  )] ) [doi ()][doi ( )] [doi (id)] ) [doi (!)]
+) : _ [doi ((1) )] ) [doi ()] [doi ((n+1) )] ) [doi ()][doi ((n) )] Fig.
+1.
+Transformation rules for the core KARO logic  first-order logic and using conventional first-order theorem proving techniques.
+There are various different translation morphisms for modal logics whose properties vary with regards the extent to which they are able to map modal logics into first-order logic, the decidability of the fragments of first-order logic into which modal formulae are translated, and the computational behaviour of first-order theorem provers on these fragments, see e.g.
+[10a13].
+In the following we present a decision procedure for the satisfiability problem in the core KARO logic consisting of three components: (i) a normalisation function which reduces complex action formulae to atomic action subformulae, (ii) a particular translation of normalised formulae into a fragment of first-order logic, and (iii) a resolution-based decision procedure for this fragment.
+Using the rewrite rules given in Figure 1 and similar rules for Oi  and Ai , the normalisation function maps any formula ' of the core KARO logic to a normal form '#.
+It is straightforward to see that the rewrite relation defined by these rules is confluent and terminating.
+The normal form '# of ' is logically equivalent to ', it is unique, and in the absence of the unbounded repetition operator, '# contains no non-atomic action formulae.
+We obtain the following result.
+Lemma 1 Let ' be a formula in the core KARO logic without occurrences of the unbounded repetition operator.
+Then '# is satisfiable iff ' is satisfiable, and '# does not contain any non-atomic action formulae.
+The particular translation we use has only recently been proposed by de Nivelle [14] and can be seen as a special case of the T-encoding introduced by Ohlbach [15].
+It allows for conceptually simple decision procedures for extensions of K4 by ordered resolution.
+As compared to tableaux-based procedures a feature of this approach is the absence of loop checking mechanisms for transitive modal logics.
+Without loss of generality we assume that the modal formulae under consideration are normalised and in negation  normal form.
+We define the translation function  as follows.
+(>; x) = > (p; x) = qp (x) (:'; x) = :('; x) (' _ ; x) = ('; x) _ ( ; x) ([doi (a)]'; x) = 8y (doai (x; y) !
+('; y)) (Oi a; x) = (hdoi (a)i>; x) (Ai a; x) = (hdoi (a)i>; x) (Ki '; x) = qKi ' (x) a is an atomic action, p is a propositional variable, qp is a unary predicate symbol uniquely associated with p, qKi ' is a predicate symbol uniquely associated with Ki ', and doai  is a binary predicate symbol which represents the relation r(i;a) in the semantics.
+Finally, let ( ) be the formula  9x ( ; x) ^ VKi '2  K ( ) Ax(Ki ');  where K ( ) is the set of subformulae of the form Ki ' in , and Ax(Ki ') is the formula  8x (qKi ' (x) $ 8y (Ki (x; y) !
+('; y))) ^ 8x; y ((qKi ' (x) ^ Ki (x; y)) !
+qKi ' (y)) ^ 8x; y ((qKi ' (y) ^ Ki (x; y)) !
+qKi ' (x)) ^ 8x Ki (x; x): Note that no additional definition of Ki is required.
+Based  on the close correspondence between the translation morphism  and the semantics of the core KARO logic it is possible to prove the following.
+Theorem 1 A formula ' of the core KARO logic is satisfiable iff (') is first-order satisfiable.
+One of the advantages of using the translation morphism proposed by de Nivelle is the fact that for any formula ' of the core KARO logic (') can easily be seen to belong to a number of well-known solvable first-order classes, including the two-variable fragment of first-order logic or the guarded fragment.
+Furthermore, using certain structural transformation techniques, described for example in [10], (') can be embedded into a number of solvable clausal classes, for example, the classes S + [16] and DL [10].
+In the following, by CLDL ((')) we denote an embedding of (') into the class DL .
+For all the solvable classes mentioned, resolution-based decision procedures exist and can be formulated in the resolution framework of Bachmair and Ganzinger [17].
+In this framework, the resolution calculus is parameterised by two  parameters: an admissible ordering  and a selection function S .
+Essentially, an admissible ordering is a total (wellfounded) strict ordering on the ground level such that for literals : : :  :An  An  : : :  :A1  A1 holds.
+This is extended to the non-ground level in a canonical manner.
+A selection function assigns to each clause a possibly empty set of occurrences of negative literals and no restrictions are imposed on the selection function.
+The calculus itself consists of the following inference rules (A1 , A2 denote atoms, C , D denote clauses): Resolution:  C _ A1 :A2 _ D (C _ D)  where (i)  is a most general unifier of A1 and A2 , (ii) no literal in C is selected, and A1  is strictly -maximal with respect to C , and (iii) :A2 is either selected, or :A2  is maximal with respect to D and no literal in D is selected.
+We implicitly assume that the premises have no common variables.
+Factoring:  C _ A1 _ A2 (C _ A1 )  where (i)  is a most general unifier of A1 and A2 , and (ii) no literal in C is selected and A1  is -maximal with respect to C .
+Besides resolution and factoring, the calculus contains a splitting rule akin to disjunction elimination in semantic tableaux.
+Let N be a set of clauses containing a clause C = C1 _ C2 that has two variable-disjoint subclauses C1 and C2 .
+Then, instead of refuting N we can try to refute N [ fC1 g and N [ fC2 g. If both sets are refutable, then also N is refutable, but if one of the sets is satisfiable, then also N is satisfiable.
+The calculus is refutationally complete and compatible with a general notion of redundancy for clauses and inferences, with which additional donat-care non-deterministic simplification and deletion rules can be applied [17].
+For our purposes it is sufficient that tautological clauses and variant clauses are eliminated from the clause set during a derivation.
+A decision procedure for DL can be obtained using an ordering  defined as follows.
+Let >d be an ordering on terms which is defined by s >d t if s is deeper than t, and every variable that occurs in t, occurs deeper in s. Then define P (s1 ; : : : ; sn )  Q(t1 ; : : : ; tn ) by mul fs1 ; : : : ; sn g >mul d ft1 ; : : : ; tn g, where >d is the multiset extension of >d .
+Theorem 2 (Soundness, completeness, and termination) Let ' be a formula of the core KARO logic and let N = CLDL ((')).
+Then: 1.
+Any derivation from N based on  terminates in exponential time (in the size of the signature of N ).
+2. '
+is unsatisfiable iff the empty clause can be derived from N .
+Proof: Termination, soundness, and completeness is a consequence of Theorem 5.4 in [10].
+In [10] it is stated that any derivation from a set N 0 in the class DL terminates in double exponential time in the size of the signature of N 0 .
+This is basically due to the fact that there is a double exponential upper bound on the number of clauses derivable from N 0 and the fact that applications of the inference rules as well as redundancy elimination steps require only polynomial time in the size of the derived clause set.
+However, for clause sets obtained from the translation of formulae of the core KARO logic it is possible to obtain a single exponential upper bound on the number of derivable clauses.
+The complexity of the inference steps and redundancy elimination steps remains unchanged, thus providing us with the upper bound stated in our theorem.
+It is straightforward to see that the satisfiability problem for formulae of the core KARO logic is PSPACE-complete.
+As pointed out in the proof of Theorem 2, the approach described above will require exponential space in the worstcase.
+A computationally space optimal decision procedure, based on translation and a refinement of the resolution calculus using a particular selection function instead of an ordering refinement, can be developed along the lines of [18].
+This alternative decision procedure would require only polynomial space in the worst case.
+4.
+Proof by Clausal Temporal Resolution Here, we use the simple observation that the use of  PDL in the KARO framework is very similar to the use of branching-time temporal logic.
+Thus, we attempt to use a simple CTL branching-time temporal logic to represent the dynamic component of the core KARO logic.
+We assume that formulae of the core KARO logic are normalised using the rewrite rules of Figure 1.
+Then dynamic operators are replaced by CTL formulae by the following rules: for example,  hdoi (a)i' [doi (a)]'  is replaced by is replaced by  E#(done aia ^ ') and A#(done i ) ')  where done ai is a propositional variable uniquely associated with agent i and atomic action a.
+Initially we work in the combination of CTL with multi-modal S5 with no interaction between these logics.
+The semantics of this logic is given for example in [2].
+Formulae in the fusion of CTL and S5(m) can rewritten into a normal form, called SNFkaro , that separates temporal and modal aspects (as is done in [19]).
+Formulae in SNFkaro are of the general form 2 i Ti where 2 is the universal relation (which can be defined in terms of the operators aeveryone knowsa and aalwaysa; see for example [19]) and each Ti is a clause and must be of one of the  A V  A  following forms.
+start ) Wnk=1 Lk Vm L0 ) A# Wn L Vjm=1 Lj0 ) E#(Wkn=1 Lk ) Vjm=1 Lj0 ) A3L k=1 k hc i Vjm=1 Lj0 ) E3L j =1 j W hc i true ) Wnk=1 Mki true ) nk=1 Lk i  i  (initial clauses) (step clause) (step clauses) (sometime clauses) (Ki clauses)  E  [KRES3]  [KRES4]  Initial Resolution.
+In the following, if L is a literal, then L denotes A if L = :A and it denotes :L, otherwise.
+A  literal clause may be resolved with an initial clause (IRES1) or two initial clauses may be resolved together (IRES2) as follows where C and D are disjunctions of literals.
+true ) C _ L start ) D _ L start ) C _ D start ) C _ L start ) D _ L start ) C _ D  Knowledge Resolution.
+During knowledge resolution we apply the following rules which are based on the modal resolution system introduced by Mints [20].
+In general we may only apply a (knowledge) resolution rule between two  true ) C _ M true ) D _ M true ) C _ D true ) C _ KiL true ) D _ Ki L true ) C _ D true ) C _ KiL true ) D _ L true ) C _ D true ) C _ :Ki L true ) D _ L true ) C _ mod(D)  The function mod(D) used in KRES4 is defined on disjunctions D of literals or modal literals, as follows.
+mod(A _ B) mod(Ki L) mod(:Ki L) mod(L)  E  A  [IRES2]  [KRES2]  (literal clauses)  E  [IRES1]  [KRES1]  (sometime clauses)  where L0j , Lk , and L are literals and Mki are either literals, or modal literals involving the modal operator Ki .
+Further, each Ki clause has at least one disjunct that is a modal literal.
+Ki clauses are sometimes known as knowledge clauses.
+Each step and sometime clause that involves the -operator is labelled by an index of the form hci i similar to the use of Skolem constants in first-order logic.
+This index indicates a particular path and arises from the translation of formulae such as (LU L0 ).
+During the translation to the normal form such formulae are translated into several step clauses and an sometime clause (which ensures that L0 must actually hold).
+To indicate that all these clauses refer to the same path they are annotated with an index.
+The outer a 2 a operator that surrounds the conjunction of clauses is usually omitted.
+Similarly, for convenience the conjunction is dropped and we consider just the set of clauses Ti .
+We denote the normalisation function into SNFkaro by  .
+In the following we present a resolution based calculus for SNFkaro .
+In contrast to the translation approach described in the previous section, this calculus works directly on SNFkaro formulae.
+The inference rules are divided into initial resolution rules, knowledge resolution rules, step resolution rules, and temporal resolution rules, which will be described in the following.
+E  literal clauses, a knowledge and a literal clause, or between two knowledge clauses relating to the same modal operator e.g.
+two K1 clauses.
+= mod(A) _ mod(B) = Ki L = :Ki L = :Ki L  The resolution rule KRES4 requires explanation.
+Take KRES4 and push in the external Ki operator from the surrounding 2 operator into the second premise obtaining ) :Ki : _ Ki where D is a disjunction of literals or modal literals.
+Since, in S5, from axioms 4, 5 and D we have  true  A  D  L  ` :Ki Ki ' () :Ki ' and ` :Ki :Ki :' () Ki :'; so we can delete :Ki : from any of the disjuncts in D that  are modal literals and obtain the required resolvent.
+Finally we require the following rewrite rule which allows us to obtain the most comprehensive set of literal clauses for use during step and temporal resolution [KRES5]  true ) D _ Ki L1 _ Ki L2 _ : : : _ Ki Ln true ) D _ L1 _ L2 _ : : : _ Ln  where D is a disjunction of literals.
+Step Resolution.
+aStepa resolution consists of the application of standard classical resolution to formulae representing constraints at a particular moment in time, together with simplification rules for transferring contradictions within states to constraints on previous states.
+Pairs of step clauses may be resolved using the (step resolution) rules SRES1, SRES2, and SRES3, while SRES4 allows to generate an extra global constraint once a contradiction within a state is found.
+The symbol in SRES4 denotes either path operator.
+P  P ) A#(F _ L) Q ) A#(G _ L) P ^ Q ) A#(F _ G) P ) E#(F _ L)hc i Q ) A#(G _ L) P ^ Q ) E#(F _ G)hc i P ) E#(F _ L)hc i Q ) E#(G _ L)hc i P ^ Q ) E#(F _ G)hc i Q ) P#false true ) Q  [SRES1]  In each case the resolvent ensures that once Q has been satisfied, meaning that the eventuality 3L must be satisfied on some or all paths, the conditions for triggering a 2formula are not allowed to occur, that is, P must be false, until the eventuality (L) has been satisfied.
+It may be surprising that resolving a -formula with a -formula in TRES3 results in a -formula.
+This is because the eventuality L must appear on all paths so similarly the resolvent will also hold on all paths.
+Simplification and subsumption are also carried out during a derivation.
+i  [SRES2]  A  i  i  [SRES3]  i  i  [SRES4]  A step clause may be resolved with a literal clause (where G is a disjunction of literals) and any index is carried to the resolvent to give resolution rules SRES5 and SRES6.
+P ) A#(F _ L) true ) (G _ L) P ) A#(F _ G) P ) E#(F _ L)hc i true ) (G _ L) P ) E#(F _ G)hc i  [SRES5]  This rule states that if, by satisfying Q in the last moment in time a contradiction is produced, then P must never be satisfied in any moment in time.
+The new constraint therefore represents 2 Q.
+A  Temporal Resolution.
+During temporal resolution the aim is to resolve one of the sometime clauses, Q ) 3L, with a set of clauses that together imply 2L along the same path, for example a set of clauses that together have the effect of F ) #2L.
+However the interaction between the a#a and a2a operators makes the definition of such a rule non-trivial and further the translation to SNFkaro will have removed all but the outer level of 2-operators.
+So, resolution will be between a sometime clause and a set of clauses that together imply an 2-formula that occurs on the same path, which will contradict the 3-clause.
+P  [TRES2]  P ) A#A2L Q ) A3L P ^ Q ) A(P WL) P ) A#A2L Q ) E3Lhc i P ^ Q ) E(P WL)hc i P ) E#E2Lhc i Q ) A3L P ^ Q ) A(P WL) P ) E#E2Lhc i Q ) E3Lhc i P ^ Q ) E(P WL)hc i i  i  i  [TRES3]  i  [TRES4]  Theorem 3 (Soundness, completeness, and termination) Let ' be a formula of the core KARO logic and let N =  (').
+Then: 1.
+Any derivation from N terminates.
+2. '
+is unsatisfiable iff N has a refutation by the temporal resolution procedure described above.
+5.
+Beyond the Core KARO Logic  i  [TRES1]  E  The proofs are analogous to those in [21, 19, 22].
+i  [SRES6]  A  i  i  In Sections 3 and 4 we have presented two methods for modal reasoning in a restricted core of the KARO logic.
+We will now consider whether and how each method can be extended to cover a larger fragment of the KARO logic.
+In the full framework Oi  and Ai  are not the same.
+There we have Oi =hdoi ()i>, and Ai  is as defined in Section 2.
+Consequently, we can extend the normalisation function defined by the rewrite rules in Figure 1 to reduce any formula ' with occurrences of Oi , Ai , or [doi ()] where  is a non-atomic action formula to a formula '# which is logically equivalent to ' and in the absence of the unbounded repetition operator '# contains no non-atomic action formulae.
+In the translation approach the translation function  has to be modified such that  (Ai a; x) = cai (x) where a is an atomic action, and cai represents the relation c(i;a) in our semantics.
+In the clausal temporal resolution approach Ai  is simply represented by propositional variables c i uniquely associated with i and .
+It seems an alternative for both approaches that would incorporate also a commitment operator could exploit the ideas of [23].
+We have also excluded wishes in our presentation.
+In the full KARO framework, Wsi is a KD modality.
+The incorporation of wishes into the translation approach presents no difficulties.
+The translation function  is extended by (Wsi '; x) = 8y (Wi (x; y) !
+('; y)) and ( ) contains additional conjuncts 8x 9y Wi (x; y ) for every agent i, ensuring that the binary relations Wi are serial.
+For the clausal temporal resolution approach the addition of wishes to the core of KARO requires (i) an extension of the normal form which allows for clauses for the wishes of each agent,  and (ii) additional sound and complete resolution rules for the KD modalities Wsi .
+The implementability operator i excluded from core KARO logic is one of the most interesting operators of KARO logic.
+Recall that the semantics of i is defined by M; w j= i ' iff 9k 2 N 9a1 ; : : : ; ak 2 Acat : M; w j= PracPossi (a1 ; : : : ; ak ; ')  where PracPossi (; ') is an abbreviation for hdoi ()i' ^ Ai .
+So, i ' holds if we can find atomic actions a1 , : : : , ak such that agent i is able to perform the sequence a1 ; : : : ; ak and performing this sequence possibly leads to a situation in which ' is true.
+Intuitively, proving i ' requires that we find a plan which might bring about a situation in which ' is true.
+In other words, the intention for including the implementability operator into KARO logic is to internalise the planning problem in the logic.
+However, it turns out that this intuition is misleading.
+To give a precise analysis of the implementability operator, let us add a modal operator 9 to our language with the following semantics.
+M; w j= 9' iff 9v 2 W:M; v j= ' Furthermore, if '[ 1 ; 2 ] is a formula containing subformula occurrences of 1 and 2 , then by '[ 10 ; 20 ] we denote the formula obtained by replacing in ' the subformula  occurrences of 1 and 2 by the formulae 10 and 20 , respectively.
+Lemma 2 Let '[i ; i #] be a formula of KARO logic with a positive subformula occurrence of i and a negative subformula occurrence of i #.
+Then 1.
+If Ai  is, by definition, equivalent to Oi  (for every action ), then '[i ; i #] is satisfiable iff '[9 ; 9#] is satisfiable.
+2.
+If Ai  is not, by definition, equivalent to Oi  (for every action ), then (i) '[i ; i #] is satisfiable iff '[9 ; i #] is satisfiable, and (ii) the satisfiability of '[9 ; 9#] implies the satisfiability of '[i ; i #], but not vice versa.
+Proof: This lemma follows from the fact that the existential quantification over atomic actions in the semantical definition of i is essentially an existential quantification over all binary relations on the set W in M. Thus, for the core KARO logic, the implementability operator is simply the dual master modality and has little to do with the planning problem.
+Consequently, in the translation approach we can simply extend the translation morphism  by  (i '; x) = 9y ('; y):  For the SNF approach, no such simple solution exists.
+Although the language of SNFkaro contains with 2 a combination of operators corresponding to the master modality,  A  A2 can only occur at one particular position, that is, surrounding a conjunction of clauses.
+The operators A2 and the dual E3, which can occur inside clauses, only quan-  tify over states reachable via a temporal path, but not over states which are only reachable via an accessibility relation associated with one of the knowledge operators Ki .
+The solution is (i) an embedding of the S5(m) sublogic of KARO logic into PDL and (ii) an embedding of this logic into CTL (instead of an embedding into the fusion of CTL and S5(m) ).
+For the first step we have to introduce additional aknowledge actionsa aKi replacing the modal operators Ki by [doi (aKi )].
+Although the accessibility relations associated with these knowledge actions are not necessarily equivalence relation, we can enforce satisfiability equivalence by adding axioms similar to Ax(Ki ') to the translated formula.
+Since after the second step of this transformation we obtain a pure CTL formula, we can use the operator 3 to translate i .
+However, it is clear that the current semantical definition of i fails to correspond to our intuitive understanding of implementability.
+A more accurate semantical definition restricts the choice of atomic actions a1 , : : : , ak , which an agent i performs to bring about a situation where ' holds, to a particular finite set of actions, for example, the set of atomic actions occurring in the formula under consideration.
+So, if Acat denotes the finite set of atomic actions occurring in a formula , then the modified semantical definition could be as follows,  E  M; w j= i ' iff 9k 2 N 9a1 ; : : : ; ak 2 Acat : M; w j= PracPossi (a1 ; : : : ; ak ; ') where is a specific KARO formula under consideration.
+In this case the existential quantifier in the definition of i ' can be replaced by a disjunction over all actions in Acat .
+Then i ' can be embedded into CTL as ' _ ( a2Acat (cai ^ #done ai )))U ').
+Although this formula is not in CTL, it can be rewritten into a satisfiability equivalent set of SNFkaro clauses making use of the additional expressiveness of SNFkaro clauses due to the index labels we can attach to step clauses.
+Also the use of the unbounded repetition operation on actions is excluded from the core KARO logic we have considered.
+This operation is not first-order definable and thus cannot be dealt with by the translation approach.
+Unbounded repetition also presents problems for the clausal temporal resolution approach as we require that only atomic actions a occur in [doi (a)]' and Ai a.
+In the presence of unbounded repetition we are not able to remove occurrences of ?
+or non-atomic action below unbounded repetition using the rules of Figure 1 or similar rewrite rules.
+However, one possibility which may be fruitful is to translate formulae such as hdoi (a?
+)i', where a is an atomic action, directly into CTL as ' _ #( (done ai U ')).
+EW  E E  This would be further rewritten into the normal form SNFkaro .
+In the full KARO framework interaction between the dynamic logic and knowledge, for example Ki [doi ()]' !
+[doi ()]Ki ' is allowed.
+This is similar to the interaction axiom between linear-time temporal logic and S5, Ki #' !
+#Ki ', given in [2], known as synchrony and perfect recall and is known to make the proof of validity much more complex.
+For example in the single agent case allowing this interaction between propositional linear time temporal logic and S5 turns the satisfiability problem from a PSPACE complete problem into a double exponential time complete problem [2].
+A clausal temporal resolution calculus for linear-time temporal logic and S5 with synchrony and perfect recall is presented in [24].
+However, in many cases the addition of such interactions leads to undecidability [2], so care is needed in this area.
+6.
+Conclusion Although there exist a number of theories of rational agency which are formulated in the framework of combinations of modal logics, the work on practical proof methods for the expressive logics involved in these theories has been sparse.
+Examples are the tableaux based proof methods developed by Rao and Georgeff for propositional BDI logics [5], and the resolution based proof methods developed by Dixon, Fisher, and Wooldridge for temporal logics of knowledge [19].
+In this paper we presented the current state of our attempt to provide proof methods for the logics of the KARO framework, whose expressiveness exceeds those of previous theories of rational agency.
+The presentation of the proof methods in Sections 3 and 4, and the discussion in Section 5, shows that although our proof methods already cover an interesting core fragment of the KARO framework, there are still essential gaps.
+We believe that this is not a sign that our approach is insufficient, but due to the fact that combinations of interacting logic inherently pose difficult proof theoretical problems, which have not received the necessary attention.
+One of the motivations for pursuing two different approaches at the same time is the fact that the strength of the approaches lies within different areas of the KARO framework.
+The translation approach allows a quite elegant treatment of the informational component of KARO.
+On the other hand, the clausal temporal resolution approach has a better potential to provide a complete calculus for the dynamic component of KARO.
+A promising approach is the possibility of combining both proof methods.
+In [25] we present a combination of clausal temporal resolution (restricted to a linear time temporal logic) and the translation approach plus first-order resolution (restricted to extension of the multi-modal logic K(m)), and we were able to show soundness, completeness,  and termination of this combination for a range of combined logics.
+References [1] [2] [3] [4]  [5] [6] [7] [8] [9] [10] [11] [12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25]  M. Wooldridge, Reasoning about Rational Agents, MIT Press, 2000.
+R. Fagin, J. Y. Halpern, Y. Moses, and M. Y. Vardi, Reasoning About Knowledge, MIT Press, 1996.
+A. S. Rao and M. P. Georgeff, aModeling agents withing a BDIarchitecture,a in Proc.
+KR-91, pp.
+473a484, Morgan Kaufmann, 1991.
+B. van Linder, W. van der Hoek, and J.-J.
+Ch.
+Meyer, aFormalising motivational attitudes of agents: On preferences, goals and commitments,a in Intelligent Agents II, vol.
+1037 of LNAI, pp.
+17a32.
+Springer, 1996.
+A. S. Rao and M. P. Georgeff, aDecision procedures for BDI logics,a J.
+Logic & Computat., vol.
+8, no.
+3, pp.
+293a343, 1998.
+B. van Linder, W. van der Hoek, and J.-J.
+Ch.
+Meyer, aFormalizing abilities and opportunities of agents,a Fundamenta Informaticae, vol.
+34, no.
+1,2, pp.
+53a101, 1998.
+B. van Linder, W. van der Hoek, and J.-J.
+Ch.
+Meyer, aCommunicating rational agents,a in Proc.
+KI-94, vol.
+861 of LNAI, pp.
+202a213, Springer, 1994.
+J.-J.
+Ch.
+Meyer and W. van der Hoek, Epistemic Logic for AI and Computer Science, Cambridge University Press, 1995.
+W. van der Hoek, B. van Linder, and J.-J.
+Ch.
+Meyer, aUnravelling nondeterminism: On having the ability to choose (extended abstract),a in Proc.
+AIMSAa94, pp.
+163a172, World Scientific, 1994.
+H. De Nivelle, R. A. Schmidt, and U. Hustadt, aResolution-based methods for modal logics,a Logic Journal of the IGPL, vol.
+8, no.
+3, pp.
+265a292, 2000.
+U. Hustadt, Resolution-Based Decision Procedures for Subclasses of First-Order Logic, Ph.D. thesis, UniversitA$?t des Saarlandes, SaarbrAzcken, Germany, 1999.
+U. Hustadt and R. A. Schmidt, aUsing resolution for testing modal satisfiability and building models,a To appear in the SAT 2000 Special Issue of J.
+Automated Reasoning, 2001.
+R. A. Schmidt, aDecidability by resolution for propositional modal logics,a J.
+Automated Reasoning, vol.
+22, no.
+4, pp.
+379a396, 1999.
+H. De Nivelle, aTranslation of S4 into GF and 2VAR,a Unpublished manuscript, May 1999.
+H. J. Ohlbach, aCombining Hilbert style and semantic reasoning in a resolution framework,a in Proc.
+CADE-15, vol.
+1421 of LNAI, pp.
+205a219, Springer, 1998.
+C. FermAzller, A. Leitsch, U. Hustadt, and T. Tammet, aResolution decision procedures,a in Handbook of Automated Reasoning.
+Elsevier, 2001.
+L. Bachmair and H. Ganzinger, aResolution theorem proving,a in Handbook of Automated Reasoning.
+Elsevier, 2001.
+L. Georgieva, U. Hustadt, and R. A. Schmidt, aComputational space efficiency and minimal model generation for guarded formulae,a Submitted, 2001.
+C. Dixon, M. Fisher, and M. Wooldridge, aResolution for temporal logics of knowledge,a J.
+Logic & Computat., vol.
+8, no.
+3, pp.
+345a 372, 1998.
+G. Mints, aGentzen-type systems and resolution rules.
+Part I: Propositional logic,a in Proc.
+COLOG-88, vol.
+417 of LNCS, pp.
+198a231, Springer, 1990.
+C. Dixon, M. Fisher, and A. Bolotov, aResolution in a Logic of Rational Agency,a in Proc.
+ECAI 2000, IOS Press, 2000.
+M. Fisher, C. Dixon, and M. Peim, aClausal Temporal Resolution,a ACM Transactions on Computational Logic, vol.
+2, no.
+1, 2001.
+R. A. Schmidt and D. Tishkovsky, aOn calculi and kripke semantics for multi-agent systems within the karo framework,a Submitted, 2001.
+C. Dixon and M. Fisher, aClausal Resolution for Logics of Time and Knowledge with Synchrony and Perfect Recall,a in Proc.
+ICTL 2000, pp.
+43a52, 2000.
+U. Hustadt, C. Dixon, R. A. Schmidt, and M. Fisher, aNormal forms and proofs in combined modal and temporal logics,a in Proc.
+FroCoSa2000, vol.
+1794 of LNAI, pp.
+73a87, Springer, 2000.

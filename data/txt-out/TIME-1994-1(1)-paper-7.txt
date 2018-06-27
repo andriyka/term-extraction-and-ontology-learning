@@ -1,0 +1,210 @@
+Using Constrained Resolution for Abductive Temporal Reasoning Nicolas Chleq  INRIA Sophia-Antipolis BP 93 { 06902 Sophia Antipolis Cedex { France chleq@sophia.inria.fr  Abstract  We describe in this article an abductive procedure based on a constrained resolution principle.
+The choice of constrained resolution is motivated by the whish to gain full advantage of using reified temporal logics.
+For this purpose, it is interesting to deal eciently with temporal ordering and equality relation between instants.
+The constrained resolution principle described here is a solution to this point.
+It is an instance of the more general constrained resolution principle of H.J.
+Burckert.
+It also relies on the work done in the area of temporal constraint propagation.
+For the purpose of temporal reasoning it is also necessary to cope with temporal persistency of known and deduced facts.
+This point is solved by handling persistency in an abductive fashion.
+1 Introduction  This article describes a resolution-based abductive procedure.
+This procedure is based on works done in the area of abductive logic programming and uses a constrained resolution principle.
+Such a resolution principle is necessary in order to be able to deal with any reified temporal logic based on instants.
+For the purpose of this paper, we use it on a simple temporal logic based on a simple and nave ontology.
+It is also suciently expressive for practical use, but this gain on expressiveness is due to an increased complexity of the language itself (more axioms), hence a more complex reasoning task.
+The use of abduction in temporal reasoning has been motivated by 12].
+This reasoning method is complementary to prediction as it allows to deal with persistency and produce explanation, while retaining a very intuitive form for causal rules eect if causes.
+Abduction has also been applied to planning with temporal formalisms such as the Event Calculus 5, 10].
+Most abductive procedure are based on resolution, and practical use of abduction relies on the feasibility of resolution based reasoning for temporal reasoning.
+Though it is not necessary to argue again on the usefulness of a resolution principle, practical use of this method is not straightforward.
+In particular, some features of the formul on which this method is applied can suer from great eciency problems.
+Equality relation and self-resolving clauses are some examples of these problematic features.
+Most of these problems are to be solved by adapted strategies and specialized inference rules.
+A lot of work has been done on the combination of the resolution principle with some particular \algorithmic" theories: for example the Theory Resolution of Stickel 14], and the Constrained Resolution of Burckert 2].
+In the next section, we begin by an informal presentation of a temporal logic.
+This logic is used throughout this paper, and its features are representative of most reified temporal logics.
+It also illustrates the need of a specialized resolution principle, which I describe as an instance of Burckert's one.
+The rest of the paper is devoted to abductive reasoning, and focuses on the abductive procedure we developed as an extension of the abductive logic programming procedure described in 7].
+2 Reified Temporal Logics  Reified temporal logics are sorted predicate calculi: one of the sorts is used for time points or time intervals.
+A formal description of these logics is given in 13].
+They are usually based on two primitive entities: instants as in McDermott's logic 9], or intervals as in Allen's one 1].
+The basic construct h  ti of these logics associates a formula with a temporal entity t, this last one being either an instant or an interval depending on the kind of logic.
+The intuitive meaning of this expression is that the formula is true at the instant denoted by the term t, or true throughout the interval denoted by t. These languages can express the truth of such-and-such proposition over time, they are hence good candidates for the expression of temporal knowledge.
+2.1 A temporal logic  The logic we use is a two-sorted predicate calculus, where time is the sort of all expressions denoting time instants, and proposition is the sort of all terms associated with temporal entities.
+It is based on in-  f]t1 t2] pg !
+t1 < t2 f]t1 t2] pg !
+begin(t1  p) f]t1 t2] pg !
+end(t2  p) f]t1 t2] pg !
+persist(t1  t2 p) persist(t1  t4 p) ^ (t1 fi t2 < t3 fi t4) !
+persist(t2  t3 p) persist(t1  t3 p) ^ (t1 < t2 fi t3) !
+true(t2  p) persist(t1  t2 p) ^ begin(t3  p) !
+(t3 fi t1 ) _ (t2 < t3 ) persist(t1  t2 p) ^ end(t3 p) !
+(t3 < t1) _ (t2 fi t3) begin(t1  p) !
+(8t2 > t1 persist(t1  t2 p) _ (9t3 (t1 < t3 < t2 ) ^ end(t3  p))) begin(t1  p) ^ persist(t1  t2 p) ^ end(t2 p) !
+f]t1 t2] pg  ( A1 ) (A2 ) (A3 ) (A4 ) (A5 ) (A6 ) (A7 ) (A8 ) (Ap ) (A9 )  Figure 1: Some axioms of the temporal logic.
+stants as the primitive temporal entity, and intervals are written with two instants as their lower and upper bounds.
+The simplest expression associates a proposition with an instant or an interval: ft P g means that P holds at time t, and f]t t ] P g means that P holds throughout the interval ]t t ].
+Instants are taken from a set that we want to be dense, so that we are able to speak of an instant between any two other instants: the set of rational numbers suits our need.
+We divide the set of propositions into the ephemeral ones, used to describe \instantaneous" phenomena, and durable ones.
+Propositions of the first class are always associated with instants by expressions of the form ft pg, while propositions of the second type are associated with intervals by expressions of the form f]t t ] pg.
+The set of durable propositions can be refined similarly to the classification established by Shoham 13].
+For our purpose, we are only interested in the liquid propositions in this taxonomy, or homogeneous in ETL 11]: we call these propositions stable and this means that their truth throughout an interval implies their truth at all instants within the interval.
+The truth of p at one instant t, as a consequence of the truth of p over an interval comprising t, is expressed by true(t p).
+The set of stable propositions is a subset of the set of durable ones.
+An instant can be represented by five means: a number, a variable, a symbolic constant, an arithmetic expression such as t + n where t is an instant and n a number, and a functional term f(t1  : : : tn).
+We use two relation symbols for the ordering of instants: < and fi.
+Between these ordering relations and expressions of the form fI P g, we propose axiom A1 in figure 1.
+Another useful feature for exibility of a temporal logic as a knowledge expression language, is the ability to give partial information about truth periods.
+For this purpose, we introduce the following expressions: begin(t, p) means that one of the truth period of proposition p begins at the instant t. When the 0  0  0  beginning of the interval is known by this way, the term e(t p) refers to the end (the upper bound) of this interval.
+The axiom A2 establishes the relationship with the expression fI pg where I is an interval.
+end(t, p) means that one of the truth period of p ends at the instant t. In the same way as above, the term b(t p) refers to the lower bound of this interval.
+This expression is formally defined by axiom A3 .
+persist(t1, t2 , p) means that the interval ]t1 t2] is included in one of the truth period of p. This expression is defined by the two axioms A4 and A5 .
+The maximality of truth period expressed by formulae like f]t t ] pg entails that the lower bound of these intervals are really the time when the proposition becomes true, and that the upper bounds are the instants when the proposition ceases to be true.
+This entails that overlapping truth periods of the same proposition lead to a contradiction between the truth inside one of the intervals, and the non-truth outside the other one.
+We suggest axioms A7 and A8 to express that overlapping of distinct truth periods is not allowed for a durable proposition.
+Axiom A9 completes the definition of the logic and enables to deduce a complete truth period from partial information.
+0  2.2 Example  We propose to illustrate the use of this logic by the well known \Yale Shooting Problem" which is written in figure 2.
+We can deduce from this example that the gun will become unloaded at time 4 because of the firing.
+We express it by end(4 loaded) and the proof of it involves reasoning about the temporal persistency of loaded.
+The truth period of this proposition begins at time T1 because of the loading action on the gun.
+Then, thanks to axiom Ap , it will last as long as needed, provided it is not interrupted.
+At this moment, the upper bound of the persistence can not be fixed, but we can assume it to be at least equal to  fT1  loadingg true(2 alive) f4 pull;triggerg T1 < 2 R1 : 8t ft loadingg !
+begin(t loaded) R2 : 8t ft unloadingg ^ true(t loaded) !
+end(t loaded) R3 : 8t ft pull;triggerg ^ true(t loaded) !
+end(t loaded) R4 : 8t ft pull;triggerg ^ true(t loaded) ^ true(t alive) !
+end(t alive) Figure 2: The Yale Shooting Problem.
+loading and pull-trigger are ephemeral propositions, and loaded and alive are stable.
+4.
+It can not be greater than 4 because of axiom A7 .
+Thus, the only solution is that this upper bound is equal to 4.
+3 The constrained resolution principle  In this section, we focus on the ability to do resolution-based reasoning with some temporal logic similar to the one described in the previous section.
+The main problem of these languages comes from the use of equality and ordering relation symbols.
+The usual axiomatization of the ordering relation fi, which describes the transitivity, reexivity and antisymmetry involves some self-resolving clauses.
+This feature entails that for some queries the resolution process may spend a lot of time with repeated use of these clauses, without any way to know whether or not these inferences are relevant for the original query.
+Our solution is an instance of the more general resolution principle proposed by H.J.
+Burckert 2].
+This constrained resolution principle is introduced in the framework of a particular logic, called logic with restricted quantifiers.
+In this logic, quantifiers are associated with formul interpreted as restriction on the variables of the overall formula.
+Clausal formul with restriction are noted C k R , which means 8X R !
+C, where X is the vector of variables in C. T denotes the theory of restriction formul: it is given in such a way that (un)satisfiability and validity of these formul can be decided by an algorithmic mean.
+Burckert simply assumes given a class of models for the restriction theory T .
+The RQ-resolution principle is given by: fP (x1 	 	 	  xn)g   C k R f:P (y1 	 	 	  yn)g   D k S R ^ S ^ ; is T -satisfiable C  D k R^S ^; (1) where ; is the conjunction of equations x1 = y1 : : : xn = yn .
+One of the completeness result from 2] says that given an unsatisfiable set of clauses, it is possible to derive by RQ-resolution an empty clause 2 k R such that T j= 9(R).
+For the purpose of temporal reasoning, we consider that the restriction theory T is the theory where fi is interpreted as an ordering relation between time  instants and = means that two instants are at the same position on the time line.
+To enable the use of constrained resolution, one first needs to have a constrained clausal form of the input formul.
+For example, axiom A1 in Figure 1 produces the following constrained clause:  f]t1 t2] pg k :(t1 < t2 ) while axiom A6 is transformed in: true(t2  p)  f]t1 t3] pg k (t1 < t2 fi t3 ) The constrained forms of the axioms have a restriction which is a conjunction of temporal constraints.
+However, some of these constraints are negative literals.
+To simplify the use of constrained resolution, we choose to assume that fi is a total ordering relation.
+This allows to use rewriting rules such as :(t < t ) !
+t fi t to eliminate negative constraints.
+We also split clauses with disjunctive restriction: C k R1 _ R2 !
+f C k R1  C k R2 g 0  0  3.1 Deciding satisability  Provided that the restrictions of clauses are conjunction of positive litterals, it is possible to use temporal constraint propagation techniques to decide satisfiability.
+Thus, the satisfiability of a conjunction of temporal expressions is equivalent to the global consistency of the constraints network built from these expressions.
+For our problem, we are interested in both the symbolic and numeric relationships between instants.
+We choose to rely on the formalism of Simple Temporal Problem (STP) studied by Dechter 3].
+In this formalism, a constraint between two instants is represented by an edge between two nodes representing the instants, the label of the edge being a numeric interval.
+Such a constraint is written x : a b] : y where x and y are two instants, a and b are two numbers belonginq to R   f;1 +1g.
+This constraint means that a fi y ; x fi b.
+A set of these constraints gives a network of binary constraints, such that an O(n3) path consistency algorithm is a complete decision procedure for the global consistency of the constraint set.
+All expressions comparing instants denoted with numbers, variables, constants and arithmetic terms can be expressed within this constraint formalism.
+Some simplification rules for unification 8], especially the ones for decomposition of functional terms,  are used inside the constraint solver when an equality is encountered.
+The purpose is to: (1) handle non-arithmetic functional terms involved in equations by simplifying these equations (2) identify equations that involve variables so that they are used to instantiate the resolvent clause.
+This keeps the set of constraints as small as possible.
+Thus, given the set of constraints R ^ S ^ ; of rule (1), the satisfiability test produces a pair h C i where  is a substitution and C is a set of constraints such that (R ^ S ^ ;)  C. Then, the resolution principle is formulated as a variant of Burckert's one.
+This gives: fP (x1 	 	 	  xn)g   C k R f:P (y1 	 	 	  yn)g   D k S R ^ S ^ ; is satisfiable (C   D) k ; (2) where ; is the set fx1 = y1  : : : xn = yn g, and h ; i is the pair resulting from the satisfiability test of R ^ S ^ ;.
+0  0  4 Abductive temporal reasoning  This section describes an extension of the abductive logic programming procedure described by Kakas et Mancarella in 7].
+This extension handles constrained resolution and, contrary to the original one, can handle non ground abducible litterals.
+The original abductive procedure is an extension of SLD-resolution, and is inspired from the first one described by Eshghi and Kowalski in 4] to handle negation as failure in a abductive fashion.
+The definition assumes a logic program P (a set of clauses of the form C  L1 : : :Ln , where C is the head and L1 : : :Ln the body), a set H of predicate symbols called abducible predicate, and a set IC of integrity constraints (clauses with empty head).
+The purpose of the original procedure is to find, for a query Q, a set " of hypotheses (ground instances of abducible predicates) such that there exists a stable model M 6] of P   " such that M j= Q and M j= IC.
+4.1 Denition of the procedure  The particular features of the procedure are the following:  we use the ability for a refutation using constrained resolution to produce \conditional answers", as it is done in Constraint Logic Programming.
+For this purpose, we consider that, at the end of an abductive refutation, the ground temporal constraints in the restriction of the derived empty clause represent, if they are not satisfied, some additional ordering hypotheses which can be assumed if they are consistent  in the same way, it is possible to force a failure in a derivation by assuming some additional constraints.
+When an empty clause is derived,  the constraint part of this empty clause can be made unsatisfiable.
+The simplest possibility is to add a new temporal constraint to the current set of hypothesis such that the constraints set of the empty clause becomes inconsistent The procedure builds interleaved sequences of states.
+The first sequence form is called an abductive refutation where each state has the form hGi  "ti "i $i  Iii.
+At the beginning, G0 is the original query.
+Gi is a goal clause, "i is a set of constraints, and "i is the current set of hypotheses.
+The set Ii is initialized with the integrity constraints in IC and is used to collect new integrity constraints from the failure in the consistency check part of the procedure.
+Denition 1 Let G be a goal clause of the form B .
+An abductive refutation of G is a finite sequence of tuple:      G1  "t1 "1 $1 I1 : : : Gn "tn "n $n In where Gi is a goal clause, "ti is a set of ground constraints, "i is a set of ground literals, $i is a substitution, Ii is a set of integrity constraints, G1 = G $1 =  I1 = IC Gn = 2 k R such that either T  "tn j= R or "tn ^ R is T satisfiable and for each i = 1 : : : n, Gi has the form L L k R where L is the selected literal, and the  next state Gi+1  "ti+1 "i+1 $i+1  Ii+1 is obtained 0  according to one of the following rules: (A1 ) L is positive, C is the resolvent of Gi and of a variant of some clause in P on the selected literal L with the pair h ;i, then:  Gi+1 = C "ti+1 = "ti $i+1 =   "i+1 = "i Ii+1 = Ii  (A2 ) L is either positive and abducible or negative, L unifies with an element of "i with the pair h ;i, (R ^ ;) is T -satisfiable, then:  Gi+1 = L k (R ^ ;) "ti+1 = "ti "i+1 = "i $i+1 =  Ii+1 = Ii 0  (A3 ) L is either positive and abducible or negative, neither L nor its negation unifies with an element of "i, and there exists a consistency derivation from hF0 "ti "i   fLg Ii i to hfg "t "  I i then: 0  0  0  Gi+1 = L k R "ti+1 = "t "i+1 = " $i+1 =  Ii+1 = I where  is a substitution which maps each variable of L to a new skolem constant, and F0 is the set of all resolvents of the clause L  with clauses of Ii .
+0  0  0  0  A consistency derivation implements the test of consistency of an hypothesis.
+It is very similar in essence to a negation as failure call in logic programming.
+The aim is to check whether an assumption is consistent with the program P and the current set of hypotheses " and of temporal constraints "t. A consistency derivation is a sequence of states of the form hFi  Dit Di  Ii i, where Fi is a set of goal clauses, Dit is the set of temporal constraints, and Di the set of current hypotheses.
+The set Ii collects the failed goals during the test, so that they will be used with further hypotheses.
+Denition 2 A consistency derivation is a finite sequence of tuple      F1 D1t  D1  I1 : : : Fm  Dmt  Dm  Im such that for each i 2 1 m], Fi is a set of goal clauses and has the form f L L k R g  Fi , Fm is the empty set, Dit is a set of ground temporal constraints, Di is a set of ground literals, and Ii is a set of integrity constraints, and L is selected  in the body of L L k R .
+Fi+1  Dit+1 Di+1  Ii+1 is obtained according to one 0  0  0  of the following rules: (C1) there exists in Fi an empty clause C = 2 k R , then: 0  Fi+1 = Fi ; fC g Di+1 = Di Dit+1 = Dit   fD g Ii+1 = Ii where D is a ground constraint such that R ^ D is inconsistent, and Dit+1 is T 0  0  0  0  satisfiable.
+(C2) L is positive, C is the set of all resolvents of clauses in P with the clause L L k R on the literal L, then: 0  Fi+1 = C   Fi Dit+1 =Dit Di+1 = Di I  i Ii+1 = I   f L L k R g ifif CC 6= =  i 0  0  (C3) L is either positive and abducible or negative, C is the set of all resolvents of L L k R with elements of Di on the literal L, then: 0  Fi+1 = C   Fi Dit+1 = Dit Di+1 = Di Ii+1 = Ii   f L L k R g 0  0  (C4) L is either positive and abducible or negative, L is ground, the opposite of L is in Di , then:  Fi+1 = Fi Di+1 = D  Dit+1 = Dt Ii+1 = Ii  0  0  0  (C5) L is either positive and abducible or negative, L is ground, and theret exists an abductive refutation from h:L Di  Di  Iii to the state h 2 k R  Dt D  $  I i then: 0  0  0  0  Fi+1 = Fi Ii+1 = I  0  0  0  Di+1 = D  0  and either Dit+1 = Dt if T  Dt j= R , or Dit+1 = Dt ^ R if T  Dt 6j= R and Dt ^ R is T -satisfiable.
+0  0  0  0  0  0  0  0  0  For our purpose, the logic program P is made of the constrained clause form of the axioms of Figure 1 together with rules describing domain relationships, such as the clauses of Figure 2 for the YSP example.
+Axioms A1 , A7, and A8 are integrity constraints in the set IC.
+The predicate symbol persist is abducible: this means that whenever a new persistency hypothesis is needed, the consistency check will try to refute goals of the form begin(t p) and end(t p) where t falls within the period of the persistency assumption.
+Of course, the aim is that these refutations fail so that the assumption does not violate integrity constraints.
+4.2 Example  Recall the YSP example of Figure 2.
+The query Q =end(t p), means that we are interested in finding when the gun will cease to be loaded.
+Rule R3 yields the goal true(4 loaded).
+Axiom A6 produces the goal persist(t1  t2 loaded) k t1 < 4 fi t2 where the literal persist(t1  t2 loaded) is abducible.
+We begin a consistency derivation with a set of temporal ordering assumptions "t = fS1 < 4 fi S2 g, and a set of hypotheses " = fpersist(S1  S2  loaded)g, where S1 and S2 are new temporal constants.
+The set of goals that we want to fail is: 8 :persist(S1  S2 loaded) k >  9 > > < = 2 k S 2 fi S1  F1 = > end(t loaded) k S1 fi t < S2  > : begin(t loaded) k S1 < t fi S2   The first clause in F1 disappears because the opposite of the literal :persist(S1  S2  loaded) is in ", and the second clause also disappears when we add the ordering constraints S1 < S2 to the set "t. At the end of the consistency derivation the set of clauses is empty, and the temporal ordering constraints in "t force S2 to be equal to 4 and S1 to T1 .
+The primary abductive refutation ends and yields the substitution ft 7!
+4g as an answer to the query Q.
+One limitation of the procedure lies in the ability to handle repeated events: although the logic is able to describe those situations, the refutation procedure must be protected for infinite queries by a bound on the depth of the refutation.
+It should be noted that those queries do not lead to subsumption between the current goal and one of its ancestors: it appears to be a \translation" on the time line.
+At this moment, we do not have any mean to identify this relationship, nor can we characterize \translated" goals with respect to their utility in the refutation process.
+5 Conclusions  In this paper, we describe an abductive procedure using a constrained resolution principle.
+Such a resolution principle is very useful in the area of  temporal reasoning.
+Constrained resolution allows an important gain on eciency by reducing nondeterminism, which is otherwise too much a trouble in pure resolution-based reasoning methods.
+The abductive procedure is based on work done by kakas and Mancarella on abductive logic programming.
+This procedure can be used to handle persistency as an assumption, and for planning problems where the set of computed hypotheses and temporal constraints describes a plan to achieve the requested goal.
+References  1] James F. Allen.
+Towards a general theory of action and time.
+Artificial Intelligence, 23(2):123{ 154, 1984.
+2] Hans-Jurgen Burckert.
+A Resolution Principle for a Logic with Restricted Quantifiers, volume 568 of Lecture Notes in Artificial Intelligence.
+Springer-Verlag, Berlin Heidelberg, 1991.
+3] Rina Dechter, Itay Meiri, and Judea Pearl.
+Temporal constraints networks.
+Artificial Intelligence, 49:61{95, 1991.
+4] K. Eshghi and R. A. Kowalski.
+Abduction compared with negation by failure.
+In G. Levi and M. Martelli, editors, Logic Programming: Proc.
+of the Sixth International Conference, pages 234{254.
+MIT Press, Cambridge, MA, 1989.
+5] Kave Eshghi.
+Abductive planning with event calculus.
+In Proc.
+of the 5th Int.
+Conf.
+on Logic Programming, pages 562{579, 1988.
+6] Michael Gelfond and Vladimir Lifschitz.
+The stable model semantics for logic programming.
+In Proc.
+of ICLP'88, pages 1070{1080, 1988.
+7] A. C. Kakas and P. Mancarella.
+On the relation between truth maintenance and abduction.
+In Proc.
+of PRICAI'90, pages 438{443, 1990.
+8] A. Martelli and U. Montanari.
+An ecient unification algorithm.
+ACM Trans.
+Programming Languages and Systems, 4(2):258{282, 1982.
+9] Drew V. McDermott.
+A temporal logic for reasoning about processes and plans.
+Cognitive Science, 6:101{155, 1982.
+10] Lode Missiaen.
+Localized Abductive Planning with the Event Calculus.
+PhD thesis, K.U.
+Leuven, September 1991.
+11] Erik Sandewall.
+Non-monotonic entailment for reasoning about time and action Part I : Sequential actions.
+Research Report LiTH-IDA-R-8827, Linkoping University, September 1988.
+12] Murray Shanahan.
+Prediction is deduction but explanation is abduction.
+In Proc.
+of the 11 th Int.
+Joint Conference on Artificial Intelligence (IJCAI), pages 1055{1060, 1989.
+13] Yoav Shoham.
+Temporal logics in AI: Semantical and ontological considerations.
+Artificial Intelligence, 33:89{104, 1987.
+14] Mark E. Stickel.
+Automated deduction by theory resolution.
+Journal of Automated Reasoning, 1:333{355, 1985.

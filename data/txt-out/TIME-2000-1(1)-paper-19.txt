@@ -1,0 +1,345 @@
+Estimating Positions and Paths of Moving Objects Kate Beard and H. Mustafa Palancioglu NCGIA and Department of Spatial Information Science and Engineering University of Maine Orono, ME 04469 beard and hpalanci@spatial.maine.edu  Abstract Several applications require support for representing and analyzing moving objects.
+Such applications include wildlife tracking, emergency dispatch, vehicle navigation, fleet management, storm tracking, and military applications to name a few.
+Enhanced data collection technologies such as high resolution satellite imagery, videogrammetry, and GPS in combination with wireless communications are rapidly increasing the feasibility of obtaining information on moving objects and fueling new research and development.
+In these applications there is a need to efficiently answer questions about moving objects such as where they are at a specific time, where they have been in the past, where they will be in the future, and their relationships to static or other moving objects.
+Complete knowledge of object movements is not possible but movements can be predicted with some degree of reliability.
+Positions and paths of moving objects can be estimated from a set of observations.
+This paper reports on an approach that uses movement profiles, and movement histories in addition to observations to more reliably estimate positions and paths of moving objects.
+1.
+Introduction and Background Management of information on moving objects requires database support and there has been substantial research activity in this area recently.
+Relevant research covers spatiotemporal databases, moving object databases [3], [18], [19], spatio-temporal indexing [12], indexes  for moving objects [7], [13], representations on the uncertainty of moving objects [11], [10], and ontological considerations for movement and moving objects [4].
+A challenge in spatiotemporal modeling comes from incorporating "space" and "time" dimensions in the same database.
+Temporal databases [6] are characterized as managing records of time varying information.
+Spatial databases [5], [14] contain records on space varying phenomena.
+Spatio-temporal databases are characterized by the management of information on phenomena that are both time and space varying.
+Research in spatio-temporal systems has taken the form of both temporal extensions to spatial databases and spatial extensions to temporal databases.
+Modeling, indexing, and query languages for spatio-temporal data have all received attention.
+Langran [9] addressed a set of practical issues concerned with data representation, incremental updates, and system longevity.
+Langran [8] examined the concept of combined spatial and temporal dimensions and suggested that dimensional dominance must be determined for the optimization of data and the algorithms.
+Snodgrass [16] described the need to consider the evolution of spatial objects in addition to retroactive or post active changes.
+Spatio-temporal indexing raises significant challenges.
+Temporal indexing often includes two aspects of time, both valid time and transaction time.
+When both times are included this is referred to as a bitemporal database [6].
+Full spatio-temporal support is assumed to include these two temporal aspects as well as two or three spatial dimensions.
+Spatio-temporal indexing has typically used one of two approaches [12]: 1)  1 0-7695-0756-5/00 $10.00 a 2000 IEEE  overlapping index structures that index spatial objects at different times or 2) the addition of time as another dimension to an existing spatial index.
+In an index for moving objects, a spatial index used to record continuously changing locations requires the index to be continuously updated which is not a satisfactory solution.
+Query languages have been the subject of related research.
+Spatial query languages [2], [14]  supporting various spatial operations have been developed.
+Likewise temporal query languages have been evolving.
+TQUEL [15] incorporates notions of time that extend the semantics to allow the formulation of historical queries.
+Spatiotemporal query language extensions need to develop in parallel with these spatial and temporal query language developments.
+The following table summarizes and compares databases from traditional to moving object databases.
+Table 1.
+Overview of database evolutions from traditional to moving object databases.
+Traditional DBMS  Spatial DBMS  Temporal DBMS  Spatio-temporal DBMS  Moving Objects DBMS  Static non-spatial nontemporal supports attribute data  Static non-temporal supports spatial and attribute data  Static and Dynamic non-spatial supports temporal and attribute data  Static and Dynamic supports spatial, temporal and attribute data  Static and Dynamic supports spatial, temporal and attribute data extends spatiotemporal by adding support for continuously time and space varying data  Time Stamping  None  None  Tuple Attribute  Geometry and Attribute  Geometry, Attribute and Location  Answers  what  what where  what when  what where when  what where-when  Data Type  Moving objects fall directly within the purview of spatio-temporal databases.
+Moving object databases are a specialization of spatiotemporal databases for discrete and continuously varying spatial and temporal information.
+A continuous model for continuous movements may be desirable but not practical in the near term.
+Data observation streams are not fully continuous and there are difficulties in storing and indexing continuous movements.
+Wolfson et al [19] identify a set of capabilities for managing moving objects that are not provided by current databases.
+These deficiencies include location modeling,  query support, indexing, and uncertainty issues.
+Within a conventional relational database the position of a moving object may be recorded and periodically updated.
+The assumption however is that the position of the object is constant between updates.
+Updates to an object's position can be made at frequent intervals but continuous updates of locations are not feasible.
+Additionally frequent updates create performance problems if they require frequent updates of the index in response to the updated positions.
+In terms of query languages, traditional query languages such as SQL are not satisfactory for spatio-temporal range  2 0-7695-0756-5/00 $10.00 a 2000 IEEE  and spatio-temporal join queries and can be particularly problematic for moving object queries.
+Moving object queries also need to accommodate semantics for uncertainty.
+Since frequent updates to an object's location can be costly and because position is assumed to be constant between periodic updates, query responses from the database will not accurately reflect a moving object's position.
+Interpolated results are also necessarily uncertainty.
+Morira et al [10] have proposed Superset and Subset semantics as one approach to address the uncertainty in queries regarding moving object trajectories.
+The Superset returns the set of tuples that potentially rather than definitely satisfies a query predicate.
+Several current research activities [19], [13] address enhancements for support of moving object information.
+Wolfson et al [19] incorporate the notion of a dynamic attribute, one whose value is updated continuously as time passes.
+They also incorpoarte a higher level data abstraction refereed to as an objects motion plan.
+The dynamic attribute is only explicitly updated in response to changes in the motion plan.
+Saltenis et al [13] propose a time parameterized R -tree which indexes the current and anticipated future positions of moving objects.
+They use a linear function with parameters that include position and a velocity vector.
+We propose a similarly discrete approach that is dictated by the assumption of a set of discrete observations and two higher level abstractions referred to as mobility profiles and movement histories.
+The next sections describe our definition of movement and moving objects and an approach to modeling the positions and paths of moving objects.
+The model assumes linear spatio-temporal functions applied to rigid objects.
+2.
+Movement and Movement Patterns We consider moving objects to be real world objects capable of voluntary or involuntary movement.
+Moving objects may include those that are frequently at rest to those that exhibit continuous movement.
+Erwig et al [3] characterize all geometric change as movement including changes in shape (growing or shrinking).
+We separate change to an object's boundary as a shape change and distinct from movement.
+We define movement specifically as a rotation about an axis or a translation (the same definition used by Moreira et al [10].
+This distinction captures important behavioral  differences between real world objects for example lakes and cars.
+Lakes frequently shrink and expand but are not subject to rotation or translation and hence we would say are not subject to movement (except possibly in a catastrophic event).
+Cars on the other hand frequently change their position but do not change their shape.
+Both rigid and non-rigid objects may exhibit both types of change: movement and boundary reconfiguration and there can be reason and need to treat these as separate dimensions of change.
+Galton [4] describes movement as occurring whenever the same object occupies different positions in space at different times.
+He describes the position of an object as the total region of space that it occupies at a time.
+By this definition he suggests that an object's position is congruent with the region of space occupied by the body itself.
+This definition allows for the translation and rotation of objects as movement but also includes scaling (an object's expansion and contraction).
+As described above, moving object representations can create storage problems in conventional DBMS because their locations require frequent updates.
+We address this problem by storing only the static positions associated with observations and computing non-observed positions in response to queries that involve a direct or indirect request for a location or path.
+Examples of such queries include: a) Where was the object an hour ago?
+b) Where will the object be in an hour?
+c) Where is the object now?
+d) What paths has the object followed?
+e) What paths may the object follow?
+Slight variations on such queries may request a time, a set of moving objects or a common time and location for a set of objects as in the following examples.
+f) When will the object arrive at a location?
+g) What objects are within ten minutes of a location ?
+h) Where and when might two object's paths cross?
+This paper focuses on the first type of query (queries a-e).
+Our approach employs a method called GetPosition (funct, id_list, t, s) with parameters that can include a location function, a list of object ids, a time, and location and which can return a time, a location for an object, or set  3 0-7695-0756-5/00 $10.00 a 2000 IEEE  of objects depending on which parameters are supplied.
+Return of an object's position (which may be represented as a point, line or region) requires specification of a time (as a point or interval) and conversely return of a time requires specification of a location.
+Query a above is an example of the former type and query f an example of the later.
+The time parameter may be specified relative to current time (now) or a specific time in an absolute temporal reference frame.
+If the query is, "Where was the object an hour ago?"
+the method GetPosition (funct, id_list, t, s) is activated with a time of NOW - 1 hour.
+All previous approaches to estimating moving object positions rely on a time ordered sequence of observations.
+Several approaches have indicated the need to amend recorded positions with additional information at higher levels of abstraction.
+Wolfson et al [19] add a motion plan which is a sequence of way time points (pi, ti) indicating where (pi) a moving object will be at time ti.
+This approach assumes that the system has prior information on an object's expected movements which may not be case.
+We assume that observations may be irregularly spaced in time, from different sources, and that no planned route information is available.
+To compute a position and expected path for a moving object a set of observations reporting an object's position are used.
+To improve the estimated locations and paths, which can suffer from flaws in the observation set, two additional pieces of information are used.
+One piece of information is an object's prototypical behavior.
+Prototypical behavior is associated with an object class rather than a particular object.
+A third input incorporates summaries of past movements that we refer to as movement histories.
+Movement histories are summaries over all or consecutive subsets of past movements of a particular object.
+A method GetPosition relies on these three sources of information.
+2.1 Detection of Movement: the role of Observations Observations are essential components for the computation of a moving object's position.
+Prototypical movement profiles (described in the next section) provide information on general movement behaviors.
+Observations on the other hand serve as sightings of a particular object at specific locations and times.
+Observations refer to any measurements that capture the location of one or more real world objects.
+Observation types  include satellite images, aerial photographs, video sequences, GPS observations or telemetry observations.
+Moreira et al [10] refer to observation based systems as sensor systems that capture location data in an ordered sequence at regular time intervals.
+Representations of these observations are stored in a database.
+For each observation we record an associated spatial footprint that describes a 2D projection of the observation into a spatial reference frame [1].
+Such projections or footprints may take the form of points, lines, or regions.
+A GPS observation has a point footprint while a satellite image has a region footprint.
+A video clip may have a point, linear, or regional footprint.
+Observations additionally have time stamps that may be points or intervals.
+Because the observation footprints and timestamps are static they are amenable to spatial, temporal or spatio-temporal indexing.
+2.2.
+Spatial and Movement Registers A GPS observation is typically associated with a single real world object (e.g.
+a ship).
+Satellite or other imagery, on the other hand, contain representations of multiple real world objects and their positions.
+Objects and their positions are extracted from images using various feature extraction methods.
+We use what is referred to as a spatial register to maintain the association between an observation and an object position.
+[object_id, observation_id, observation_time_stamp, point or region] A point or region specification depends on the extent of an object in the observation.
+This association is important for accuracy assessment as the accuracy of the position is a function of characteristics of the observation and the applied feature extraction method.
+In comparison with GPS observations, images are less effective observation sources for identifying and tracking specific moving objects.
+In certain contexts, however, imagery including that from video and surveillance cameras may be useful sources for obtaining moving object positions.
+In our approach typically the only stored positions for moving objects are those recorded by an observation.
+Once an instance of an object, say B, is extracted from an image we describe its location  4 0-7695-0756-5/00 $10.00 a 2000 IEEE  as given in the observation by a point or by the center of the object's minimum bounding rectangle (MBR).
+B:position: (x,y,z,th)Oti describes B's location in the observation Oti with time stamp ti; x, y, and z are coordinates describing the MBR center, and th is an initial azimuth for the object if a record of azimuth is pertinent.
+Two such observations are required to detect movement.
+We say movement has occurred if for [?
+]t (the difference in time stamps between two observations), there is a [?
+]X, [?
+]Y, [?
+]Z, or [?
+]th greater than zero, and we define a unit movement as the set of deltas between two observation tuples.
+media constraints.
+Directional axis movement constraints describe the ability of an object to move in the X, Y or Z axis where these are aligned with respect to the object itself as shown in Figure 1.
+We assume an object has a fixed orientation: a front and back aligned with theY axis and a left and right aligned with the X axis.
+Z is the vertical axis aligned with the gravitational field.
+As examples, helicopters are capable of Y movement (forward and backward)), Z movement (up, down), and X movement (sideways), a submarine has Z and Y movement, an elevator only Z movement, and a car just Y movement.
+B:movement O1,O2 = ([?
+]X, [?
+]Y, [?
+]Z, [?
+]th) A unit movement has the properties of duration ([?
+]t), path ([?
+]X, [?
+]Y, [?
+]Z, or [?
+]th) and velocity ([?
+]X, [?
+]Y, [?]Z)/[?
+]t, or [?]th/[?]t.
+The unit movement vectors are maintained in what is referred to as a movement register.
+If we assume a uniform space-time surface or volume and no constraints on an object's movements, a set of observed positions could be sufficient to compute an object's probable trajectory between observations or a position at any unmeasured space-time coordinate.
+All real world object movements are however subject to various spatial and temporal constraints.
+Knowledge of object's movement constraints in combination with observations can improve the ability to more reliably estimate a moving object's location or path.
+We model constraints on object movements through development of prototypical movement profiles and movement histories.
+2.3 Prototypical movement profiles Prototypical movement profiles generally identify constraints on the movement behaviors of a class of objects.
+A movement profile for a class of objects identifies directional axis constraints on movement, medium constraints on movement, general size, shape and weight characteristics than constrain movement, as well as prototypical average or maximum speed for a class of object.
+These sets of constraints are associated with class hierarchies.
+As an example classes of vehicles, classes of animals or classes of storms can be globally assigned average or maximum speeds.
+Subsets of classes with different behaviors can be assigned to subclasses distinguished by different directional movement constraints or different  Z  Front  Y  Left Right  X  Back  Figure 1.
+Axes used to describe the directional axis movement constraints of objects.
+Media constraints refer to the surface or volumetric media on or within which an object is capable of moving.
+Very few objects are unconstrained with respect to media.
+Obvious examples of media constraints include roads for automobiles, tracks for trains, snow for sleds and snowmobiles and water for ships.
+Animals, people and all terrain vehicles are examples of less media constrained moving objects.
+Within a media type additional constraints may apply to subclasses of objects.
+For example the class and condition of a roadway may restrict certain subclasses of vehicles such as heavy trucks.
+Constraints on prototypical movements can take the form of either spatial or temporal constraints.
+An animal's spatial constraints can be that it can not move up steep gradients, through thick underbrush, or over water.
+Its temporal constraints may be that it routinely moves only during the day or only during the night.
+Media may have their own constraints that a moving object may inherit.
+For example all classes of moving objects have a prototypical speed.
+Cars constrained to the road media inherit the speed limits assigned to the roads which in turn may override their prototypical speed  5 0-7695-0756-5/00 $10.00 a 2000 IEEE  2.4 Movement histories While prototypical movement profiles characterize general movement constraints at a class level, a time ordered sequence of observations on a particular instance of a real world moving object provides information on the object's movement history.
+Movement histories are summaries of collections of unit movements for example the collection of unit movements associated with a single object B as extracted from a set of observations Oi, i=1,..n. B: movement = (([?
+]T, [?
+]X, [?
+]Y, [?
+]Z, [?
+]th)(O1,O2) ([?
+]T [?
+]X, [?
+]Y, [?
+]Z, [?
+]th) (O2,O3) ([?
+]T [?
+]X, [?
+]Y, [?
+]Z, [?
+]th) (O3,O4)).
+Any contiguous subset of unit movement vectors can form a movement history.
+A collection of movements can be described by the overall duration [?
+]T (O1,On); path ([?
+]X, [?
+]Y, [?
+]Z, [?
+]th) (O1,On, an average direction or heading and an average velocity for the overall duration ([?
+]X, [?
+]Y, [?
+]Z, [?
+]th) (O1,On))/ [?
+]T (O1,On).
+Large subsets of unit movements describe longer histories that can begin to reveal spatial and temporal patterns such as an animal tracing a similar path at similar times of the day.
+With larger collections of unit movements we can build summaries that describe spatio-temporal patterns in the collection such as whether the movements are systematic, organized, regular, or periodic [20].
+Movement histories may or may not be stored.
+3.
+Estimation of Locations and Paths From the three sources of information: observations, profiles, and histories responses to queries regarding moving objects can be generated.
+Assume a situation in which a dispatcher is tracking fleet vehicles (of different types) and must respond to any number of possible queries concerning vehicle locations and paths.
+One query might be "Where was Vehicle 37 15 minutes ago?"
+For this example we assume every vehicle is equipped with a GPS receiver and transmitter and reports its position every hour.
+If the current time is 11:00am the request is for the vehicle's position at 10:45am.
+As a first step the object's movement profile is retrieved to obtain its movement constraints.
+Assume a subset of the vehicle's profile is as follows:  Object class: truck max speed: 80 mph media: road (classes) directional axis constraint: Y The profile indicates that this vehicle is constrained to roads, has only Y (forward and backward) movement capability and a maximum speed of 80mph.
+A search is them made on the spatial and movement registers for recorded positions and unit movements of the truck that are closest to the requested time.
+Three recorded positions for 10:10am, 9:10am and 8:10am and two unit movement vectors are returned.
+The Average summary operation over the unit movement vectors provides the recent history information that the truck's averaged heading is South with an average speed of 50 mph.
+Figure 2 illustrates the three recorded positions and the unit movement vectors between the pairs of observed positions.
+Using the media constraint from the movement profile which is roads (possibly of a certain class) and the general heading South, a standard geographic information system (GIS) network allocation routine is used to compute possible positions.
+The start node for the network allocation is the last observed position.
+This last position had a time stamp of 10:10 am and the requested time is 10:45 indicating the need to estimate positions over the last 35 minutes.
+Each road link in the network has an associated impedance value, a value that represents a cost to traverse the link.
+This value can be expressed in time or distance units.
+Using a time impedance value, road links from the start position are accumulated until the desired impedance value of thirty-five minutes is reached.
+At each intersection in the road network the vehicle could take a number of different paths.
+Using the recent movement history information that the average heading has been south and the average speed has been 50 mph, the most likely paths of the vehicle can be constrained to links in the network with south, south-west and south-east azimuth values.
+6 0-7695-0756-5/00 $10.00 a 2000 IEEE  histories should enhance the ability to more reliably estimate moving object positions and paths, but more testing is need to demonstrate this.
+In continuing research we are investigating the number of observations needed to respond to a query and the number of unit movements needed to build useful summaries for a particular context.
+These numbers are expected to be functions of the numbers of observations on an object within a time interval and the time frame of the query.
+Summary operations over unit movement vectors is another area of on going research.
+Summaries of subsets of vectors are required to identify individual object movement constraints but additionally they can be used to build descriptions of periodic, cyclical, or other spatio-temporal patterns.
+Such patterns may subsequently be used as search templates for similar patterns.
+Figure 2.
+Observed positions and unit movement vectors for Truck 37.
+One area of particular interest is to more formally estimate the uncertainties associated with the estimation of object positions and paths using the three information sources.
+The computation of either a location or an expected arrival time can not be exact and thus the reported result and presentation should provide some indication of the degree of uncertainty.
+Future research will investigate metrics for reporting spatial or temporal uncertainties and visual presentations of such uncertainties.
+Acknowledgment Support from NIMA for this research under grant number NMA202-98-1-1113 is gratefully acknowledged.
+Figure 3.
+Possible paths and most probable locations for truck 37 given its profile constraints and recent history.
+Figure 3 highlights the set of links representing zero to thirty-five minutes of travel time from the truck's last observed position.
+The two small darker segments represent the most likely positions of the truck 15 minutes ago given the constraints indicated by the movement histories.
+4.
+Summary and Future Work This paper reflects work in progress.
+Clearly additional research is needed for a fully functional approach to managing moving objects and estimating unrecorded movements and paths.
+The addition of movement profiles and movement  5.
+References [1] Beard, K. T. Smith, L.Hill.
+1997.
+Meta-information Models for Georeferenced Digital Library Collections.
+Proceedings IEEE 2nd International Conference on Metadata.
+Silver Spring, MD.
+[2] Egenhofer M. 1994.
+Spatial SQL: A Query and Presentation Language.
+IEEE Transactions on Knowledge and Data Engineering Vol.
+6.
+No.
+1 pp.
+8695.
+[3] Erwig, M. Guting, R. H. M. Schneider and M. Vazirgiannis.
+1997.
+Spatio-temporal Data Types: An Approach to Modeling and Querying Moving Objects in Databases.
+Chorochronos Technical Paper Series.
+[4] Galton, A., 1995.
+Towards a Qualitative Theory of Movement, In A. U. Frank and W. Kuhn (eds.
+), Spatial Information Theory: A Theoretical Basis for GIS  7 0-7695-0756-5/00 $10.00 a 2000 IEEE  (Proceedings of International Conference COSIT'95, Semmering, Austria, Springer-Verlag, pp.
+377-396  [5] Guting, R.H. 1994.
+An Introduction to Spatial Database Systems.
+VLDB Journal 4. pp.
+357-399.
+[19] Wolfson O., P. Sistla, B. Xu, J. Zhou, S. Chamberlain, Y. Yesha, and N. Rishe, 1999.
+"Tracking Moving Objects Using Database Technology in DOMINO", Springer-Verlag Lecture Notes in Computer Science, No.
+1649, Proceedings of NGITS'99.
+pp.
+112-119.
+[6] Jensen, C. S. and R. Snodgrass.
+1999.
+Temporal Data Management.
+IEEE Transactions on Knowledge and Data Engineering.
+Vol.
+11, No.1.
+pp.
+36-43.
+[7] Kollios, G., D. Gunopulos, and V. Tsotras.
+1999.
+[20] Yuan, M. 1998.
+Representing Spatio-temporal Processes to Support Knowledge Discovery in GIS databases.
+8th International Symposium on Spatial Data Handling 2: 431-440.
+On Indexing Mobile Objects.
+In Proceedings of the PODS Conference.
+pp.
+261-272.
+[8] Langran, G., 1988, Temporal Design Tradeoffs.
+In proceedings of GIS/LIS'88, Volume 2 Falls Church, VA: ACSM, pp.
+890-899.
+[9] Langran, G., 1993, Time in Geographic Information Systems Bristol, PA: Taylor & Francis.
+[10] Moreira J, R. Cristina, and J.-M. Saglio, 1999.
+"Representation and Manipulation of Moving Points: An Extended Data Model for Location Estimation", Cartography and Geographic Information Systems, Vol.
+26, No.
+2, pp.
+109-123.
+[11] Pfoser, D and C. S. Jensen.
+1999.
+Capturing the Uncertainty of Moving Object Representations.
+Proceedings of the SSDBM Conference.
+pp.
+111-132.
+[12] Saltenis, S. and C. S. Jensen.
+1999.
+R-Tree Indexing of General Spatio-Temporal Data.
+Chorochronos Techncial Report Series CH-99-18.
+[13] Saltenis, S. C. S. Jensen, S. T. Leutenegger and M. A. Lopez.
+1999.
+Indexing the Positions of Continuously Moving Objects.
+Chorochronos Techncial Report Series CH-99-19.
+[14] Shekar.S.
+S. Chawla, S. Ravada, A. Fetterer, X. Liu, and C.-t,Lu.
+1999.
+Spatial DatabasesAccomplishments and Research Needs.
+IEEE Transactions on Knowledge and Data Engineering.
+Vol.
+11 No.
+1 pp.
+45-54.
+[15] Snodgrass R. 1987.
+The Temporal Query Language TQuel.
+TODS 12(2): 247-298.
+[16] Snodgrass, R and I. Ahn.
+1985.
+A Taxonomy of Time in Databases.
+Proceedings ACM SIGMOD.
+Austin, TX.
+pp.
+236-246.
+[17] Sistla P., O. Wolfson, S. Chamberlain, S. Dao.
+1997.
+Modeling and Querying Moving Objects.
+Proceedings of the 13th International Conference on Data Engineering, [18] Wolfson O., B. Xu,, S. Chamberlain.
+L. Jiang.
+1998.
+Moving Objects Databases: Issues and Solutions.
+Proceedings of the 10th International Conference on Scientific and Statistical Database Management (SSDBM98) Capri, Italy.
+pp.
+111-122.
+8 0-7695-0756-5/00 $10.00 a 2000 IEEE

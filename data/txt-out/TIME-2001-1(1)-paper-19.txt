@@ -1,0 +1,293 @@
+A Temporal Logic for reasoning about Timed Concurrent Constraint Programs F.S.
+de Boer Universiteit Utrecht frankb@cs.uu.nl  M. Gabbrielli UniversitaE di Udine gabbri@dimi.uniud.it  Abstract A temporal logic is presented for reasoning about the correctness of timed concurrent constraint programs.
+The logic is based on epistemic modalities which express either what a process knows at a certain time or what a process believes about the results of the other processes.
+In terms of these epistemic modalities of aknowledgea and abeliefa a compositional axiomatization is given of the reactive behaviour of timed concurrent constraint programs.
+1 Introduction Many computer applications, usually called reactive systems, involve time-critical aspects and often require a programmer to specify timing constraints such as, for example, that an input is required within a bounded period of time.
+Reactive systems include real-time systems which are subject to hard timing constraints (e.g.
+process controllers and signal processing systems).
+Many different formalisms have been developed to specify, verify and program reactive systems, including (several) timed process algebras (see for example [1, 10]), temporal logic (and its executable versions) [12, 9] and the concurrent synchronous languages ESTEREL, LUSTRE, SIGNAL and Statecharts which have been already been used in many industrial applications.
+Inspired by these formalisms a different approach to specify and program reactive systems has recently emerged in the context of concurrent constraint programming (ccp) [14].
+This is an asynchronous concurrent programming paradigm in which the idea of generating and satisfying constraints is central to the computing process.
+In [16, 4] timed extensions of the pure ccp formalism were studied.
+The resulting languages are built around the hypothesis of bounded asynchrony [16]: Computation takes a bounded period of time rather than being instantaneous (as it is in ESTEREL [2]) and the whole system evolves in cycles corresponding to time units.
+The languages defined in [15, 16] are deterministic ones, useful mainly for programming small akernelsa of real-time systems (in their standard  M.C.
+Meo UniversitaE di LaAquila meo@univaq.it  version they can be compiled to finite state automata).
+However, non-determinism arises when considering large reactive systems involving several processes running on different processors and communicating via asynchronous links.
+These (timed) systems can be naturally specified and programmed by using a non-deterministic language, indeed all the existing timed process algebras and almost all the variants of Statecharts admit non-determinism.
+Therefore in [4] we investigated a non-deterministic timed ccp language, called tccp, that provides a (Turing powerful) natural extension of the ccp framework.
+In this paper we introduce a temporal logic for reasoning about timed reactive sequences.
+A timed reactive sequence describes at each moment in time the reaction of a tccp process to the input of the external environment.
+A reaction is formalized as a pair of constraints  , where is the input given by the environment and  is the constraint produced by the process itself.
+The basic assertions of the temporal logic describe these reactions in terms of epistemic modalities which express either what a process believes or assumes about the inputs of the environment and what a process knows or commits to, i.e., has itself produced at one time-instant.
+These epistemic modalities of abeliefa and aknowledgea provide then a kind assumption/commitment style of specification.
+The main result of this paper is a compositional proof system for reasoning about the correctness of tccp programs as specified by formulas in this temporal logic.
+2 The tccp language In this section we introduce the tccp language [4] and we define its operational semantics of by using a transition system.
+Since the starting point is ccp, we introduce first some basic notions related to this programming paradigm.
+The ccp languages are defined parametrically wrt to a given constraint system.
+The notion of constraint systems has been formalized in [14] according to the Scottas treatment of information systems and by using some notions from cylindric algebras in order to treat the hiding operator of the language (by using an abstract  operator) and to model  parameter passing (by using diagonal elements).
+Here we only consider the resulting structure and (we refer to [14] for further details).
+ be a given (denumerable) Definition 2.1 Let set of variables with typical elements fi     .
+A (cylindric) constraint system is a structure fi     fi  	         where fi    fi  	  is a complete algebraic lattice ( is the lub operation, fi , 	 are the least and the greatest elements), for fi  fi and for each fi   there exists a function  each fi    the setfi contains the constraints   (so called diagonal elements) such that the following axioms are satisfied fi     fi    if    fi    fi      fifi         fifi     fi    then  fi   	   fi          fi   fi    fi   fifi  if  	 fi  then         fi fi if fi 	  then          fi  fi  Note that if models the equality theory, then the elements   can be thought of as the formulas fi   .
+In the sequel we will identify a system C with its underlying set of constraints fi and we will denote   fi by  with the convention that, in case of ambiguity, the scope of  is limited to the first constraint sub-expression.
+The basic idea underlying ccp is that computation progresses via monotonic accumulation of information in a global store.
+Information is produced by the concurrent and asynchronous activity of several agents which can add (tell) a constraint to the store.
+Dually, agents can also check (ask) whether a constraint is entailed by the store, thus allowing synchronization among different agents.
+Parallel composition in ccp is modeled by the interleaving of the basic actions of its components.
+When querying the store for some information which is not present (yet) a ccp agent will simply suspend until the required information has arrived.
+In timed applications however often one cannot wait indefinitely for an event: In case a given time bound is exceeded (i.e.
+a time-out occurs), the wait should be interrupted and an alternative action should be taken.
+Moreover in some cases it is also necessary to abort an active process  and to start a process  when a specific event occurs (this is usually called preemption of ).
+In order to be able to specify these timed behaviours in ccp, we introduce a discrete global clock and assume that  and  actions take one time-unit.
+Computation evolves in steps of one time-unit, so called clockcycles.
+We consider action prefixing as the syntactic marker which distinguishes a time instant from the next one.
+Furthermore we make the assumption that parallel processes  are executed on different processors, which implies that at each moment every enabled agent of the system is activated.
+This assumption gives rise to what is called maximal parallelism.
+The time in between two successive moments of the global clock intuitively corresponds to the response time of the underlying constraint system.
+Furthermore, on the basis of the above assumptions we introduce a timing construct of the form now then  else  which can be interpreted as follows: If the constraint is entailed by the store at the current time  then the above agent behaves as  at time , otherwise it behaves as  at time .
+As shown in [4, 15] this basic construct allows one to derive such timing mechanisms as time-out and preemption.
+Thus we end up with the following syntax of timed concurrent constraint programming.
+Definition 2.2 [tccp Language [4]] Assuming a given cylindric constraint system C the syntax of agents is given by the following grammar:     tell  fi     fi    ask   fi    fi   	         fi    fi   fi  where the   are supposed to be finite constraints (i.e.
+algebraic elements) in fi .
+A tccp process  is then an object of the form , where  is a set of procedure declarations of the form fifi  and  is an agent.
+Action prefixing is denoted by , non-determinism is fi introduced via the guarded choice construct   , parallel composition is denoted by , and a notion of locality is introduced by the agent fi which behaves like  with fi considered local to , thus hiding the information on fi provided by the external environment.
+In order to simplify the notation, in the following we will omit the fi  whenever   .
+The operational model of tccp can be formally described by a transition system      fi where we assume that each transition step takes exactly one time-unit.
+Configurations (in) Conf are pairs consisting of a process and a constraint in fi representing the common store.
+The transition relation       is the least relation satisfying the rules R1-R10 in Table 1 and characterizes the (temporal) evolution of the system.
+So,      means that if at time  we have the process  and the store then at time    we have the process  and the store .
+In order to represent successful termination in Table 1 : it cannot make any we introduce the auxiliary agent transition.
+Rule R1 shows that the agent  fi adds to the store  (note that the updated store   will be visible only starting from the next time instant).
+According to rule the guarded choice operator gives rise to global non-determinism, since the external environment can affect show that the agent now the choice.
+The rules  	          R1    R2  fi    fi         	   fi            Az  Az      Az  Az   R3  fi  	  R4  fi   	       	      Az  Az       Az  Az   R5  fi  	  R6  fi   	     R7  R8  R9  R10       	       	    and         	   	      Az  Az      Az  Az       Az   Az  Az  Az     Az  Az     	       Az   Az         Az  Az          Az          Az   fi    fi  Az           fifi         fi  fi  Table 1.
+The transition system for fi .
+then  else  behaves as  or  depending on the (instantaneous) evaluation of the guard 1 .
+Rules R7 and R8 model the parallel composition operator in terms of maximal parallelism.
+The agent fi behaves like , with fi considered local to .
+To describe locality in rule R9 the syntax has been extended by an agent   fi where  is a local store of  containing information on fi which is hidden in the external store.
+Initially the local store is empty, i.e.
+fi   fi fi.
+Rule treats the case of a procedure call when the actual parameter equals the formal parameter.
+We do not need more rules since here and in the following we assume that, for every procedure call p(y) appearing in a process D.A, if the original declaration for p in D is p(x):A then D contains also the declaration p(y):-  AA .
+Using the transition system described by (the rules in) Table 1 we can define a notion of (compositional) ob-    1 As discussed in [?
+], the evaluation of the guard in this case need to be instantaneous to be able to express such a construct as a time-out in the language.
+servables which associates with an agent a set of timed reactive sequences of the form        fi  fi    where a pair of constraints     represents a computation step performed by the agent at time i: Intuitively, the agent transforms the global store from  to  or, in other words,  is the assumption on the external environment while   is the contribution of the agent itself.
+The last pair denotes a astuttering stepa in which no further information can be produced by the agent, thus indicating that a aresting pointa has been reached.
+Since in tccp computations the store evolves monotonically, it is natural to assume that reactive sequences are monotonically increasing, so we assume that each timed reactive sequence        fiA   fiA   fi  fi  satisfies the following condition:    and    A   for any   	     and   	  .
+Since the constraints arising from computation steps are finite, we also assume that a reactive sequence contains only finite constraints.
+The set of all reactive sequences is denoted by  and its typical elements  by     , while sets of reactive sequences are denoted by      and  indicates the empty reactive sequence.
+Furthermore,  denotes the operator which concatenates sequences.
+Operationally the reactive sequences of an agent are generated as follows.
+Definition 2.3 We define inductively the semantics  fi    fi by fi                     and   fi         	 and   fi    Formally  is defined as the least fixed-point of the corresponding operator   fi    fifi  fi    fifi whose definition  fifi is obtained from the previous one by substituting  fi for   fi (    ).
+The set of interpretations fi    fi is easily seen to be a cpo, with the ordering of (point-wise extended) setinclusion.
+It is also straightforward to check that  is continuous.
+According to the previous definition, the semantics fi associates to a process  the set of all finite, maximal, reactive sequences obtained from the transition system by performing at each time instant an arbitrary assumption on the contribution of the external world .
+More abstract notion of observables (e.g.
+input/output pairs) can be extracted from reactive sequences (see [4]).
+3 A calculus for tccp In this section we introduce a temporal logic of knowledge and belief for reasoning about tccp programs.
+We first define temporal formulas and the related notions of truth and validity in terms of timed reactive sequences.
+Then we introduce the correctness assertions that we consider and a corresponding proof system.
+3.1 Temporal logic Our temporal logic is based on epistemic formulas of the form  fi and   fi, where is a constraint of the given underlying constraint system.
+The modality  expresses the abelievesa of a process, that is,   fi holds if the process assumes the information represented by is produced by the environment.
+On the other hand, the modality represents the (private) knowledge of a process, that is,  fi holds if the information represented by is aknowna by the process itself.
+More precisely, these epistemic formulas will be interpreted with respect to a reaction which consists of pair of constraints  , where, as previously mentioned, represents the input of the external environment and  what is produced by the process itself.
+Formally we have the following truth definition of epistemic formulas.
+Definition 3.1 Let fi be a constraint system and     fi .
+Then we define      fi iff   and     fi iff   .
+An atomic formula in our temporal logic is an epistemic formula as described above.
+Compound formulas are constructed from these atomic formulas by using the (usual) logical operators of negation, conjunction and (existential) quantification (over the variables of the underlying constraint system) and the temporal operators  (the next operator) and  (the until operator).
+Definition 3.2 [Temporal formulas] Given an underlying constraint system with set of constraints fi , formulas of the temporal logic are defined by !
+   fi      fi    !
+!
+ "   fi!
+!
+!
+ "  In the sequel we assume that the temporal operators have binding priority over the propositional connectives.
+We introduce the following abbreviations: !
+for fi  !
+and !
+for  !.
+We also use !
+ " as a shorthand for !
+ " fi and !
+ " as a shorthand for !
+ " .
+The truth of temporal formulas is defined with respect to a a timed reactive sequence #     #fi , where each view #      describes the local knowledge and belief of the process at time .
+Moreover we assume that time does not stop, so actually a finite sequence #     #fi represents the infinite sequence #     #fi #fi #fi   , with the last state repeated infinitely many times.
+Intuitively then !
+holds if !
+holds in the next time-instant and !
+ " holds if there exists a future moment (possibly the present) in which !
+holds and until then " holds.
+In order to define formally the truth of a temporal formula we introduce the following notions:  $ Az if  is a proper suffix of  Az (  Az if  $ Az or   Az ).
+Furthermore, for   #     #fi , we define fi fi  #    #fi (as a particular case, we have that fi #fi  #) and % 	fi  # .
+Az  Az  Az  Definition 3.3 Let  be a timed reactive sequence and !
+be a temporal formula.
+Then we define    !
+by:            fi    !
+ !  !    fi!
+ !
+ !
+ "  where, for    if if if if if if if   fi                   % 	fi    fi % 	fi     fi  	  !
+   ! and    ! Az   !, for some  Az s.t.
+    Az fi   !
+for some Az  , Az   " and for all Az $ AzAz  , AzAz   !  fi          fi   fi .
+fi  fi , we define      Definition 3.4 A formula !
+is valid, notation   !, iff    !
+for every timed reactive sequence .
+Previous definition implies for example the validity of the formula fi which expresses that time does not stop.
+Moreover we have the validity of the usual temporal tautologies.
+Monotonicity of the operators and  wrt the entailment relation of the underlying constraint system is expressed by the following rules:    fi     fi  and   fi     fi    As discussed in the previous section, we assume that reactive sequences are monotonically increasing, that is, for each sequence        fiA   fiA   fi  fi  we assume that    and   A  for each   	    .
+Then previous definition and Definition 3.1 imply the validity of the following formulas   fi    Az   fi  and   fi    Az   fi  These formulas express the persistence of knowledge and believes, respectively.
+The relation between the epistemic operators is logically described by the laws   fi     fi    fi      fi  that is, what is believed is also known and what is known at the current state is believed in the next state.
+The validity of these formulas depends on the monotonicity of the language that we are considering: In an imperative language, where information can be deleted, clearly these formulas are no longer valid.
+3.3 Soundness and completeness We denote by   	fi !
+the derivability of the correctness assertion  	fi !
+in the proof system introduced in the previous section.
+The following theorem states the soundness of this proof system.
+Theorem 3.6 Let  be a tccp process.
+If   	fi !
+then 	fi !, for every correctness assertion  	fi !.
+   At the heart of this theorem lies the compositionality of fi which is proved in [4]: Intuitively, for each syntactic  construct of the language we can define a semantic operator (acting on sets of reactive sequences) which reflects the operational behaviour of the syntactic operator.
+For example, given two sets of reactive sequences     , the semantic parallel operator     is defined as the point-wise extension to sets of the following (commutative and associative) partial operator defined on sequences:         fi  fi                    fi  fi  fi     3.2 The proof-system We introduce now a proof-system for correctness of tccp programs.
+We first define formally the correctness assertions and their validity.
+Definition 3.5 Correctness assertions are formulas of the form  	fi !, where  is a tccp process and !
+is a temporal formula.
+The validity of an assertion  	fi !, denoted by    	fi !, is defined as follows:    	fi !
+iff    ! for all   fi Thus  	fi !
+is valid if every (finite, maximal) computation of  satisfies !.
+Table 2 presents the proof-system.
+Axiom T1 states that every computation of  fi satisfies  fi, that is, after the execution of the tell-operation the process knows .
+In rule T2   stands for    fi.
+Given that  satisfies ! , rule T2 allows the derivation of the specifi  fi   , which expresses that either cation for fi  eventually  is believed and, consequently, !
+ holds in the    	  next time-instant (since the evaluation of the ask takes one time-unit), or none of the guards is ever satisfied.
+Rule T3 simply states that if  satisfies !
+and  satisfies " then every computation of now then  else  satisfies either !
+or " , depending on the fact that is believed or not.
+Hiding of a local variable fi is axiomatized in rule T4 by existentially quantifying fi in !.
+Rule T5 simply models parallel composition in terms of conjunction.
+Rule T6 describes recursion in the usual manner (see also [3]) and as in Table 1, fi is assumed to be both the formal and the actual parameter (here  denotes derivability within the proof system).
+Rule T7 allows to weaken the specification.
+fi  fi       where we require that the two arguments of the operator agree at each point of time with respect to the contribution of the environment (the  as) and that they have the same  is assumed being undefined).
+length (in all other cases  Given the compositionality of the semantics R, soundness can be proved by induction on the length of the derivation.
+A crucial property of the proof system needed in the soundness proof (for the rule of parallel composition) is the following: if   	fi !
+and  Az is a reactive sequence which is obtained from a reactive sequence   fi by replacing some astuttera reactions   by  , for some  , then Az   !.
+In other words, correctness assertions which are derivable do not fully specify stutter reactions.
+Note that the previous property does not hold when considering generic formulas.
+For example, one has that 	  	     fi while 	   	   fi.
+Because of underspecification of stutter reactions we do not have completeness in the sense that every valid correctness assertion is derivable.
+T1    	fi    T2  fi    fi      T3 T4 T5 T6 T7   fi    fi   	fi !
+     fi fi  fi   	fi            	fi !
+fi  now then  else   	fi !
+fi fi !
+fi !
+fi "    	fi !
+ "  fi 	fi !
+  	fi !
+ fi 	fi !
+fi !
+!
+ "  	fi "          	         fi    ! fi   	fi "    fi   !fi     fi  Az  fi        "fi           fi    fi  fi  fifi declared as     Table 2.
+The system TL for fi .
+Completeness can be obtained by extending the logic in order to allow for a more precise representation of stutter reactions.
+If we allow in the logic constraint variables  &    (and quantification over them) a stutter reaction can be fully specified by the formula  fi   fifi which states that what is believed is known and vice versa.
+With such an extension, for example, axiom   can be strengthened as  fi 	fi   fi   fi   fi    fifi follows: where   is an atomic formula which aimportsa information about the underlying constraint system.
+However, such an extension requires a major revision of the proof system since the simple version of rule   that we used would be no longer sound (a suitable notion of quantification over predicate variables is required).
+The development of a complete calculus is deferred to the extended version of this paper.
+   Az  4 Related and future work We introduced a temporal logic for reasoning about the correctness of a timed extension of ccp and we proved the soundness of a related proof system.
+Recently, a logic for a different timed extension of ccp, called ntcc, has been presented in [13].
+The language ntcc is a non deterministic extension of the timed ccp language defined in [15].
+Its computational model, and therefore the underlying logic, are rather different from those that we considered, since both ntcc and the language defined in [15] follow the ESTEREL model of computation consisting of  abursts of activitya: In each phase a ccp process is executed to produce a response to an input provided by the environment.
+Thus, each time interval is identified with the time needed for a ccp process to terminate a computation (suitable syntactic restrictions on recursion ensure that the program is always terminating).
+The programmer has to transfer explicitly the all information from a time instant to the next one by using special primitives, since at the end of a time interval all the constraints accumulated and all the processes suspended are discarded.
+These assumptions allow to obtain an elegant semantic model consisting of sequences of sets of resting points (each set describing the behaviour at a time instant).
+On the other hand, the tccp language that we consider has a different notion of time, since each time-unit is identified with the time needed for the underlying constraint system to accumulate the tellas and to answer the askas issued at each computation step by the processes of the system.
+This assumption allow us to maintain the essential features of ccp computations: No restriction on recursion is needed (since at each time instant there is a finite number of parallel agents) and no explicit transfer of information across time boundaries is required.These differences affects also the expressive power of the language (see [4] for a detailed discussion).
+Since the store grows monotonically, some syntactic restrictions are needed also in tccp in order to obtain bounded response time, that is, to be able to statically determine the maximal length of each time-unit (see [4]).
+From a logical point of view, as shown in [3] the set of resting points of a ccp program characterizes essentially the strongest post condition of the program (the characterization however is exact only for a certain class of programs).
+In [13] this logical view is integrated with (linear) temporal logic constructs which are interpreted in terms of sequences of sets of resting points, thus taking into account the temporal evolution of the system.
+Since the resting points provide a compositional model (describing the final results of computations), in this approach there is no need for a semantic and logical representation of aassumptionsa.
+On the other hand such a need arise when one wants to describe the input/output behaviour of a process, which for generic (non deterministic) processes cannot be obtained from the resting points.
+Since tccp maintains essentially the ccp computational model, at each time instant rather than a set of final results (i.e.
+a set of resting points) we have an input/ouput behaviour corresponding to the interaction of the environment, which provides the input, with the process, which produces the output.
+This is reflected in the semantic structures that we use and in the logic we have defined, which could be seen a logic for describing timed reactive sequences.
+Related to the present paper is also [8], where tcc specifications are represented in terms of graph structures in order to apply model checking techniques.
+A finite interval of time (introduced by the user) is considered in order to obtain a finite behaviour of the tcc program, thus allowing the application of existing model checking algorithms.
+Future work concerns first of all the development of a sound and complete axiomatization of the temporal logic introduced in this paper and an investigation into decision procedures.
+Since reactive sequences have been used also in the semantics of several other languages, including dataflow and imperative ones [11, 5, 7], we plan also to consider extensions of our logic to deal with these different languages.
+References [1] J. Baeten and J. Bergstra.
+Real time process algebra.
+Formal Aspects of Computing, 3(2): 142-188, 1991.
+[2] G. Berry and G. Gonthier.
+The ESTEREL programming language: Design, semantics and implementation.
+Science of Computer Programming, 19(2):87-152, 1992.
+[3] F.S.
+de Boer, M. Gabbrielli, E. Marchiori and C. Palamidessi.
+Proving Concurrent Constraint Programs Correct.
+Transactions on Programming Languages and Systems (TOPLAS), 19(5): 685-725.
+ACM Press, 1997.
+[4] F.S.
+de Boer, M. Gabbrielli and M.C.
+Meo.
+A Timed CCP Language.
+Information and Computation, 161, 2000.
+[5] F.S.
+de Boer, J.N.
+Kok, C. Palamidessi, and J.J.M.M.
+Rutten.
+The failure of failures in a paradigm for asynchronous communication.
+In J.C.M.
+Baeten and J.F.
+Groote, editors, Proceedings of CONCURa91, vol.
+527 of LNCS, pages 111a126.
+Springer-Verlag, 1991.
+[6] F.S.
+de Boer and C. Palamidessi.
+A Fully Abstract Model for Concurrent Constraint Programming.
+In S. Abramsky and T.S.E.
+Maibaum, editors, Proc.
+of TAPSOFT/CAAP, vol.
+493 of LNCS, pages 296a319.
+Springer-Verlag, 1991.
+[7] S. Brookes.
+A fully abstract semantics of a shared variable parallel language.
+In Proc.
+Eighth IEEE Symposium on Logic In Computer Science.
+IEEE Computer Society Press, 1993.
+[8] M. Falaschi, A. Policriti, A. Villanueva.
+Modeling Concurrent systems specified in a Temporal Concurrent Constraint language.
+in Proc.
+AGPa2000.
+2000.
+[9] M. Fisher.
+An introduction to Executable Temporal Logics.
+Knowledge Engineering Review, 6(1): 43-56, 1996.
+[10] M. Hennessy and T. Regan.
+A temporal process algebra.
+Information and Computation, 117: 221-239, 1995.
+[11] B. Jonsson.
+A model and a proof system for asynchronous processes.
+In Proc.
+of the 4th ACM Symp.
+on Principles of Distributed Computing, pages 49a58.
+ACM Press, 1985.
+[12] Z.
+Manna and A. Pnueli.
+The temporal logic of reactive systems.
+Springer-Verlag, 1991.
+[13] C. Palamidessi and F.D.
+Valencia.
+A Concurrent Constraint Calculus for timed systems.
+Draft, 2000.
+[14] V.A.
+Saraswat and M. Rinard.
+Concurrent constraint programming.
+In Proc.
+of POPL, pages 232a245.
+ACM Press, 1990.
+[15] V.A.
+Saraswat, R. Jagadeesan, and V. Gupta Foundations of Timed Concurrent Constraint Programming .
+In Proc.
+of LICS 94, 1994.
+[16] V.A.
+Saraswat, R. Jagadeesan, and V. Gupta Timed Default Concurrent Constraint Programming.
+Journal of Symbolic Computation, 22(5-6):475a520, 1996.

@@ -1,0 +1,332 @@
+Mapping Calendar Expressions into Periodical Granularities* Claudio Bettini Sergio Mascetti DICo - University of Milan, via Comelico 39, I-20135 Milan, Italy Abstract An effort has been devoted in the recent years to study and formalize the concept of time granularity and to design applications and services using the formalization.
+Among other proposals, a calendar algebra has been defined to facilitate the specification of new granularities and to perform conversions among them.
+This paper shows how granularities defined as algebraic calendar expressions can be represented as periodical sets of instants.
+More precisely, the paper shows how each algebraic operator changes the periodical structure of the granularities given as operands.
+These results have an immediate application enabling users to easily specify new granularities and using them in the only constraint solver supporting time granularities that is currently available.
+1.
+Introduction Temporal information in applications is often expressed differently for different purposes.
+For internal representation purpose, integers and integer intervals are a common choice.
+For example, in UNIX systems, time is expressed internally as the number of seconds elapsed since Jan 1, 1970.
+Other examples include temporal databases [EJS98], where integer intervals are often used internally as timestamps, and temporal contraint propagation [BWJ02], where sets of integer intervals are used.
+On the other hand, when presented to users, temporal information is best expressed in terms of commonly used, organization-specific, or even user-specific calendars.
+A particular time such as "Wed Feb 11 21:56:32 EST 2004", expressed in the common calendar, is much easier for a human user than "1,076,554,592 seconds since 00:00:00 1970-01-01 UTC" is, while the latter is easier for computers to deal with.
+The same holds for "every other Friday" *  This work has been partially supported by Italian MIUR (FIRB "WebMinds" project N.RBNE01WEJT 005).
+Wang's work has also been supported by US NSF under the career award 9875114.
+X. Sean Wang Department of Computer Science Univ.
+of Vermont, Burlington, VT, USA versus a set of intervals of integers, each being a day, that gives all these Fridays.
+In this paper, we consider the calendar algebra [NWJ02] as a symbolic representation tool at the user level.
+The algebra can be used to easily define commonly used granularities like day, week, month, and year, as well as specialized granularities like every other Friday, and first week of all semesters.
+We develop a method to convert calendar algebra expressions to internal integer interval representations (formally defined later).
+As a particular application of our results, users of the only system currently available for solving networks of temporal constraints with granularities (GSTP, [BWJ02]) can use calendar algebra expressions to define granularities appearing in the constraints.
+The main contribution of the paper is that we show how to map an algebraic expression defining a time granularity into a periodic set representation of the same granularity.
+In particular, for each algebraic operator, the periodicity of the set corresponding to its application is derived from the periodicity of the argument expression.
+In the paper we also highlight a problem with the definition of the altering tick algebra operator in [NWJ02], and we propose a solution.
+Despite several formalisms have been proposed for symbolic representation of granularities and periodicity (among which [LMF86, Nie92, NWJ02, Ter03]), and some work has been done on comparing and enhancing the expressive power of some of them (e.g., [BD00]), no mapping was provided in these papers to identify how each operator changes the mathematical characterization of the periodicity of the argument expressions.
+The problem of finding these mappings is not trivial for some operators, and its solution enables interesting applications based on the mathematical characterization of periodic expressions.
+In the next section we define granularities and discuss their internal symbolic representation.
+In Section 3 we outline our main task of conversion, identifying the periodicity for each algebraic operator.
+The derivation of the integer intervals corresponding to explicit granules in one period is shown in Section 4 and we conclude in Section 5.
+2.
+Granularities and Their Symbolic Representation Time granularities include very common ones like hours, days, weeks, months and years, as well as the evolution and specialization of these granularities for specific contexts or applications.
+Trading days, banking days, and academic semesters are just few examples of specialization of granularities that have become quite common when describing policies and constraints.
+A comprehensive formal study of time granularities and their relationships can be found in [BJW00].
+In this paper, for lack of space we only introduce notions that are essential to show our results.
+In particular, we report here the notion of labeled granularity which was proposed for the specification of a calendar algebra [BJW00, NWJ02].
+Granularities are defined by grouping sets of instants into granules.
+For example, each granule of the granularity day specifies the set of instants included in a particular day.
+A label (or index) is used to refer to a particular granule.
+The whole set of time instants is called time domain, and for the purpose of this paper the domain can be an arbitrary infinite set with a total order relationship, <=.
+Definition.
+A labeled granularity is a pair (L, G), where L is a subset of the integers, and G is a mapping from L to the subsets of the time domain such that for each pair of integers i and j in L with i < j, if G(i) 6= [?]
+and G(j) 6= [?
+], then (1) each element in G(i) is less than every element of G(j), and (2) for each integer k in L with i < k < j, G(k) 6= [?].
+When L is exactly the integers, the granularity is called "full-integer labeled".
+When L = Z+ we have the same notion of granularity as used in several applications (e.g., [BWJ02]).
+For example, following this labeling schema, if we assume to map day(1) to the subset of the time domain corresponding to January 1, 2001, day(32) would be mapped to February 1, 2001, b-day(6) to January 8, 2001 (the sixth business day), and month(15) to March 2002.
+The generalization to arbitrary label sets has been introduced mainly to facilitate conversion operations in the algebra, however our final goal is the conversion of a labeled granularity denoted by a calendar expression into a "positive-integer labeled" one denoted by a periodic formula.
+Related to the notion of labeled granularity is the one of label-aligned subgranularity.
+Formally, G1 is a labelaligned subgranularity of G2 if the label set LG1 of G1 is a subset of the label set LG2 of G2 and for each i in LG1 such that G1 (i) 6= [?
+], we have G1 (i) = G2 (i).
+Intuitively, G1 has a subset of the granules of G2 and those granules have the same label in the two granularities.
+Several interesting relationships can be defined among granularities.
+The first of these is called group into and defines a partial order over the set of all granularities.
+If G and H are granularities, then G is said to group into H, denoted G / H, if for each non-empty granule H(j), there exists a (possibly infinite) set S of labels of G such that S H(j) = i[?
+]S G(i).
+Intuitively, G / H means that each granule of H is a union of some granules of G. For example, day / week since a week is composed of 7 days and day / b-day since each business day is a day.
+Granularities are said to be bounded when L has a first or last element or when G(i) = [?]
+for some i [?]
+L. We assume the existence of an unbounded bottom granularity, denoted by G[?]
+which is full-integer labeled and groups into every other granularity in the system.
+We also say that G partitions H if G / H and there are no granules of G other than those included in granules of H. For example, both day and b-day group into b-week, but day does not partition b-week, while b-day does.
+Since we are particularly interested in granularities which can be expressed as periodic repetitions of granules of other granularities (in particular a bottom granularity), we formally define the following relationship1 Definition.
+A labeled granularity G groups periodically into a labeled granularity H if G groups into H and there exist positive integers N and P such that (1) for each label i of H, i + N is a label of H unless i + N is greater than the greatest label of H, and (2) for each label i of H, if Sk H(i) = r=0 G(jr ) and H(i + N ) is a non empty granSk ule of H then H(i + N ) = r=0 G(jr + P ), and (3) if H(s) is the first non-empty granule in H (if exists), then H(s + N ) is non empty.
+Intuitively, condition (1) says that labels of H have N as a periodic pattern (i.e., if i [?]
+LH , then i + a * N [?]
+LH with a [?]
+Z if H is unbounded), condition (2) says that the granules of H repeat along the time domain by "shifting" each granule by P granules of G, and condition (3) simply says that there is at least one of these repetitions.
+Several examples will be shown in Section 3.
+We call each pair P and N in Definition 2, a period and its associated period label distance.
+Note that period and period label distance are not unique.
+More precisely, we inG G dicate with PH the period of H in terms of G and with NH the period label distance of H in terms of G; the form PH and NH is used when G = G[?]
+.
+In general, this relationship guarantees that granularity H can be finitely described (in terms of granules of G) providing the following information: (i) a value for P and N ; (ii) the set L of labels of H in one period of length P ; (iii) 1  This is simply an extension to labeled granularities of the analogous relation defined for "regular" granularities (see e.g., [BJW00]).
+for each j [?]
+L, the finite set Sj of labels of G, describing the composition of H(j); (iv) the labels of first and last non-empty granules in H, if their values are not infinite.
+If L is the set of labels of H with values in {b, .
+.
+.
+, b + N - 1}, and we assume H to be unbounded, the description of an arbitrary granule j [?]
+LH can be obtained by the following formula.
+Given j 0 = [(j - 1) mod N ] + 1 and  fi b-1  fi  * N + j0 if b-1 * N + j0 >= b  N N k=   fi b-1  + 1 * N + j 0 otherwise N  corresponds to Monday, i.e., the first day of a week.
+Note that G partitions G0 , and G0 is also a full-integer labeled granularity.
+Proposition 1 If G0 = Groupm (G), then PG0 = m * PG and NG0 = NG Example 1 Figure 1 shows an example of the grouping operation: granularity day is the bottom granularity and its period is 1; week is defined as Group7 (day), so it has a period of 7 days.
+we have  H(j) =  [  i[?
+]Sk         j-1 k-1 G G G PH * + i - PH * .
+N N  Day Week  1  2  3  4  1  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21  2  3  Figure 1.
+Group operation example  3.
+Deriving periodicity from algebraic operations We now briefly illustrate each calendar algebra operation, identifying a pair of values P and N that characterize the periodicity of the granularity resulting from its application.
+Since we assume to start from the bottom granularity G[?]
+, which is trivially periodic in terms of itself, these results applied recursively to a calendar expression, allow us to characterize the periodicity of the resulting granularity in terms of G[?]
+.
+With respect to the algebra defined in [NWJ02] we need to limit the altering tick operation to finite values (no [?]
+in its parameters), and we exclude the subset operation if not simply applied as the last operation in an algebraic expression.
+In the following, symbols G0 , G, G1 , and G2 stand for granularities.
+G, G1 and G2 are usually operand granularities, while G0 is the resulting granularity; Symbols LG0 , LG , LG1 , and LG2 stand for the label set associated to G0 , G, G1 , and G2 , respectively; Symbols PG0 , P , PG1 , and PG2 stand for periods of G0 , G, G1 , and G2 respectively; NG0 , NG ,NG1 , and NG2 are the period label distances of G0 , G, G1 , and G2 , respectively.
+3.1.
+The grouping operation Let G be a full-integer labeled granularity, and m a positive integer.
+The grouping operation Groupm (G) gives the granularity G0 such that for each integer i, G0 (i) =  i*m [  G(j).
+j=(i-1)*m+1  For example, given granularity day, week can be generated by week = Group7 (day) if we assume that day(1)  3.2.
+The altering-tick operation Let G1 , G2 be full-integer labeled granularities, and l, k, m integers, where G2 partitions G1 , and 1 <= l <= m. The m altering-tick operation Alterl,k (G2 , G1 ) generates a new granularity by periodically expanding or shrinking granules of G1 in terms of granules of G2 .
+Since G2 partitions G1 , each granule of G1 consists of some contiguous granules of G2 .
+The granules of G1 can be partitioned into mgranule groups such that G1 (1) to G1 (m) are in one group, G1 (m+1) to G1 (2m) are in the following group, and so on.
+The goal of the altering-tick operation is to modify the granules of G1 so that the l-th granule of every aforementioned group will have |k| additional (or fewer when k < 0) granules of G2 .
+For example, if G1 represents 30-day groups (i.e., G1 = Group30 (day)) and we want to add a day to the third month every 12 month (i.e., to make March to have 31 12 days), we may perform Alter3,1 (day, G1 ).
+Specifically, for all i = l + m * n, where n is an integer, G1 (i) denotes the granule to be shrunk or expanded.
+The granules of G1 are split into two parts at G1 (0).
+When i > 0, G1 (i) expands (or shrinks) by taking in (or pushing out) later granules of G2 , and the effect is propagated to later granules of G1 .
+On the contrary, when i <= 0, G1 (i) expands (or shrinks) by taking in (or pushing out) earlier granules of G2 , and the effect is propagated to earlier granules of G1 .
+The altering-tick operation can be formally described as follows.
+For each integer i such that G1 (i) 6= [?
+], let bi and i ti be the integers such that G1 (i) = [?
+]tj=b G2 (j).
+(The i integers bi and ti exist because G2 partitions G1 .)
+Then G0 = Alterm l,k (G2 , G1 ) is the granularity such that for each integer i, let G0 (i) = [?]
+if G1 (i) = [?
+], and otherwise let  G0 (i) = b0i  =  St0i  j=b0i    G2 (j) where:  bi + (h - 1) * k, if i = (h - 1) * m + l bi + h * k, otherwise  and t0i = ti + h * k, having h = b i-l m c + 1.
+The original definition of altering-tick given in [NWJ02] as reported above, has the following problems when an arbitrary negative value for k is used: (1) It allows the definition of a G0 that is not a full integer labeled granularity and (2) It allows the definition of a G0 that does not even satisfy the definition of granularity.
+After considering several options, we decided that a reasonable restriction that avoids these undesired behaviors is imposing  Combine(G1 , G2 ) generates a new granularity G0 by combining all the granules of G2 that are included in one granule of G1 into one granule of G0 .
+More formally, for each i [?]
+LG1 , let s(i) = [?]
+if G1 (i) = [?
+], and otherwise let s(i) = {j [?]
+LG2 |[?]
+= 6 G2 (j) [?]
+G1 (i)}.
+Then G0 = Combine(G1 , G2 ) is the granularity with the label set LG0 =S{i [?]
+LG1 |s(i) 6= [?]}
+such that for each i in LG0 , G0 (i) = j[?
+]s(i) G2 (j).
+As an example, given granularities b-day and month, the granularity for business months can be generated by b-month = Combine(month, b-day).
+k > -(mindist(G1, 2, G2) - 1)  Proposition 4 If G0 = Combine(G1 , G2 ), then: PG0 = lcm(PG1 ,PG2 )NG1 lcm(PG1 , PG2 ) and NG0 = PG  where mindist() is formally defined in [BJW00].
+Intuitively, mindist(G1, 2, G2) represents the minimum distance (in terms of granules of G2) between two consecutive granules of G1.
+Example 3 Figure 3 shows an example of the combining operation: G0 = Combine(W eek, G2 ).
+Day is the bottom granulairty, the period of week is 7 and the period of G2 is 3, therefore the period of G0 is 21.
+1  m Proposition 2 If G0 = Alterl,k (G2 , G1 ), then: PG0 = m * PG1 * PG2 * NG2 + k * NG1 * (PG2 )2 and NG0 = m * NG1 * NG2 * PG2 .
+Example 2 Figure 2 shows an example of the altering tick operation: day is the bottom granularity; G1 = Group3 (Day) and G0 is defined as 2 Alter2,-1 (Day, G1 ).
+The period of G0 is 5 and NG0 = 2.
+Day G1 G'  1  2  3  4  5  1 1  6  7  2 2  8  Day  1  2  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21  1  Week G2  3  1  2  3  1  2 4  5  6  7  8  2  3 9 10  11 12  13 14  3  G'  Figure 3.
+Combining operation example  9 10 11 12 13 14 15 16 17 18 19 20 21  3 3  4 4  5 5  6 6  7  7 8  Figure 2.
+Alter-tick operation example  3.3.
+Shifting operation Let G be a full-integer labeled granularity, and m an integer.
+The shifting operation generates a new granularity G0 = Shiftm (G) such that for each integer i, G0 (i) = G(i + m).
+Note that G0 is full-integer labeled.
+Proposition 3 If G0 = Shif tm (G1 ), then PG0 = PG1 and NG0 = NG1 .
+3.4.
+Combining operation Let G1 and G2 be granularities with label sets LG1 and LG2 respectively.
+The combining operation  Anchored grouping operation Let G1 and G2 be granularities with label sets LG1 and LG2 respectively, where G2 is a label-aligned subgranularity of G1 , and G1 is a full-integer labeled granularity.
+The anchored grouping operation Anchored-group(G1 , G2 ) generates a new granularity G0 by combining all the granules of G1 that are between two granules of G2 into one granule of G0 .
+More formally, G0 = Anchored-group(G1 , G2 ) is the granularity with the label set LG0 = LG2 such that for i0 -1 each i [?]
+LG0 , G0 (i) = [?
+]j=i G1 (j), where i0 is the next label of G2 after i.
+Proposition 5 If G0 = Anchored-group(G1 , G2 ), then lcm(PG1 ,PG2 )*NG2 PG0 = lcm(PG1 , PG2 ) and NG0 = PG 2  Example 4 Figure 4 shows an example of the anchored grouping operation: the USweek (i.e., a week starting with a Sunday) is defined by the operation anchored-group(day, Sunday).
+Using day as the bottom granularity, the period of USWeek is 7.
+Day  1  2  3  4  5  6  8  9 10 11 12 13 14 15 16 17 18 19 20 21  7  Sunday USWeek  7  0  14 7  21 14  Figure 4.
+Anchored grouping operation example  3.5.
+Subset operation The subset operation is designed to generate a new granularity by selecting an interval of granules from another granularity.
+Let G be a granularity with label set L, and m, n integers such that m <= n. The subset operation G0 = Subsetnm (G) generates a new granularity G0 = Subsetnm (G) with the label set LG0 = {i [?]
+L | m <= i <= n}, and for each i [?]
+LG0 , G0 (i) = G(i).
+Note that G0 is a label-aligned subgranularity of G, and G0 is not a full-integer labeled granularity even if G is.
+We also allow the extensions of setting m = -[?]
+or n = [?]
+with semantics properly extended.
+This operation returns a finite granularity.
+It may still be periodic, with same period as its argument granularity, if it includes granules that cover exactly a multiple of its period, provided that we introduce bounds for the description of the periodic granularity.
+Clearly, these bounds are determined by the values of m and n when different from -[?]
+and +[?
+], respectively.
+However, in general, either the operation will lead to a finite non-periodic granularity (whose granules are all explicitly described), or to a finite semiperiodic granularity [BJW00], where the periodic part has the same period as its argument granularity.
+3.6.
+Selecting operations There are three selecting operations: select-down, selectup and select-by-intersect.
+To facilitate the description of these operations, the [?
+]lk (S) notation is used.
+Intuitively, if S is a set of integers, [?
+]lk (S) selects l elements starting from the k-th one.
+Select-down operation.
+For each granule G2 (i), there exits a set of granules of G1 that is contained in G2 (i).
+The operation Select-downlk (G1 , G2 ), where k 6= 0 and l > 0 are integers, selects granules of G1 by using [?
+]lk (*) on each set of granules (actually their labels) of G1 that are contained in one granule of G2 .
+More formally, G0 = Select-downlk (G1 , G2 ) is the granularity with the label set LG0 = [?]i[?
+]LG2 [?
+]lk ({j [?]
+LG1 | [?]
+= 6 G1 (j) [?]
+G2 (i)}),  eration generates a new granularity G0 by selecting the granules of G1 that contain one or more granules of G2 .
+The Select-by-intersectlk (G1 , G2 ) operation, where k 6= 0 and l > 0 are integers, selects granules of G1 by applying for each granule G2 (i) the [?
+]lk (*) operator to the set of labels of LG1 such that the corresponding granules intersect G2 (i).
+In both cases, G0 is a label-aligned subgranularity of G1 .
+Proposition 6 If G0 = Select-downlk (G1 , G2 ) G0 = Select-up(G1 , G2 ) or G0 = Select-by-intersect(G1 , G2 ) then PG0 lcm(PG1 ,PG2 )NG1 lcm(PG1 , PG2 ) and NG0 = .
+PG  or =  1  Example 5 Consider a calendar with day as the bottom granularity.
+Sunday could be defined as Select-down17 (day, week).
+Hence, the period of the granularity Sunday is 7.
+3.7.
+Set operations The set operations, union, intersection, and difference, can be defined on G1 and G2 only if there exists a granularity H such that G1 and G2 are both label-aligned subgranularities of H. Union.
+The union operation G1 [?]
+G2 generates a new granularity G0 by collecting all the granules from both G1 and G2 .
+More formally, G0 = G1 [?]
+G2 is the granularity with the label set LG0 = LG1 [?]
+LG2 , and for each i [?]
+LG0 ,  G1 (i), i [?]
+LG1 , 0 G (i) = G2 (i), i [?]
+LG2 - LG1 .
+Note that G1 and G2 are label-aligned subgranularities of G0 .
+Example 6 Given granularities Saturday and Sunday, the granularity WeekendDay can be generated by WeekendDay = Sunday [?]
+Saturday.
+The operations intersection [?]
+and difference (-) are defined similarly.
+Since a set operation is valid if the granularities used as argument are both labeled aligned granularity of another granularity, the following property is used.
+Proposition 7 If G is a labeled aligned subgranularity of NH G H, then N PG = PH .
+Proposition 8 If G0 = G1 [?]
+G2 or G0 = G1 [?]
+G2 or G0 = G1 - G2 then PG0 = lcm(PG1 , PG2 ) and NG0 = lcm(PG1 ,PG2 )NG1 lcm(PG1 ,PG2 )NG2 = .
+PG PG 1  2  and for each i [?]
+LG0 , G0 (i) = G1 (i).
+4.
+Completing the periodical characterization  Select-up and Select-by-intersect operations.
+Two analogous operations can be defined.
+The Select-up(G1 , G2 ) op-  In Section 3 we have derived for each operation the values P and N characterizing the periodicity of the resulting  granularity in terms of one of the operand granularities.
+In order to fully characterize the granularity we still have to provide a description of the granules in one of the periods, assuming, of course, that we have one for the operand granularities.
+Moreover, we should identify possible lower and upper bounds.
+For what concern the bounds, we know that each operation, except subset, results in an unbounded granularity if the granularities used as arguments are unbounded.
+From this consideration and since we assume that the bottom granularity is unbounded, all the granularities that could be generated with the calendar operation (excluding the subset operation) are unbounded.
+Since we assume that the subset operation could be only used as the last operation in an algebraic expression, we can assure that for each operation, except the subset, the resulting granularity is unbounded.
+For the subset operation it has been indicated in the previous section how to calculate the lower and upper bounds.
+Since we do not have to deal with bounds and since the period can be easily obtained, in order to fully characterize a periodical granularity we only need the explicit representation of the granules in one of its periods.
+4.1.
+Deriving the explicit granules in one period Observe that our algebra operations are always defined in two step, first the label set, and second the granules for each label.
+In order to derive the explicit granules in one period, we first need to identify the set of labels LG0 for the granules of the resulting granularity in one period of G0 , and then compute the value of each of them according to the operation definition.
+In order to check the relationship among explicit granules as directed by the algebra operation definitions, for each granularity G, we define LG as the set of labels corresponding to granules of G which contain at least one of G[?]
+(1), .
+.
+.
+, G[?]
+(PG ).2 LG is equal to LG if G[?]
+(0) 6[?]
+G(min(LG )), otherwise LG = LG - {max(LG )}.
+To compute LG0 we still need to extend both explicit granules and labels of each operand granularity to the period of G0 , and then use the operation definitions to derive LG0 and then LG0 .
+Given a granularity G with period PG , the corresponding set of labels LG can be extended to a period P by considering P instead of PG in the definition of L. We denote the resulting set with LP G. The idea is to start with LG[?]
+= {1}, and then show for each operation how L of the resulting granularity G0 is calculated given the L value (possibly extended to the common period PG0 ) of the operand granularities.
+2  Note that the cardinality of LG will be equal to the number of granules in one period or have one extra label (in the case a granule includes both G[?]
+(0) and G[?]
+(1)).
+If G0 = Shif tm (G1 ) then LG0 = {i [?]
+Z|i + m [?]
+LG1 } If G0 = Groupm (G1 ) then LG0 = {min(LG1 ), .
+.
+.
+, min(LG1 ) + NG0 } m If G0 = AlterT ickl,k (G2 , G1 ) then LG0 = {min(LG2 ), .
+.
+.
+, min(LG2 ) + NG0 } If G0 = Combining(G1 , G2 ) then P P 6 G2 (j) [?]
+G1 (i)} [?
+]i [?]
+LGG1 0 s(i) = {j [?]
+LGG2 0 | [?]
+= PG0 0 and LG = {i [?]
+LG1 |s(i) 6= [?]}
+If G0 = select downlk (G 1 , G2 ) then n o S P LG0 = i[?
+]LPG0 [?
+]lk j [?]
+LGG1 0 |[?]
+= 6 G1 (j) [?]
+G2 (i) G2  If G0 = select n up(G1 , G2 ) then  o P P LG0 = j [?]
+LGG1 0 |[?
+]j [?]
+LGG2 0 ([?]
+= 6 G2 (j) [?]
+G1 (i)) If G0 = select by intersect(G 1 , G2 ) then n o S P l LG0 = i[?
+]LPG0 [?
+]k j [?]
+LGG1 0 |[?]
+= 6 G1 (j) [?]
+G2 (i) G2  If G0 = G1 [?]
+G2 then P P LG0 = LGG1 0 [?]
+LGG2 0 , and similarly for [?]
+and -.
+Example 7 Consider a calendar having day as the bottom granularity; let week be defined with Pweek = 7, Nweek = 1 and Lweek = {1}.
+We define the granularity including all the Saturdays and Sundays (called wday) as wday = select down26 (day, week).
+By Proposition 6, Pwday = 7 and Nwday = 7.
+In order to compute Lwday Pwday we first need to calculate Lday = {1, 2, 3, 4, 5, 6, 7}, P  wday and Lweek = {1}.
+Hence, by definition of the combinPwday ing operation Lwday = [?
+]26 (j [?]
+Lday |[?]
+= 6 day(j) [?]
+week(1)) = {6, 7}.
+Since LG0 is trivially derived from LG0 , we can calculate the explicit granules in one period by applying the formulas specific to the operation for each label in LG0 .
+Referring to Example 7, Lwday = Lwday = {6, 7}, and using the definition of the select down operation we derive wday(6) = day(6) and wday(7) = day(7), which together with the values of Pweek and Nweek fully characterize week.
+If we need to characterize all granularities as periodic expressions in terms of the bottom granularity, we can simply recursively apply the steps we have shown for each algebraic operation.
+Example 8 Continuing with Example 7, suppose we define weekend as combine(week, wday).
+By Proposition 4 Pweekend = 7 and Nweekend = 1; moreover from the formulas to derive L: Lweekend = Lweekend = {1}.
+By definition of the combining operation, s(1) = {6, 7}, S and hence weekend(1) = wday(j).
+Since j[?
+]{6,7} wday(6) = day(6) and wday(7) = day(7), then weekend(1) = day(6) [?]
+day(7).
+4.2.
+Computing arbitrary values from the periodic representation Given LG0 , the explicit granules, and the values of PG0 and NG0 for the granularity G0 derived by an algebraic operation where G is the operand granularity which periodically groups into G0 , we can easily compute the composition of an arbitrary granule G0 (j) with j [?]
+LG0 in terms of granules of G using the formula given at the end of Section 2.
+Example 9 Referring to Example 7, we know that Lwday = {6, 7} and wday(6) = day(6) and wday(7) = day(7).
+wday(14) can be computed using the formula observing that j = 14, b = min(Lwday ) = 6, G N = PH = 7, and S6 = {6} and S7 = {7}.
+Then we derive k = j 0 = 7, and hence wday(14) = day(14).
+4.3.
+Reducing the periodic representation to positive-integer labeled granularities Each granularity obtained from a calendar expression as explained above can be easily converted into a full- or positive-integer labeled granularity in order to satisfy the definition used in some of the existing applications (e.g., GSTP).
+The formal definition of this process is described in [BJW00] and is not reported here for lack of space.
+Example 10 Referring to Example 7, the granules with the labels 6 and 7 in Lwday are relabeled with 1 and 2, respectively.
+While the value of the period remains the same, the value of Nwday is changed into 2, the number of granules in each period.
+It is easily seen that the formula provided to compute arbitrary values is still valid.
+5.
+Conclusions We have shown how, given a calendar algebra expression, we can derive an equivalent granularity characterization in terms of periodic sets of granules of the bottom granularity.
+The periods and period label distances we obtain are not always minimal.
+We are investigating algorithms to reduce the period value or even to find the minimum values.
+The optimal period values have more general applications; for example it would be very useful even to further reduce the representations given by users that directly define their granularities in terms of periodic sets, as it currently happens for the GSTP system [BWJ02].
+We are also working on XML versions of algebraic and periodical representations, to enable a rich set of time granularity web services that could be useful for many applications handling time-dependent data.
+References [BJW00] C. Bettini, S. Jajodia, and X. Wang.
+Time Granularities in Databases, Temporal Reasoning, and Data Mining.
+Springer, 2000.
+[BD00] C. Bettini, R. De Sibi.
+Symbolic Representation of UserDefined Time Granularities, Annals of Mathematics and Artificial Intelligence, 30(1-4):53-92, 2000.
+[BWJ02] C. Bettini, X. Wang, S. Jajodia, Solving MultiGranularity constraint networks, Artificial Intelligence, 140(12):107-152, 2002.
+[EJS98] O. Etzion, S. Jajodia, and S. Sripada (Eds.)
+Temporal Databases: Research and Practice.
+Springer-Verlag Heidelberg, Lecture Notes in Computer Science 1380, 1998.
+[LMF86] B. Leban, D. Mcdonald, and D. Foster, A representation for collections of temporal intervals, in Proc.
+of the American National Conference on Artificial Intelligence, pp.
+367- 371, AAAI Press, 1986.
+[Nie92] M. Niezette and J. Stevenne, An efficient symbolic representation of periodic time, in Proc.
+of International Conference on Information and Knowledge Management, pp.
+161- 168, ACM Press, 1992.
+[NWJ02] P. Ning, X. Wang, S. Jajodia.
+An Algebraic Representation of Calendars.
+Annals of Mathematics and Artificial Intelligence 36(1-2): 5-38, 2002.
+[Ter03] Paolo Terenziani, Symbolic User-Defined Periodicity in Temporal Relational Databases.
+IEEE Trans.
+on Knowledge and Data Engineering, 15(2): 489-509, 2003.

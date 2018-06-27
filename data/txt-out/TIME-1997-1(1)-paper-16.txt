@@ -1,0 +1,315 @@
+GCH-OSQL A Temporally-Oriented Object-Oriented Query Language Based on a Three-Valued Logic Carlo Combi ( 5 ) and Giorgio Cucchi  8 Laboratory of Artificial Intelligence Dipartimento di Matematica e Infonnatica Universita' degli Studi di Udine via delle Scienze 206,33100 Udine - Italy email: combi@dimi.uniud.it Abstract  a span of time, and sometimes the concept of instant for punctual events [ 12, 221.
+Temporal dimension, moreover, can be expressed in different and heterogeneous way: the adopted time axis, for example, has different time units ("in 1989 the patient had myocardial infarction", "at 1:00 p.m. the patient had an episode of atrial fibrillation: it lasted 48 minutes"); in other cases the temporal location is expressed with some indeterminacy ("between 17:30 and 18:15 the patient had for 6 seconds ventricular fibrillation").
+Furthermore, different granularities and indeterminacies can be used in many varying ways to define temporal intervals ("at 17:30 for 20 seconds", "for 3 hours until 16:20", "start between 14:20 and 14:33; end between 18 and 18:30).
+At the best of our knowledge, there are no temporal query languages, from literature, able to represent all the different granularities of the above mentioned valid-time intervals [21,22].
+Supporting time granularity in querying the database.
+In querying the system about the stored temporal information we usually need granularities different and not related to those used when storing data.
+In the same query different granularities may be used.
+Managing uncertainty in temporal relationships.
+In dealing with information having different granularities andor indeterminacy, it is possible that in some cases temporal relations cannot be asserted for sure.
+It is not possible, for example, establish the before/after relations between two pathologies, represented, respectively, by the sentences "myocardial infarction on October 22, 1994" and "atrial fibrillation episode in October 1994".
+The need of managing temporal information given at different levels of granularity and indeterminacy is common to many application areas.
+Between them, we focus on the management of clinical data.
+Different time granularities are also needed in querying remporal databases.
+In this paper, we describe GCH-OSQL (Granular Clinical History - Object Structured Query Language), an object-oriented temporally-oriented extension of SQL.
+GCH-OSQL is based on an objectoriented temporal dura model, named GCH-OODM.
+GCH-OODM allows storage of temporal information at different and mixed granularities.
+GCH-OSQL deals with the valid time of temporal data.
+The temporal extension of the SELECT statement includes the addition of the TIME-SLICE and MOVING WINDOW clauses, and the capability of referring to the temporal dimension of objects in the WHERE and SELECT clauses.
+1.
+Introduction Among still open problems in research on temporal object-oriented databases we focus on the management of different time granularities, i.e.
+different time units, and the management of temporal indeterminacy in locating intervals and instants [21, 22, 241.
+Motivation in considering this kind of problems in temporal objectoriented databases comes from our interest in managing complex clinical temporal information [ 12, 131.
+In this paper we describe the query language GCHOSQL (Granular Clinical History - Object Structured Query Language); GCH-OSQL is based on an objectoriented data model, named GCH-OODM (Granular Clinical History - Object Oriented Data Model).
+GCHOSQL deals with the following specific issues.
+Temporal granuIarity and temporal indeterminacy modeling.
+The temporal dimension is expressed by using sometimes the concept of interval, for facts having  2.
+The object-oriented temporal data model GCH-OODM GCH-OODM is an object-oriented data model, extended to consider and manage the valid time of information.
+The object oriented data model is C++-like [3]: the database schema consists of a set of classes.
+Objects are created as instances of a class.
+In the  9  0-8186-7937-9/97 $10.000 1997 IEEE  119  following we will use the terms class and type as synonyms, to describe the proposed data model [3].
+An object is characterized by a state, described by attributes, not accessible from outside, and by an inte@ace, defined by methods.
+By methods, properties of objects and relations between objects of the same class or of different classes are expressed.
+Each method has a declaration, consisting of a name, a set of parameters, identified by name and type, and a result, identified by a type.
+Like attributes, code associated to the execution of a method is not accessible from outside.
+From a notational point of view, the reference to a method m( ...) applied to an object o will be written as o.m( ...).
+GCH-OODM supports the main features of objectoriented data models applied to databases: object identity, encapsulation, abstract data types, single inheritance, polymorphism, management of complex objects, persistence [ 161.
+Besides the usual types (char, char*, int, real, array, list, set, ...), GCH-OODM uses, to model the temporal dimension of information, some predefined data types: the type hierarchy el-time, instant, duration, interval; the type t-o-set, by which sets of temporal objects are modeled.
+Temporal granularities are modeled by the type granularity; objects of this type can have values belonging to the set, ordered by descending values, { S U P , yy, mm, dd, hh, min, ss, INF} composed by the symbols of the considered time units.
+GCH-OODM relies on a three-valued logic modeled by the type bool3, to manage uncertainty coming from comparison between temporal dimensions expressed at different granularities.
+(managed by the class bool3); b) comparison operations between objects returned by suitable methods and/or suitable typed constants; or c) composition by the logical connectives of formulas of type a) or b).
+,-=g-HJ A T  I  NOTA  I  T(A)  F I :I F  U  The meaning of the other logical connectives can be defined by the above defined ones: A OR B stands for NOT((N0T A) AND (NOT B)); F(A) stands for T(N0T A); U(A) stands for NOT (T(A) OR T(N0T A)).
+This three-valued logic is managed by the predefined data type bool3.
+2.2.
+Time modeling The class el-time allows us to model time points on the basic time axis, named elementary instants.
+Each elementary instant is identified by the corresponding chronon, i.e.
+the nondecomposable unit of time supported by the temporal DBMS [22, 241.
+By the class el-time properties of integers are extended to the time axis.
+This way, both time points and spans between time points are modeled in a homogeneous way: time points are identified on the basic time axis by their distance from the origin of the axis.
+The class el-time provides, then, functions both to manage the absolute location of time points on the time axis - i.e., calendar-related functions able to deal with leap years, months having 28, 29, 30, or 31 days - and to manage time spans - i.e., functions able to perform operations on time spans, not directly anchored to the calendar - and also to compute sum and difference operations on time pointdtime spans.
+For clarity reasons we will use two different formats, to specify respectively time points and distances between time points.
+We use the usual calendric format W/MM/DD/HH/Mi/SSto specify a time point.
+We will use the format Y y y M mm D dd H hh Mi min S ss,to identify a distance between time points (Y,M, D, H, Mi, and s stand for values related to the corresponding time unit).
+The time point 94/10/10/0/0/0, for example, identifies the first second of October 10, 1994; the time span 5 min 2 ss identifies a duration lasting 5 minutes and 2 seconds (we will omit to specify 0 yy 0 mm 0 dd 0 hh, but only for time units coarser than the coarsest time unit having a non-zero value).
+The class instant allows us to represent a time point, identified by the granule, i.e.
+a set of contiguous chronons, containing it.
+This class uses, by the methods infl) and sup(), two objects of type el-time, to represent  2.1.
+Managing the three-valued logic: the class boo13 The presence of different granularities and of indeterminacy leads us to manage relations between intervals possibly having, besides the two logical values true or false, an indeterminate logical value: it is not always possible to establish with certainty the truth or the falsehood of relations existing between intervals [W. We then use a three-valued logic: in addition to the values T: True and F: False, the value U: Undefined is present.
+The usual logical connectives AND, OR, NOT, IMPLIES, ...., and the logical quantifiers EXISTS (3, and FOR EACH (V) have been extended to consider the third truth value UNDEFINED.
+The adopted three-valued logic derives from Kleene's logic, where the third truth value U is related to situations, about which it is not possible to know the truth or falsehood [19].
+In comparison with the Kleene's logic we added the new logical connectives TO, U() and F(), to explicitly manage each of the three truth values.
+The interpretation of the logical connectives, depending on the values of the formulas A and B, is described by the following truth tables.
+In GCH-OODM formulas may consist in: a) methods returning a logical value  120  the lower and upper bound of the granule, in which the generic time point is located.
+A granule can be expressed by different time units, e.g.
+by the format W/MM/DD or W/MM, or it may be specified by two time points, i.e.
+the upper and the lower bound of the granule, by the format *W/MM/DD/HH/Mi/SS, W/MM/DD/HH/Mi/SS+.
+The instant 94/10/10, for example, may coincide with anyone of the time points included between the two bounds 9 4 / 1 0 / 1 0 / 0 / 0 / 0 and 94/10/10/23/59/59, represented by two objects o f el-time type: the notation 9 4 / 1 0 / 1 0 will be equivalent to 494/10/10/0/0/0, 9 4 / 10 / 10/ 2 3 / 5 9 / 5 9+.
+In modeling indeterminacy, the instant 496 / 1/1/ 6 / 3 0 / 0, 96 /I./ 1/6 / 3 6 / 59+, for example, specifies a time point between 6:30 and 6:36 of January first, 1996.
+The class duration allows us to model a generic time span, specified at arbitrary granularity.
+This class uses, by the methods injf) and sup(), two objects of type el-rime, to represent the lower and upper distances between chronons, between which the value of the given duration is included.
+A duration is expressed by an ordered sequence of elements, composed by an integer followed by a granularity specifier (from years to seconds, yy,mm, dd, hh, min, ss): e.g., 4 yy, 3 yy 2 mm 3 dd.
+It may be expressed also by specifying the lower and upper distances, e.g.
+4 3 dd 4 hh 6 min 3 ss, 4 dd 6 hh 5 min 2 ss+.
+The duration 3 dd, for example, stands for a time span between 3 dd 0 hh 0 min 0 s s a n d 3 dd 2 3 hh 59 min 59 ss.
+Suitable methods allow the expression of relations and of operations, like sum or differences, on instances of the classes instant and duration [ 131.
+A generic interval, i.e.
+a set of contiguous time points, is modeled by the class intervul.
+The methods start(), end() and dur() allow us to identify, respectively, the starting instant, the ending instant and the duration of the interval.
+Our approach has some similarities with the approaches adopted by Snodgrass in TSQL2, by Bettini and colleagues, and by Clifford and Rao [2, 10,221: both of them are based on mappings between instants defined at different granularities.
+Comparisons between instants given at different granularities are performed by mapping the instants on intervals (or sets of disjoint intervals) at a lower common granularity.
+Bettini and colleagues and Clifford and Rao focus more on the formal definition of granularity; they consider a general framework allowing the definition of different kinds of granularity.
+They do not consider problems related to the definition and the management of anchored time points (i.e., instants) and unanchored time spans (i.e., durations) given at different calendar-based granularities.
+They do not address the problem of merging granularity and indeterminacy in a seamless way.
+These two last topics are faced in TSQL2 by  approach from that proposed in GCH-OSQL [22].
+We discuss the approach adopted in TSQL2 in the section 4.
+Suitable methods of the class interval allow us to establish temporal relations between two intervals, specified at different and not predefined granularity and/or indeterminacy.
+Relations between intervals are a superset of the 13 Allen's relations and they can be divided in granularity-related relations and granularityindependent relations [I, 121.
+Time modeling in GCHOODM is described in details in [ 131.
+In GCH-OODM methods of the class interval representing temporal relations are defined by the methods of classes instant and duration, based, in turn, on methods of the class el-time.
+For example, the relation a.BEFORE(b) between two objects a, b instances of the class interval is expressed by the methods of the classes instunt and then el-rime in the following way: a.BEFORE(b) =df a.end().BEFORE(b.start())=df T iff a.end().sup()< b.start().info F iff a.end().infl)> b.start().sup()OR (a.end().inf() = b.start().infi)AND a.end().sup() = b.starr().sup()AND a.end().infl)= a.end().sup()) 0 U otherwise  -  2.3.
+Temporal and atemporal classes GCH-OODM distinguishes temporal classes and atemporal classes.
+Objects instances of temporal classes (hereinafter temporal objects) have an associated valid interval.
+By these temporal objects we are able to represent information for which it is important to know the period during which the information is true in the modeled world.
+The method valid-intervaZ() returns the interval of validity of an object.
+By the valid interval it is possible to verify temporal relations between objects instances of temporal classes.
+Temporal objects may have many temporal properties; these properties, defined by suitable methods, are represented by temporal objects, which can be composed by set of temporal objects, with an approach having analogies with that in ~51.
+-  Objects instances of atemporal classes (hereinafter atemporal objects) model information, not having an associated temporal dimension.
+An atemporal object may, however, have properties represented by temporal objects.
+Both in temporal and atemporal classes we distinguish, then, temporal methods, modeling temporal features, returning temporal objects and atemporal methods returning atemporal objects.
+In fig.1 some examples are given both for temporal and atemporal classes and for temporal and atemporal methods.
+Snodgrass, providing some solutions with a different  121  class person { public: char* n a m e 0 ; 1;  class patient: public person { public: t-o-set<visit> Visit-set(); t-o-set<symptom> symptom-set 0 ; 1;  temporal class symptom { interval valid-interval(); char* s-name ( ) ; char* severity 0 ; 1; temporal class visit { interval valid-interval(); int heart-rate(); int temperature(); 1;  Figure 1.
+The schema of the example clinical database  Simple Temporal Problems (STP); in this case complete constraint propagation is tractable [ 141.
+The class t-o-set is a temporal class.
+The valid interval of an object I instance of the class t-o-set is evaluated on the basis of all the valid intervals of temporal objects belonging to I: I.vulid-intervul().sturt().infl) min(x.vulid-intervul().stu~~().infl)), xEI I.vulid-intervul().sturt().sup() E min(x.vulid_intervul().st~rr().sup()), xE I I.vulid-intervul().end().infl) 3 max(x.vulid-infervul() .end().infl)),x E I I.vu6id_infervul().endg.sup()E max(x.vulid_intervuZ().endO.supO),x E I Granularity of the valid interval of an instance of the class t-o-set depends, then, on the granularities of the valid intervals of objects belonging to the modeled set.
+We consider two orthogonal ways of specializing the t-0-set class: the first consists in specializing temporal objects managed by the class (see next paragraph); the second consists in defining explicitly some constraints on the managed temporal objects, in order to consider, for example, only sets of non overlapping temporal objects andor with the valid interval specified at a predefined granularity.
+2.4.
+Sets of temporal objects: the class t-o-set The predefined class t-o-set (temporal-object-set) allows the construction and the management of set of temporal objects.
+To the instances of the class t-o-set it is possible to apply the usual operations on sets: insertion, deletion, intersection, union, difference, existence of an element, emptiness, contained-in relation.
+Some methods are defined to verify the existence, at a given granularity (if needed), of temporal relations between objects belonging to an instance of the class t-o-set, satisfying some conditions on atemporal methods (see Example 3.3 ii) in the following section) [12, 131.
+Let us consider the following methods, related to an instance I of the class t-o-set.
+Let p, q be two atemporal formulas, i.e.
+formulas involving only atemporal methods and comparisons on atemporal objects; let x and y be two temporal objects, X an assigned granularity.
+To explain the meaning of the following methods, we will use the method subset: I.subset@) returns the subset of temporal objects belonging to I and satisfying the formula p. I.OCCURS@) = I.subset@) # 0 The method OCCWRS@) allows us to establish if in the set I there is an object satisfying the condition p. I.CONTEMPORARY@,q,X)I 3 x E I.subset@), 3 y E I.subset(q) (x.vulid_fime().CONMPORARY (-y.vulid-time(), X ) ) The method CON"EMPORARY@,q,X) allows us to establish if in the set I there are two temporal objects, satisfying, respectively, the formulas p and q, and having the valid intervals contemporary at a predefined granularity X.
+For example, 1.CONTEMPORARY ("heart-rate() < 80","heart-rate() > 120", mm) allows us to establish if, in the set I of temporal objects of the class visit (see fig.l), there are in the same month two heart rate values respectively less than 80 and greater than 120.
+In a similar way methods allowing to verify other temporal relations between intervals (before, after, overlap, ..) have been defined [ 131.
+The set of temporal objects managed by an instance of the class r-o-ser can be viewed, as regards their temporal dimension, as a network of temporal constraints among the starting and ending points of the valid intervals of the temporal objects.
+These constraints fit into the class of  2.5.
+The example database The example schema represented in fig.1, obviously far from real clinical data complexity, considers both temporal and atemporal classes.
+A hierarchy of classes is described, using a C++-like syntax.
+It refers to a clinical database, where data about patients are stored: data are related to the symptoms a patient suffers from and to the parameters (like heart rate) collected during follow up visits.
+The atemporal class putient has two temporal properties, modeled by the methods visit-set() and symptom-set(), returning instances of the temporal class t-0-set.
+These instances are specialized to manage sets of temporal objects of, respectively, symptom and visit classes.
+Methods s-nume() or heurt-rute(), for example, are atemporal.
+122  The objects in the database containing the data we are interested in are instances of the classes listed in the FROM clause.
+To each listed class an object variable is associated: it is used to refer to object instances of the related class in the database.
+IN GCH-OSQL object variables must be present.
+Example 3.1.
+The query "Find all the patients having nausea and display patient name and the starting instant of each nausea symptom" will be expressed in the following way: SELECT P .name ( ) , S.valid-interval0 .start().display() FROM patient P, symptom S WHERE P.symptom-set0 .HAS-MEMBER(S)AND S. s p a m e ( ) ="nausea"  3.
+The GCH-OSQL query language The temporal extension to the syntax of SQL concerns the part needed for database queries.
+We did not define any particular syntax for update, insert and delete operations, to preserve information hiding [7].
+The specific programming language of the adopted object oriented DBMS directly manages these operations, by using the ad-hoc defined suitable methods.
+The temporal extension includes the addition of the TIME-SLICE and MOVING WINDOW clauses in the original SELECT statement; the temporal dimension of objects may be referred to in the WHERE and SELECT clauses.
+A GCH-OSQL query may be expressed this way, where square brackets mean the clause is optional:  3.2.
+The WHERE clause  SELECT <class methods or path  In the WHERE clause the logical conditions which express the constraints that must be satisfied by the objects which will be selected in the database are specified.
+Complex constraints may be made composing simpler conditions, using the logical connectives AND, OR, NOT, and the connectives MUSTBE, MAYBE, MUST-NOTBE, translating the GCH-OODM operators  expressions, FROM <classes> [WHERE <temporal and atemporal conditions>] [TIME-SLICE <time interval>] [MOVING WINDOW <duration>]  The query returns data retrieved through methods listed in the SELECT clause, from classes instances in the database listed in the FROM clause, satisfying the conditions imposed through the optional WHERE, TIMESLICE, MOVING WINDOW clauses.
+Retrieved objects are those for which the specified conditions result in TRUE or UNDEFINED logical values.
+Therefore also objects who might satisfy the specified conditions are included in the result.
+According to the object-oriented approach we exposed before, object attributes are referred through methods listed in the clauses, hiding implementation details to users.
+When a method is specified in a clause, the related code is executed.
+An object can be reached through a path expression (implicit join): it consists in a sequence of methods separated by a "."
+(see Example 3.1).
+In showing main features of GCH-OSQL the database schema in fig.
+1 will be used.
+TO,U09 FO.
+Conditions involving temporal relations are expressed  in the WHERE clause through t-0-set class methods, and using interval class methods.
+Example 3.2.
+The query "Find all the symptoms occurring during visits; display the name and the interval of validity of the symptom, and also the patient suffering from it" will be expressed in the following way: SELECT P Iname ( ) , S. s-name ( ) , S.valid-interval().display() FROM patient P, symptom S, visit V WHERE P-symptom-set().HAS-MEMBER(S) AND P.visit-set0 .HAS-MEMBER(V) AND S.valid-interval ( ) .DURING( V.valid-interval()) Example 3.3.
+"Find the patients having had nausea and headache, with headache surely before nausea": this query can be expressed in the following two ways: i) SELECT P .name ( ) FROM patient P, symptom S1, symptom S2 WHERE P.symptom-set(),HAs-MEMBER(Sl) AND P.visit-set ( ) .HAS_MEMBER(S2) AND Sl.s-name() = "nausea" AND S2.
+s-name ( ) = "headache" AND MUSTBE(S2.valid-interval().BEFORE (Sl.valid-interval()) ii) SELECT P.name() FROM patient P, WHERE MUSTBE P. symptom-set ( .BEFORE ( "s-name ( 1 = headache , s-name ( ) = "nausea"" 1 Alike other proposals, in GCH-OSQL we have not added any other clause (as WHEN or WHILE [8, 201).
+3.1.
+The SELECT and FROM clause In the SELECT clause object methods or path expressions can be listed, with a comma between them.
+In this clause only methods related to the displaying of the data are allowed: it is not possible to use in this clause updating methods, that have side effects on the state of the database.
+To display objects having complex features, the method display() is usually defined.
+The timemodeling types, for example, like interval, instant, and duration, have suitably defined methods display(), to represent in a proper.
+abstract manner different time concepts.
+'I  123  'I I'  'I  consider, on the chronon time axis, an interval having a duration of exactly 48 hours.
+that would allow to separately express the temporal part of the query.
+This choice allows one to express the query constraints in a seamless way, without forcing the user to divide the select condition.
+This choice, moreover, avoid some anomalies, as, for example, expressing some temporal constraints in the WHEN clause and some others in the WHERE clause [20].
+3.4.
+The MOVING WINDOW clause Using this clause, the objects stored in the database are examined through a temporal window, of the width specified in the clause, moving along the temporal axis.
+The constraints expressed in the other clauses are checked only on the database part visible through that window.
+Example 3.5.
+"Print the name of patients having had heart rate greater than 120 and symptoms of chest pain in a period ofjifieen days"; this query is expressed as: SELECT P .name ( FROM patient P WHERE P .visit-set ( 1 .OCCURS( "heart-rate ( 1 > 1 2 0 " ) AND P .symptom-set ( ) .OCCURS ( s-name ( ) = "chest pain" ) MOVING WINDOW 1 5 dd In the MOVING WINDOW clause through the MUST or MAY keywords, only, respectively, certain or uncertain situations can be considered.
+3.3.
+The TIME-SLICE clause This clause allows the user to query along the temporal dimension of objects, considering only those objects in the database whose valid time is contained in the interval specified in the clause.
+Also objects whose valid time could be contained in the specified interval are selected.
+In this clause is possible to use the MUST and MAY keywords.
+Using the MUST keyword, only those objects whose valid time is certainly contained in the interval specified in the clause are selected, while using the MAY keyword only those objects for which it is uncertain that their valid time is contained in the specified interval are selected.
+In the TIME-SLICE clause the time interval may be expressed in many different ways: by the FROM..TO keywords, in order to define an interval by its starting and ending instants: e.g., FROM 1994/12/11 TO 1994/12/23/11/00.
+It is also possible to specify only the FROM or the TO keywords.
+0 by the FROM..FOR keywords, in order to define an interval by its starting instant and its duration: e.g., FROM 1994/12/11 FOR 2 mm.
+0 by the FOR..TO keywords, to define an interval by its duration and its ending instant: e.g., FOR 3 dd TO 1995/4.
+by the AT keyword, to define an interval as a single granule: e.g., AT 1996/5.
+Example 3.4.
+The query "Find all symptoms happened starting from December 1991 to November 12th, 1996 in the afternoon" will be expressed in the following way: SELECT S. s-name ( 1 FROM symptom S TIME-SLICE FROM 1 9 9 1 / 1 2 TO ~1996/11/12/12/0/0, 1996/11/12/17/0/0~ We underline that the capability of defining the TIMESLICE interval by, respectively, the FROM..TO, FROM..FOR, and FOR..TO keywords is not redundant.
+Let us consider for example the two clauses (i) TIMESLICE FROM 1994/6/23 TO 1994/6/25 and (ii) TIME-SLICE FROM 1994/6/23 FOR 48 hh 0 min 0 ss: both these clauses identify an interval having the same starting and ending instants.
+However, the clause (i) will consider, on the chronon time axis, an interval having a duration between 24 hours plus 1 second and 72 hours less 1 second: i.e., this time span is evaluated, considering the indeterminacy related to the granularity of both the starting and the ending instants; the clause (ii) will  'I  4.
+Related work To evidence the peculiar aspects of GCH-OSQL, we consider query languages based on a object oriented data model: TOOSQL, OODAPLEX, OOTempSQL, OQLR, and TQL [8, 15, 20, 23, 261.
+A further comparison is then made with the TSQL2 language [22].
+Time modeling.
+In the considered languages, apart from OOTempSQL, the temporal dimension, related to data stored in the database, is represented by an interval.
+The interval is specified by a starting instant and a flnul instant; instantaneous events are represented by making equals the starting and final instants.
+In GCH-OSQL the interval is specified by a starting instant, aflnul instant, and a duration.
+This lets the wider flexibility in pointing out beginning, ending, and duration of an interval, at the necessary granularity.
+Typically GCH-OSQL allows the definition of an interval duration at a finer granularity (seconds, for example), while expressing beginning and ending instants at a coarser granularity (as days).
+This capability, absent in the other considered languages, suits well the clinical data management 1121.
+In OOTempSQL temporal elements are introduced; using a temporal element more disjoint intervals, identified'by a begin and an end, can be referenced [8].
+This concept allows one to enrich the expression of the temporal dimension, for the part, as to say, not linked to the use of different time measurement units.
+In GCH-OSQL the time representation is made through a predefined type hierarchy, that gives the user the chance to represent new temporal dimensions.
+The choice to represent temporal data through predefined  124  types is adopted also by some query languages, as OQLR, TQL, TOOSQL, OODAPLEX [15, 20; 23, 261.
+In OODAPLEX time is simply one of the language types; the database designer has the chance to extend the type definition to model the temporal dimension as preferred Wl.
+In TSQL2 some data types are introduced to model concepts similar to those defined in GCH-OSQL: data types datetime, interval, and period of TSQL2 correspond, respectively, to the types instant, duration and interval of GCH-OSQL [22].
+Temporal dimensions.
+The temporal dimension in GCHOSQL represents the valid time, as in OQLR [23].
+In TQL, TOOSQL and in TSQL2 the temporal dimension can be used to express both valid time and transaction time [18, 20, 221.
+OODAPLEX, through the use of functions, can model both valid and transaction times, and other temporal dimensions defined by the user [26].
+Temporal entities.
+In GCH-OSQL the temporal dimension is associated to objects.
+The same happens in OQL/T and TQL [23, 151, where, every entity being an object in each data model, the temporal dimension is associated to objects.
+In TOOSQL and in OOTempSQL, the temporal dimension is associated to attributes [8, 201: in OOTempSQL, for example, temporal attributes are represented through functions, that for each instant belonging to a temporal element return the attribute value [8].
+In OODAPLEX it is possible to connect the temporal dimension both to attributes and objects [26].
+GCHOSQL is as flexible as OODAPLEX in linking temporal dimension to different entities, because, especially through instances of the predefined temporal type t-o-set, it is possible to model the time dependent properties of an object through sets of temporal objects.
+GCH-OOSQL and GCH-OODM do not consider the problem of the temporal evolution of objects nor the role changes of objects [6,26].
+Time granularity and time indeterminacy.
+Using GCHOSQL the user can express in a seamless way temporal data and temporal conditions at the granularity and/or indeterminacy he considers the best suited.
+This lets the user express data in the more suited way, depending on the precision requested to represent temporal dimension, or depending on the knowledge degree of that.
+In most of the examined languages the granularity is fixed, and temporal data are always expressed with the same temporal unit of measurement, and the problem of the temporal indeterminacy in locating events on the temporal axis is not considered.
+Other examined languages, as OOTempSQL, TOOSQL, TQL, OQL/T, allow, and nothing more, the use of different time measurement units, through conversion operations from one unit to others [8, 15, 20, 231.
+This approach to management of different granularities of time seems more limited than the one proposed in GCH-OSQL; often, in fact, only in querying a database it is possible to use different time measurement units, while in inserting data  the granularity has been fixed at the schema level and cannot be modified [20].
+Moreover compared to this characteristic, GCHOSQL allows the management of uncertainty coming from temporal relations between data defined at different granularities and/or indeterminacies, using a threevalued logic [I31 and special operators (MUSTBE, MAYBE, MUST-NOTBE).
+This aspect is not considered in the examined temporal extensions, all adopting the usual two-valued logic, but TSQL2.
+In TSQL2 problems related to different time granularities and to time indeterminacy are faced [22].
+TSQL2 allows one to define and manage different calendars, each of them composed by several time granularities: this topic has not been faced in GCHOSQL.
+In representing intervals with different time granularities, some constraints are introduced in TSQL2 on the indeterminacy of the starting and ending instants.
+These constraints restrict the capability of representing intervals at different and mixed granularities: it is not possible, for example, to define in TSQL2 the interval "in 1996 for three days".
+This limitation has been removed in GCH-OSQL.
+In managing uncertainty for temporal relations, TSQL2 adopts a probabilistic approach: for each time point the probability is given that the indeterminate instant is located at that time point [22].
+This approach leads to extend the syntax and the semantic of TSQL2 with the concepts of credibility and plausibility.
+These concepts allow one to pragmatically manage truthfunctional conditions in TSQL2 SELECT clause [22].
+Some works dealing with uncertainty in temporal relationships are based on the adoption of modal operators.
+The approach of Pemici and colleagues in [ 5 , 171 has some differences from what performed by GCHOSQL in the meaning of the MUST and MAY operators: more particularly, in LATER the result of a MUST query satisfies also the corresponding MAY query.
+GCH-OSQL distinguishes MUSTBE queries, in which we are looking for sure situations, from MAYBE queries, in which we are looking only for uncertain situations.
+The same meaning of a MAY query in LATER is performed in GCH-OSQL simply without specifying neither the operator MUSTBE nor MAYBE.
+Implementing the system.
+With respect to several works proposed in literature, GCH-OSQL is characterized, finally, by the presence of a prototypal implementation, applied to a management system of clinical histones [4, 11,251.
+A prototype of GCH-OSQL and a graphical interface have been implemented on a Sun workstation, in the OpenLook graphical environment; the prototype is based on the ONTOS object-oriented database management system.
+ONTOS has been used in the implementation of the clinical database too, to which GCH-OSQL has been applied, related to follow-up of patients after a coronary-artery angioplasty intervention [ 111.
+One of the goals the of the GCH-OSQL interface was to give users a simple and  125  Workshop on an Infrastructure for Temporal Databases, Arlington, TX, N-1 - N-19, 1993.
+[9] Chittaro L, Goodwin S, Hamilton H, Montanari A (eds) Third Intemational Workshop on Temporal Representation and Reasoning (TIME96).
+Los Alamitos CA, IEEE Computer Society Press 1996.
+[lo] Clifford J, Rao A.
+A Simple, General Structure for Temporal Domains, In: C. Rolland, F. Bodart and M. Leonard (eds) Temporal Aspects in Information Systems.
+Amsterdam, Elsevier, North-Holland, 1988: 17-28.
+[ 111 Combi C, Pinciroli F, Cavallaro M, Cucchi G. Querying Temporal Clinical Databases with Different Time Granularities: the GCH-OSQL Language.
+In: GARDNER RM (ed.
+), 19.
+Annual Symposium on Computer Applications in Medical Care.
+Philadelphia, Hanley & Belfus, 1995,326 - 330.
+[ 121 Combi C, Pozzi G, Pinciroli F. Managing Different Time Granularities of Clinical Information by an Interval-Based Temporal Data Model.
+Methods of Information in Medicine 1995; 34 (5): 458 - 474 [13] Combi C, Pinciroli F, Pozzi G. Managing Time Granularity of Narrative Clinical Information: the Temporal Data Model TIME-NESIS.
+In [9]: 88 - 93.
+[14] Dechter R, Meiri I, Pearl J. Temporal Constraint Networks, Artificial Intelligence 1991; 49: 61-95.
+[15] Goralwalla IA, Ozsu MT.
+Temporal Extensions to a Uniform Behavioral Object Model.
+In Elmasri R, Kouramjian V, Thalheim B.
+(eds) Proceedings of the Intemational Conference on the E-R approach, LNCS, Berlin, Springer-Verlag, 1993: 110 - 121.
+[16] Kim W. Modem Database Systems.
+New York, Addison Wesley, 1995.
+[17] Maiocchi R, Pernici B, Barbic F. Automatic Deduction of Temporal Information, ACM Transactions on Database Systems 1992; 17(4): 647 - 688.
+[18] Oszu MT, Peters R, Szafron D, Irani B, Lipka A, Muiioz A. TIGUKAT: A Uniform Behavioral Objectbase Management System.
+VLDB Joumal 1995; 4: 445 - 492.
+[19] Panti G. Multi-valued Logics.
+In Gabbay D, Smets P.
+(4s.).
+Handbook of Defensible Reasoning and Uncertainty Management Systems.
+Kluwer, Berlin, 1996, in press.
+[20] Rose E, Segev A. TOOSQL: A Temporal ObjectOriented Query Language.
+LBL 33855 Technical Report,  guided approach, so that also an unexperienced user can make syntactic and semantic right queries [ 111.
+5.
+Final outlines GCH-OSQL and GCH-OODM allow the management of temporal granularity and of temporal indeterminacy.
+The user can, while inserting data, specify the temporal dimension at the level he considers the best suited, also depending on his knowledge or on the importance the modeled fact has.
+Moreover, GCHOSQL allows one to manage granularityhndeterminacy in the queries: in querying the database it is possible to verify the existence of temporal relations at the required granularity, that can be different from the one used in expressing the temporal dimension of stored data.
+GCH-OSQL provide the management of uncertainty in temporal relations by a three-valued logic.
+Through the use of the unary operators MUSTBE, MAYBE, MUST-NOTBE, it is possible to explicitly consider each of the logical values True, Undefined, False.
+Finally, GCH-OSQL performs a homogeneous  management of temporal conditions in the query.
+Compared to SQL, GCH-OSQL has few additional clauses: TIME-SLICE and MOVING WINDOW.
+Instead of adding other clauses, the temporal conditions are expressed in the WHERE clause.
+In fact, in GCH-OSQL it is possible to use some suitable methods of the types instant, duration, interval, and r-o-set, to verify temporal features among the objects stored in the database.
+Acknowledgments This work was partially supported by contributions from: MURST Italian National Project for Medical Informatics; Department of Biomedical Engineering of the Politecnico di Milano; Department of Mathematics and Computer Science of the University of Udine.
+References  1993.
+[21] Snodgrass R. Temporal Object-Oriented Databases: A Critical Comparison.
+In [16]: 386-408.
+[22] Snodgrass RT.
+(ed.)
+The TSQL2 Temporal Query Language.
+Boston, Kluwer Academic Publishers, 1995.
+[23] Su SYW, Chen HHM.
+Modeling and Management of Temporal Data in Object-Oriented Knowledge Bases.
+In Proceedings of the Intemational Workshop on an Infrastructure for Temporal Databases, Arlington, TX,HH1 - HH-17,1993.
+1241 Tansel AU, Clifford J, Gadia S , Jajodia S, Segev A, Snodgrass R.(eds.)
+Temporal Databases.
+Theory, Design and Implementation.
+Redwood City, CA, BenjaminCummings, 1993.
+[25] Vassilakis C, Georgiadis P, Sotiropoulou A.
+A Comparative Study of Temporal DBMS Architectures.
+In Wagner RR, Thoma H. (eds) Proc.
+7th Int.
+Workshop on Database and Expert Systems Application, IEEE Computer Press, Los Alamitos, CA, 1996, 153 - 164.
+[26] Wuu GTJ, Dayal U.
+A Uniform Model for Temporal and Versioned Object-oriented Databases.
+In [24]: 230-247.
+[l] Allen J.
+Towards a General Theory of Action and Time.
+Artificial Intelligence 1984; 23: 123-154.
+[2] Bettini C, Wang XS, Jajodia S .
+A General Framework and Reasoning Models for Time Granularity.
+In: [9]: 104 - 111.
+[3] Blakeley JA.
+OQL[C++]: Extending C++ with an Object Query Capability.
+In [16]: 69 - 88.
+[4] Bohlen MH.
+Temporal Database System Implementations.
+SIGMOD Record 1995; 24(4): 53-60.
+[5] Brusoni V, Console L, Pemici B, Terenziani P. LATER: a General Purpose Manager of Temporal Information, 8th Intemational Symposium on Methodologies for Intelligent Systems, Charlotte, North Carolina, October 1994.
+[6] Cardenas AF, Ieong IT, Taira RK, Barcher R, Breant CM.
+The Knowledge - Based Object-Oriented PIQUERY+ Language.
+IEEE Transactions on Knowledge and data Engineering 1993; 5(4): 644 - 657.
+[7] Cattell RGG.
+(ed.)
+The Object Database Standard: ODMG 93 Release 1.2.
+San Francisco.
+Morgan Kaufmann, 1996.
+[8] Cheng TS, Gadia SK.
+An object-oriented model for temporal databases.
+In Proceedings of the Intemational  126

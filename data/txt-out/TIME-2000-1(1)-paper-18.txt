@@ -1,0 +1,306 @@
+PMTV: A Schema Versioning Approach for Bi-temporal Databases Han-Chieh Wei and Ramez Elmasri Department of Computer Science and Engineering The University of Texas at Arlington {wei, elmasri}@cse.uta.edu  Abstract Most of the existing schema versioning approaches are developed for single time-dimension temporal databases.
+For bi-temporal databases, which allow both retroactive and proactive updates to the schema and database, these approaches introduce many problems and perform inefficiently.
+In this paper, we first review two schema versioning approaches, single table versioning (STV) and multiple table versioning (MTV) approaches, and also the proposed partial multiple table versioning (PMTV) approach.
+We prove the correctness of PMTV by showing it producing equivalent results to STV, and then compare these three approaches in database conversion and temporal query processing.
+The comparison shows that the proposed PMTV approach not only solves the problems but also performs more efficiently than the other approaches when applied to bi-temporal databases.
+1.
+Introduction The aim of temporal databases is to accommodate time dimensions to capture the dynamic character of real world objects.
+Not only database objects undergo change, but also the database schema changes due to the dynamic changes of application requirements or design specifications.
+Schema versioning[5,16], and its weaker companion, schema evolution[1,15,18], are two techniques dealing with changes made to the schema while retaining the consistency between the database and its schema.
+Basically, the difference between schema evolution and schema versioning is that schema evolution keeps only one (current) version of schema and corresponding data, whereas schema versioning preserves versions of schema and data during the evolution.
+There are differences when these two approaches are implemented in snapshot databases versus in temporal databases.
+In snapshot databases, schema evolution only keeps the current schema and corresponding data.
+The old schema and legacy data are obsolete and will not be kept.
+However, temporal databases not only store the current data but also the historical data and even future information expected to occur.
+Therefore, if there is only one schema version, it needs to retain the full schema information.
+In temporal relational databases, this is  0-7695-0756-5/00 $10.00 AL 2000 IEEE  recognized as single table versioning (or complete table) [3,4,29] (STV) approach.
+For schema versioning, whenever the schema is changed, a new schema is created and defined as a new version of the schema.
+Accordingly, the new version of data is converted from the old data to be consistent with the new schema.
+Both the legacy schema and data are still stored in the catalog and database system as old versions.
+As a result, the legacy data is preserved and also the applications defined on the old schema need not be rewritten nor recompiled.
+This is true both in snapshot and temporal databases.
+However, in snapshot schema versioning, the concepts of time and history still cannot be included.
+That is, the schema changes can only apply to the current version.
+Changes to the past or plans for the future schema still cannot be captured.
+On the other hand, in temporal databases, especially bi-temporal databases [9,22,23], incorporating both transaction time and valid time, can fulfill the requirements of schema versioning not only because they allow the users or application programs to access temporal information but also because they allow retroactive and proactive updates.
+Therefore, if the database schema is stored in a bi-temporal catalog, it can provide the most flexibility for database schema evolution.
+However, there is a cost tradeoff between the flexibility of retroactive and proactive schema changes and the cost of implementing these mechanisms.
+The complexity is high because changes not only affect the current versions of data but also the past and even the future versions which makes the database conversion much more complicated than for conventional snapshot databases.
+The schema versioning approach is know as multiple table version approach (MTV) [4,29] in temporal databases.
+Most previous research [5] discusses STV and MTV in transaction-time databases only.
+In our previous paper [29], we fully explored the effect of schema changes involving both retroactive and proactive updates in bitemporal relational databases by comparing these two approaches.
+Algorithms for schema update and database conversion were defined for these two operations.
+The problems and complexity of the two approaches were also discussed.
+We then proposed a compromise approach, partial multiple table versioning (PMTV).
+In this paper, we will prove the correctness of the PMTV approach, and  compare the time and space complexity of the three approaches.
+Query processing is the most critical problem for the PMTV approach because it requires EVENT-JOIN [19,20], which includes TemporalNATURALJOIN and Temporal-OUTERJOIN and these are the most expensive operations in temporal databases.
+We propose the index join approach to solve this problem.
+In the next section, we briefly review these three approaches and their problems and advantages by an example.
+In section 3, we prove the correctness of the PMTV approach.
+Section 4 compares the time and space complexity of the approaches for database conversion.
+The problem of bi-temporal query processing is discussed in section 5.
+Section 6 concludes this paper.
+2.
+Schema versioning approaches The following example reviews the three versioning techniques implemented in bi-temporal databases and discuss their problems.
+For simplicity, the example only shows the versions of one entity in the relation.
+More schema change examples and algorithms can be found in [29].
+Example Assume that the bi-temporal relation Employee is created at time 10 with valid-time interval [10, now] and with the attributes employee ID, name, salary, and position.
+Figure 1 shows the current state of the relation at time 40, for the versions of Employee 'John'.
+Employee ID Name Salary Position VS VE TS TE 1 John 30k P1 10 30 10 20 1 John 30k P1 10 20 20 UC * 1 John 35k P2 20 50 20 35 1 John 35k P2 20 30 35 UC * 1 John 40k P3 30 65 35 40 1 John 40k P3 30 60 40 UC * 1 John 45k P4 60 80 40 UC * Figure 1.The state of the Employee relation at time 40.
+The tuples with a*a are the current versions.
+Assume that the following schema change is applied to the relation Employee: At time 50, a new time-varying attribute Bonus is SC: added to Employee, which is valid from time 25 to 65, and Johnas bonus is recorded as 5% and is valid during [25,65].
+2.1 Single Table Version (STV) approach In single table version, each table has only one version throughout the lifetime of the database.
+As mentioned earlier, the schema needs to include the history of all changes.
+This idea is proposed in [14] as complete schemata, which follows the idea of complete table in [4].
+A complete schema consists of tables defined over the union of attributes that have ever been defined for them.
+If attributes are dropped, the dropped attribute will still be  0-7695-0756-5/00 $10.00 AL 2000 IEEE  retained in the database since in append-only temporal databases data will never be deleted.
+Therefore the record size, and hence the table size for this approach will only grow but never shrinks.
+Figure 2 shows the results of schema changes SC for STV.
+Employee ID Name Salary Position Bonus VS VE 1 John 30k P1 null 10 30 1 John 30k P1 null 10 20 1 John 35k P2 null 20 50 1 John 35k P2 null 20 30 1 John 40k P3 null 30 65 1 John 40k P3 null 30 60 1 John 45k P4 null 60 80 Part (a) 1 John 35k P2 null 20 25 1 John 35k P2 5% 25 30 1 John 40k P3 5% 30 60 1 John 45k P4 5% 60 65 1 John 45k P4 null 65 80 Part (b) Figure 2.
+Relation Employee in STV after  TS TE 10 20 20 UC 20 35 35 UC 50 35 40 40 UC 50 40 UC 50 50 50 50 50 50  UC UC UC UC UC  SC.
+Three problems are identified in this approach: space overhead, search overhead, and database availability.
+As we can see from Figure 2, the problem of space overhead results from excessive data duplication and null values whenever the database is converted to conform to the schema change.
+In the single table version approach, every time an attribute is added to or dropped from a relation, all current versions of entities need to be checked to see if their valid time interval overlaps with the schema change.
+For temporal databases, which usually contain a large amount of data, the search time will be a large overhead.
+For the problem of database availability, when a new attribute is added or the type domain of an attribute is generalized, part of (or even the whole) database will not be available for a period of time due to the process of database conversion, which requires augmentation and reorganization of the storage space.
+2.2 Multiple Table Version (MTV) approach In multiple table version, every time a relation schema is changed, it creates a new table version.
+The current entity versions in the source table whose valid-time interval overlaps with interval of the schema change need to be copied into the newly created table along with the value of the new attribute (if the schema change is attribute addition).
+Figures 3 shows the table versions and data converted from the source versions after SC is executed: version V1 is created, the data are converted from the current entity versions marked with a*a in table version V0.
+(a) Employee_V0 (Valid lifespan: Iv0 = [10,now]) ID 1 1 1 1 1 1 1  Name Salary Position John 30k P1 John 30k P1 John 35k P2 John 35k P2 John 40k P3 John 40k P3 John 45k P4  VS 10 10 20 20 30 30 60  VE 30 20 50 30 65 60 80  TS 10 20 20 35 35 40 40  TE 20 UC 35 UC 40 UC UC  3.
+Correctness of PMTV  * * *  (b) Employee_V1 (Valid lifespan: Iv1 = [25,65]) ID Name Salary Position Bonus VS VE 1 John 35k P2 5% 25 30 1 John 40k P3 5% 30 60 1 John 45k P4 5% 60 65 Figure 3.
+(a) the original table.
+(b) after SC.
+TS 50 50 50  TE UC UC UC  Three problems are found in the MTV approach [29]: data duplication, multischema queries [5], and mandatory version creation.
+2.3 Partial Multiple Table Version (PMTV) PMTV [29] uses the concept of temporal normalization [13].
+For the schema change of attribute addition, since the new added attribute will not be synchronized with the existing attributes in the relation, the PMTV approach creates a bi-temporal relation with only the new attribute plus the key attribute (ID) of the relation being modified.
+The complete relation can be later reconstructed by applying the Entity-Join [19] operation.
+The result of the schema change SC is show in Figure 4.
+Employee ID Name Salary 1 John 30k 1 John 30k 1 John 35k 1 John 35k 1 John 40k 1 John 40k 1 John 45k  Position P1 P1 P2 P2 P3 P3 P4  VS 10 10 20 20 30 30 60  VE 30 20 50 30 65 60 80  TS 10 20 20 35 35 40 40  TE 20 UC 35 UC 40 UC UC  (a) Original Employee relation Emp_Bonus ID Bonus VS 1 5% 25  VE 65  TS 50  TE UC  (b) New created relation for attribute Bonus after SC Figure 4.
+Applying SC using partial multiple table version.
+The PMTV approach solves all the problems in the STV and MTV approaches as presented in [29].
+However, there are several issues that need to be investigated: 1.
+The correctness of the PMTV approach.
+2.
+Does PMTV perform better than STV and MTV?
+3.
+Reducing the cost of Entity-Join performed in PMTV to reconstruct the complete object information.
+EntityJoin [19] includes temporal equal join and temporal outer join which are the most expensive operations in temporal query processing.
+0-7695-0756-5/00 $10.00 AL 2000 IEEE  In this section, we will prove the correctness of the PMTV approach by showing that the table state after a schema change applying STV approach can be losslessly composed by taking Temporal EntityJoin of the table versions generated by PMTV approach (The equivalence of STV and MTV are shown in [5]).
+Because of the space limit, we only present the proof of attribute addition.
+Definitions: R = < ID, A1, A2, ... , An, VS, VE, TS, TE > is a bi-temporal relation schema.
+ro = { ti | ti = <ID, VA1, VA2,... VAn, VSt, VEt, TSt, TEt>} The set of instances of relation R before the schema change SC.
+SC: add_attr(Ax, valx, VSx, VEx, TTx) The schema change SC add an attribute Ax with default value valx at time TTx with valid-time interval [VSx, VEx].
+Rsc=<ID, A1, A2, ..., An, Ax, VS, VE, TS, TE> The relation schema after SC.
+rsc = { ti | ti = <ID, VA1, VA2,... VAn, VAx=null, VSi, VEi, TSi , TEi >} The state of relation instance when attribute Ax is added at time TTx.
+Figure 2(a) shows an example of rsc where Ax is new added attribute Bonus.
+rcur = { ti | ti a rsc, TEi = UC} The set of current versions of entities at time TTx, e.g.
+the tuples with * mark in Figure 1 are in rcur.
+rsc_cur = { ti | ti a rcur AND [VSi,VEi] OVERLAP [VSx,VEx] } Tuples in rcur whose valid-time intervals overlaps with [VSx,VEx].
+rm = { ti | ti a rsc AND (TEi < TTx) } For STV approach, as shown in [29], we consider two sets of tuples in rsc_cur: rI and rP.
+rI: the set of tuples in rsc_cur whose valid-time interval is included in [VSx, VEx], rI = { ti | ti a rsc_cur, [VSi,VEi] a [VSx, VEx]} rP: the set of tuples in rsc_cur whose valid-time interval is partially overlaped with [VSx, VEx], rP = rsc_cur a rI After schema change SC, we have rI a r'I aS rnew_I , where r'I = { ti | ti a rI, TEi a TTx} rnew_I = { ti | ti a rI, VAxavalx, TSiaTTx, TEiaUC} , and rP a r'P aS rnew_P1 aS rnew_P2, where r'P = { ti | ti a rp, TEi a TTx} rnew_P1 = { ti | ti a rP, [VSi,VEi]a([VSi,VEi] a [VSx,VEx]), TSi aTTx, TEi aUC } rnew_P2 = { ti | ti a rP, VAxavalx, [VSi,VEi]a([VSi,VEi] aS [VSx,VEx]), TSi aTTx, TEi aUC }  Hence, applying the schema change SC to relation R with current set of instances rsc using STV approach, gives the result: R  SC SC  Rsc  ro rSTV rSTV = rm aS (r'I aS rnew_I) aS (r'P aS rnew_P1 aS rnew_P2) For the PMTV approach, after the schema change SC, a new bi-temporal table, R_Ax is created, with the set of instances rAx, in addition to the old table R and its instances ro.
+R_Ax = <ID, Ax, VS, VE, TS, TE> rAx = { ti | ti = <IDt, VAx=valx, VSx, VEx, TTx, UC>} To prove the equivalence between STV and PMTV, we need to show, that: rSTV aA rAx Entity-Join ro Entity-Join [19] (referred as Event-Join in [20]) joins together a temporal object that has been vertically partitioned into several relations via temporal normalization [13].
+Several algorithms and implementation methods have been proposed for single time dimension entity-join [19,20,25].
+The Entity-Join here is actually a bi-temporal entity-join.
+We are not going to investigate how these algorithms and implementations can be extended for bi-temporal EntityJoin.
+We are only interested in the join result.
+Here we adopt and extend the algorithm of sort-merge entity join from [20] because it is easy to present and understand.
+The entity-join (ro Entity-Join rAx) is done as: (ro Temporal Natural-Join rAx on ID) aS (ro Temporal OuterJoin rAx ).
+In the following algorithm, we assume that both relations are sorted on ID as the primary order and on TS as the second order.
+At each iteration, two tuples, xi aro and yi arAx, are compared to each other and one or more result tuples will be produced based on the relationship between the tuples on their ID values and time intervals (both valid-time and transaction-time intervals).
+Algorithm: (1) Read xi , yj for each xi aro, yjarAx, do the following steps: (2) if xi (ID) > yj(ID) then read next y.
+(3) else if xi (ID) = yj(ID), consider the following cases: (3.1) if xi (TE) < yj(TS) then -- generate an outer-join result tuple tx for xi : tx=<xi(ID),xi (A1,..An),null,xi([VS,VE]),xi([TS,TE])> (1) (3.2) else if xi ([TS,TE]) a yj([TS,TE])  0-7695-0756-5/00 $10.00 AL 2000 IEEE  if xi ([VS,VE]) a yj([VS,VE]) then -- generate an intersection tuple txy for xi , txy=<xi (ID),xi (A1,..,An),yj(Ax),xi ([VS,VE]), (2) yj([TS,TE])> -- generate an outer join result tuple tx for xi , tx=<xi (ID),xi (A1,..,An),null,xi ([VS,VE]), (3) xi(TS), yj(TS)> (3.2.2) elseif xi ([VS,VE])aSyj([VS,VE]) a  a then -- generate an outer join result tuple tx1 for xi , tx1=<xi (ID),xi (A1,..An),null,xi ([VS,VE]), (4) xi(TS), yj(TS)> -- generate an outer join result tuple tx2 for xi , tx2=<xi (ID),xi (A1,..,An),null, xi ([VS,VE]) a (5) yj([VS,VE]), yj([TS,TE])> -- generate an intersection tuple tx3 for xi , tx3=<xi (ID), xi (A1,..,An), yj(Ax), xi ([VS,VE]) aS (6) yj([VS,VE], yj([TS,TE])> (4) Read next tuple(s).
+When applying this algorithm to implement ro EntityJoin rAx, after schema change SC, we have the following input values for yj: For all yi a rAx, yi ([VS,VE]) = [VSx,VEx], yi (TS) = TTx, yi (TE) = UC, yi (Ax) = valAx we'll get the following results: (3.2.1)  For the set of tuples (1): {tx| tx =<xi (ID),xi (A1,..An),null,xi ([VS,VE]), xi([TS,TE])>} aA rm The set of tuples (2): {txy|txy=<xi (ID), xi (A1,..,An), valAx, xi ([VS,VE]), TTx, UC>} aA rnew_I Set of tuples (3): {tx| tx=<xi (ID),xi (A1,..,An),null,xi ([VS,VE]), xi (TS), TTx>} aA r'I Set of tuples (4): {tx1|tx1=<xi (ID),xi (A1,..An),null,xi ([VS,VE]), xi (TS), TTx>} aA r'P Set of tuples (5): {tx2| tx2= < xi (ID), xi (A1, .., An), null, xi ([VS,VE]) a yj([VS,VE]), TTx, UC > } aA rnew_P1 Set of tuples (6): {tx3 | tx3 = < xi (ID), xi (A1, .., An), yj(Ax), xi ([VS,VE]) aS yj([VS,VE], TTx, UC > } aA rnew_P2  rAx Entity-Join ro = (1) aS (2) aS (3) aS (4) aS (5) aS (6) = rm aS (rnew_I aS r'I ) aS (r'P aS rnew_P1 aS rnew_P2) = rSTV  4.
+Comparison of three approaches The three approaches presented in this paper for schema change and database conversion can be characterized by the following costs: 1. time, the time needed to search for the current object versions before the database conversion, 2. space, the space required for the new object versions, 3. query processing, the time needed to process a temporal query.
+In this section, we compare the space and time costs based on our previous research [29].
+The time cost is measured as the number of block accesses.
+The space is measured in terms of the additional space used for the null values in the STV approach and the duplicated data in both STV and MTV approaches.
+For the PMTV approach, the additional space is the space of the new created tables for the added attributes.
+The following are the definitions of the parameters: Parameters Sa : average attribute size (byte).
+B: block size.
+Ivsc : a temporal element which is the valid lifespan of the schema change.
+Na : average number of attributes in original table R. Ntp : number of tuples in table R before any schema changes.
+Nver,T : average number of current versions of table R at time T. Ne : average number of distinct entities in table R. NO : average number of current versions of each entity whose valid-time intervals overlap with Ivsc.
+where NO = NP + NF NP : average number of current versions of each entity whose valid-time intervals partially overlap with Ivsc.
+NF : average number of current versions of each entity whose valid-time intervals included in Ivsc.
+Nadd: the number of attribute addition operations.
+NOT: the number of table versions in MTV whose validtime intervals overlap with Ivsc.
+4.1 Search time overhead For both STV and MTV approaches, the first step of data conversion after a schema change is searching for the current versions of each object, and then selecting the versions whose valid-time interval intersects with the schema change.
+If there is no temporal index, for the  0-7695-0756-5/00 $10.00 AL 2000 IEEE  STV approach, even though the effective time of the schema change is short, a complete scan of the table is necessary to find all current versions.
+Number of block accesses for STV approach: (SaANa)Ntp/B For the MTV approach, since the table versions represent a sort of temporal index, the tables that need to be scanned are limited to the table versions whose valid lifespans intersect with the schema change.
+However, if a schema change is applied with a long time interval, the search overhead may be as high as the STV approach.
+Number of block accesses for MTV approach: (Sa A Na) (Ntp / Nver,T) A NOT / B For the PMTV approach, there is no search needed since it is independent from the current table state.
+Therefore, the number of block accesses for PMTV approach is always zero.
+Consider the following example: Assume for some table R, Sa=8, Na=8, and the block size B= 512 bytes.
+For the MTV approach, we assume Nver,T=5 and the tuples are evenly distributed into each of the table versions.
+To compare the search time of the three approaches for data conversion, we assume that Ntp ranges from 1000 to 5000, and the number of table versions whose valid-time span overlaps with the schema change (NOT) ranges from 1 to 5.
+The results are shown in Figure 5.
+# of block access  Therefore, the table state after schema change SC is equivalent for the STV and PMTV approaches.
+The equivalence of the afterwards update operations to the new tables version(s) for these two approaches has been recognized and can be found in [20].
+800  STV  600  PMTV  400  MTV(1V)  200  MTV(2V) MTV(3V)  0 1000  2000  3000  4000  5000  # of tuples  MTV(4V) MTV(5V)  Figure 5.
+Search time for the current versions  We can see that the PMTV approach does not need any search where as the STV approach requires 125 to 625 block accesses as Ntp increased from 1000 to 5000.
+For the MTV approach, as the number of the overlapped table versions increases, the number of the block accesses also increases and eventually equals the STV approach when all the table versions overlap with the schema change.
+4.2 Storage space cost To compare the space complexity, we use the formulas defined in our earlier research [29].
+The space required for attribute addition by STV is the space for the null values Snull and for the duplicated attributes Sdup.
+SSTV = Snull + Sdup = Sa * ( Nadd  Nadd a 1 * Ntp + (2NP + NF) * Ne * i )+  a  These two figures show that the approach of PMTV saves a lot of space compared to the other approaches for database conversion.
+i=0 Nadd a1 dLZ dLs Saa dLZ Nadd a Na + i dLsa ( 2 NP + NF )a Ne dLZdLdeg i=0 dLs dLt The space required for attribute addition by MTV is for the overlapped data version duplicated in the new table versions.
+a [  dLs dLs NO a Ne dLs i dLsdLt i dLdeg j =1 The space required for attribute addition by PMTV is only the size of two attributes for each entity.
+SPMTV = Nadd * [ ( Sa * 2 ) * Ne ] Nadd  SMTV = Saa  dLZdLT  ]  i  a dLZdLZdLZdLZdL a ( N + j )dLVdLVdL, a a  Additional space used (KB)  The main parameters of the analysis are Ntp and Nadd, i.e., the number of tuples in the original table before the schema change and the number of attribute additions.
+We now present the results of the analysis.
+Figure 6 compares the additional space required for the three approaches using fixed parameters Na=8, Sa=8, Ne=50, Ntp=1000 as the number of attribute addition (Nadd) increased from 1 to 8.
+Figure 7 compares the space cost using fixed parameters Na=8, Sa=8, Ne=20, Nadd=8 as the number of tuples in the original tables (Ntp) ranges from 400 to 1400.
+800 600  STV  400  MTV  200  PMTV  0 1  2  3  4  5  6  7  8  # of attribute addition  The Space cost for database conversion with fixed Ntp where Nadd increased from 1 to 8.
+Additional space used (KB)  )LJXUH   1000 800  STV  600  MTV 400  PMTV  200 0 400  600  800  1000  1200  1400  # of tuples (before schema change)  The Space cost for database conversion with fixed Nadd where Ntp ranges from 400 to 1400.
+)LJXUH   0-7695-0756-5/00 $10.00 AL 2000 IEEE  5.
+Temporal query processing Different types of temporal queries have been defined in [27].
+In this section, we consider the most general bitemporal query to compare these three approaches.
+This kind of query has the format arange//range/pointa as defined in [27], which means aRetrieve a list of objects with keys in range K which are valid during valid-time range Iv as of time Ta.
+Consider the following query, aList employee John's history during time 25 to 65 as of time 60a.
+For this query, if there is no temporal index, a complete scan of the whole Employee table is required for the STV approach but no join operation is needed.
+MTV approach provides sort of a temporal index; consequently the number of tuples to be scanned is limited.
+However, MTV has the multischema problem, therefore joins may be required between different versions of the queried table [29].
+For the PMTV approach, if no index exists, not only is the complete table scan required but also join operations between the original table and the tables created for the added attributes must be implemented, making the query very expensive.
+However, as we will show, the PMTV approach performs no worse than the other approaches if a bi-temporal index is used.
+For STV and MTV approaches, while processing bitemporal queries, with the form of a*//*/pointa, we can expect STV performs better than MTV because the MTV approach needs not only the complete scan of all the table versions but also the join operations.
+Therefore, we only compare PMTV with the STV approach.
+Many join techniques have been well developed for snapshot relational databases [12], and some were extended to implement temporal joins [9,19,24,25].
+Entity-Join [19] (referred as Event-Join in [20]) joins together a temporal object that is vertically partitioned into several relations via time normalization [13].
+This is the case in our application.
+In [24,25], partition join is used to process the Entity-join operation and both give good results.
+However, the proposed partition techniques only applied to valid-time databases assuming that an object cannot have more than one value of a temporal attribute at any time point, which is not true in bitemporal databases.
+Other Entity-Join techniques have also been proposed [21,26,28].
+However, it is difficult to apply these techniques in bi-temporal databases.
+Instead of adopting additional join mechanism or building the extra join index table and its index [21,26], we present the Bi-temporal Entity Join method by applying a single bi-temporal indexing structure for both purposes of indexing and Entity Join.
+1  This equation and the next one were introduced in [29].
+0-7695-0756-5/00 $10.00 AL 2000 IEEE  Ncur: the average number of current versions for each entity.
+Ia : the percentage of Ve which is the number of current versions for each entity.
+I, : the percentage of tuples in the Ncur whose valid-time intervals overlap with Ivsc.
+Il : the percentage of tuples in No whose valid-time intervals partially overlap with Ivsc.
+Ntp = Ne * Ve Ncur = Ia Ve No = I, Ncur Np = Il No Then we have NSTV = NeVe + IaI, ( Il+1) Ve Ne NPMTV = NeVe+ Ne  # of entries in the nodes of the leaf level  The following two figures compare n(RTSTV) and n(RTPMTV) assuming Ve=10, Ia = 0.8, Il = 0.5, and the number of distinct entities Ne ranges from 100 to 1000.
+In Figure 8, with I, = 0.5, total number of tuples to be indexed in RTSTV is 1.45 time more than in RTPMTV.
+If we raise the percentage of tuples need to be converted after schema change, i.e., I,, from 0.5 to 1, the ratio n(RTSTV) / n(RTPMTV) is increased to 2.0.
+20000 15000 10000 5000 0  STV PMTV STV / PMTV =1.45  100  300  500  700  900  #of distinct entities  )LJXUH The number of entries in the nodes of the leaf level of the index R-tree with Ve=10 and lower weight of data conversion, I,=0.5.
+# of entries in the nodes of the leaf level  There are many temporal index techniques proposed, e.g., Time Index [6] and its derivatives, TP index, APtree, R-tree and its variants.
+A complete survey can be found in [17].
+Most of the work focuses on the indexing of one single time dimension.
+One approach of bitemporal index is to view bi-temporal data as a special case of spatial data and to adopt spatial indices to bitemporal data.
+Recently, several bi-temporal indexing techniques have been proposed [10,11] based on the spatial indices R-tree [8] or R*-tree [2].
+Here we use R-tree as our bi-temporal index.
+Because of the space limit, we only introduce how to incorporate indexing and Entity-Join in one index structure.
+The detailed implementation of Entity-Join and the efficiency of different index structure in bi-temporal databases is out side the scope of this paper and will be included in our another work.
+The R-tree index structure is a direct extension of B+trees in n dimensions.
+The data structure is a heightbalanced tree which consists of intermediate and leaf nodes.
+A leaf node contains index record entries of the form ( I, tuple-ID ) where tuple-ID refers a tuple in the database and I is an ndimensional rectangle which is the bounding box of the object indexed I = (I1, I2, ..., In) where n is the number of dimensions and Ii is a closed bounded interval describing the extent of the object along dimension i.
+For bi-temporal databases, the dimension is 2.
+The intermediate nodes contain entries of the form ( I , child-ptr) where child-ptr is the address of a lower level node of the tree and I covers all rectangles in the lower node's entries.
+For the STV approach, a R-tree, RTSTV is built upon the data set rSTV of schema Rsc.
+The total number of entries in the nodes of the leaf level, NSTV, is the number of tuples in rSTV, where NSTV = Ntp + ( NF + 2*NP ) * Ne 1 For the PMTV approach, because the information of all the added attributes are part of the objects in relation R, therefore, the instances in the added attribute relation R_Ax, together with the instances in relation R, can be indexed by the same R-tree, RTPMTV.
+The total number of entries in all the nodes of the leaf level is NPMTV, NPMTV = Ntp + Ne We compare the space overhead of RTSTV and RTPMTV in terms of the total number of tuples to be indexed , i.e., the total number of entries in the leaf nodes of both trees , n(RTSTV) and n(RTPMTV), after the schema change.
+We assume (continuing from section 4): Ve: the average number of versions for each entity e.  25000 20000 15000  STV  10000  PMTV  5000  STV / PMTV =2  0 100  300  500  700  900  # of distinct entities  The number of entries in the nodes of the leaf level of the index R-tree with higher weight of data conversion, I, =1.
+)LJXUH   For the entity-join in the PMTV approach, consider the query showed earlier, "List employee John's history during time 25 to 65 as of time 60".
+After retrieving all the valid tuples, these tuples can be entity-joined in memory without much time overhead.
+From the discussion in the previous sections, we can see that the PMTV approach performs better than STV and MTV approaches in both database conversion and query processing (when a bitemporal indexing structure is used) thus make PMTV a better approach for bi-temporal schema versioning.
+The same idea can be also applied to other bi-temporal indexing techniques without difficulty.
+[3]  [4] [5]  [6]  6 Conclusion In this paper, we first use an example to review two schema versioning approaches for temporal databases: Single Table Version (STV) and Multiple Table Version (MTV), and the proposed Partial Table Version (PMTV) approach.
+In most of the current literature, only transaction time is considered on schema versioning.
+The research that discusses schema versioning involving both transaction time and valid time does not consider some of the more complex problems concerning schema version creation and database conversion.
+We discuss the problems associated with the three approaches concerning space-time overhead, bitemporal querying, and database conversion.
+For our proposed partial multiple table version approach, when a new attribute is added, it creates a new bi-temporal relation with only the new attribute, plus the key attribute of the relation being modified.
+This way, no null values will be introduced, no searching for the overlapped current versions is needed, no database restructuring and data duplication is required, and no extra effort is needed for the problem of mandatory version creation.
+In addition, when compared with the two previous approaches, the time and space cost for database conversion has been largely reduced.
+Although the PMTV approach performs much better than the STV and MTV approaches in the process of databases conversion, it requires expensive Entity-Join to retrieve the complete object information.
+To solve this problem, we propose a method that incorporates indexing and entity-join into one index structure.
+We use R-tree bitemporal index for our presentation, the same methodology can be adopted to other bi-temporal indexing scheme.
+[7]  [8]  [9] [10]  [11]  [12] [13]  [14] [15]  [16] [17] [18]  References [1] J. Banerjee, H-T Chou, H. J. Kim , and H.F. Korth.
+Semantics and Implementation of Schema Evolution in Object-oriented databases.
+SIGMOD RECORD, 16(3): 311 a 322, 1987.
+[2] N. Beckmann, H.P.
+Kriegel, R. Schneider, and B. Seeger.
+The R*-tree: an efficient and Robust Access Method for  0-7695-0756-5/00 $10.00 AL 2000 IEEE  [19]  Points and Rectangles.
+In Proceedings of ACM SIGMOD, pages 322 a 331, 1990.
+J. Clifford, C. Dyreson, T. Isakowitz, C. S. Jensen, and R.T. Snodgrass.
+On the Semantics of anowa in Databases.
+ACM Transactions on Database Systems, 22(2):171 a 214, June 1997.
+J. Clifford and D.S.
+Warren.
+Formal Semantics for Time in Databases.
+ACM Transactions on Database Systems, pages 214-254, 1983.
+Christina DeCastro, Fabio Grandi, and Maria Rita Scalas.
+Schema Versioning for Multitemporal Relational Databases.
+Information Systems, pages 249-290, July 1997.
+R. Elmasri, G. Wuu, and Y. Kim.
+The Time Index: An Access Structure for temporal data.
+In Proceedings of the 16th VLDB Conference, 1990.
+H. Gunadhi and A. Segev.
+Query Processing Algorithms for Temporal Intersection Joins.
+In Proceedings of 7th International Conference on Data Engineering, IEEE, 1991.
+A. Guttman.
+R-Trees: A Dynamic Index Structure for Spatial Searching.
+In Proceedings of ACM SIGMOD, pages 47 a 57, 1984.
+C. Jensen et al.
+A consensus glossary of temporal database concepts.
+SIGMOD RECORD, 23(1):52-64, 1994.
+C. Kolovson, M. Stonebraker.
+Segment Indexes: Dynamic Indexing Techniques for Multi-dimensional Interval Data.
+In Proceedings ACM SIGMOD, pages 138 a 147, 1991.
+A. Kumar, V. J. Tsotras, and C. Faloutsos.
+Access Methods for Bi-temporal Databases.
+In Recent Advances in Temporal Databases, J. Clifford, and A. Tuzhilin (eds), pages 235 a 254, 1995.
+Priti Mishra and M. H. Eich.
+Join Processing in Relational Databases.
+ACM Computing Surveys, Vol.
+24, No.
+1, March 1992.
+S. B. Navathe and R. Ahmed.
+A Temporal Relation Model and a Query Langue.
+Information Sciences, pages 147-175, 1989.
+J. F. Roddick.
+Dynamically Changing Schemas within Database Models.
+Australian Computer Journal, pages 105-109, 1991.
+J. F. Roddick.
+Schema Evolution in Database Systems a An Annotated Bibliography.
+Technical Report No.
+CIS92-004, School of Computer and Information Science, University of South Australia, 1992.
+J. F. Roddick.
+A survey of schema versioning issues for database systems.
+Information and Software Technology, 37(7), 1995.
+B. Salzberg and V. J. Tsotras.
+A Comparison of Access Methods For Time-Evolving Data.
+In Computing Surveys, 31(2):158-121, 1999.
+M. R. Scalas, A. Cappelli, and C. De Castro.
+A Model for Schema evolution in Temporal Relational Databases.
+In Proceedings of 1993 CompEuro, Computers in Design, Manufacturing, and Production, pages 223 a 231, May 1993.
+A. Segev.
+Join Processing and Optimization in Temporal Relational Databases.
+Chapter 15 of Temporal Databases: Theory, Design, and Implementation, Benjamin/Cummings, 1993.
+[20] A. Segev and H. Gunadhi.
+Event-join optimization in temporal relational databases.
+In Proceedings of the Conference on Very Large Data Base, pages 205-215, August, 1989.
+[21] A. Shrufi and T. Topaloglou.
+Query Processing for Knowledge Bases Using Join Indices.
+In Proceedings of the 4th International Cinference on Information and Knowledge management (CIKM), 1995.
+[22] R. T. Snodgrass.
+The Temporal Query Language TQuel.
+ACM Transactions on Database Systems, pages 247 a 298, June 1987.
+[23] R. T. Snodgrass, editor.
+The TSQL2 Temporal Query Language, chapter 10.
+Kluwer Academic Publishers, 1995.
+[24] M. D. Soo, R. T. Snodgrass and C. S. Jensen.
+Efficient Evaluation of the Valid-Time Natural Join.
+In Proceedings of the 10th International Conference on Data Engineering, IEEE, 1994.
+[25] D. Son and R. Elamsri.
+Efficient Temporal Join Processing Using Time Index.
+In Proceedings of the 8th International Conference on Scientific and Statistical Database Management, pages 252 a 261, June 18 a 20, 1996.
+[26] T. Topaloglou.
+Storage Management for Knowledge Bases.
+In Proceedings of the 2nd International Conference on Information and Knowledge Management (CIKMa93), 1993.
+[27] V. J. Tsotras, C.S.
+Jensen, and R. T. Snodgrass.
+A Notation for Spatiotemporal Queries.
+In TimeCenter Technical Report TR-10, April 1997.
+[28] P. Valduriez.
+Join Indices.
+ACM Transactions on Database Systems, 12(2): 218 a 246, June 1987.
+[29] H.C. Wei and R. Elmasri.
+Study and Comparison of Schema Versioning and Database Conversion Techniques for Bi-Temporal databases.
+In Proceedings of the 6th International Workshop on Temporal Representation and Reasoning (TIME-99), pages 88-98, May 1 a 2, 1999.
+0-7695-0756-5/00 $10.00 AL 2000 IEEE

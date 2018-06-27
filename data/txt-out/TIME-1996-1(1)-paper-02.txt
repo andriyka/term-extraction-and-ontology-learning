@@ -1,0 +1,283 @@
+Proceedings of TIME-96  1  Gaining Efficiency and Flexibility in the Simple Temporal Problem Amedeo Cesta  Angelo Oddi  IP-CNR National Research Council of Italy Viale Marx 15, I-00137 Rome, Italy amedeo@pscs2.irmkant.rm.cnr.it  Dipartimento di Informatica e Sistemistica Universita di Roma "La Sapienza" Via Salaria 113, I-00198 Rome, Italy oddi@assi.dis.uniroma1.it  Abstract The paper deals with the problem of managing quantitative temporal networks without disjunctive constraints.
+The problem is known as Simple Temporal Problem.
+Dynamic management algorithms are considered to be coupled with incremental constraint posting approaches for planning and scheduling.
+A basic algorithm for incremental propagation of a new time constraint is presented that is a modification of the Bellman-Ford algorithm for Single Source Shortest Path Problem.
+For this algorithm a sufficient condition for inconsistency is given based on cycle detection in the shortest paths graph.
+Moreover, the problem of constraint retraction from a consistent situation is considered and properties for repropagating the network locally are exploited.
+Some experiments are also presented that show the usefulness of the properties.
+1  Introduction  Knowledge-based architectures for planning and scheduling based on constraint propagation, e.g.
+[5, 3, 8, 2], perform incremental constraint posting and retraction on a current partial solution.
+A complete plan is created by efficiently searching in partial plans space, and, in other cases, it is adapted to new situations by partially removing parts of the solution.
+A module for temporal constraint management that supports plan space search and current solution maintenance should be extremely efficient because is called into play at any modification (monotonic or not) of the current plan.
+Such an efficiency is usually guaranteed by restricting the expressive power of the temporal representation.
+Usually the so called Simple Temporal Problem (STP) [7] is used that allows the representation of binary quantitative constraints without disjunction.
+In spite of the restriction of expressivity, also for STP it results useful to consider how the efficiency of manipulation primitives may be improved.
+In our research, we have been investigating possible  algorithms for managing temporal information that: (a) allow dynamic changes of the constraint set for both incremental constraint posting and retraction; (b) exploit the localization of effects of any change in a subnetwork of the whole constraint graph; (c) do not compute the minimal network as done in [7] but just check for consistency.
+A previous paper [1], in the same line of [6], has concerned the specialization of arc-consistency algorithm to the STP.
+The choice of arc-consistency to propagate temporal constraints was motivated by the good trade-off wrt space and time complexity.
+In the same paper some properties were given that were shown experimentally to improve the performance of the algorithm in the average case.
+The present paper contains a further step in the direction of gaining efficiency in the solution of the STP.
+After presenting the essentials of STP (Section 2), it presents dynamic algorithms based on the well known Bellman-Ford algorithm for computing Single Source Shortest Paths (Section 3).
+It also introduces (Section 4) the concept of dependency that computes a particular spanning tree on the constraint graphs that allows the definitions of a sufficient condition for inconsistency detection (Section 5) and an algorithm for local constraint retraction (Section 6).
+Some experiments (Section 7) show the usefulness of the properties.
+2  The Temporal Problem  A Simple Temporal Problem is defined in [7] and involves a set of temporal variables {X1 , .
+.
+.
+, Xn }, having continuous domains [lbi , ubi ] and a set of constraints {aij <= Xj - Xi <= bij }, where aij >= 0, bij >= 0 and aij <= bij .
+A special variable X0 is added to represent the origin of the time (the beginning of the considered temporal horizon) and its domain is fixed to [0, 0].
+A solution of the STP is a tuple (xi .
+.
+.
+xn ) such that xi [?]
+[lbi , ubi ] and every constraint aij <= Xj - Xi <= bij is satisfied.
+An STP is inconsis-  Proceedings of TIME-96 tent if no solution exists.
+In order to find the set of possible values [lbi , ubi ] for every variable Xi , a direct constraint graph Gd (Vd , Ed ) is associated to the STP, where the set of nodes Vd represents the set of variables {X1 , .
+.
+.
+, Xn } and the set of edges Ed represents the set of constraints {aij <= Xj - Xi <= bij }.
+Given a constraint aij <= Xj -Xi <= bij , we can rewrite it as a pair of inequalities: * Xj - Xi <= bij * Xi - Xj <= -aij For every linear inequality Xj - Xi <= wij (with wij equal to bij or -aij ) we have an edge (i, j) in Gd (Vd , Ed ) labeled with the weight wij .
+Each path in Gd from the node i to the node j, i = i0 , i1 .
+.
+.
+im = j induces between the variables Xj and Xi the constraint Xj - Xi <= lij , where lij is the sum of weights along the path, that is lij = w01 +w12 +.
+.
+.+w(m-1)m .
+Considering the set of all paths between the nodes i and j, these paths induce a constraint Xj - Xi <= dij , where dij is the length of a shortest path between the nodes i and j.
+Finally a cycle on the graph Gd is closed path i = i0 , i1 .
+.
+.
+im = i and a negative cycle is a cycle with associated a negative length (lii < 0).
+In [7] some useful properties of an STP are given and reported in the following theorems.
+Theorem 1 [7] A Simple Temporal Problem is consistent iff Gd does not have negative cycles.
+Defining d0i as the length of a shortest path on the graph Gd from the origin 0 and the node i and di0 as the length of a shortest path from the node i to the origin 0 we can also have the other following theorem.
+Theorem 2 [7] Given a consistent Simple Temporal Problem, the set [lbi , ubi ] of feasible values for the variable Xi is the interval [-di0 , d0i ].
+Theorem 2 shows that the Simple Temporal Problem is a Shortest Paths Problem and precisely we have to calculate two sets of shortest paths length: (a) the set of shortest paths from the node 0 (that represent the variable X0 ) to the nodes 1 .
+.
+.
+n; (b) and the set of shortest paths from the nodes 1 .
+.
+.
+n to node 0.
+3  An Algorithm for the STP  To solve the basic STP we use the Bellman-Ford algorithm for the Single Source Shortest Paths Problem [4] giving an incremental version of the algorithm named Propagation, which accepts as an input the graph Gd and a new constraint Cij (where Cij = aij <= Xj - Xi <= bij ) and produces in output a new set of feasible values [-di0 , d0i ] for every variable Xi or a value fail in the case the new constraint induces a inconsistent situation.
+To understand the algorithm, shown in Figure 1, some  2 simple definitions are useful: given a node i of the graph Gd we define EdgesOut(i) as the set of edges which leave from the node i and EdgesIn(i) as the set of edges which arrive to the node i. T and F are the boolean constants T rue and F alse.
+The algorithm has two differences wrt the standard implementation on Bellman-Ford with a queue.
+First, it calculates at the same time two sets of shortest distances.
+Second, the algorithm has an internal test which detects negative cycles on the graph Gd which contain the reference node X0 .
+In addition, every node u [?]
+Vd has two boolean marks: LB(u) and U B(u).
+This marks are useful in order to distinguish the two types of propagation in the graph Gd , that is, respectively U B(u) = T and LB(u) = T when a node is modified by the propagation process for the distance d0i and the distances di0 .
+The Propagation calculates the set of distances {d0i } between Steps 6 and 14 and the set of distances {di0 } between Steps 16 and 24.
+This last section of the algorithm, in order to calculates the set of distances di0 , (that is, the length of the shortest paths on the graph Gd between the nodes 1 .
+.
+.
+n and the node 0) considers the set of direct edges in Gd as oriented in the opposite direction.
+In this way when a shortest path between the nodes 0 and i is found, it is actually a shortest path in the opposite direction.
+Finally, the tests at Steps 10 and 20 check for negative cycles in the graph Gd when they contain the node 0.
+The algorithm calculates also two shortest path trees.
+In fact Steps 11 and 21 respectively update the predecessor function pu, which represents the shortest path tree of the distances {d0i } and the predecessor function pl, which represents the shortest path tree of the distances {di0 }.
+The complexity of the algorithm, as well known, is O(EN ).
+Where N and E are respectively the number of nodes and the number of edges in Gd .
+negative cycles  4  Focusing on Dependency  The temporal meaning of shortest path trees on the Gd graph is simple.
+Every bound {d0i } (or {di0 }) is induced by the set of temporal constraints in the shortest paths between the origin 0 and the node i (or between the node i the origin 0).
+The following definitions are useful: Definition 1 Let Gd a consistent distance graph.
+The tree DTub of the shortest paths from the origin 0 to the nodes 1 .
+.
+.
+n is called Upper Bounds' Dependency Tree.
+Definition 2 Let Gd a consistent distance graph.
+The tree DTlb of the shortest paths from to the nodes  Proceedings of TIME-96 Propagation (Gd , Cij ) 1. begin 2.
+Q - {i, j} 2a.
+LB(i) ::= T ; U B(i) ::= T 2b.
+LB(j) ::= T ; U B(j) ::= T 3.
+While Q 6= [?]
+do begin 4. u - P op(Q) 5. if U B(u) then 6.
+Foreach (u, v) [?]
+EdgesOut(u) do 7. if d0u + wuv < d0v 8. then begin 9. d0v ::= d0u + wuv 10. if d0v + dv0 < 0 then exit(fail) 11. pu(v) ::= u 12.
+U B(v) ::= T 13. if v 6[?]
+Q then Q - Q [?]
+{v} 14. end 15. if LB(u) then 16.
+Foreach (u, v) [?]
+EdgesIn(u) do 17. if du0 + wvu < dv0 18. then begin 19. dv0 ::= du0 + wvu 20. if d0v + dv0 < 0 then exit(fail) 21. pl(v) ::= u 22.
+LB(v) ::= T 23. if v 6[?]
+Q then Q - Q [?]
+{v} 24. end 25.
+LB(u) ::= F 26.
+U B(u) ::= F 27. end 28. end Figure 1: Propagation algorithm  1 .
+.
+.
+n to origin 0 is called Lower Bounds' Dependency Tree.
+If a given graph Gd is consistent then the trees DTub and DTlb are always defined.
+In fact, without negative cycles, the distances {d0i } and {di0 } are always defined.
+In general, the trees DTub and DTlb may not be single.
+In fact, the graph Gd may contain several paths with the same length.
+A relevant situation is verified when the graph Gd contains at least a negative cycle.
+In this case, the following Theorem holds.
+Theorem 3 Give a distance graph Gd .
+If during the update process of the Propagation algorithm the predecessor function pu (pl) represents a graph containing at least a cycle then the graph Gd is inconsistent.
+3 Proof.
+We give the proof for the distances {d0i }, but an analogous proof can be given for the distances {di0 }.
+Suppose by hypothesis that during the update process of the algorithm, a dependency path exists between the nodes i and j named p1 : i = i0 , i1 .
+.
+.
+ir = j, that is, a path such that pu(ik ) = ik-1 , with k = 1 .
+.
+.
+r. If we sum the weights along this path, we have the following relation: d0j - d0i = w01 + w12 + .
+.
+.
++ w(r-1)r .
+(1)  If successively the Propagation algorithm builds a dependency path p2 : j = j0 , j1 .
+.
+.
+js = j, we can write the following relation: dnew - d0j = w01 + w12 + .
+.
+.
++ w(s-1)s .
+0i  (2)  Where dnew is the new value of the distances d0i 0i updated along the path p2 .
+If we sum the relations 1 and 2 we obtain the length of the cycle lii : lii = dnew - d0i .
+0i  (3)  Observing that the link of two paths p1 and p2 is a cycle and dnew < d0i , then the length lii is negative 0i and this proves the inconsistency of the graph Gd .
+2  5  Cycle Detection  In order to use the property expressed by Theorem 3 few changes are introduced in the Propagation algorithm.
+Each edge (i, j) in the graph Gd have three new boolean marks: N EW ((i, j)), LBP ((i, j)) and U BP ((i, j)).
+The mark N EW is useful in order to distinguish the new edges introduced in Gd , by the new temporal constraint Cij .
+In fact, if in the graph there is at least a negative cycle, then it must contain at least one of the new edges introduced.
+Instead, the two marks LBP ((i, j)) and U BP ((i, j)) are used to check when a bound changes two times as explained in the next Theorem 4: Theorem 4 Let Gd a consistent distance graph and Cij = aij <= Xj - Xi <= bij the new constraint added.
+If during the propagation process the distance d0j (di0 ) changes two times, then the constraint Cij is inconsistent with the other constraints represented in Gd .
+Proof.
+We give the proof for the distances {d0j }, but an analogous proof can be given for the distances {dj0 }.
+If the constraint represented by the edge (i, j) changes the distance d0j a first time, this means every new shortest paths built by the Propagation algorithm will contain the node j.
+If the distances is changed a second time, then the algorithm has built a closed dependency path and for the Theorem 3 the graph Gd is inconsistent.
+2  Proceedings of TIME-96 Figure 2 shows the modified version of the algorithm to check for cycle detection.
+It is interesting to notice the complexity of the algorithm with cycles detection is the same of the Propagation algorithm.
+In fact, the only difference with the previous algorithm is the check of the boolean marks N EW ((i, j)) LBP ((i, j)) and U BP ((i, j)).
+Propagation-cd (Gd , Cij ) 1.
+- 9. as in the Propagation algorithm 10a.
+if d0v + dv0 < 0 10b.
+then exit(fail) 10c.
+else if N EW ((u, v)) 10d.
+then if U BP ((u, v)) 10e.
+then exit(fail) 10f.
+else U BP ((u, v)) ::= T 11.
+- 19. as in the Propagation algorithm 20a.
+if d0v + dv0 < 0 20b.
+then exit(fail) 20c.
+else if N EW ((u, v)) 20d.
+then if LBP ((u, v)) 20e.
+then exit(fail) 20f.
+else LBP ((u, v)) ::= T 24.
+- 28. as in the Propagation algorithm  Figure 2: Differences introduced by cycle detection the average time  6  Retraction of Temporal Constraints from a Consistent Context  This paragraph deals with the problem of removing temporal constraints from a consistent graph Gd (a graph without negative cycles).
+A basic way to do this consists of: physically removing the constraint from the graph Gd ; setting every distance {d0i } and {di0 } to the value +[?
+]; finally, running the Propagation algorithm on the whole graph.
+As a matter of fact, this method is not very efficient.
+In fact, when retracting a constraint from the time map a lot of distances are likely not to be affected by the removal.
+The dependency information may be used to focalize the part of the network actually affected by the removal and to run the Propagation algorithm on that part of the graph.
+To state same properties some definitions are useful.
+Given an upper bounds' dependency tree DTub (VDTub , EDTub ), each sub-tree STub [i](VSTub , ESTub ) of root i [?]
+VDTub is called an Upper Bounds' Dependency Sub-tree.
+Given a lower bounds' dependency tree DTlb (VDTlb , EDTlb )  4 every sub-tree STlb [i](VSTlb , ESTlb ) of root i [?]
+VDTlb is called a Lower Bounds' Dependency Sub-tree.
+Given a a distance graph Gd (VGd , EGd ) and a node i [?]
+VGd , IN (i) is the set of start nodes of the edges which enter in the node i (in the edge (j, i), j is the start node and i is the end node).
+The next Proposition explains the real effects of a removal constraints from a graph Gd and it is a starting point to write a new algorithm to remove temporal constraints from Gd .
+Proposition 1 Let Gd be a consistent graph and DTub (VDTub , EDTub ) its upper bounds' dependency tree (DTlb (VDTlb , EDTlb ) its lower bounds' dependency tree).
+The retraction of an edge (i, j) [?]
+EDTub ( (i, j) [?]
+EDTlb ) modifies at most the distances of the nodes k [?]
+VSTub [j] ( k [?]
+VSTlb [j] ).
+No distances are modified when (i, j) 6[?]
+EDTub ( (i, j) 6[?]
+EDTlb ).
+Proof.
+We give the proof for the distances {d0i }, but an analogous proof can be given for the distances {di0 }.
+The removal of an edge (i, j) [?]
+EDTub can't modify a node's distance {d0k } in the case k 6[?]
+VSTub [k].
+In fact the removal of (i, j) does not change the shortest path between the origin 0 and the node k. If (i, j) 6[?]
+EDTub then no distance is changed because no shortest path is changed.
+2 The basic idea to write an efficient removal algorithm is run the Propagation algorithm on the only part of the Gd graph affected by the removal of the constraint.
+The next Theorem formalize this concept and explains how to initialize the Propagation algorithm.
+Theorem 5 Let Gd be a consistent distance graph.
+To remove the effects of the constraint represented by the edge (i, j) [?]
+EDTub ( (i, j) [?]
+EDTlb ) the queue Q of the Propagation algorithm and the set of distances {d0i } ({di0 }) in the graph Gd need of the following initialize operations.
+S S 1.
+Q - k[?
+]VST [j] IN (k) (Q - k[?
+]VST [j] IN (k)) ub lb 2. d0u ::= +[?
+], u [?]
+VSTub [j] (du0 ::= +[?
+], u [?]
+VSTlb [j]) Proof.
+We give the proof for the distances {d0i }, but an analogous proof can be given for the distances {di0 }.
+By Proposition 1, for every node k [?]
+VSTub [j], the distance {d0k } can change after the removal.
+The Propagation algorithm have to rebuild the new shortest paths for every node k [?]
+VSTub [j].
+In order to update these distances to the new values, it is necessary to initialize them to the maximum possible value +[?].
+In fact, it is not known what the new values will be and the Propagation algorithm can only reduce the bounds.
+In addition, we have to put in the queue Q all  Proceedings of TIME-96 the nodes of the constraints (i, j) which enter in the set S of updated nodes.
+That is, the nodes in the set k[?
+]VSTub [i] IN (k).
+In fact, these are the only nodes of the graph from which can start the new shortest paths of the nodes k [?]
+VSTub [j].
+2 The Remove algorithm is shown in Figure 3.
+It accepts as an input a graph Gd and a constraint Cij which have to be removed from Gd and return the graph Gd updated.
+At the step 13 is used the RePropagation algorithm that is similar to the Propagation algorithm but accepts as an input a list of nodes Q instead of an edge Cij .
+The parameter Q is used as an initialization for the internal queue.
+Moreover RePropagation does not check for the consistency of a modification because the removal of one or more constraints, relax the STP holding the consistency property.
+Remove (Gd , Cij ) 1. begin 2.
+Vm - [?]
+3.
+Q-[?]
+4. if (i, j) [?]
+EDTub 5. then Vm - Vm [?]
+VSTub [j] 6. else if (j, i) [?]
+EDTub 7. then Vm - Vm [?]
+VSTub [i] 8. if (i, j) [?]
+EDTlb 9. then Vm - Vm [?]
+VSTlb [i] 7. else if (j, i) [?]
+EDTlb 8. then Vm - Vm [?]
+VSTlb [j] 9.
+Foreach u [?]
+Vm do begin 10.
+Q - Q [?]
+IN (u) 11. end 12.
+EGd - EGd - {(i, j), (j, i)} 13.
+RePropagation(Gd , Q) 14. end Figure 3: Remove algorithm  7  Performance Evaluation  In order to get some realistic evaluations of the algorithms, we have used a scheduling system described in [3] and the time network generated by the scheduler.
+This scheduler solves instances of the Deadline Job Shop Scheduling Problem (DJSSP) by incremental precedence constraint posting between the activities until any conflict in the use of resources is resolved.
+In the DJSSP, each activity in a job can request only one resource and a resource is requested only once in a job.
+The sequence of resources requested by the activities in a job is random.
+Every job has a  5 fixed release date and a due date.
+More details on the random problem generator are described in [3].
+All the evaluations are given as number of time points explored by the algorithms.
+This choice is motivated from the fact that such number is both proportional to the time of computation and machine independent.
+We have built two different types of time networks from the resolution of two different DJSSPs: the 8x8x8 (named P 8) and the 10x10x10 (named P 10), where the first number indicate the number of jobs, the second one the number of activities in a job and the third one the number of resources.
+The data are obtained running ten instances of each type of problem.
+Table 1 shows the number of time points N , the maximum number of distance constraints Emax and maximum connectivity Cmax for each problem.
+The connectivity is defined as the ratio between the number of distance constraints E and the number of time points N .
+The value N is two times the number of activities plus two (the origin point and horizon point).
+The value Emax represents the maximum number of distance constraints which can be contained in a time network associated to the solution of the instance of the DJSSP.
+Emax is obtained by the sum of the maximum values of the number of precedence constraints for each resource and the number of constraints before the scheduling algorithm starts to find a solution.
+Table 2 and Table 3 present the perfor-  Table 1: Number of time points and maximum connectivity for the experimental time networks Problem P8 P 10  N 130 202  Emax 333 661  Cmax = Emax /N 2.56 3.27  mance of the Propagation algorithm when a modification is either consistent or inconsistent respectively.
+This values are shown as a function of the average connectivity Av-conn, that is, every row of the table represents the average value obtained in the interval Av-conn +-0.25.
+In order to get several values of the connectivity we have built a solution of an instance of a DJSSP and progressively reduced the number of edges and selected a time constraint Cij in random way.
+In order to get the results showed in Table 2, we have modified the distance constraint selected Cij = aij <= Xj - Xi <= bij , in the constraint  Proceedings of TIME-96  6  Cij = aij + (dij - aij )U [0.05, 01] <= Xj - Xi <= bij .
+Where U [x, y] represents a random value r with uniform distribution such that x <= r <= y and dij is minimal temporal distance between the nodes i and j on the Gd graph.
+In this case, it is possible to make a comparison between the number of nodes scanned by the Propagation algorithm (Loc-prop values) and the number of nodes scanned by an algorithm which works from scratch (Scratch values).
+In order to get the results showed in Table 3, we have induced an inconsistent situation by modifying the constraint Cij in the constraint dij (1 + U [0.05, 01]) <= Xj - Xi <= bij In this other case, it is possible make a comparison between the number of nodes visited by the Propagation algorithm which uses the property expresses by Theorem 4 (Cycle-det values) and the number without the previous property (No-cycle-det values).
+Table 2: Incremental vs scratch propagation Problem P8  P 10  Av-conn 1.25 1.75 2.25 2.75 1.25 1.75 2.25 2.75 3.25  Loc-prop 38.76 52.33 34.08 39.51 51.42 67.20 64.34 57.00 63.92  Scratch 652.67 1111.47 1641.19 2048.28 1108.38 1928.54 2876.22 3817.79 4388.71  a solution; then we have reduced progressively the number of time constraints by using the Remove algorithm.
+In this case, is possible to make a comparison between the average number of nodes scanned by the Remove algorithm (Loc-rem values) and the number of nodes scanned in the same case by a scratch algorithm (Scratch-rem values).
+The scratch algorithm eliminates first the constraint from the time map; then puts all the bounds of the time points to the value +[?
+]; finally updates all the network.
+Table 4: Incremental vs scratch remove Problem P8  P 10  Av-conn 1.25 1.75 2.25 2.75 1.25 1.75 2.25 2.75 3.25  Loc-rem 2.37 35.34 56.02 96.35 2.69 33.12 55.06 70.58 156.97  Scratch-rem 652.67 1111.47 1641.19 2048.28 1108.38 1928.54 2876.22 3817.79 4388.71  Acknowledgments This research is partially supported by: ASI - Italian Space Agency, CNR Special Project on Planning, CNR Committee 04 on Biology and Medicine.
+References [1] Cervoni, R., Cesta, A., Oddi, A., Managing Dynamic Temporal Constraint Networks, Proceedings of the Second International Conference on AI Planning Systems (AIPS94), AAAI Press, 1994.
+Table 3: Propagation with and without cycle detection Problem P8  P 10  Av-conn 1.25 1.75 2.25 2.75 1.25 1.75 2.25 2.75 3.25  Cycle-det 3.02 2.92 2.47 1.92 3.21 2.78 2.68 2.55 2.63  No-cycle-det 114.42 77.30 43.87 9.75 199.45 133.81 86.85 27.15 14.58  Finally, Table 4 presents the performance of the Remove algorithm.
+These results are obtained in the same way as the previous ones.
+First we have built  [2] Cesta, A., Oddi, A., DDL.1: A Formal Description of a Constraint Representation Language for Physical Domains, Proceedings of the 3rd European Workshop on Planning (EWSP95), IOS Press, 1996.
+[3] Cheng, C. Smith, S.,F., Generating Feasible Schedules under Complex Metric Constraints, Proceedings of the 12th National Conference on Artificial Intelligence (AAAI-94), AAAI Press, 1994.
+[4] Cormen, T.H., Leierson, C.E., Rivest, R.L., Introduction to Algorithms, MIT Press, 1990.
+[5] Currie, K., Tate, A., O-Plan: the open planning architecture, Artificial Intelligence, 52, 1991, 49-86.
+[6] Davis, E., Constraint Propagation with Interval Labels, Artificial Intelligence, 32, 1987, 281-331.
+[7] Dechter, R., Meiri, I., Pearl, J., Temporal constraint networks.
+Artificial Intelligence, 49, 1991, 61-95.
+[8] Ghallab, M, Laruelle, H., Representation on Control in IxTeT, a Temporal Planner, Proceedings of the Second International Conference on AI Planning Systems (AIPS94), AAAI Press, 1994.

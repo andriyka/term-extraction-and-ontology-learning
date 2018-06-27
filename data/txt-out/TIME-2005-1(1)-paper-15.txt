@@ -1,0 +1,501 @@
+Analysis of timed processes with data using algebraic transformations Michel A. Reniers Yaroslav S. Usenko Department of Mathematics and Computer Science, Technical University of Eindhoven, P.O.
+Box 513, 5600 MB Eindhoven, The Netherlands  Abstract The language of timed uCRL is an extension of an ACP-style process algebra-based language uCRL with time-related features.
+In this paper we describe this language and its equational axiomatization, and give an example specification.
+We outline the method of simplifying transformations based on this equational axiomatization, and illustrate it on this example.
+This transformation method allows for a time-free abstraction of the specification, which in turn enables the use of tools and techniques for verification of untimed systems.
+We prove some properties of the example using a known invariants technique.
+Key words: Process Algebra, Real Time, Axioms, Verification.
+1  Introduction  The language uCRL, see [13], offers a uniform framework for the specification of data and processes.
+Data are specified by equational specifications (cf.
+[5, 19]): one can declare sorts and functions working upon these sorts, and describe the meaning of these functions by equational axioms.
+Processes are described in process algebraic style, where the particular process syntax stems from ACP [6, 4, 9], extended with data-parametric ingredients: there are constructs for conditional composition, and for data-parametric choice and communication.
+As is common in process algebra, infinite processes are specified by means of (finite systems of) recursive equations.
+In uCRL such equations can also be data-parametric.
+As an example, for action a and adopting standard semantics for uCRL, each solution for the equation X = a * X specifies (or "identifies") the process that can only repeatedly execute a, and so does Y(17) where Y(n) is defined by the data-parametric equation Y(n) = a * Y(n + 1) with n [?]
+Nat.
+Several timed extensions have been proposed for different kinds of process algebras.
+For an overview of ACP extensions with time we refer to [3].
+According to [3], timed process algebras can be categorized by three criteria.
+Discrete vs. continuous time; relative vs. absolute time; two-phase vs. timed-stamped model.
+In [11] the language uCRL is extended with time, and in [21] a sound and complete axiomatization of timed uCRL is presented.
+In [15] some examples of specification and reasoning in timed uCRL are given.
+Timed uCRL makes use of absolute time, timed stamped model, and the time domain can be defined by the user (both discrete and continuous domains are possible).
+For a way to interpret timed automata [1] in timed uCRL we refer to [23, Chapter 6].
+In this paper we present a method to describe and analyze real-time systems using uCRL and timed uCRL.
+It is assumed that some real-time system is described by means of a timed uCRL specification (see Section 2).
+Mostly such descriptions will contain operators such as parallel composition that complicate analysis.
+As a first step towards the analysis of such systems, we linearize the given description using the algorithm from [22] (see Section 3).
+The result is a Timed  1  Linear Process Equation (TLPE) which is equivalent to the original description and has a very simple structure.
+On this TLPE it is already possible to perform some analysis.
+Next, in Section 4, we describe how a TLPE can be transformed into an LPE, i.e., a linear process equation without time.
+This transformation, called time-free abstraction, has been used for a more restricted class of timed uCRL specifications in [21].
+Crucial steps in this transformation are that the TLPE is first transformed into a well-timed TLPE and second that it is transformed into a deadlock-saturated well-timed TLPE.
+Finally, all time-stamping is captured in the parameters of atomic actions.
+The result is an LPE for which the machinery of untimed uCRL can be put to use for further analysis.
+These are based on symbolic analysis of the specifications, such as invariants, term rewriting and theorem proving, or on explicit state space generation and model-checking.
+We illustrate the respective steps of the proposed method on the Bottle Filling System from [15, Section 3] and [3, Section 4.2.5].
+In comparison to those expositions, we apply a proved transformation method [22] and a general analysis technique based on invariants [7].
+2  uCRL and Timed uCRL  Timed uCRL specifications contain algebraic specifications of several abstract data types.
+The only data types that are required are booleans and time.
+The algebraic specifications of booleans are standard and can be found for instance in [8, Chapter IV].
+We assume a constant t and functions !
+: Bool - Bool and [?]
+: Bool x Bool - Bool .
+Time Time can be represented in many different ways.
+In timed uCRL the time domain has to satisfy a set of properties.
+We present these properties as an algebraic specification of sort Time by defining its signature and the axioms.
+The signature of sort Time consists of: a constant 0; functions leq, eq : Time x Time - Bool , which are often abbreviated as <= and =, respectively; function if : Bool x Time x Time - Time; and functions min, max : Time x Time - Time.
+The axioms of sort Time are presented below.
+Many of the axioms are taken from, or inspired by [11, 16].
+The axioms say that <= is a total order on the Time domain, and 0 is the least element.
+(Time10 )  t<=u[?
+]u<=w [?]t<=u[?]u<=w[?
+]t<=w t<=u[?]!
+w <=u[?]t<=u[?]!
+w <=u[?]!
+w <=t  (Time100 )  !
+u<=t[?
+]u<=w [?]!
+u<=t[?]u<=w[?]!
+w <=t  (Time1000 )  0<=t[?
+]t  (Time2)  t<=u[?]u<=t[?
+]t  (Time3)  eq(t, u) [?]
+t <= u [?]
+u <= t  (Time5)  min(t, u) [?]
+if (t <= u, t, u)  (Time6)  max (t, u) [?]
+if (u <= t, t, u)  (Time60 )  if (t, t, u) [?]
+t  (Time7) (Time80 )  if (!b, t, u) [?]
+if (b, u, t) if (b1 [?]
+b2 , t, u) [?]
+if (b1 , t, if (b2 , t, u))  (Time9)  if (b1 , if (b2 , t, u), w) [?]
+if (b1 [?]
+b2 , t, if (b1 , u, w))  (Time10)  if (t <= u [?]
+u <= t, t, u) [?]
+u  (Time11)  t <= if (b, u, w) [?]
+(b [?]
+t <= u) [?]
+(!b [?]
+t <= w)  (Time12)  if (b, u, w) <= t [?]
+(b [?]
+u <= t) [?]
+(!b [?]
+w <= t)  (Time13)  The last seven axioms allow to eliminate if from any boolean expression containing subterms of sort Time.
+Every term of sort Time can be represented as 0, a variable, or as if (b, t, u) where t and u are terms of sort Time.
+The above mentioned form has two extremes: one where all boolean terms b are variables, and another, where every variable of sort time (and 0) occurs at most once.
+The latter form is useful for proving time identities in the following way: if we order the time variables occurring in a term as 0 < t1 < .
+.
+.
+< tn , then with the help of the axioms we can transform every term of sort Time to the form if (b1 , ti0 , if (b2 , ti1 , .
+.
+.
+if (bm , tim-1 , tim ) .
+.
+. ))
+with indices such that tik < tik+1 .
+Moreover, the conditions b1 , .
+.
+.
+, bm can be made pairwise distinct,  2  i.e.
+having the property that i 6= j - bi [?]
+bj [?]
+f .
+In addition, the conditions b1 , .
+.
+.
+, bm can be made such that if eq(tik , tik+1 ) [?]
+t, then bk [?]
+t. This gives us a method for proving identities of sort Time.
+Other Data Types.
+Any other data type in uCRL is specified in a similar way by providing a signature and axioms from which all other identities are derived.
+Other data sorts have generally different axioms, and sometimes induction principles (cf.
+[14]) are required to describe them.
+Processes Next we define the binding-equational theory of timed uCRL by defining its signature and the axioms.
+The signature of timed uCRL consists of data sorts (or 'data types') including Bool and Time as defined above, and a distinct sort Proc of processes.
+Each data sort D is assumed to be equipped with a binary function eq : D x D - Bool .
+(This requirement can be weakened by demanding such functions only for data sorts that are parameters of communicating actions).
+The process operations are the ones listed below: - - - - * actions a : Da - Proc where a [?]
+ActLab is an action label and Da is a list of parameter types of a.
+It is assumed that the signature of timed uCRL is parameterized by the finite set of action labels ActLab.
+* deadlock d :- Proc.
+The constant d models inaction, or the inability to perform actions.
+* alternative composition + : Proc x Proc - Proc.
+The process p + q behaves like p or like q, depending on which of the two performs the first action.
+* sequential composition * : Proc x Proc - Proc.
+The process p * q first performs the actions of p, until p terminates, and then continues with the actions from q.
+* conditional operator _ C _ B _ : Proc x Bool x Proc - Proc.
+The process term p C b B q behaves like p if b is equal to t, and if b is equal to f it behaves like q. P * alternative P quantification d:D : Proc - Proc, for each data variable d of sort D. The process d p behaves like p[d1 /d] + p[d2 /d] + * * * , i.e., as the possibly infinite alternative composition of processes p[di /d] for any data term di of sort D. * at-operator , : Proc xTime - Proc.
+A key feature of timed uCRL is that it can be expressed at which time a certain action must take place.
+This is done using the at-operator.
+The process p,t behaves like the process p, with the restriction that the first action of p must start at time t. The process p , t can delay till at most time t. If p consists of several alternatives, then only those with the first actions starting at time t will remain in p , t. The alternatives that start earlier than t will express that p , t can delay till that earlier time.
+The alternatives that start later than t will express that p , t can wait till time t (but not till that later time).
+* initialization operator  : Time xProc - Proc and weak initialization operator  : Time x Proc - Proc.
+The initialization operator tp expresses the process in which all alternatives of p that start earlier than t are left out, but an alternative to delay till time t is added.
+The weak initialization operator t [?]
+p expresses the process in which all alternatives of p that start earlier than t are replaced by the ability to delay till those earlier times.
+Thus the process t [?]
+p can delay till the same time as p, while t  p can delay till at least time t, which can be longer than p could delay.
+* parallel composition k : Proc x Proc - Proc, left-merge T : Proc x Proc - Proc, and communication merge | : Proc x Proc - Proc.
+The process p k q can first perform an action of p, first perform an action of q, or start with a communication, or synchronization, between p and q.
+The process p k q exists at time t only if both p and q exist at time t. The process p T q is as p k q, but the first action that is performed comes from p. The action can only be performed if the other party still exists at that time.
+The process p | q also behaves as  3  the process p k q, except that the first action must be a communication between p and q.
+Furthermore, these actions must occur at the same time and have the same data parameters.
+The action resulting from such a communication is defined by the partial commutative and associative function g : ActLab x ActLab - ActLab such that g(a1 , a2 ) [?]
+ActLab implies that a1 , a2 and g(a1 , a2 ) have parameters of the same sorts.
+It is assumed that the signature of timed uCRL is parameterized by this function g. * encapsulation [?
+]H : Proc - Proc, for H [?]
+ActLab.
+The process [?
+]H (p) behaves as the process p where the execution of actions from the set H is prohibited.
+* ultimate delay [?
+]U : Proc - Proc.
+The ultimate delay operator [?
+]U(p) expresses the process, which can delay as long as p can, but cannot perform any action.
+* before operator  : Proc - Proc.
+The before operator p  q expresses the process in which all alternatives of p that start later than [?
+]U(q) are replaced by the abilities to delay till [?]U(q).
+Thus p  q cannot delay longer than both p and q.
+The ultimate delay [?
+]U(p) of process p can be expressed in terms of  as d  p. This process cannot perform actions and can delay as long as p could (because d can delay till any time).
+Another key feature of timed uCRL is that it can be expressed that a process can delay till a certain time.
+The process p + d , t can certainly delay till time t, but can possibly delay longer, depending on p. Consequently, the process d , 0 can neither delay nor perform actions, and the process d can delay for an arbitrary long time, but cannot perform any action.
+We follow the intuition that a process that can delay till time t can also delay till an earlier moment, and a process that can perform a first action at time t can also delay till time t. P The descending order of binding strength of operators is: ,, *, {, [?
+], }, {k, T, |}, CB, , +.
+In Appendix A the axioms of timed uCRL are given.
+Many of these axioms are taken from, or inspired by [21, 12].
+To prove identities in timed uCRL we use a combined many-sorted calculus, which for the sort of processes has the rules of binding-equational calculus, for the sorts of booleans and time has the rules of equational calculus, while other data sorts may include induction principles which could be used to derive process identities as well.
+We note that the derivation rules of binding-equational calculus do not allow to substitute terms containing free variables if they become bound.
+The operational semantics (SOS) of timed uCRL and soundness and completeness proofs of the axiomatization are presented in [21].
+The axiomatization used here is an extension of the axiomatization in [21] with a number of axioms that are derivable in the setting of [21] for all closed terms.
+These extra axioms are needed to prove correctness of the linearization.
+Timed uCRL Specifications For the purpose of this paper we restrict to the timed uCRL specifications that do not contain left merge (T), communication (|), ultimate delay ([?
+]U), and before () operators explicitly.
+These operators were introduced to allow the finite axiomatization of parallel composition (k) and timing constructs in the bisimulation setting, and they are hardly used explicitly in timed uCRL specifications.
+We consider systems of process equations with the right hand sides from the following subset of timed uCRL terms P - - - - p ::= a( t ) | d | Y( t ) | p + p | p * p | p k p | d:D p | p C c B p | [?
+]H (p) | p , t | t  p | t [?]
+p - - For a system of process equations G containing a process equation for X, (X( t ), G) is a process - - definition if t is a list of data terms that corresponds to the type of process X.
+The combination - - of the given data specification with a process definition (X( t ), G) of process equations determines a timed uCRL specification.
+Such a specification depends on a finite subset Act of ActLab and on Comm, an enumeration of g restricted to the labels in Act.
+4  2.1  Example: Bottle Filling System  This example is taken from [15, Section 3] and [3, Section 4.2.5].
+We start from the informal specification from [3, page 153]: "Bottles on a conveyor belt are filled with 10 liters of liquid poured from a container with a capacity of m liters.
+The container is filled at a constant rate of r liters per second.
+When a bottle is under the container, a tap is opened and the bottle is filled at a rate of 3 liters per second until the container becomes empty.
+From that moment, the bottle is filled at the same rate as the container.
+When the bottle is full, the tap is closed and the conveyor belt starts moving to put the next bottle under the container which takes 1 second.
+Obviously, it is highly preferable that overflow (of the container) never occurs.
+Of course, it is also preferable that the container does not get empty during the filling of each bottle."
+Specification in Timed uCRL The time domain used in this specification is nonnegative rational numbers.
+For the specification of the conveyor belt we distinguish three 'modes of operation': mv - moving, nf - normal filling, and sf - slow filling.
+CBmv (t:Time) =!start , (t + 1) * CBnf (t + 1) X CBnf (t:Time) = ?empty , (t + t0 ) * CBsf (t + t0 , 3t0 ) C t0 < 10/3B  t0 :Time !stop , (t + 10/3) * CBmv (t + 10/3) CBsf (t:Time, l:Q) =!stop , (t + (10 - l)/r) * CBmv (t + (10 - l)/r) The process CBmv executes the !start action and then behaves as the process CBnf .
+The latter process can synchronize with the container process by ?empty at time period t + t0 , where t0 [?]
+[0, 10/3), or it can synchronize by !stop action at time t + 10/3.
+The further behavior of CBnf depends on which action it synchronized.
+For the specification of the container also three modes are distinguished: inc - increasing the amount of liquid, dec - decreasing, and dry - liquid goes through the empty container directly into the bottle.
+X Cinc (t:Time, h:Q) = ?start,(t + t0 ) * Cdec (t + t0 , h + rt0 ) C t0 < (m - h)/rB  t0 :Time !overflow , (t + (m - h)/r) * d , (t + (m - h)/r) X Cdec (t:Time, h:Q) = ?stop,(t + t0 )*Cinc (t + t0 , h - (3 - r)t0 ) C t0 <= h/(3 - r) B d,0 t0 :Time  + !empty , (t + h/(3 - r)) * Cdry (t + h/(3 - r)) X Cdry (t:Time) = ?stop ,t0 * Cinc (t0 , 0) t0 :Time  The process Cdec behaves nondeterministically at time t + h/(3 - r).
+Depending on the parallel process it can either perform ?stop or !empty in order to synchronize with that process.
+Using the above descriptions of the conveyor belt and the container, the system can be given as: T(t:Time, h:Q) = [?
+]H (CBmv (t) k Cinc (t, h)) where g(?s, !s) = g(!s, ?s) = s for s [?]
+{start, stop, empty} and g is undefined otherwise, and H = {?s, !s | s [?]
+{start, stop, empty}}.
+In words, the system is a parallel composition of the conveyor belt and the container processes, that are forced to synchronize on all actions except !overflow.
+Let G contain all of the above equations.
+Then the process definition (T(0, h), G) forms the specification of the bottle-filling system.
+5  3  Linearization  - - The problem of linearization of a timed uCRL specification defined by (X( t ), G) consists of generation of a new timed uCRL specification which * depends on the same Act and Comm, * contains all data definitions of the original one, and, possibly, definitions of the auxiliary data types, - - * is defined by (Z(mX ( t )), L), where L contains exactly one process equation for Z in linear form (defined later), and mX is a mapping from the parameters of X to the parameters of X.
+- - - - such that all processes that are solutions of (X( t ), G) are also solutions of Z(mX ( t )), L).
+It is not possible to linearize a timed uCRL specification which is unguarded, e.g.
+X = X cannot be brought to the linear form.
+The exact notion of guardedness in uCRL is rather complicated.
+In a nutshell, in a guarded process every occurrence of a recursive call is preceded (with sequential composition) by an action.
+We refer to [22, Section 3.6] for a precise definition.
+We define Timed Parallel Greibach Normal Form (TPEGNF) and Timed Linear Process Equation (TLPE) as special forms of process equations in timed uCRL.
+TPEGNF and TLPE are similar to the Greibach Normal Form [10] for context-free languages.
+A timed uCRL process equation is in TPEGNF if it is of the form: XX --- - --- - --- --- --- X(d:D) = ai ( fi (d, ei )) , ti (d, ei ) * pi (d, ei ) C ci (d, ei ) B d,0 --- i[?
+]I - ei :Ei  +  X X  - --- - --- --- aj ( fj (d, ej )) , tj (d, ej ) C cj (d, ej ) B d,0  --- j[?
+]J - ej :Ej  +  X  --- --- d , td (d, ed ) C cd (d, ed ) B d,0  ---- ed :Ed  --- where I and J are disjoint, and all pi (d, ei ) have the following syntax: - - - - - - p::=a( t ) | d | Y( t ) | p * p | p k p | [?
+]H (pkp) | [?
+]H (Y( t )) | p,t | t  p | t [?]
+p A timed uCRL process equation is called Timed Linear Process Equation (TLPE) if it is of the --- --- - same form as above, but the terms pi (d, ei ) are recursive calls of the form X(- gi (d, ei )) for some - - function vectors gi .
+- - The equation is explained as follows.
+The process X, being in a state vector d , can for any - - - - - --- - - ei , that satisfy the condition ci (d, ei ), perform an action ai parameterized by fi (d, ei ) at the --- --- - - absolute time ti (d, ei ), and then proceed to the state - gi (d, ei ).
+Moreover, it can for any - ej , that --- - --- - satisfy the condition cj (d, ej ), perform an action aj parameterized by fj (d, ej ), and then terminate --- ---- successfully.
+The last summand indicates that for any ed :Ed , that satisfies cd (d, ed ), the process --- can wait till the absolute time td (d, ed ).
+- - As input for the linearization procedure we take a timed uCRL process definition (X( t ), G).
+Further on, the process goes through a number of intermediate forms, including TPEGNF, and finally we get to TLPE.
+All the steps are described in [22, Chapter 6] and are proved to transform a system of process equations in timed uCRL to an equivalent one.
+3.1  Linearization of the Example  In this subsection we illustrate some of the linearization steps on our example.
+The example does not contain double bound variables, so we can start with reducing right hand sides of the equations  6  with the help of conventional term rewriting [2].
+This step is described in [22, Section 6.2.2].
+By doing this step the equations for CBnf and Cinc change to the following: X CBnf (t:Time) = ?empty , (t + t0 ) * CBsf (t + t0 , 3t0 ) C t0 < 10/3 B d,0 t0 :Time  + !stop , (t + 10/3) * CBmv (t + 10/3) X Cinc (t:Time, h:Q) = ?start , (t + t0 ) * Cdec (t + t0 , h + rt0 ) C t0 < (m - h)/r B d,0 t0 :Time  + !overflow , (t + (m - h)/r) * d , (t + (m - h)/r) In both equations we move the alternative composition operator (+) outside the sum operator and eliminate the sum in the second summand.
+At this point all our equations, except the one for T are in TPEGNF.
+We proceed by guarding [22, Section 6.2.4] the equation for T. We have to consider the term [?
+]H (CBmv (t) k Cinc (t, h)) and apply the guarding procedure to it.
+We get the following: [?
+]H (CBmv (t) k Cinc (t, h)) = start , (t + 1) * [?
+]H (CBnf (t + 1) k Cdec (t + 1, h + r)) C h < m - r B d,0 + !overflow , (t + (m - h)/r) * d , (t + (m - h)/r) C m - r <= h B d,0 Here we use the fact that only !overflow action is not forced to synchronize, and the rest of the actions have to.
+It is interesting to see how the !overflow action gets its condition.
+It has to happen before time t + 1, otherwise the action !start , (t + 1) should occur first.
+This means that t + (m - h)/r <= t + 1 should hold, which is equivalent to m - r <= h. Now we consider the term [?
+]H (CBnf (t)kCdec (t, h)) and apply the guarding procedure to it.
+Here we again use the fact that the all the actions of the two processes have to synchronize.
+We get the following: [?
+]H (CBnf (t) k Cdec (t, h)) = stop , (t + 10/3) * [?
+]H (CBmv (t + 10/3) k Cinc (t + 10/3, h - 10(3 - r)/3)) C 10(3 - r)/3 <= h B d,0 +empty , (t + h/(3 - r)) * [?
+]H (CBsf (t + h/(3 - r), 3h/(3 - r)) k Cdry (t + h/(3 - r))) C h < 10(3 - r)/3 B d,0 Now we consider the term [?
+]H (CBsf (t, l) k Cdry (t)) and apply the guarding procedure to it.
+We get the following: [?
+]H (CBsf (t, l) k Cdry (t)) = stop , (t + (10 - l)/r) * [?
+]H (CBmv (t + (10 - l)/r) k Cinc (t + (10 - l)/r, 0)) At this point we are ready to make a single equation for the whole system (cf.
+[22, Section 4.3]).
+Here we use the fact that only the parallel processes are reachable.
+We define a new sort  7  State = {mv_inc, nf_dec, sf_dry, dl} and use it as a parameter of the resulting process T: T(s:State, t:Time, h, l:Q) = start , (t + 1) * T(nf_dec, t + 1, h + r, 0) C s = mv_inc [?]
+h < m - r B d,0 + !overflow , (t + (m - h)/r) * T(dl, t + (m - h)/r, 0, 0) C s = mv_inc [?]
+m - r <= h B d,0 + stop , (t + 10/3) * T(mv_inc, t + 10/3, h - 10(3 - r)/3, 0) C s = nf_dec [?]
+10(3 - r)/3 <= h B d,0 + empty , (t + h/(3 - r)) * T(sf_dry, t + h/(3 - r), 0, 3h/(3 - r)) C s = nf_dec [?]
+h < 10(3 - r)/3 B d,0 + stop , (t + (10 - l)/r) * T(mv_inc, t + (10 - l)/r, 0, 0) C s = sf_dry B d,0 + d , t C s = dl B d,0 This equation is in TLPE format.
+Let system of equations L contain the above equation only.
+Then (T(mv_inc, 0, h, 0), L) is the linearized specification of the bottle-filling system.
+4  Time-free Abstraction and Analysis  - - An important notion of timed uCRL processes is well-timedness.
+A term a( t ) , t * p is well-timed - - if p [?]
+t  p. If t is such that c(t) [?]
+t implies p [?]
+t  p, then a( t ) , t * p C c(t) B d , 0 is also - - well-timed.
+Terms a( t ) , t and d , t are also well-timed.
+If p and q are well-timed terms, then p + q, P d:D p and p C c B d,0 are also well-timed terms.
+- - An equation in TPEGNF is well-timed if for all i [?]
+I the terms ai ( ti ) , ti * pi C ci B d , 0 are well-timed.
+The linearization method for timed uCRL ensures that the resulting TLPE is well-timed, e.g., in our example, t  T(s, t, h, l) [?]
+T(s, t, h, l).
+The time-free abstraction (cf.
+[21, Section 4.2]) of well-timed TLPEs can be used for further analysis with methods that are designed for untimed uCRL.
+For instance, strong bisimilarity of time-free abstractions of two well-timed TLPEs is equivalent to the timed bisimilarity of them.
+In the initial timed uCRL specification time has a direct influence on the specified behavior, for instance on the interleavings of parallel components (for example a , 1 k b , 2 [?]
+a , 1 * b , 2 in timed uCRL).
+This is why performing the time-free abstraction on the initial specification will not work (because a(1) k b(2) 6[?]
+a(1) * b(2) in uCRL).
+However, after linearization the influence of time on the specified behavior is encoded in the parameters and conditions of resulting TLPE, i.e.
+time becomes just a conventional data type in untimed uCRL.
+Applying time-free abstraction to our example gives us the following uCRL equation: T(s:State, t:Time, h, l:Q) = start(t + 1) * T(nf_dec, t + 1, h + r, 0) C s = mv_inc [?]
+h < m - r B d + !overflow(t + (m - h)/r) * T(dl, t + (m - h)/r, 0, 0) C s = mv_inc [?]
+m - r <= h B d + stop(t + 10/3) * T(mv_inc, t + 10/3, h - 10(3 - r)/3, 0) C s = nf_dec [?]
+10(3 - r)/3 <= h B d + empty(t + h/(3 - r)) * T(sf_dry, t + h/(3 - r), 0, 3h/(3 - r)) C s = nf_dec [?]
+h < 10(3 - r)/3 B d + stop(t + (10 - l)/r) * T(mv_inc, t + (10 - l)/r, 0, 0) C s = sf_dry B d + [?
+](t) C s = dl B d Analysis We try to prove some properties of the bottle-filling system.
+For this we assume that in the initial state m > r > 0.
+It is easy to see that both r and m do not change in T, and 8  therefore these properties are invariants of T. It is also easy to see that h >= 0 is an invariant of the system.
+Having assumed that, we see that if h >= m - r in the initial state, then the overflow is eminent at time (m - h)/r.
+It is interesting to see what happens if h < m - r in the initial state.
+To this end, we can see that the following formula is an invariant (cf.
+[7]) of the LPE: r <= 30/13 [?]
+(s = mv_inc == h < m - r) [?]
+(s = nf_dec == h < m) This gives us the fact that if r <= 30/13, then overflow is not reachable provided h < m - r holds in the initial state.
+In case r > 30/13, the process T is equal to T(s:State, t:Time, h, l:Q) = start(t + 1) * stop(t + 13/3) * T(mv_inc, t + 13/3, h + r - 10(3 - r)/3, 0) C s = mv_inc [?]
+h < m - r B d + !overflow(t + (m - h)/r) * T(dl, t + (m - h)/r, 0, 0) C s = mv_inc [?]
+m - r <= h B d + [?
+](t) C s = dl B d This is because r > 30/13 and h >= 0 implies that h+r < 10(3-r)/3 is always false.
+It is clear that the value of h increases with every sequence of start, stop actions by a constant, so the overflow is eminent.
+The next question is whether the container may become empty.
+From the previous analysis follows that this can only happen if r <= 30/13 and h < m - r holds in the initial state.
+If r < 30/13, the value of h will decrease with each sequence of start, stop actions by a constant.
+So, eventually, its value will become smaller than 10(3 - r)/3 and the container will become empty.
+In case r = 30/13, the value of h is constant in state nf_dec and equal to the initial value of h plus 10(3 - r)/3 = 30/13, so, the container does not become empty in this case.
+5  Conclusions and Future Work  We presented the language of timed uCRL with an example specification.
+We outlined the method of simplifying transformations based on equational axiomatization, and illustrated it on the example.
+This transformation allows for a time-free abstraction of the specification, which in turn enables the use of tools and techniques for verification of untimed systems.
+For proving properties of the presented example we used known invariant [7] techniques.
+An interesting direction for future work is in adopting efficient real-time abstraction techniques similar to the regions and zones methods [1] for timed automata.
+Another interesting approach is to make use of model checking techniques, similar to the ones available for timed automata in tools like UPPAAL [18].
+A symbolic model checking approach for untimed uCRL has been recently proposed in [17].
+It looks more applicable to the time setting than the explicit model checking [20] of modal mu-calculus formulas.
+In order to apply any of these methods for timed setting a well-thought extension of modal mu-calculus (or another action-based temporal logic) to real-time is needed.
+References [1] R. Alur.
+Timed automata.
+In Proc.
+CAV'99, LNCS 1633, pages 8-22, 1999.
+[2] F. Baader and T. Nipkow.
+Term Rewriting and All That.
+Cambridge University Press, August 1999.
+[3] J. C. M. Baeten and C. A. Middelburg.
+Process Algebra with Timing.
+Monographs in TCS.
+Springer, 2002.
+9  [4] J. C. M. Baeten and W. P. Weijland.
+Process Algebra.
+Cambridge Tracts in TCS 18.
+Cambridge University Press, 1990.
+[5] J.
+A. Bergstra, J. Heering, and P. Klint, editors.
+Algebraic Specification.
+ACM Press, ACM Press Frontier Series, 1989.
+[6] J.
+A. Bergstra and J. W. Klop.
+Process algebra for synchronous communication.
+Information and Computation, 60(1/3):109-137, 1984.
+[7] M. A. Bezem and J. F. Groote.
+Invariants in process algebra with data.
+In B. Jonsson and J. Parrow, editors, Proc.
+CONCUR'94, LNCS 836, pages 401-416.
+Springer, 1994.
+[8] S. N. Burris and H. P. Sankappanavar.
+A Course in Universal Algebra.
+Number 78 in Graduate Texts in Mathematics.
+Springer-Verlag, 1981.
+[9] W. J. Fokkink.
+Introduction to Process Algebra.
+Texts in TCS.
+An EATCS Series.
+Springer, 2000.
+[10] S. A. Greibach.
+A new normal-form theorem for context-free phase structure grammars.
+JACM, 12(1):42-52, 1965.
+[11] J. F. Groote.
+The syntax and semantics of timed uCRL.
+Report SEN-R9709, CWI, Amsterdam, 1997.
+[12] J. F. Groote and S. P. Luttik.
+Undecidability and completeness results for process algebras with alternative quantification over data.
+Report SEN-R9806, CWI, Amsterdam, July 1998.
+Available from http://www.cwi.nl/~luttik/.
+[13] J. F. Groote and M. A. Reniers.
+Algebraic process verification.
+In J.
+A. Bergstra, A. Ponse, and S. A. Smolka, editors, Handbook of Process Algebra, chapter 17, pages 1151-1208.
+Elsevier, 2001.
+[14] J. F. Groote and J. J. v. Wamel.
+Algebraic data types and induction in uCRL.
+Report P9409, University of Amsterdam, Programming Research Group, 1994.
+[15] J. F. Groote and J. J. v. Wamel.
+Analysis of three hybrid systems in timed uCRL.
+SCP, 39:215-247, 2001.
+[16] J. F. Groote and J. J. v. Wamel.
+The parallel composition of uniform processes with data.
+TCS, 266(1-2):631-652, 2001.
+[17] J. F. Groote and T. A. C. Willemse.
+A checker for modal formulae for processes with data.
+In F. S. de Boer, M. M. Bonsangue, S. Graf, and W.-P. de Roever, editors, Proc.
+FMCO'04, LNCS 3188, pages 223-239, 2004.
+[18] K. G. Larsen, P. Pettersson, and W. Yi.
+UPPAAL in a nutshell.
+International Journal on Software Tools for Technology Transfer, 1(1-2):134-152, 1997.
+[19] J. Loeckx, H.-D. Ehrich, and M. Wolf.
+Algebraic specification of abstract data types.
+In S. Abramsky, D. Gabbay, and T. S. E. Maibaum, editors, Handbook of Logic in Computer Science, Vol 5, chapter 4, pages 217-316.
+Oxford University Press, 2000.
+[20] R. Mateescu and M. Sighireanu.
+Efficient on-the-fly model-checking for regular alternation-free mu-calculus.
+SCP, 2002.
+[21] M. A. Reniers, J. F. Groote, J. J. v. Wamel, and M. B. v. d. Zwaag.
+Completeness of Timed uCRL.
+Fund.
+Inf., 50(3-4):361-402, 2002.
+[22] Y. S. Usenko.
+Linearization in uCRL.
+PhD thesis, Eindhoven University of Technology, December 2002.
+[23] T. A. C. Willemse.
+Semantics and Verification in Process Algebras with Data and Timing.
+PhD thesis, Eindhoven University of Technology, 2003.
+10  A  Axioms of Timed uCRL  We assume that * x, y, z are variables P of sort Proc; c, c1 , c2 are variables of sort Bool ; d, d1 , dn , d0 , .
+.
+.
+are data variables (but d in d:D is not a variable); and t, u, w are variables of sort Time.
+- - * b stands for either a( d ), or d; - - - - - - 1 n * d = d0 is an abbreviation for eq(d1 , d0 ) [?]
+* * * [?]
+eq(dn , d0 ), where d = d1 , .
+.
+.
+, dn and -0 - 1 n d = d0 , .
+.
+.
+, d 0 ; * the axioms where p and q occur are schemata ranging over all terms p and q of sort Proc, including those in which d occurs freely; * the axiom (SUM2) is a scheme ranging over all terms r of sort Proc in which d does not occur freely.
+11  x+y [?
+]y+x  (A1)  x + (y + z) [?]
+(x + y) + z  (A2)  x+x[?
+]x  (A3)  (x + y) * z [?]
+x * z + y * z  (A4)  (x * y) * z [?]
+x * (y * z)  (A5)  x + [?
+]U (x) [?]
+x  (A6T)  d + [?
+]U (x) [?]
+d  (A6T0 )  d*x[?
+]d  x k y [?]
+(x T y + y T x) + x | y  b , t T y [?]
+(b , t  y) * y  (b , t * x) T y [?]
+(b , t  y) * ((t  x) k y) (x + y) T z [?]
+x T z + y T z 0  0  xCtBy [?
+]x  (Cond1) (Cond2)  x C c B y [?]
+x C c B d , 0 + y C !c B d , 0  0  (x + y) | z [?]
+x | z + y | z  (Cond3T)  (ATA8)  0  otherwise  x|y [?
+]y|x  (x C c B d , 0) * y [?]
+(x * y) C c B d , 0  (Cond6T)  (x T y) T z [?]
+x T (y k z)  (x + y) C c B d , 0 [?]
+x C c B d , 0 + y C c B d , 0  (Cond7T)  (x C c B d , 0) T y [?]
+(x T y) C c B d , 0  (Cond8T)  (x C c B d , 0) | y [?]
+(x | y) C c B d , 0  p C eq(d, e) B d , 0 [?]
+p[d := e] C eq(d, e) B d , 0 X x[?
+]x  (PET)  x | (y T z) [?]
+(x | y) T z  xTd [?
+]x*d  x | d [?]
+[?
+]U (x)  r[?]
+e:D  X d:D  X  (r[e := d])  X  p+p  X X d:D  X d:D  X  X  X  d:D  (p * x) [?]
+(  X  q  (SUM4) (SUM5)  d:D  (p T x) [?]
+( (p | x) [?]
+(  (SCT2) (AT1) (AT2) (ATA10 )  (x + y) , t [?]
+x , t + y , t  (ATA2)  (x * y) , t [?]
+x , t * y X X ( p) , t [?]
+p,t  (ATA3)  d:D  (ATA4)  d:D  (SUM6)  (x C c B d , 0) , t [?]
+x , t C c B d , 0  (ATA50 )  p) | x  (SUM7)  t[?]x[?]
+tx[?]t[?
+]x+d,t X x , u C t <= u B d ,0  (ATD0)  X  (SUM8)  xb[?
+]x  X d:D  X  (x , t T y) C u <= t B d , 0  x , t , u [?]
+x , t C t = u B d , 0 + [?
+]U (x) , min(t,u)  d:D  p) * x  x,t  b,t*y [?
+]b,t*ty  (SUM3) p+  X  (SC5) (SCD1)  t:Time  d:D  (p + q) [?]
+d:D  d:D  (SUM2)  d:D  p[?]
+d:D  X  x[?]
+(SC1) (SC4)  (SCT1)  (x , t T u [?]
+y) C u <= t B d , 0 [?]
+d:D  X  (CF2)  (SCDT2)  x , t T y [?]
+(x T y) , t  (SUM1)  (CF1)  (SC3)  (x | y) | z [?]
+x | (y | z)  (Cond9T) (ScaT)  X  (CM8)  (x | y) , t [?]
+x | y , t - -0 - -0 - - - - - 0 0 - a( d ) | a ( d ) [?]
+g(a, a )( d ) C d = d B d  (x C c1 B d , 0) + (x C c2 B d , 0) [?]
+x C c1 [?]
+c2 B d , 0 (Cond5T)  (x C c B d , 0) * (y C c B d , 0)[?
+](x * y) C c B d , 0  (CM7) (ATA7)  - -0 - - 0 a( d ) | a ( d ) [?]
+d  (Cond4T)  (CM4)  (x | y) , t [?]
+x , t | y  if g(a, a ) is defined  (x C c1 B d , 0) C c2 B d , 0 [?]
+(x C c1 [?]
+c2 B d , 0)  (CM3T) (CM5)  (b * x) | (b * y) [?]
+(b | b ) * (x k y)  (A7)  xCf By [?
+]y  0  (b * x) | b [?]
+(b | b ) * x  (CM1) (CM2T)  p) T x  d:D  ([?
+]H (p)) [?]
+[?
+]H (  (ATB0)  u:Time  p)  d:D  (p C c B d , 0) [?]
+(  d:D  X  p) C c B d , 0  (SUM12T)  d:D  (ATC10 )  x  (y + z) [?]
+x  y + x  z  (ATC2)  x  (y * z) [?]
+x  y X X x p[?]
+xp  (ATC3)  - - [?
+]H (b) [?]
+b if b = a( d ) and a [?]
+/H  (D1)  [?
+]H (b) [?]
+d otherwise  (D2)  x  (y C c B d , 0) [?]
+(x  y) C c B d , 0+x , 0  [?
+]H (x + y) [?]
+[?
+]H (x) + [?
+]H (y)  (D3)  [?
+]H (x * y) [?]
+[?
+]H (x) * [?
+]H (y)  (D4)  x  (y T z) [?]
+x  (y  z)  [?
+]H (x C c B d , 0) [?]
+[?
+]H (x) C c B d , 0 [?
+]H (x , t) [?]
+[?
+]H (x) , t  d:D  x  (y | z) [?]
+x  (y  z)  (D5T) (D7)  x  ([?
+]H (y)) [?]
+x  y X (x  y) , u C u <= t B d , 0  x  (y , t) [?]
+u:Time  12  (ATC4)  d:D  (ATC50 ) (ATC6) (ATC7) (ATC8) (ATC11)

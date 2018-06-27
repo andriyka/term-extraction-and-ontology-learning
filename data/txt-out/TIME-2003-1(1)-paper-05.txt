@@ -1,0 +1,373 @@
+Towards the Implementation of First-Order Temporal Resolution: the Expanding Domain Case Boris Konev Department of Computer Science University of Liverpool Liverpool L69 7ZF, U.K. B.Konev@csc.liv.ac.uk  Anatoli Degtyarev Department of Computer Science Kingas College London Strand, London WC2R 2LS, U.K. Anatoli@dcs.kcl.ac.uk  Clare Dixon Department of Computer Science University of Liverpool Liverpool L69 7ZF, U.K. C.Dixon@csc.liv.ac.uk  Michael Fisher Department of Computer Science University of Liverpool Liverpool L69 7ZF, U.K. M.Fisher@csc.liv.ac.uk  Ullrich Hustadt Department of Computer Science University of Liverpool Liverpool L69 7ZF, U.K. U.Hustadt@csc.liv.ac.uk  Abstract First-order temporal logic is a concise and powerful notation, with many potential applications in both Computer Science and Artificial Intelligence.
+While the full logic is highly complex, recent work on monodic first-order temporal logics has identified important enumerable and even decidable fragments.
+In this paper, we develop a clausal resolution method for the monodic fragment of first-order temporal logic over expanding domains.
+We first define a normal form for monodic formulae and then introduce novel resolution calculi that can be applied to formulae in this normal form.
+We state correctness and completeness results for the method.
+We illustrate the method on a comprehensive example.
+The method is based on classical first-order resolution and can, thus, be efficiently implemented.
+1.
+Introduction In its propositional form, linear, discrete temporal logic has been widely used in the formal specification and verification of reactive systems [18, 15, 12].
+Although recognised a powerful formalism, first-order temporal logic has  On  leave from Steklov Institute of Mathematics at St.Petersburg  generally been avoided due to complexity problems (e.g.
+there is no finite axiom system for general first-order temporal logic).
+However, recent work by Hodkinson et al.
+[11] has showed that a particular fragment of first-order temporal logic, termed the monodic fragment, has completeness (sometimes even decidability) properties.
+This breakthrough has led to considerable research activity examining the monodic fragment, in terms of decidable classes, extensions, applications and mechanisation, etc.
+Concerning the mechanisation of monodic temporal logics, general tableau and resolution calculi have already been defined, in [13] and [5, 3], respectively.
+However, neither of these is particularly practical: the tableau method requires representation of all possible first-order models, while the resolution method requires the maximal combination of all temporal clauses.
+In this paper, we focus on an important subclass of temporal models, having a wide range of applications, for example in spatio-temporal logics [21, 10] and temporal description logics [1], namely those models that have expanding domains.
+In such models, the domains over which first-order terms range can increase at each temporal step.
+The focus on this class of models allows us to produce a simplified clausal resolution calculus, termed a fine-grained calculus, which is more amenable to efficient implementation.
+Thus, we will define the expanding domain monodic fragment, a fine-grained resolution calculus, and provide completeness results for the fine-grained calculus relative to the completeness of the general resolution calculus [6].
+A number of examples will be given, showing how the finegrained calculus works in practice and, finally, conclusions and future work will be provided.
+understanding of temporal operators:  Mn j=a gD Mn j=a D  iff iff  Mn j=a D Mn j=a (D U D)  iff iff  Mn j=a (D W D) iff  2.
+First-Order Temporal Logic First-Order (discrete linear time) Temporal Logic,  FOTL, is an extension of classical first-order logic with operators that deal with a linear and discrete model of time (isomorphic to , and the most commonly used model of time).
+The first-order temporal language is constructed in a standard way [9, 11] from: predicate symbols P0 ; P1 ; : : : each of which is of some fixed arity (null-ary predicate symbols are called propositions); individual variables x0 ; x1 ; : : :; individual constants c0 ; c1 ; : : :; Boolean operators ^, :, _, ), , true (atruea), false (afalsea); quantifiers 8 and 9; together with temporal operators (aalways in the futurea),  (asometime in the futurea), g(aat the next momenta), U (until), and W (weak until).
+There are no function symbols or equality in this FOTL language, but it does contain constants.
+For a given formula, D, const (D) denotes the set of constants occurring in D. We write D(x) to indicate that D(x) has at most one free variable x (if not explicitly stated otherwise).
+N  Formulae in FOTL are interpreted in first-order temporal structures of the form M = hDn ; In i, n 2 , where every Dn is a non-empty set such that whenever n < m, Dn  Dm , and In is an interpretation of predicate and constant symbols over Dn .
+We require that the interpretation of constants is rigid.
+Thus, for every constant c and all moments of time i; j  0, we have Ii (c) = I j (c).
+N  A (variable) assignment a is a function from the set of individual variables to [n2N Dn .
+(This definition implies that variable assignments are rigid as well.)
+We denote the set of all assignments by V. For every moment of time n, there is a corresponding first-order structure, Mn = hDn ; In i; the corresponding set of variable assignments Vn is a subset of the set of all assignments, Vn = fa 2 V j a(x) 2 Dn for every variable xg; clearly, Vn  Vm if n < m. Intuitively, FOTL formulae are interpreted in sequences of worlds, M0 ; M1 ; : : : with truth values in different worlds being connected via temporal operators.
+The truth relation Mn j=a D in a structure M, only for those assignments a that satisfy the condition a 2 Vn , is defined inductively in the usual way under the following  Mn+1 j=a D; there exists m  n such that Mm j=a D; for all m  n, Mm j=a D; there exists m  n, such that Mm j=a D; and for all i 2 ; n  i < m implies Mi j=a D; Mn j=a (D U D) or Mn j=a D:  N  M is a model for a formula D (or D is true in M) if there exists an assignment a in D0 such that M0 j=a D. A formula is satisfiable if it has a model.
+A formula is valid if it is true in any temporal structure M under any assignment a in D0 .
+The models introduced above are known as models with expanding domains.
+Another important class of models consists of models with constant domains in which the class of first-order temporal structures, where FOTL formulae are interpreted, is restricted to structures M = hDn ; In i, n 2 , such that Di = D j for all i; j 2 .
+The notions of truth and validity are defined similarly to the expanding domain case.
+It is known [19] that satisfiability over expanding domains can be reduced to satisfiability over constant domains.
+N  N  Example 1 The formula 8xP(x) ^ (8xP(x) ) g8xQ(x)) ^ :Q(c) is unsatisfiable over both expanding and constant domains; the formula 8xP(x) ^ (8x(P(x) ) gQ(x))) ^ :Q(c) is unsatisfiable over constant domains but has a model with an expanding domain.
+This logic is complex.
+It is known that even asmalla fragments of FOTL, such as the two-variable monadic fragment (all predicates are unary), are not recursively enumerable [16, 11].
+However, the set of valid monodic formulae (see Definition 1 below) is known to be finitely axiomatisable [20].
+Definition 1 An FOTL-formula D is called monodic if any subformulae of the form T D, where T is one of g, ,  (or D1 T D2 , where T is one of U , W ), contains at most one free variable.
+3.
+Divided Separated Normal Form (DSNF) Definition 2 A temporal step clause is a formula either of the form p ) gl, where p is a proposition and l is a propositional literal, or (P(x) ) gM (x)), where P(x) is a unary predicate and M (x) is a unary literal.
+We call a clause of the the first type an (original) ground step clause, and of the second type an (original) non-ground step clause.
+Definition 3 A monodic temporal problem in Divided Separated Normal Form (DSNF) is a quadruple hU ; I ; S ; E i, where 1. the universal part, U , is given by a set of arbitrary closed first-order formulae; 2. the initial part, I , is, again, given by a set of arbitrary closed first-order formulae;  Let P be a monodic temporal problem, and let Pi1 (x) )  The sets U , I , S , and S are finite.
+Note that, in a monodic temporal problem, we do not allow two different temporal step clauses with the same left-hand sides.
+A problem with the same left-hand sides can be easily transformed by renaming into one without.
+In what follows, we will not distinguish between a fiV nite set of formulae X and the conjunction X of formulae within the set.
+With each monodic temporal problem, we associate the formula  I^  U^  8  xS ^  ^  Pi j (c)  gMi j (c);  )  g9x ^ Mi j (x);  k  x  9  Pi j (x)  )  j =1  x  8  _k  (2)  k  (3)  j =1  g8x _ Mi j (x) k  Pi j (x)  )  j =1  (4)  j =1  are called derived step clauses, where c 2 const (P) and j = 1 : : : k. Formulae of the form (2) and (3) are called ederived step clauses.
+Note that formulae of the form (2) and (3) are logical consequences of (1) in the expanding domain case; while formulae of the form (2), (3), and (4) are logical consequences of (1) in the constant domain case.
+As Example 1 shows, (4) is not a logical consequence of (1) in the expanding domain case.
+Let fIS1 ) gI"1 ; : : : ; ISn ) gI"n g be a set of derived (e-derived) step clauses or original ground step clauses.
+Then  ^n  xE :  8  g^ I"i n  ISi )  i=1  Now, when we talk about particular properties of a temporal problem (e.g., satisfiability, validity, logical consequences etc) we mean properties of the associated formula.
+Arbitrary monodic FOTL-formulae can be transformed into DSNF in a satisfiability equivalence preserving way using a renaming technique replacing non-atomic subformulae with new propositions and removing all occurrences of the U and W operators [9, 5].
+(1)  be a subset of the set of its original non-ground step clauses.
+Then formulae of the form  3. the step part, S , is given by a set of original (ground and non-ground) temporal step clauses; and 4. the eventuality part, E , is given by a set of eventuality clauses of the form L(x) (a non-ground eventuality clause) and l (a ground eventuality clause), where l is a propositional literal and L(x) is a unary non-ground literal.
+gMi1 (x); : : : ; Pi (x) ) gMi (x) k k  i=1  is called a merged derived step clause (and merged ederived step clause, resp.).
+Let A ) gB be a merged derived (e-derived) step clause, let P1 (x) ) gM1 (x); : : : ; Pk (x) ) gMk (x) be a subset of the original step clauses, and let A (x)  A ^  Vk P (x) i  i=1  ;  B (x)  B ^  Vk M (x) i  x(A (x) )  8  :  Then  i=1  gB (x))  4.
+Completeness Calculus A resolution-like procedure for the monodic fragment over constant domains has been introduced in [5].
+Although satisfiability over expanding domains can be reduced to satisfiability over constant domains [19], it has been proved in [6] that a simple modification of the procedure can be directly applied to the expanding domain case.
+We sketch the monodic temporal resolution system here to make the paper self-contained.
+We use this acompleteness calculusa to show relative completeness of the calculus presented in the next section.
+More details on the completeness calculus, as well as proofs of the properties stated below, can be found in [5] and [6] for the constant and expanding domain cases, respectively.
+is called a full merged step clause (full e-merged step clause, resp.).
+Let P be a monodic temporal problem, Pc = P [ fL(c) j L(x) 2 E ; c 2 const (P)g is the constant flooded form of P. Evidently, Pc is satisfiability equivalent to P. We present now two calculi, Ic and Ie , aimed at the constant and expanding domain cases, respectively.
+The inference rules of these calculi coincide; the only difference is in the merging operation.
+The calculus Ic utilises merged derived and full merged step clauses; whereas Ie utilises merged e-derived and full e-merged step clauses.
+Inference Rules.
+In what follows, A ) gB and Ai ) gBi denote merged derived (e-derived) step clauses, g(B (x))) and 8x(Ai(x) ) g(Bi (x))) denote 8x(A (x) ) full merged (full e-merged) step clauses, and U denotes the (current) universal part of the problem.
+  Step resolution rule w.r.t.
+U :  A ) gB :A  (  gU res ) ;  where U [ fB g `?.
+    Initial termination rule w.r.t.
+U : The contradiction ?
+is derived and the derivation is (successfully) terminated if U [ I `?.
+Eventuality resolution rule w.r.t.
+U :  g(B1 (x)))  x(A1 (x) ) .. .
+8  g(Bn (x)))  x(An (x) )  8  x  8  Vn  L(x)   ( U res ) ;  Ai (x)  :  i=1  where 8x(Ai (x) ) gBi (x)) are full merged (full emerged) step clauses such that for all i 2 f1; : : : ; ng, the loop side conditions 8x(U ^ Bi (x) ) :L(x)) and x(U ^ Bi (x) )  8  Wn (A (x))) are both valid1.
+j  j =1  The set of full merged (full e-merged) step clauses, satisfying the loop side conditions, is called a loop in  Wn A (x) is called a loop for-  L(x) and the formula  j  j =1  mula.
+  Ground eventuality resolution rule w.r.t.
+U :  A1 ) gB1  :::  Vn  An ) gBn  l    ( U res ) ;  Ai  :  i=1  where Ai ) gBi are merged derived (e-derived) step clauses such that the loop side conditions U ^ Bi ` l  :  and U ^ Bi `  Wn A  j  for all  i 2 f1; : : : ; ng are  j =1  both valid.
+Ground loop and ground loop formula are defined similarly to the case above.
+A derivation is a sequence of universal parts, U = U0  U1  U2  : : :, extended little by little by the conclusions of the inference rules.
+Successful termination means that the given problem is unsatisfiable.
+The I , S and E parts of the temporal problem are not changed in a derivation.
+Theorem 1 (see [5], theorems 2 and 3) The rules of Ic preserve satisfiability over constant domains.
+If a monodic  `8 :  )  1 In the case U etrue, can x L(x), the degenerate clause, true be considered as a premise of this rule; the conclusion of the rule is then true and the derivation successfully terminates.
+:  temporal problem P is unsatisfiable over constant domains, then there exists a successfully terminating derivation in Ic from Pc .
+Theorem 2 (see [6], theorems 2 and 3) The rules of Ie preserve satisfiability over expanding domains.
+If a monodic temporal problem P is unsatisfiable over expanding domains, then there exists a successfully terminating derivation in Ie from Pc .
+Example 2 The need for constant flooding can be demonstrated by the following example.
+None of the rules of temporal resolution can be applied directly to the (unsatisfiable) temporal problem given by  I = fP(c)g; S = fq ) gqg; U = fq  P(c)g; E = f:P(x)g: If, however, we add to the problem an eventuality clause l and a universal clause l ) :P(c), the step clause q ) gq will be a loop in l, and the eventuality resolution rule would derive :true2 .
+5.
+Fine-Grained Resolution for the Expanding Domain Case The main drawback of the calculi introduced in the previous section is that the notion of a merged step clause is quite involved and the search for appropriate merging of simpler clauses is computationally hard.
+Finding sets of such full merged step clauses needed for the temporal resolution rule is even more difficult.
+From now on we focus on the expanding domain case.
+This is simpler firstly because merged e-derived step clauses are simpler (formulae of the form (4) do not contribute to them) and, secondly, because conclusions of all inference rules of Ie are first-order clauses.
+We now introduce a calculus where the inference rules of Ie are refined into smaller steps, more suitable for effective implementation.
+First, we concentrate on the implementation of the step resolution inference rule; then we show how to effectively find premises for the eventuality resolution rule by means of step resolution.
+The calculus is inspired by the following consideration: Suppose that Ie applies the step resolution rule to a merged e-derived step clause A ) gB .
+The rule can be applied if B [ U `?
+and this fact can be established by a firstorder resolution procedure (that would skolemise the universal part).
+Then the conclusion of the rule, :A , is added to U resulting in a new universal part U 0 .
+Suppose that the  :  2 Note that the non-ground eventuality  P(x) is not used.
+It was shown in [4] that if all step clauses are ground, for constant flooded problems we can neglect non-ground eventualities.
+step resolution rule is applied to another merged e-derived step clause, A 0 ) gB 0 .
+The side condition, B 0 [ U 0 `?, again can be checked by a first-order resolution procedure.
+Since we never add new existential formulae, U 0 can be skolemised in exactly the same way as U .
+Therefore, we can actually keep U in clausal form.
+Note further that we are not only going to check side conditions for the rules of the Ie by means of first-order resolution but also search for clauses to merge at the same time.
+Fine-grained resolution might generate additional step clauses of the form C)  gD:  (5)  Here, C is a conjunction of propositions, unary predicates of the form P(x), and ground formulae of the form P(c), where P is a unary predicate symbol and c is a constant occurring in the originally given problem; D is a disjunction of arbitrary literals.
+Definition 4 Let P be a constant flooded temporal problem; the set of clauses S(P), called the result of preprocessing, consists of step clauses from P and  Deduction rules 1.
+Arbitrary (first-order) resolution between universal clauses.
+The result is a universal clause.
+2.
+Arbitrary (first-order) resolution between initial and universal clauses (or just between initial clauses).
+The result is an initial clause.
+3.
+Fine-grained (restricted) step resolution  g(D1 _ L) C2 ) g(D2 _ :M) (C1 ^ C2 )D ) g(D1 _ D2 )D  C1 )  ;  where C1 ) g(D1 _ L) and C2 ) g(D2 _ :M ) are step clauses and D is an mgu of the literals L and M such that D does not map variables from C1 or C2 into a constant or a functional term.3 C1 ) g(D1 _ L) D2 _ :N C1 D ) g(D1 _ D2 )D  ;  where C1 ) g(D1 _ L) is an step clause, D2 _ :N is a universal clause, and D is an mgu of the literals L and N such that D does not map variables from C1 into a constant or a functional term.
+4.
+Right factor  1.
+For every original non-ground step clause P(x) )  C ) g(D _ L _ M ) CD ) g(D _ L)D  gM(x)  and every constant c 2 const (P), the clause P(c) )  gM(c)  (6)  where D is an mgu of the literals L and M such that D does not map variables from C into a constant or a functional term.
+5.
+Left factor  is in S(P).
+2.
+Clauses obtained by clausification of the universal and initial parts, as if there is no connection with temporal logic at all, are in S(P).
+The resulting clauses are called universal clauses and initial clauses resp.
+Originally, universal and initial clauses do not have common Skolem constants and functions.
+Initial and universal clauses are kept separately.
+In sections 5.1 and 5.2, we assume that a given problem is preprocessed.
+5.1.
+Fine-grained step resolution Fine-grained step resolution consists of a set of deduction and deletion rules.
+We implicitly assume that different premises and conclusion of the deduction rules have no variables in common; variables are renamed if necessary.
+;  gD gDD  (C ^ L ^ M ) ) (C ^ L)D )  ;  where D is an mgu of the literals L and M such that D does not map variables from C into a constant or a functional term.
+6.
+Clause conversion a step clause of the form C ) the universal clause :C.  gfalse is rewritten into  Deletion rules 1.
+First-order deletion: (first-order) subsumption and tautology deletion in universal clauses; subsumption and tautology deletion in initial clauses; subsumption of initial clauses by universal clauses (but not vice versa).
+3 This restriction justifies skolemisation: Skolem constants and functions do not asneaka in the left-hand side of step clauses, and, hence, Skolem constants from different moments of time do not mix.
+2.
+Temporal deletion: A universal clause D2 subsumes a step clause C1 ) gD1 if D2 subsumes D1 or D2 subsumes4 :C1 .
+A step clause C1 ) gD1 subsumes a step clause C2 ) gD2 if there exists a substitution D such that D1 D  D2 and :C1 D  :C2 .
+A step clause C ) gD is a tautology if D is a tautology.
+(Note that, since we do not have negative occurrences to the left-hand side of step clauses, C cannot be false).
+Tautologies are deleted.
+We adopt the terminology from [2].
+A (linear) proof by fine-grained resolution of a clause C from a set of clauses S is a sequence of clauses C1 ; : : : ; Cm such that C = Cm and each clause Ci is either an element of S or else the conclusion by a deduction rule from C1 ; : : : ; Ci 1 .
+A proof of false is called a refutation.
+A (theorem proving) derivation by fine-grained resolution is a sequence of sets of clauses S0  S1  : : : such that every Si+1 differs from Si by either adding the conclusion of a deduction rule or else deleting a clause by a deletion rule.
+We say that a clause C is derived by fine-grained resolution from S0 if C 2 Si for some i.
+Note 1 Fine-grained step resolution without the restriction on substitutions would, certainly, lead to unsoundness: The monodic problem given by  U = fu1 : 9x:Q(x); u2 : 8x(P(x) _ Q(x))g; I = 0/ ; S = fs1 : P(x) ) gQ(x)g; E = 0/ ; which is satisfiable, would wrongly be declared unsatisfiable without this restriction (After skolemisation, U s = fus1 : :Q(c); us2 : P(x) _ Q(x)g, then unrestricted resolution would derive us3 : :P(c) from us1 and s1, and then the contradiction from us1, us2, and us3.)
+Example 3 It might seem that the restriction on mgus is too strong and destroys completeness of the calculus.
+For example, at first glance it may appear that under this restriction it is not possible to deduce a contradiction from the following (unsatisfiable) temporal problem P given by  I = f8xP(x)g; U = f:Q(c)g; S = fP(x) ) gQ(x)g; E = 0/ : However we can derive a contradiction because we apply our calculus to S(P) which contains an additional step clause P(c) ) gQ(c):  :L  k (x)).
+and further,  : L x ^ ^L ( 1( )  :::  k (x))  abbreviates  Lemma 3 Let P = hU ; I ; S ; E i be a monodic temporal problem and S = S(P) be the result of preprocessing.
+Let C ) gfalse be an arbitrary final clause derived by finegrained step resolution from S. Then there exists a derivation U = U0  U1  : : : by the step resolution rule of Ie and a merged e-derived step clause A ) gB such that B [ Ui `?, for some i  0, and A = e9C, where e9 means existential quantification over all free variables.
+Proof (Sketch).
+Since C ) gfalse is derivable, there exists its proof I by fine-grained resolution.
+We prove the lemma by induction on the number of applications of the clause conversion rule in I.
+Suppose we proved the lemma for proofs containing less than n applications of the clause conversion rule, and let I contains n such applications.
+Then every conclusion of the clause conversion rule is also a conclusion by the step resolution rule of Ie .
+It can be shown that both the induction basis and induction step follow from the following claim.
+Claim.
+Let a be a proof of C ) gfalse by the rules of finegrained resolution, except the clause conversion rule, from a set of step clauses S and a set of universal clauses U .
+Then there exists a merged e-derived step clause A ) gB such 9C.
+that B [ U `?
+and A = e Let Pi (xi ) f pi  f  ) )  gMi (xi ) j i = 1 : : : K g gli j i = 1 : : : Lg  be the set of all step clauses from S involved in a where pi ) gli denotes either a ground step clause, or an ederived step-clause of the form (6) added by preprocessing (w.l.o.g., we assumed that all the variables x1 ,.., xK are pairwise distinct).
+We assume that a is tree-like, that is, no clause in a is used more than once as an assumption for an inference rule; we may make copies of the clauses in a in order to make it tree-like.
+Note that (by accumulating the mgus used in the proof) it is possible to construct a finite set of instances of these clauses (and universal clauses) such that there exists a treelike proof of C ) gfalse from this new set of clauses and all mgus used in the proof are empty5 .
+That is, there exist substitutions fDi; j j i = 1 : : : K ; j = 1 : : : si g such that Pi (xi )Di; j f pi  f  ) )  gMi (xi )Di j j i = 1 : : : K ; j = 1 : : : si g gli j i = 1 : : : Lg ;  (7)  A formal statement of completeness follows.
+4 Here,  Definition 5 A clause of the form C ) gfalse; where C is of the same form as in (5), is called a final clause.
+:L x _ _  (  1( )  :::  5 The condition that premises of the non-ground binary resolution rule should be variable disjoint may be violated here; note, however, that this condition is needed for completeness, not correctness.
+(together with some instances of universal clauses) contribute to the proof of C ) gfalse where all mgus used in the proof are empty, and, furthermore, s K ^ ^ i  C=  i=1 j =1  Pi (xi )Di; j ^  ^L  x  9  pi :  i=1  Note further (induction) that due to our restriction on the step resolution rule, for any i; j, the substitution Di; j maps xi into a free variable.
+Let us group the instances of the step clauses according to the value of the substitutions.
+We introduce an equivalence relation IL on the clauses from (7) as follows: For every i; j; i0 ; j0 we have  Pi (xi )Di; j ) gMi (xi )Di; j ; Pi0 (xi0 )Di0 ; j0 ) gMi0 (xi0 )Di0 ; j0 2 IL iff xi Di; j = xi0 Di0 ; j0 (it can be easily checked that IL is indeed an equivalence relation).
+Let N be the number of equivalence classes of (7) by IL; let Ik be the set of indexes of the k-th equivalence class (we refer to clauses from (7) by indexes of the corresponding substitutions).
+V Let Ck = (i; j)2Ik Pi (xi )Di; j , for every k, 1  k  N; let V V C0 = Li=1 pi .
+Note that C = Nk=1 Ck ^ C0 and this parV tition of C is disjoint.
+Let Dk = (i; j)2Ik Mi (xi )Di; j , let  V  form (2) are in S ought to preprocessing.
+Let for every derived rule of the form (3),  V  8D ^ U `?.
+D0 = Li=1 li , let D = Nk=1 Dk ^ D0 .
+Note that e Note further that if we replace the free variable of Dk with aV fresh constant, ck , there still exists a refutation from N k=1 D(ck ) ^ D0 and universal clauses (with mgus applied to and intermediate clauses only).
+It follows that VNuniversal k=1 9xDk (x) ^ D0 ^ U `?.
+V It suffices to note that ( Nk=1 9xCk (x) ^ C0 ) ) V g( Nk=1 9xDk (x) ^ D0 ) is a merged e-derived step 2 clause.
+Lemma 4 Let P = hU ; I ; S ; E i be a monodic temporal problem and S = S(P) be the result of preprocessing.
+Let U = U0  U1  : : : be a derivation by the step resolution rule of Ie .
+Let A ) gB be a merged e-derived step clause such that B [ Ui `?, for some i  0.
+Then there exists a final clause C ) gfalse, derived by fine-grained resolution 9C.
+from S, such that A ) e  Proof (Sketch).
+As in the proof of the previous lemma, it suffices to prove that under conditions of the lemma there exists a proof of a final clause C ) gfalse from the set of step clauses from S and the (current) universal part, Un , by the rules of fine-grained resolution, except the clause con9C.
+version rule, such that A ) e The clause A ) gB is merged from derived clauses of the form (2) and (3).
+Note that all derived clauses of the  ^s  g9x ^ Mi j (x); s  Pi j (x) )  j =1  j =1  consider a set of instances of non-ground step clauses from S, fPi j (c) ) Mi j (c) j j = 1 : : : sg; where c is a new constant.
+Since B [ Un `?, there exists a set of instances of step clauses (we simplify indexing for the sake of presentation) Pj (ci ) f pi  f  ) )  gM j (ci )g j i = 1 : : : K ; j = 1 : : : si g gli j i = 1 : : : Lg;  where constants, such that VK Vsci 1 ; :M: : ;(ccK) ^areVLnewl ^(Skolem) U `?
+(again, as in the proof n i=1 j =1 j i i=1 i of Lemma 3, pi ) gli denotes either an original ground step clause or a clause of the form (6) added by preprocessing).
+Let a be a (first-order) resolution proof of ?
+from Un and the following set of clauses fM j (ci ) j i = 1 : : : K ; j = 1 : : : si g [ fli j i = 1 : : : Lg.
+Let fM j (ci ) j (i; j) 2 I g [ fli j i 2 J g, for some sets of indexes I and J, be its subset containing all clauses involved in a (and only the clauses involved in a).
+Then there exists a proof I by fine-grained step resolution from  gM j (ci ) j (i; j) 2 I g gli j i 2 J g ) (and V universal clauses) of a final clause C ) gfalse, where V C = (i j)2I Pj (ci ) ^ j2J pi .
+P j (c i ) f pi  f  )  ;  We assume, for simplicity of the proof, that the lifting theorem (cf.
+e.g.
+[14]) holds for a, that is, there exists a non-ground (first-order) refutation a0 from fM j (x j ) j (i; j) 2 I g [ fli j i 2 J g, such that a s a0 in the terminology of [14]: Every clause Ci0 of a0 is a generalisation of the corresponding clause Ci of a.
+It can be seen that the lifting theorem can be transfered to fine-grained inferences, and there exists a proof I0 from the set of original step clauses  gM j (x j ) j (i; j) 2 I g gli j i 2 J g ) (and universal clauses) of a final clause C0 ) gfalse such that I0 s I, that is, every intermediate clause Ci0 ) gD0i from I0 is a generalisation of a corresponding clause from Pj (x j ) f pi  f  )  I.
+(The only difficulty is to ensure the requirement on mgus imposed by our inference system.
+Note that none of the (Skolem) constants c1 ; : : : ; cK occurs in I0 .
+If, in the proof I0 , a constant or a functional term was substituted into a variable occurring in the left-hand side of a clause, this clause would not be a generalisation of any clause from I.)
+This implies the conclusion of the lemma.
+2  Lemma 3 ensures soundness of fine-grained step resolution.
+Lemma 4 says that the conclusion of an application of the clause conversion rule, :C, subsumes the conclusion of an application of the step resolution rule of Ie , :A .
+Theorem 5 The calculus consisting of the rules of finegrained step resolution, together with the (both ground and non-ground) eventuality resolution rule, is sound and complete for the monodic fragment over expanding domains.
+Note 2 The proof of completeness given above might be hard to fulfil in the presence of various refinements of resolution and/or redundancy deletion.
+As a remedy, we suggest considering constrained calculi, like e.g.
+resolution over constrained clauses with constraint inheritance.
+It is known that such inference systems are complete and moreover compatible with redundancy elimination rules and many (liftable) refinements (see e.g.
+[17], theorems 5.11 and 5.12, subsections 5.4 and 5.5, resp.).
+Here we take into account that there are no clauses with equality, and therefore all sets are well-constrained in the terminology of [17].
+Then instead of ground clauses of the form Pj (ci )  )  gM j (ci )  we consider their constrained representations Pj (xi )  )  gM j (xi )  fxi = ci g:  Recall that in accordance with the semantics of constrained clauses, a clause C  T represents the set of all ground instances CD where D is a solution of T .
+In our case, there is exactly one solution of xi = ci given by the substitution fxi 7!
+ci g. So, the semantics of Pj (xi )  )  gM j (xi )  fxi = ci g  is just Pj (ci )  )  gM j (ci ):  So, all clauses originating from the universal part have empty constraints and all temporal clauses have constraints defined above, and there exists a non-ground proof of a constrained final clause with constraint inheritance.
+Note that the (Skolem) constants c1 ; : : : ; ck may only occur in constraints but not in clauses themselves.
+It suffices to note that in this case inferences with constraint inheritance admit only two kinds of substitutions into xi : either fxi 7!
+ci g (however it is impossible because ci occurs only in constraints), or fxi 7!
+xi0 g where xi0 is bound by the same constraint fxi0 = ci g. The case of matching xi and y where y originates from the universal part is solved by the substitution fy 7!
+xi g. A non-ground inference of a final clause, satisfying the conditions on substitutions in the fine-grained resolution rules, can be extracted from this constrained proof implying, thus, the conclusion of Lemma 4.
+5.2.
+Loop search Next we use fine-grained step resolution to find the appropriate set of full e-merged clauses to apply the (ground or non-ground) eventuality resolution rule.
+It has been noticed in [5] that in order to effectively find a loop in L(x) 2 E , given a formula with one free variable IS(x) we have to be able to find the set of all full e-merged clauses of the form gB (x)) such that the formula 8x(A (x) ) x(B (x) ^ U ) IS(x))  8  is valid (where IS(x) = H (x) ^ :L(x) and H (x) is a disjunction of the left-hand sides of some full e-merged step clauses).
+Let 8x(A (x) ) gB (x)) be a full e-merged step clause such that 8x(B (x) ^ U ) IS(x)).
+Note that 8x(B (x) ^ U ) IS(x)) is valid iff 9x(B (x) ^ U ^ :IS(x)) is unsatisfiable.
+Definition 6 Let cl be a distinguished constant to be used in loop search that we call the loop constant.
+We assume that the loop constant does not occur in a given problem and is not used for skolemisation.
+Definition 7 Let us define a transformation for loop search on a set of universal and step clauses S as follows.
+LT(S) is the minimal set of clauses containing S such that for every original non-ground step clause (P(x) ) gM (x)) 2 S, the set LT(S) contains the clause P(cl ) )  gM(cl ):  (8)  We add the clause6 true ) g:IS(cl ) to LT(S) and apply the rules of fine-grained step resolution except the clause conversion rule to it.
+Lemma 6 Let S be a set of universal and step clauses, and let C ) gfalse be a final clause derived by the rules of fine-grained step resolution except the clause conversion rule from LT(S) [ ftrue ) g:IS(cl )g such that at least one of the clauses originating from true ) g:IS(cl ) is involved in the derivation.
+Then there exists a full e-merged (from S) clause 8x(A (x) ) gB (x)) such that the formula l 8x(B(x) ^ U ) IS(x)) is valid and A (x) = (e 9C )fc !
+xg.
+Proof (Sketch).
+By Lemma 3, there exists a merged (from LT (S)) e-derived clause A ) gB such that f:IS(cl )g [ B [ U `?
+and A = e9C.
+It suffices to notice that 8x((A ) gB )fcl !
+xg) is a full merged (from S) step clause and l 9x(IS(x) ^ B fc !
+xg ^ U ) is unsatisfiable.
+2  :  :  6 In fact, a set of clauses since H (x), and IS(x), is a set of first-order clauses.
+Function BFS Input: A set S of universal and step clauses, saturated by fine-grained resolution and an eventuality clause L(x) 2 E .
+Output: A formula H (x) with at most one free variable.
+/ i = 0.
+Method: 1.
+Let H0 (x) = true; N0 = 0; 2.
+Let Si+1 = LT(S) [ ftrue ) f(:Hi (cl ) _ L(cl ))g. Apply the rules of fine-grained step resolution except the clause conversion rule to Si+1 .
+If we obtain a contradiction, then return the loop true (in this case 8x:L(x) is implied by the universal part).
+Otherwise let Ni+1 = fC j ) ffalsegkj=1 be the set of all new final clauses from Si+1 .
+/ return false; else let Hi+1 (x) = 3.
+If Ni+1 = 0, 4.
+If 8x(Hi (x) ) Hi+1 (x)) return Hi+1 (x).
+5. i = i + 1; goto 2.
+Wk  l j=1 C j fc  !
+xg.
+Figure 1.
+Breadth-first search using fine-grained step resolution.
+Lemma 7 Let S be a set of universal and step clauses, and let 8x(A (x) ) gB (x)) be a full e-merged (from S) step clause such that 8x(B (x) ^ U ) IS(x)).
+Then there exists a derivation by the rules of fine-grained step resolution except the clause conversion rule from LT(S) of a final clause C ) gfalse such that 8x(A (x) ) (e9Cfcl !
+xg)).
+: A(x) ) gB(x)g, E = fe1 : L(x); e2 : l g. We especially chose such a trivial example to be able to demonstrate thoroughly the steps of our proof search algorithm.
+We clausify U resulting in U s = fu1 : (:B(x) _ A(x)); u2 : (:B(x) _ :L(x)); u3 : :l _ A(c)g.  S  = fs1    Proof (Sketch).
+The proof is analogous to the proof of Lemma 4.
+As we already noticed, 9x(B (x) ^ U ^ :IS(x)) is unsatisfiable, and this can be checked by a first-order resolution procedure.
+Since cl does not occur in the problem, we can skolemise this existential quantifier with cl .
+We lift now all Skolem constants but cl .
+2 Then the loop search algorithm from [5] can be reformulated as shown in Fig.
+1.
+(This algorithm is essentially based on the BFS algorithm for propositional temporal resolution [7].)
+Lemma 8 The BFS algorithm terminates provided that all calls of saturation by step resolution terminate.
+If BFS returns non-false value, its output is a loop formula in L(x).
+Note 3 Termination of calls by step resolution can be achieved for the cases when there exists a (first-order) resolution decision procedure [8] for formulae in the universal part, see also [4].
+Theorem 9 The calculus consisting of the rules of finegrained step resolution, together with the (both ground and non-ground) eventuality resolution rule, is complete for the monodic fragment over expanding domains even if we restrict ourselves to loops found by the BFS algorithm.
+5.3.
+Example Let us consider a monodic temporal problem P given / U = f8x(B(x) ) A(x) ^ :L(x)); l ) 9xA(x)g, by I = 0,  Step resolution We can deduce the following clauses by fine-grained step resolution: s2 : A(x) ) s3 : A(x) )    gA(x) ( s1, u1) g:L(x) ( s1, u2)  The set of clauses is saturated.
+Now we try finding a loop in L(x).
+Loop search The set S = fu1; u2; u3; s1; s2; s3g; H0 (x) = true; N0 = / i = 0.
+LT(S) = flt1 : A(cl ) ) gB(cl )g. 0; We deduce the following clauses by fine-grained step resolution (except the clause conversion rule) from S1 = LT(S) [ fl1 : true ) gL(cl )g: l2 : A(cl ) ) l3 : A(cl ) ) l4 : true ) l5 : A(cl ) )  gA(cl ) g:L(cl ) g:B(cl ) gfalse  ( lt1, u1) ( lt1, u2) ( u2, l1) ( l3, l1)  The set of clauses is saturated.
+Then N1 = fA(cl ) ) gfalseg, H1 (x) = A(x).
+Obviously, 8x(H0 (x) ) H1 (x)) is not true.
+Now the set S2 = LT(S) [ fl6 : true ) g(:A(cl ) _ L(cl ))g and we deduce from it the following: l7 : A(cl ) ) gA(cl ) l8 : A(cl ) ) g:L(cl ) l9 : true ) g(:B(cl ) _ L(cl )) l10 : true ) g(:B(cl ) _ :A(cl )) l11 : A(cl ) ) gL(cl ) l12 : A(cl ) ) g:A(cl ) l13 : true ) g:B(cl ) l14 : A(cl ) ) g:B(cl ) l15 : A(cl ) ) gfalse  ( lt1, u1) ( lt1, u2) ( u1, l6) ( u2, l6) ( l7, l6) ( l8, l6) ( u2, l9) ( l8, l9) ( l8, l11)    The set of clauses is saturated.
+N2 = fA(cl ) ) gfalseg, H2 (x) = A(x).
+As 8x(H1 (x) ) H2 (x)), the loop is A(x).
+Eventuality resolution We can apply now the eventuality resolution rule whose conclusion is u4 : :A(x):    Step resolution u5 : :l    Loop search S = fu1; u2; u3; u4; u5; s1; s2; s3g; H0 (x) = true; N0 = / i = 0; LT(S) = flt1 : A(cl ) ) gB(cl )g; S1 = 0; LT(S) [ fl16 : true ) gl g; and we can deduce: l17 : true )    ( u3, u4)  gfalse ( l16, u5)  that is, a contradiction.
+The loop is true.
+Eventuality resolution We can apply now the eventuality resolution rule whose conclusion is :true.
+The problem is unsatisfiable.
+Note 4 As the example shows, the presence of clauses of the form (6), introduced by preprocessing, and (8), introduced by the transformation for loop search, might lead to repeated derivations (with free variables and with constants).
+This can be avoided, however, if instead of generating these clauses, we relax the conditions on substitutions in the definition of rules of fine-grained resolution by allowing original constants and the loop constant to be substituted to variables occurring in the left-hand side of a step clause.
+It can be seen that the set of derived final clauses would be the same.
+Taking into consideration this note, we do not use the reduction for loop search, and clauses l2, l3, l7, l8 would not be derived.
+Instead, at the first iteration of BFS on L(x), we would deduce the following clauses from S1 = S [ fl1 : true ) gL(cl )g: l40 : true ) g:B(cl ) ( u2, l1) l50 : A(cl ) ) gfalse ( s3, l1); and at the second iteration from S2 = LT(S) [ fl6 : true ) g(:A(cl ) _ L(cl ))g: l90 : true ) g(:B(cl ) _ L(cl )) l100 : true ) g(:B(cl ) _ :A(cl )) l110 : A(cl ) ) gL(cl ) l120 : A(cl ) ) g:A(cl ) l130 : true ) g:B(cl ) l140 : A(cl ) ) g:B(cl ) l150 : A(cl ) ) gfalse  ( u1, l6) ( u2, l6) ( s2, l6) ( s3, l6) ( u2, l90 ) ( s3, l90 ) ( s3, l110 ):  6.
+Conclusion We have described a fine-grained resolution calculus for monodic first order temporal logics over expanding domains.
+Soundness of the fine-grained inference steps is easy to prove and completeness is shown relative to the completeness proof for the expanding domain for the non-fine grained version [6].
+While the implementation based on the general calculus would involve generating all subsets of the step clauses with which to apply the step and eventuality resolution rules, the fine-grained resolution inference rules can be implemented directly using any appropriate firstorder theorem prover for classical logics.
+This makes the new calculus presented here particularly amenable to efficient implementation.
+As part of our future work, we will examine the extension of this approach to the case of temporal models with constant domains.
+We also aim to implement and test the calculus defined here.
+Finally, we wish to acknowledge support for this work from EPSRC via research grant GR/R45376/01.
+References [1] A. Artale, E. Franconi, F. Wolter, and M. Zakharyaschev.
+A temporal description logic for reasoning over conceptual schemas and queries.
+In Proceedings of JELIAa02, volume 2424 of LNCS, pages 98a 110.
+Springer, 2002.
+[2] L. Bachmair and H. Ganzinger.
+Resolution theorem proving.
+In A. Robinson and A. Voronkov, editors, Handbook of Automated Reasoning, chapter 2, pages 19a99.
+Elsevier, 2001.
+[3] A. Degtyarev and M. Fisher.
+Towards first-order temporal resolution.
+In KI 2001, Proceedings, volume 2174 of LNCS, pages 18a32.
+Springer, 2001.
+[4] A. Degtyarev, M. Fisher, and B. Konev.
+Exploring the monodic fragment of first-order temporal logic using clausal temporal resolution.
+Technical Report ULCS-03-012, University of Liverpool, Department of Computer Science, 2003. http://www.csc.liv.ac.uk/research/.
+[5] A. Degtyarev, M. Fisher, and B. Konev.
+Monodic temporal resolution.
+In Proc.
+CADE19, to appear, LNAI.
+Springer, 2003.
+Available as Technical report ULCS-03-001 from http://www.csc.liv.ac.uk/research/.
+[6] A. Degtyarev, M. Fisher, and B. Konev.
+Monodic temporal resolution: the expanding domain case.
+Technical Report ULCS-03-004, University of Liverpool, Department of Computer Science, 2003. http://www.csc.liv.ac.uk/research/.
+[20] F. Wolter and M. Zakharyaschev.
+Axiomatizing the monodic fragment of first-order temporal logic.
+Annals of Pure and Applied logic, 118:133a145, 2002.
+[7] C. Dixon.
+Temporal resolution using a breadth-first search algorithm.
+Annals of Mathematics and Artificial Intelligence, 22:87a115, 1998.
+[21] F. Wolter and M. Zakharyaschev.
+Qualitative spatiotemporal representation and reasoning: a computational perspective.
+In Exploring Artificial Intelligence in the New Millenium, pages 175a216.
+Morgan Kaufmann, 2002.
+[8] C. FermuEller, A. Leitsch, U. Hustadt, and T. Tammet.
+Resolution decision procedures.
+In A. Robinson and A. Voronkov, editors, Handbook of Automated Reasoning, volume II, chapter 25, pages 1791a1850.
+Elsevier, 2001.
+[9] M. Fisher.
+A normal form for temporal logics and its applications in theorem proving and execution.
+Journal of Logic and Computation, 7(4):429a456, 1997.
+[10] D. Gabelaia, R. Kontchakov, A. Kurucz, F. Wolter, and M. Zakharyaschev.
+On the computational complexity of spatio-temporal logics.
+To appear in the proceedings of FLAIRS, 2003.
+[11] I. Hodkinson, F. Wolter, and M. Zakharyaschev.
+Decidable fragments of first-order temporal logics.
+Annals of Pure and Applied Logic, 106:85a134, 2000.
+[12] G. J. Holzmann.
+The model checker Spin.
+IEEE Trans.
+on Software Engineering, 23(5):279a295, 1997.
+[13] R. Kontchakov, C. Lutz, F. Wolter, and M. Zakharyaschev.
+Temporalising tableaux.
+Studia Logica, to appear.
+[14] Alexander Leitsch.
+Springer, 1997.
+The Resolution Calculus.
+[15] Z.
+Manna and A. Pnueli.
+The Temporal Logic of Reactive and Concurrent Systems: Specification.
+Springer, 1992.
+[16] S. Merz.
+Decidability and incompleteness results for first-order temporal logic of linear time.
+Journal of Applied Non-Classical Logics, 2:139a156, 1992.
+[17] R. Nieuwenhuis and A. Rubio.
+Paramodulation-based theorem proving.
+In A. Robinson and A. Voronkov, editors, Handbook of Automated Reasoning, chapter 7, pages 371a443.
+Elsevier, 2001.
+[18] A Pnueli.
+The Temporal Logic of Programs.
+In Proceedings of the Eighteenth Symposium on the Foundations of Computer Science, 1977.
+[19] F. Wolter and M. Zakharyaschev.
+Decidable fragments of first-order modal logics.
+Journal of Symbolic Logic, 66:1415a1438, 2001.

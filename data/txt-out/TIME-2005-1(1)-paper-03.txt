@@ -1,0 +1,539 @@
+Constraint-Based Qualitative Simulation  arXiv:cs/0504024v1 [cs.AI] 7 Apr 2005  Krzysztof R. Apt National University of Singapore, Singapore, and CWI and UvA, Amsterdam, The Netherlands apt@comp.nus.edu.sg  Abstract We consider qualitative simulation involving a finite set of qualitative relations in presence of complete knowledge about their interrelationship.
+We show how it can be naturally captured by means of constraints expressed in temporal logic and constraint satisfaction problems.
+The constraints relate at each stage the 'past' of a simulation with its 'future'.
+The benefit of this approach is that it readily leads to an implementation based on constraint technology that can be used to generate simulations and to answer queries about them.
+1 Introduction Qualitative reasoning was introduced in AI to abstract from numeric quantities, such as the precise time of an event or the location or trajectory of an object in space, and to reason instead on the level of appropriate abstractions.
+Two different forms of qualitative reasoning were studied in the literature.
+The first one is concerned with reasoning about continuous change in physical systems, monitoring streams of observations and simulating behaviours, to name a few applications.
+The main techniques used are qualitative differential equations, constraint propagation and discrete state graphs.
+For a thorough introduction see [14].
+The second form of qualitative aims at reasoning about contingencies such as time, space, shape, size, directions, through an abstraction of the quantitative information into a finite set of qualitative relations.
+One then relies on complete knowledge about the interrelationship of these qualitative relations.
+This approach is exemplified by temporal reasoning due to [1], spatial reasoning introduced in [10] and [20], reasoning about cardinal directions (such as North, 0 2005 c IEEE.
+Personal use of this material is permitted.
+However, permission to reprint/republish this material for advertising or promotional purposes or for creating new collective works for resale or redistribution to servers or lists, or to reuse any copyrighted component of this work in other works must be obtained from the IEEE.
+Sebastian Brand National University of Singapore, Singapore brand@comp.nus.edu.sg  Northwest), see, e. g., [16], etc.
+For a recent overview of this approach to spatial reasoning, see [8].
+Qualitative simulation deals with reasoning about possible evolutions in time of models capturing qualitative information.
+One assumes that time is discrete and that only changes adhering to some desired format occur at each stage.
+[15] discusses qualitative simulation in the first framework, while qualitative spatial simulation is considered in [9].
+Our aim here is to show how qualitative simulation in the second approach to qualitative reasoning (exemplified by qualitative temporal and spatial reasoning) can be naturally captured by means of temporal logic and constraint satisfaction problems.
+The resulting framework allows us to concisely describe various complex forms of behaviour, such as a simulation of a naval navigation problem or a solution to a version of a piano movers problem.
+The domain knowledge is formulated using a variant of linear temporal logic with both past and future temporal operators.
+Such temporal formulas are then translated into constraints.
+The usual constraint-oriented representation of the second approach to qualitative reasoning is based on modelling qualitative relations as constraints.
+See, for example, [11] for an application of this modelling approach.
+In contrast, we represent qualitative relations as variables.
+This way of modelling has important advantages.
+In particular, it is more declarative since model and solver are kept separate; see the study of the relation variable model in [6].
+In our case it allows us to express all domain knowledge on the same conceptual level, namely as constraints on the relation variables.
+Standard techniques of constraint programming can then be used to generate the simulations and to answer queries about them.
+To support this claim, we implemented this approach in the generic constraint programming system ECLi PSe [22] and discuss here several case studies.
+coveredby  2 Simulation Constraints  a b  2.1 Constraint Satisfaction Problems  a b  a We begin by briefly introducing Constraint Programming.
+Consider a sequence X = x1 , .
+.
+.
+, xm of variables with respective domains D1 , .
+.
+.
+, Dm .
+By a constraint C on X, written C(X), we mean a subset of D1 x * * * x Dm .
+A constraint satisfaction problem (CSP) consists of a finite sequence of variables X with respective domains and a finite set C of constraints, each on a subsequence of X.
+A solution to a CSP is an assignment to its variables respecting their domains and constraints.
+We study here CSPs with finite domains.
+They can be solved by a top-down search interleaved with constraint propagation.
+The top-down search is determined by a branching strategy that controls the splitting of a given CSP into two or more CSPs, the 'union' of which is equivalent to (i. e., has the same solutions as) the initial CSP.
+In turn, constraint propagation transforms a given CSP into one that is equivalent but simpler.
+We use here heuristicscontrolled domain partitioning as the branching strategy and hyper-arc consistency of [19] as the constraint propagation.
+Hyper-arc consistency is enforced by removing from each variable domain the elements not used in a constraint.
+inside  a  a a  b  b  b  disjoint  meet  overlap  b equal a b  a b  contains  covers Figure 1.
+The eight RCC8 relations  Example.
+Take the qualitative spatial reasoning with topology introduced in [10] and [20].
+The set of qualitative relations is the set RCC8, i. e., Q = {disjoint, meet, equal, covers, coveredby, contains, inside, overlap}; see Fig.
+1, which also shows the neighbourhood relation between these relations.
+ We fix now a sequence O of objects of interest.
+By a qualitative array we mean a two-dimensional array Q on O x O such that  2.2 Intra-state Constraints * for each pair of objects A, B [?]
+O, the expression Q[A, B] is a variable denoting the (basic) relation between A, B.
+So its initial domain is a subset of Q.
+To describe qualitative simulations formally, we define first intra-state and inter-state constraints.
+A qualitative simulation corresponds then to a CSP consisting of stages that all satisfy the intra-state constraints.
+Moreover, this CSP satisfies the inter-state constraints that link the variables appearing in various stages.
+For presentational reasons, we restrict ourselves here to binary qualitative relations (e. g., topology, relative size).
+This is no fundamental limitation; our approach extends directly to higher-arity relations (e. g., ternary orientation).
+* the consistency conditions hold on Q, so for each triple of objects A, B, C the following intra-state constraints are satisfied:  We assume that we have at our disposal  reflexivity:  Q[A, A] = equal,  converse:  conv(Q[A, B], Q[B, A]),  composition:  comp(Q[A, B], Q[B, C], Q[A, C]).
+Each qualitative array determines a unique CSP.
+Its variables are Q[A, B], with A and B ranging over the sequence of the assumed objects O.
+The domains of these variables are appropriate subsets of Q.
+An instantiation of the variables to elements of Q corresponds to a consistent Q-scenario.
+In what follows we represent each stage t of a simulation by a CSP Pt uniquely determined by a qualitative array Qt .
+Here t is a variable ranging over the set of natural numbers that represents discrete time.
+Instead of Qt [A, B] we also write Q[A, B, t], reflecting that, in fact, we deal with a single ternary array.
+* a finite set of qualitative relations Q, with a special element denoting the relation of an object to itself; * consistency conditions on Q-scenarios; we assume the usual case that they can be expressed as relations over Q, specifically as a binary converse relation conv and a ternary composition relation comp, * a conceptual neighbourhood relation between the elements of Q that describes which atomic changes in the qualitative relations are admissible.
+2  2.3 Inter-state Constraints  7  To describe the inter-state constraints, we use as atomic formulas statements of the form  b  6  Q[A, B] ?
+q  (eventually), (from now on), U  c  (next time), (until),  3  2  1  12 13  Figure 2.
+Navigation path  Past formulas.
+Here the evaluation starts at the upper bound and moves backward.
+|=[s..t] Q[A, B] ?
+c |=[s..t]  -1  ph  |=[s..t] -1 ph |=[s..t] -1 ph |=[s..t] kh S ph  if if if if if and  Q[A, B, t] ?
+c where ?
+[?]
+{=, 6=}; |=[s..r] ph and r = t - 1 and s 6 r; |=[s..r] ph for all r [?]
+[s..t]; |=[s..r] ph for some r [?]
+[s..t]; |=[s..r] ph for some r [?]
+[s..t] |=[u..t] kh for all u [?]
+[r + 1 .. t].
+Furthermore, we write Q[A, B] [?]
+{q1 , .
+.
+.
+, qk } as an abbreviation of (Q[A, B] = q1 ) [?]
+.
+.
+.
+[?]
+(Q[A, B] = qk ).
+The meaning of Q[A, B] [?]
+/ {q1 , .
+.
+.
+, qk } is analogous.
+The bounded quantification [?
+]A [?]
+{o1 , .
+.
+.
+, ok }.
+ph(A) represents the disjunction ph(o1 ) [?]
+.
+.
+.
+[?]
+ph(ok ).
+Universal quantification [?
+]A [?]
+{o1 , .
+.
+.
+, ok }.
+ph(A) is interpreted analogously.
+As usual, A in ph(A) denotes a placeholder (free variable), and ph(oi ) is obtained by replacing A in all its occurrences by oi .
+Propositional connectives.
+These are defined as expected, in particular independently of the 'past' or 'future' aspect of the formula.
+For example, if not if  11  4  and their 'past' counterparts, -1 , -1 , -1 , and S (since).
+While it is known that past time operators can be eliminated, their use results in more succinct (and in our case more intuitive) specifications; see, e. g., [18].
+Inter-state constraints are formulas that have the form ph - ps.
+Both ph and ps are built out of atomic formulas using propositional connectives, but ph contains only past time temporal operators and ps uses only future time operators.
+Intuitively, at each time instance t,Seach inter-state cont straint ph - ps links the 'past' CSP i=0 Pi with the 'fuStmax ture' CSP i=t+1 Pi .
+So we interpret ph in the interval [0..t], and ps in the interval [t + 1 .. tmax ].
+We now explain the meaning of a past or future temporal formula ph with respect to the underlying qualitative array Q in an interval [s..t], for which we stipulate s 6 t. We write |=[s..t] ph to express that ph holds in the interval [s..t].
+|=[s..t] !ph |=[s..t] ph1 [?]
+ph2  10  a  5 where ?
+[?]
+{=, 6=} and q [?]
+Q, or 'true', and employ a temporal logic with four temporal operators,  9  8  |=[s..t] ph, |=[s..t] ph1 or |=[s..t] ph2 .
+Conjunction ph1 [?]
+ph2 and implication ph1 - ph2 are defined analogously.
+2.4 An Example: Navigation Future formulas.
+Intuitively, the evaluation starts at the lower bound of the time interval and moves only forward in time.
+|=[s..t] Q[A, B] ?
+c  if  |=[s..t]  if  ph  |=[s..t] ph |=[s..t] ph |=[s..t] kh U ph  if if if and  A ship navigates around three buoys along a specified course.
+The position of the buoys is fixed; see Fig.
+2.
+We reason qualitatively about the cardinal directions  Q[A, B, s] ?
+c where ?
+[?]
+{=, 6=};  Q = {N, NE, .
+.
+.
+, W, NW, EQ}  |=[r..t] ph and r = s + 1 and r 6 t; |=[r..t] ph for all r [?]
+[s..t]; |=[r..t] ph for some r [?]
+[s..t]; |=[r..t] ph for some r [?]
+[s..t] |=[u..t] kh for all u [?]
+[s .. r - 1].
+with the obvious meaning (EQ is the identity relation).
+Ligozat [16] provides the composition table for this form of qualitative reasoning and shows that it captures consistency.
+The buoy positions are given by the following global 3  3.1 Unfolding Translation  intra-state constraints: Q[buoy a , buoy c ] = NW,  We translate the propositional connectives into appropriate Boolean constraints.
+The temporal operators are unfolded over the simulation stages.
+For example, the 'future' formula (Q[A, B] = q) in the interval [1..3] translates to  Q[buoy a , buoy b ] = SW, Q[buoy b , buoy c ] = NW.
+All objects occupy different positions: [?
+]A, B [?]
+O.
+A 6= B - Q[A, B] 6= EQ.
+(Q[A, B, 1] = q) [?]
+b1 , (Q[A, B, 2] = q) [?]
+b2 , (Q[A, B, 3] = q) [?]
+b3 , b1 [?]
+b2 [?]
+b3 = 1,  The initial position of the ship is south of buoy c, so we have Q[ship , buoy c ] = S. The ship is required to follow a path around the buoys.
+In Fig.
+2, the positions required to be visited are marked with bold circles.
+We stipulate  and  with fresh Boolean variables b1 , b2 , b3 .
+(Q[ship , buoy a ] = W [?]
+(Q[ship , buoy b ] = N [?]
+Translation for 'future' formulas.
+(Q[ship , buoy c ] = E [?]
+(Q[ship , buoy c ] = S )))) to hold in the interval [0 .. tmax ].
+A tour of 13 steps exists (and is found by our program); it is indicated in Fig.
+2.  cons + ([s..t], true) [?]
+b cons + ([s..t], !ph) [?]
+b  is is  cons + ([s..t], ph1 [?]
+ph2 ) [?]
+b  is  b = 1; b' = !b, cons + ([s..t], ph) [?]
+b' ; (b1 [?]
+b2 ) [?]
+b, cons + ([s..t], ph1 ) [?]
+b1 , cons + ([s..t], ph2 ) [?]
+b2 ;  cons + ([s..t], Q[A, B] ?
+c) [?]
+b is (Q[A, B, s] ?
+c) [?]
+b where ?
+[?]
+{=, 6=};  3 Temporal Formulas as Constraints  cons + ([s..t], ph) [?]
+b  (b1 [?]
+b2 ) [?]
+b, cons + ([r..t], ph) [?]
+b2 , (s + 1 6 t) [?]
+b1 , (s + 1 = r) [?]
+b1 ; V cons + ([s..t], ph) [?]
+b is ( r[?
+]s..t br ) [?]
+b, + cons ([r..t], ph) [?]
+br for all r [?]
+[s..t]; W cons + ([s..t], ph) [?]
+b is ( r[?
+]s..t br ) [?]
+b, cons + ([r..t], ph) [?]
+br for all r [?]
+[s..t];  We explain now how a temporal formula (an inter-state constraint) is imposed on the sequence of CSPs representing the spatial arrays at consecutive times.
+Such a formula is reduced to a sequence of constraints by eliminating the temporal operators.
+We provide two alternative translations.
+The first simply unfolds the temporal operators into primitive constraints, while the second retains more structure and avoids duplication of subformulas by relying on array constraints.
+Consider a temporal formula ph - ps where ph uses only 'past' time operators S and ps uses only 'future' time operators.
+Given a CSP ti=s Pi , we show how the past temporal logic formula ph translates to a constraint cons - ([s..t], ph) and how the future temporal logic formula ps translates to a constraint cons + ([s..t], ps), both on the variables of S t i=s Pi .
+We assume that the target constraint language has Boolean constraints and reified versions of simple comparison and arithmetic constraints.
+Reifying a constraint means associating a Boolean variable with it that reflects the truth of the constraint.
+For example, (x = y) [?]
+b is a reified equality constraint: b is a Boolean variable reflecting the truth of the constraint x = y.
+We denote by cons([s..t], ph) [?]
+b the sequence of constraints representing the fact that the formula ph has the truth value b in the interval [s..t].
+The 'past' or 'future' aspect of a formula is indicated by a marker - or + , resp., when relevant.
+The translation of ph proceeds by induction and is initiated with cons([s..t], ph) [?]
+1 (where s 6 t).
+is  cons + ([s..t], kh U ph) [?]
+b is cons + ([s..t], ph [?]
+kh [?]
+(kh U ph)) [?]
+b.
+Translation for 'past' formulas.
+This case is symmetric to the 'future' case except for the 'backward' perspective.
+So we have cons - ([s..t], Q[A, B] ?
+c) [?]
+b is (Q[A, B, t] ?
+c) [?]
+b where ?
+[?]
+{=, 6=}, for example.
+The remaining cases are defined analogously.
+Observe that the interval bounds s, t in cons([s..t], ph) are treated as constants such that s 6 t.  3.2 Array Translation This alternative translation avoids the potentially large disjunctive constraints caused by unfolding the and U operators.
+The idea is to push disjunctive information inside variable domains, with the help of array constraints.
+4  Reconsider the formula (Q[A, B] = q) in the interval [1..3].
+It is translated into a single array constraint, with the help of a fresh variable x ranging over time points:  Simulate spatial array Q, state constraints, tmax 7-- solution PS := hi; t := 0 while t < tmax do Pt := create CSP from Qt and impose intra-state constraints PS := append Pt to PS and impose inter-state constraints  Q[A, B, x] = q, 1 6 x, x 6 3.
+Array constraints generalise the better-known element constraint.
+Constraint propagation for array constraints is studied in [5] and used in our implementation.
+When negation occurs in the formula, a complication arises with this translation approach, however.
+Just negating the associated truth value, as in the unfolding translation, is now incorrect.
+We therefore first transform a formula into negation normal form (NNF).
+The array translation of NNF formulas follows.
+We give it only for 'future' formulas and where different from the unfolding translation.
+The case of negation does not apply anymore.
+cons + ([s..t], ph) [?]
+b is cons + ([s..t], ph [?]
+( true - cons + ([s..t], ph) [?]
+b  is  cons + ([s..t], kh U ph) [?]
+b is  hPS, failurei := prop(PS) if not failure then PS ' := PS with final state constraints imposed on Pt hsolution, successi := solve(PS ' ) if success then return solution t := t + 1 return failure Figure 3.
+The simulation algorithm  ph) [?]
+b;  The array translation results in just two array constraints, namely Q[ship , buoy , r1 ] = E and Q[ship , buoy , r2 ] = S, The four ordering constraints 1 6 r1 , r1 6 n r1 6 r2 , and r2 6 n control the fresh variables r1 , r2 .
+  s 6 r, r 6 t, cons + ([r..t], ph) [?]
+b; (b1 [?]
+(b2 [?]
+b3 )) [?]
+b, s 6 r, r 6 t, cons + ([r..t], ph) [?]
+b1 , (s = r) [?]
+b2 , s 6 u, u 6 r, (u = r - 1) [?]
+b3 , cons + ([s..u], kh) [?]
+b3 .
+4 Simulations By a qualitative simulation we mean a finite or infinite sequence PS = hP0 , P1 , .
+.
+.i of CSPs such that for each chosen inter-state constraint ph - ps we have that the constraint  The interval end points s, t in cons([s..t], ph) can now be variables with domains, in contrast to the case of the unfolding translation where s, t are constants.
+We are careful to maintain the invariant s 6 t and state appropriate constraints to this end.
+Therefore, for example, we unfold ph into a conjunction only step-wise, as the formula ph).
+ph [?]
+( true -  cons([0 .. t0 ], ph) - cons([t0 + 1 .. t], ps) S is satisfied by the CSP ti=0 Pi , * if PS is finite with u elements, for all t0 [?]
+[0 .. u - 1], t = tmax , * if PS is infinite, for all t0 > 0, t > t0 + 1.
+Example.
+Let us contrast the two alternative translations for a formula from the navigation domain.
+Consider ph[?]
+(ph1 [?]
+Thus, at each stage of the qualitative simulation, we relate its past (and presence) to its future using the chosen interstate constraints.
+Consider an initial situation I = P0 and a final situation Fx determined by a qualitative array of the form Qx , where x is a variable ranging over the set of integers (possible time instances).
+We would like to determine whether a simulation exists that starts in I and reaches Ft , where t is the number of steps.
+If one exists, we may also be interested in computing a shortest one, or in computing all of them.
+ph2 ),  ph1 [?]
+(Q[ship , buoy ] = E) and ph2 [?]
+(Q[ship , buoy ] = S), in the interval [1..n] for a constant n, as a 'future' formula.
+So we consider the sequence of constraints cons + ([1..n], ph) for each translation.
+The unfolding translation generates many reified equality constraints of the form (Q[ship , buoy , k] = D) Pn[?]
+bi,k , where D is E or S. More specifically, n + i=1 i = n(n + 3)/2 such constraints and as many new Boolean variables are created.
+Many of the constraints are variants of each other differing only in their Boolean variable bi,k .
+Simulation algorithm.
+The algorithm given in Figure 3 provides a solution to the first two problems in presence of a non-circularity constraint.
+5  The sequence PS of CSPs is initially empty and subsequently step-wise extended; so it remains finite.
+We view PS as a single CSP, which consists of regular finite domain variables and constraints and which thus fits into the problem format solvable by a standard constraint programming techniques.
+We employ the auxiliary procedures prop and solve.
+The call to prop performs constraint propagation of the intrastate and inter-state constraints.
+In our implementation, the hyper-arc consistency notion is used.
+As a result, the variable domains are pruned and less backtracks arise when solve is called.
+If the outcome is an inconsistent CSP, the value false is returned in the failure flag.
+The call to solve checks if a solution to the CSP corresponding to the given sequence of CSPs exists.
+If so, a solution and true is returned, otherwise h[?
+], falsei.
+In our implementation, solve is a standard backtrack search (based on variable domain splitting) combined with constraint propagation as in the prop procedure.
+We use the constant tmax equal to the number of different qualitative arrays, i. e., tmax = |O| * (|O| - 1) * 2|Q|-1 .
+If the desired simulation exists, the above algorithm finds a shortest one and outputs it in the variable solution.
+T  L  C  P  B  S Figure 4.
+A piano movers problem  believe it is worth doing so, and it is not difficult to modify our implementation (the solve procedure) accordingly.
+5.3 Heuristics Our implementation also incorporates the specialised reasoning techniques for RCC8 [21] and the cardinal directions [16].
+In these studies, maximal tractable subclasses of the respective calculi are identified, and corresponding polynomial decision procedures are discussed.
+Our context requires that these techniques are treated as heuristics, due to the presence of side constraints (notably the inter-state constraints).
+With a relation variable model for qualitative spatial reasoning, these heuristics fall into the customary class of variable and value ordering heuristics for guiding search in constraint programming.
+In our implementation, the search heuristic splits the relation variable domains appropriately so that one of the new domains belongs to a maximal tractable subclass of the respective calculus.
+5 Implementation We implemented the simulation algorithm of Fig.
+3 and both alternative translations of temporal formulas to constraints in the ECLi PSe constraint programming system [22].
+The total program size is roughly 1500 lines of code.
+5.1 Propagation Support for enforcing hyper-arc consistency for Boolean and many reified constraints, as well as for extensionally defined constraints such as conv, comp and the conceptual neighbourhood constraint, is directly available in ECLi PSe (by its fd/ic and propia libraries).
+For array constraints, we use the ECLi PSe implementation discussed in [5].
+The availability of these (generic) implementations of propagation mechanisms explains why we chose hyper-arc consistency.
+We emphasise, however, that in a relation variable model, constraint propagation is relevant only for efficiency.
+6 Case Studies We now report on two case studies.
+In both of them, the solutions were found by our implementation within a few seconds.
+6.1 Piano Movers Problem Consider the following version of the piano movers problem.
+There are three rooms, the living room (L), the study room (S) and the bedroom (B), and the corridor (C).
+Inside the study room there is a piano (P) and inside the living room a table (T); see Figure 4.
+Move the piano to the living room and the table to the study room assuming that none of the rooms and the corridor are large enough to contain the piano and the table at the same time.
+Additionally, ensure that the piano and the table at no time will touch each other.
+5.2 Search We use the basic backtracking algorithm provided by ECLi PSe , but we control it with the heuristics described in the following section.
+Various other, advanced search strategies are available in ECLi PSe , for example Limited Discrepancy Search [13].
+Although we did not experiment with these techniques, we 6  * if the piano or the table overlaps with one space s, then it also overlaps with some other space s' , such that s and s' touch each other:  To formalise this problem, we describe the initial situation by means of the following formulas: ph0 [?]
+ph1 [?]
+ph2 [?]
+Q[B,L] = disjoint [?]
+Q[B,S] = disjoint [?]
+Q[L,S] = disjoint,  [?
+]s [?]
+S.
+[?
+]o [?]
+{P, T}.
+(Q[s, o] = overlap - [?
+]s' [?]
+S. (Q[s' , o] = overlap [?]
+Q[s, s' ] = meet)),  Q[C,B] = meet [?]
+Q[C,L] = meet [?]
+Q[C,S] = meet,  * if the piano overlaps with one space, then it does not touch any space, and equally the table:  Q[P,S] = inside [?]
+Q[T,L] = inside.
+[?
+]s [?]
+S.
+[?
+]o [?]
+{P, T}.
+(Q[s, o] = overlap - [?
+]s' [?]
+S. Q[s' , o] 6= meet),  We assume that initially ph0 , ph1 , ph2 hold, i. e., the constraints cons - ([0..0], ph0 ), cons - ([0..0], ph1 ) and cons - ([0..0], ph2 ) are present in the initial situation I.
+Below, given a formula ph, by an invariant built out of ph we mean the formula ph - ph.
+Further, we call a room or a corridor a 'space' and abbreviate the subset of objects {B, C, L, S} by S. We now stipulate as the inter-state constraints the invariants built out of the following formulas:  * both the piano and the table can touch at most one space at a time: [?
+]s, s' [?]
+S.
+[?
+]o [?]
+{P, T}.
+(Q[s, o] = meet [?]
+Q[s' , o] = meet - Q[s, s' ] = equal).
+After these additions, our program generated the shortest solution in the form of a simulation of length 12.
+In this solution the bedroom is used as a temporary storage for the table.
+Interestingly, the table is not moved completely into the bedroom: at a certain moment it only overlaps with the bedroom.
+* the relations between the rooms, and between the rooms and the corridor, do not change: ph0 [?]
+ph1 , * at no time do the piano and the table fill completely any space: [?
+]s [?]
+S. (Q[P, s] 6= equal [?]
+Q[T, s] 6= equal) ,  6.2 Phagocytosis  * together, the piano and the table do not fit into any space.
+More precisely, at each time, at most one of these two objects can be within any space:  The second example deals with a simulation of phagocytosis: an amoeba absorbing a food particle.
+This problem is discussed in [9].
+We quote:  [?
+]s [?]
+S.
+!
+(Q[P, s] [?]
+{inside, coveredby} [?]
+Q[T, s] [?]
+{inside, coveredby}),  "Each amoeba is credited with vacuoles (being fluid spaces) containing either enzymes or food which the animal has digested.
+The enzymes are used by the amoeba to break down the food into nutrient and waste.
+This is done by routing the enzymes to the food vacuole.
+Upon contact the enzyme and food vacuoles fuse together and the enzymes merge into the fluid containing the food.
+After breaking down the food into nutrient and waste, the nutrient is absorbed into the amoeba's protoplasm, leaving the waste material in the vacuole ready to be expelled.
+The waste vacuole passes to the exterior of the protozoan's (i. e., amoeba's) body, which opens up, letting the waste material pass out of the amoeba and into its environment."
+* at no time instance do the piano and the table touch each other: Q[P, T] = disjoint.
+The final situation is captured by the constraints Q[P, L] = inside  and Q[T, S] = inside.
+Remarkably, the interaction with our program revealed in the first place that our initial formalisation was incomplete.
+For example, the program also generated solutions in which the piano is moved not through the corridor but 'through the walls', as it were.
+To avoid such solutions we added the following intrastate constraints.
+* each space is too small to be 'touched' (met) or 'overlapped' by the piano and the table at the same time:  To fit it into our present framework, we slightly simplified the problem representation by not allowing for objects to be added or removed dynamically.
+[?
+]s [?]
+S.
+!
+(Q[s, P] [?]
+{overlap, meet} [?]
+Q[s, T] [?]
+{overlap, meet}), 7  7 Final Remarks  In this problem, we have six objects, amoeba , nucleus , enzyme , vacuole , nutrient and waste .
+The initial situation is described by means of the three following constraints:  The most common approach to qualitative simulation is the one discussed in [14, chapter 5].
+For a recent overview see [15].
+It is based on a qualitative differential equation model (QDE) in which one abstracts from the usual differential equations by reasoning about a finite set of symbolic values (called landmark values).
+The resulting algorithm, called QSIM, constructs the tree of possible evolutions by repeatedly constructing the successor states.
+During this process, CSPs are generated and solved.
+This approach is best suited to simulate evolution of physical systems.
+A standard example is a simulation of the behaviour of a bath tub with an open drain and constant input flow.
+The resulting constraints are usually equations between the relevant variables and lend themselves naturally to a formalisation using CLP(FD), see [7, chapter 20] and [3].
+The limited expressiveness of this approach was overcome in [4], where branching time temporal logic was used to describe the relevant constraints on the possible evolutions (called 'trajectories' there).
+This leads to a modified version of the QSIM algorithm in which model checking is repeatedly used.
+Our approach is inspired by the qualitative spatial simulation studied in [9], the main features of which are captured by the composition table and the neighbourhood relation discussed in Example 2.2.
+The distinction between the intra-state and inter-state constraints is introduced there, however the latter only link the consecutive states in the simulation.
+The simulation algorithm of [9] generates a complete tree of all 'evolutions', usually called an envisionment.
+In contrast to [9], our approach is constraint-based.
+This allows us to repeatedly use constraint propagation to prune the search space in the simulation algorithm.
+Further, by using more complex inter-state constraints, defined by means of temporal logic, we can express substantially more sophisticated forms of behaviour.
+While the prevalent approach to constraint-based modelling of qualitative spatial knowledge maps qualitative relations to constraints, we use variables to express qualitative relations.
+The relation variable approach is much more declarative, separating the model from the solver.
+The advantage of a relation variable model for qualitative simulations is that the knowledge of the spatial domain as well as of the application domain can be expressed on the same conceptual level, by intra-state and inter-state constraints.
+This leads to a model that can easily be realised within a typical constraint programming system using generic propagation and search techniques, and is also immediately open to advances in these systems.
+Simulation in our approach subsumes a form of planning.
+In this context, we mention the related work [17] in  Q[amoeba , nutrient ] = disjoint, Q[amoeba , waste ] = disjoint, Q[nutrient , waste ] = equal.
+We have the intra-state constraints Q[enzyme , amoeba ] = inside, Q[vacuole , amoeba ] [?]
+{inside, coveredby}, Q[vacuole , enzyme ] [?]
+{disjoint, meet, overlap, covers}, and, concerning the nucleus, Q[nucleus , vacuole ] [?]
+{disjoint, meet}, Q[nucleus , enzyme ] [?]
+{disjoint, meet}, Q[nucleus , amoeba ] = inside.
+The inter-state constraints are Q[nutrient , amoeba ] = meet - Q[nutrient, amoeba ] = overlap, Q[nutr., amoeba ] [?]
+{inside, coveredby, overlap - Q[nutr., amoeba ] [?]
+{inside, coveredby}.
+We model the splitting up of the food into nutrient and waste material by Q[nutrient , waste ] = equal - .
+(ph1 - .
+ph2 [?].
+ph3 ) [?].
+Q[nutrient , waste ] 6= equal; with ph1  [?]
+Q[nutrient , vacuole ] = inside [?]
+Q[enzyme , nutrient ] = overlap [?]
+Q[enzyme , waste ] = overlap  ph2  [?]
+Q[nutrient , waste ] = overlap  ph3  [?]
+Q[nutrient , waste ] = equal  The dotted operators express if-then-else, that is, a- .
+b [?].
+c  [?]
+(a - b) [?]
+(!a - c).
+The final situation is described by means of the constraints Q[amoeba , waste ] = disjoint, Q[amoeba , nutrient ] [?]
+{contains, covers}.
+Our program generated a simulation consisting of 9 steps.
+8  the area of planning which shows the benefits of encoding planning problems as CSPs and the potential with respect to solving efficiency.
+Also related is the TL PLAN system where planning domain knowledge is described in temporal logic [2].
+The planning system is based on incremental forward-search, so temporal formulas are just unfolded one step at a time, in contrast to the translation into constraints in our constraint-based system.
+Finally, [12] discusses how a qualitative version of the piano movers problem can be solved using an approach to qualitative reasoning based on topological inference and graph-theoretic algorithms.
+Our approach is substantially simpler in that it does not rely on any results on topology apart of a justification of the composition table.
+of 10th National Conference on Artificial Intelligence (AAAI'92), pages 679-684.
+AAAI Press, 1992.
+[10] M. J. Egenhofer.
+Reasoning about binary topological relations.
+In O. Gunther and H.-J.
+Schek, editors, Proc.
+of 2nd International Symposium on Large Spatial Databases (SSD'91), volume 525 of LNCS, pages 143-160.
+Springer, 1991.
+[11] M. T. Escrig and F. Toledo.
+Qualitative Spatial Reasoning: Theory and Practice.
+Application to Robot Navigation, volume 47 of Frontiers in Artificial Intelligence and Applications.
+IOS Press, 1998.
+[12] B. Faltings.
+Using topology for spatial reasoning.
+In Proc.
+of 8th International Symposium on Artificial Intelligence and Mathematics (AI&M'00), 2000.
+References [1] J. F. Allen.
+Maintaining knowledge about temporal intervals.
+Communications of the ACM, 26(11):832- 843, 1983.
+[13] W. D. Harvey and M. L. Ginsberg.
+Limited discrepancy search.
+In Proc.
+of 14th International Joint Conference on Artificial Intelligence (IJCAI'95), volume 1, pages 607-615.
+Morgan Kaufmann, 1995.
+[2] F. Bacchus and F. Kabanza.
+Using temporal logics to express search control knowledge for planning.
+Artificial Intelligence, 116, 2000.
+[14] B. Kuipers.
+Qualitative reasoning: modeling and simulation with incomplete knowledge.
+MIT Press, 1994.
+[3] A. Bandelj, I. Bratko, and D. Suc.
+Qualitative simulation with CLP.
+In Proc.
+of 16th International Workshop on Qualitative Reasoning (QR'02), 2002.
+[15] B. Kuipers.
+Encyclopedia of Physical Science and Technology, chapter Qualitative simulation, pages 287-300.
+Academic Press, third edition, 2001.
+[4] G. Brajnik and D. Clancy.
+Focusing qualitative simulation using temporal logic: theoretical foundations.
+Annals of Mathematics and Artificial Intelligence, 22:59-86, 1998.
+[16] G. Ligozat.
+Reasoning about cardinal directions.
+Journal of Visual Languages and Computing, 9(1):23-44, 1998.
+[5] S. Brand.
+Constraint propagation in presence of arrays.
+In K. R. Apt, R. Bartak, E. Monfroy, and F. Rossi, editors, Proc.
+of 6th Workshop of the ERCIM Working Group on Constraints, 2001.
+[17] A. Lopez and F. Bacchus.
+Generalizing GraphPlan by formulating planning as a CSP.
+In Proc.
+of International Joint Conference on Artificial Intelligence (IJCAI'03), 2003.
+[6] S. Brand.
+Relation variables in qualitative spatial reasoning.
+In S. Biundo, T. Fruhwirth, and G. Palm, editors, Proc.
+of 27th German Annual Conference on Artificial Intelligence (KI'04), volume 3238 of LNAI, pages 337-350.
+Springer, 2004.
+[18] N. Markey, F. Laroussinie, and Ph.
+Schnoebelen.
+Temporal logic with forgettable past.
+In Proc.
+of 17th IEEE Symposium on Logic in Computer Science (LICS'02), pages 383-392, 2002.
+[7] I. Bratko.
+PROLOG Programming for Artificial Intelligence.
+International Computer Science Series.
+Addison-Wesley, third edition, 2001.
+[19] R. Mohr and G. Masini.
+Good old discrete relaxation.
+In Y. Kodratoff, editor, Proc.
+of European Conference on Artificial Intelligence (ECAI'88), pages 651-656.
+Pitman publishers, 1988.
+[8] A. G. Cohn and S. M. Hazarika.
+Qualitative spatial representation and reasoning: An overview.
+Fundamenta Informaticae, 46(1-2):1-29, 2001.
+[20] D. A. Randell, Z. Cui, and A. G. Cohn.
+A spatial logic based on regions and connection.
+In B. Nebel, C. Rich, and W. R. Swartout, editors, Proc.
+of 2nd International Conference on Principles of Knowledge Representation and Reasoning (KR'92), pages 165-176.
+Morgan Kaufmann, 1992.
+[9] Z. Cui, A. G. Cohn, and D. A. Randell.
+Qualitative simulation based on a logical formalism of space and time.
+In P. Rosenbloom and P. Szolovits, editors, Proc.
+9  [21] J. Renz and B. Nebel.
+Efficient methods for qualitative spatial reasoning.
+Journal of Artificial Intelligence Research, 15:289-318, 2001.
+[22] M. G. Wallace, S. Novello, and J. Schimpf.
+ECLiPSe: A platform for constraint logic programming.
+ICL Systems Journal, 12(1):159-200, 1997.
+10
