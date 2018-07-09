@@ -208,7 +208,7 @@ class TermExtractor:
             	stn = filter(filter_fn, [' '.join(t) for t in fsa1.detect(sent_pos_tags) if len(t) >= self.min_term_words and len(self.swd.detect(t)) == 0])
                 sentence_terms.update(stn)
             terms.extend(sentence_terms)
-            print i, '/', max_i, s
+            #print i, '/', max_i, s
             i = i + 1
         return terms
 
@@ -266,8 +266,6 @@ class TermExtractor:
 
             # multiply to log(term length)
             c_value = c_value * np.log(current_term['len'])
-            if trace:
-            	print t, 'freq=', current_term['sum'], ' cvalue=', c_value
             c_values.append(c_value)
             # break
 

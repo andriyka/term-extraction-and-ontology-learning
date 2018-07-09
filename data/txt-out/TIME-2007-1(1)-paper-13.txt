@@ -1,0 +1,493 @@
+SQTL: a Preliminary Proposal for a Temporal-to-temporal Query Language Nicole Bidoit, Matthieu Objois Univ.
+Paris-Sud, UMR CNRS 8623, Orsay F-91405 CNRS, Orsay F-91405 {bidoit,objois}@lri.fr  Abstract A temporal database can be represented as a finite sequence of relational instances.
+Queries over such temporal instances usually map the input sequences to relation instances.
+Motivated by emerging applications, we are investigating a new type of queries over temporal instances, called t2t queries (temporalto-temporal queries).
+The issue is to develop languages able to define mappings from temporal instances to temporal instances.
+The paper proposes and investigates two types of t2t query languages: point wise languages and SQTL languages.
+Keywords Temporal databases, temporal query languages.
+1  Introduction  Managing temporal or ordered information is one of the central issues of many Computer Science areas.
+Temporal and ordered information plays a crucial role in a wide range of fields and applications: the web, bioinformatics, medical applications, multimedia applications, animation, simulation, personal information management, data flow processing, streaming, etc.
+Suitable database models and query languages [15, 7] have been developed to store and support temporal information.
+Query languages that deal with temporal information, either based on the relational model or on more sophisticated models such as XML, provide operators allowing for limited forms of information retrievals.
+Usually, these languages mainly target snapshot queries (what are the data available at some time point?
+), history extractions (what is the evolution of some data?)
+and combinations/variations of these extractions.
+Indeed, well-known formal temporal languages such as TL or TS - FO [8, 12, 7] have very strong limitations:  they give the ability to define mappings from temporal database instances (a sequence of database states) to relations (tables) and totally lack the ability to map sequences of instances to sequences of instances, in a general way.
+The purpose of this paper1 is to introduce a new type of query languages, called temporal-to-temporal (t2t) languages for specifying mappings from temporal instances to temporal instances.
+We now illustrate the usefulness of t2t languages.
+(1) Let us start by considering video recordings and their semantical descriptors which can be seen as temporals instances.
+A Video extraction outputs the images satisfying a given property, in the order of the input video.
+For example, if the video is a TV news recording, one could be interested in extracting the images related to a given topic (e.g.
+politics, economics).
+Quite similarly to videos, musical scores or descriptors of musical digital files can also be seen as temporal instances.
+(2) Musical canon with voices consists in repeating a main melody times, such that the first repetition starts with a time offset , and each repetition also starts after the previous one with time offset .
+One could be interested in building automatically canons, using a t2t query with parameters and .
+(3) Musical transposition is meant to transpose semi-tones higher or lower, each note of a score.
+Aside from video and music processing, another field of application is streaming [2, 9]: a stream is a potentially infinite temporal instance.
+(4) Stream filtering.
+Suppose that several traffic control devices send continuously data to a central server.
+One could want the server to filter the stream and build a new stream, made of all the data satisfying some property .
+The t2t languages introduced in this article are de1 A preliminary version of this work appeared in the informal proceedings of the French national conference on databases BDA 2006.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  signed using known standard temporal query languages as elementary building blocks.
+For instance, we will consider two languages to illustrate our point: first order logic FO, and first order temporal logic TL.
+However, the results presented are stated for any temporal query language (e.g.
+FO, TL, ETL [17, 12], TL [12], TL [16, 5], etc.).
+We investigate two ways of defining t2t languages.
+The first one, denoted point-wise, exploits a simple and naive generalization of temporal query languages: given a query of a standard temporal language, the idea is to apply the query at all time points of a temporal instance (rather than at its first state).
+The t2t languages obtained that way are quite limited because they cannot have an impact over the length of the output instances.
+Thus, another mechanism called slicing-querying is explored for building t2t languages.
+Slicing-querying languages, called SQTL languages, are based on a twophase process: the first step slices temporal instances into sub-instances; the second step is a query applied on each slice or sub-instance.
+We investigate two mechanisms for slicing temporal instances.
+Cut slicing consists in gathering in a slice the consecutive states of a temporal instance as long as they return the same answer to some query.
+Cut slicing outputs a sequence of slices that do not overlap and that covers the input temporal instance.
+Regular slicing is based on a regular language, that is, given an input temporal instance a regular slicing tries to match subsequences of states of the temporal instance with words of the regular language.
+Regular slicing is designed is a way similar to the temporal language ETL [17], although they are quite different.
+We show that regular slicing subsumes cut slicing in most cases.
+Let us now turn to an intuitive presentation of the querying phase.
+The input of the querying phase is the input temporal instance enriched by the output of the slicing phase.
+The querying process considers a temporal query which is sequentially applied, for each slice, over the input temporal instance.
+It should be understood that, for each slice, the querying process outputs a temporal instance.
+Two kinds of querying are introduced and investigated: for each slice, either the query is evaluated at the first time point of the slice and thus outputs a (static) relation or the query is evaluated at each time point of the slice (in a local point-wise manner) and thus outputs a temporal instance.
+The paper is organized as follows.
+Section 2 gives the notations we use throughout the article, and recalls the definitions of the temporal query language TL.
+Section 3 is devoted to the point-wise languages and gives their properties.
+Section 4 introduces SQTL languages, and their presentation is geared by some running examples.
+Section 5 is a discussion of some of the choices made in the design of slicing-querying languages, and  gives some concluding remarks.
+2  Preliminaries  We assume the reader to be familiar with first-order logic FO and with the usual definitions of relation schema, database schema and instances.
+We match boolean relation schemas (resp.
+boolean instances) with relation schemas (resp.
+instances) of arity 0.
+Thus, the empty instance of arity 0 is denoted and the instance of arity 0 containing the empty tuple is denoted .
+In the whole paper, we assume a unique domain, and we consider the database schema .
+An implicit temporal instance over the database schema is a finite sequence of finite instances over .
+The size of this temporal instance , denoted is the size of the sequence , that is .
+A temporal instance of size 1 is called a static instance.
+A temporal instance of size at least 2 is said to be strictly temporal.
+For each , is called the state of at time point .
+The instance of the relation schema at time point is also denoted .
+The active domain of , denoted , is the set of domain elements appearing in .
+In the paper, represents a tuple of variables whose arity is clear from the context, and is a valuation of ranging over .
+If is a subsequence of states of , we denote and .
+The query language TL The first order linear temporal logic TL [8] is a well known formalism for specifying queries over the implicit temporal databases [7].
+The syntax of TL over database schema is given by the formation rules for FO over , together with the following additional rules: If and are formulas then and are formulas.
+The satisfaction of a TL formula over temporal instance at time point , given a valuation of the free variables of , denoted , is defined as follows: If is , iff .
+If is obtained by a first order rule (negation, conjunction, or quantification), is defined as usual.
+If is , iff there exists such that and for all such that , .
+If is , iff there exists such that and for all such that , .
+It is sometimes convenient to use the following derived temporal modalities and formulas: is and is is and is  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  is  and is is  is ("sometime ") ("always ")  and E XAMPLE 2.1 Let be a unary schema in let be a temporal instance over .
+The boolean TL formula given below checks whether there is a state (with ) in such that is identical to the first state .
+Recall that the query "are there two states and that are identical?
+", denoted twin, is not expressible in TL [1, 3].
+Note that several temporal query languages more expressive than TL have been investigated, like Extended Temporal Logic ETL [12], the while-loop language TWHILE [12, 5], and the fixpoint language TL [5].
+Note that ETL and TL were introduced in the propositional case, respectively by Wolper [17] and Vardi [16].
+Queries and answers A FO or TL query over the database schema is specified by a formula .
+The evaluation of over temporal instance at time point , denoted , is obtained by evaluating at time point : a valuation .
+The answer of over , denoted evaluation of at time point 1:  output schema and closure under composition are the same as above for t2t queries and t2t languages.
+We now proceed to the definition of a first class of t2t languages, called point-wise languages.
+3  Point-wise languages  In a first attempt to define t2t languages, a simple and naive idea is to apply a query of a given temporal language at all time points of a temporal instance.
+As we will see, the t2t languages thus obtained have important limitations.
+We now give a formal definition of point-wise languages.
+If is a temporal language then PW is a pointwise language.
+The syntax of PW is the same as .
+A query of PW is an expression of the form where is a query of .
+The answer of over the temporal instance , denoted , is the temporal instance such that for all , is the answer of evaluated at time point , that is .
+Figure 1 illustrates how the answer to a point-wise query is obtained.
+However, the reader should not misinterpret the arrow between and : it represents that is the result of the evaluation of at time point , which depends on the whole temporal instance when is a temporal language like TL .
+, is the .
+The reader should pay attention to the fact that the answer to a FO or a TL query is, by definition, a relation that is a static instance.
+Two queries and are equivalent, denoted , iff for all temporal instance we have .
+Let be a query of a temporal language over the database schema .
+We denote the input schema of , that is , and we denote the output schema of .
+Let be a language.
+Let and be queries of such that .
+The composition of and is the query denoted such that for all temporal instance , .
+The language is closed under composition iff any composition of queries of is expressible in .
+Temporal and temporal-to-temporal languages In order to distinguish known query languages such as TL (whose queries output static instances) from the languages presented in this article (whose queries output temporal instances), we keep the usual terminology, temporal language, for the former and we introduce the terminology temporal-to-temporal (t2t) language for the latter.
+Note that the notions of input schema,  Figure 1.
+Evaluation of  in  PW  We now give some examples of point-wise queries.
+E XAMPLE 3.1 Transposition with PW FO .
+We consider the musical transposition query, described in the introduction.
+A musical score is viewed here as a finite sequence of (sets of) notes.
+Let be the unary relation schema.
+We consider temporal instances over which are encoding of scores: in each state of the temporal instance, the instance over stores notes.
+Let be an integer.
+The aim of the query is to compute a musical score where each note from the original score is transposed by semitones.
+We assume that the function computes the -transposition of notes.
+The query is expressible in PW FO .
+Let be the following FO query:  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  Then, it is easy to check that  expresses  .
+E XAMPLE 3.2 Transposition revisited with PW(TL).
+We use the same notations as in Example 3.1.
+We consider the t2t query denoted which aims at transposing semi-tones higher only for notes such that appears somewhere in the original score.
+The query is expressible in PW TL ; let be the following TL query:  Sketch of proof: let be a temporal instance over , and let and be queries of PW such that is well defined.
+Let us assume that .
+Since and are in PW , there exists and in such that and .
+Let be the query where any occurrence of is replaced by , and let .
+It is rather easy to see that , hence P ROPERTY 3.3 For all temporal instance , for all , .
+Above, is the query from Example 3.1.
+Then, it is easy to check that expresses .
+E XAMPLE 3.3 Mirror.
+We consider the t2t query denoted , specified by: for all temporal instance , .
+We claim that is not expressible in PW TL , because if it was, we would be able to build a TL formula expressing the query .
+However, using a more expressive language like the fixpoint language TL [12, 5], we can show that is expressible in PW TL .
+Expressive power It is possible to obtain expressive power results for point-wise languages based on the hierarchy for temporal languages.
+P ROPERTY 3.1 Let 1.
+If over, 2.
+If  then  and PW  then PW  be temporal languages.
+, and more-  PW  PW  .
+The proof of this result is immediate from the definitions of the languages.
+Point-wise versus temporal languages A temporal language can be seen as a t2t language: consider that its output is a temporal instance of size 1 (i.e.
+a static instance).
+Over static instances, it is trivial to show that and PW are equivalent.
+Over strictly temporal instances, and PW are incomparable: the answer to any query of (resp.
+PW ) cannot be an instance of size greater than 1 (resp.
+of size 1).
+Properties We now show some properties of the point-wise languages.
+In the following, is any temporal language.
+P ROPERTY 3.2  PW  is closed under composition.
+This property shows an important and obvious limitation of point-wise languages: they are unable to change the size of the temporal instance (i.e.
+if the size of the input is then so is the size of the output).
+Indeed, none of the point-wise languages can express the video extraction or musical canon queries.
+This fact motivates the introduction of another paradigm for t2t queries.
+Point-wise languages in the literature In [15], models for temporal queries are presented.
+The sequenced queries and the non-sequenced queries are respectively similar to point-wise queries with FO as the support language, to point-wise queries with a support language at least as expressive as TL.
+Although, because these languages deal with an interval based bidimensional representation of time, these queries are sligthly more powerful than point-wise languages.
+However, the languages presented in [15] still suffer from being unable to define queries that increase the size of a temporal instance.
+4  SQTL languages  In order to cope with the limitation of point-wise languages, we now consider temporal-to-temporal languages that work in two phases: the first one is called slicing, the second one is called querying.
+Let us consider a temporal instance .
+Intuitively, the first step slices the temporal instance into sub-instances, called slices.
+The output of this first step is a sequence of slices.
+It can be such that, for instance, two slices share some common states (they may overlap), or/and such that a state of the temporal instance does not belong to any of the slices (the sequence of slices may have "holes").
+In the second step, a query is applied over each slice, keeping available the access to the whole temporal instance as a context for .
+The output of the second step is a temporal instance built by concatenating the results of querying the slices, in the order of the slicing output.
+We will investigate two ways to apply  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  slicing  querying  Figure 2.
+SQTL languages over each slice : either is applied once, in the first state of the slice, or is applied in all the states of the slice, in a "local" point-wise manner.
+Figure 2 illustrates the slicing and querying steps, in the case where is applied only in the first state of every slice.
+The reader should pay attention to the fact that this figure and the subsequent ones are meant to illustrate the semantics of our slicing-querying languages, and not their physical implementation.
+For instance, the result of the slicing step is described by duplicating the temporal instance (once for each slice produced), but it is clear that such a replication is not needed for implementing the language.
+Before defining further the slicing-querying languages, we illustrate the main ideas by some informal running examples.
+E XAMPLE 4.1 Conditional point-wise query.
+Let be a query with free variable .
+The aim of the query is to compute a temporal instance whose states are the answers to iff this answer is not empty.
+For instance, suppose that and that is empty for .
+Then .
+Note that the video extraction and stream filtering applications given in the introduction are particular cases of conditional point-wise queries.
+In order to express by a SQTL query, we will first slice the input: a slice is a sub-instance of such that the answer to evaluated at any point of is non empty.
+Then, the querying phase applies the query in each state of each slice, in a point-wise manner.
+We illustrate this idea below:  slicing:  querying ( ):  We would like to highlight the fact that if is a temporal query (whose evaluation at time point depends on the whole temporal instance ), then applying in the querying phase really computes because is available at that moment.
+E XAMPLE 4.2 Copy.
+The aim of the query is to compute the temporal instance concatenated with itself.
+For instance, if , then  In order to express , we will slice all the states of twice, and in the querying phase we will apply the identity query in each state of each slice.
+The figure below illustrates this.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  slicing:  Slicing can be done in various manners.
+Here we focus on elementary slicing.
+The slicing is elementary iff ( and are defined as above) there exists such that and for all , .
+Then the state called a seed for the slice .
+querying ( ):  For instance, let process such that E XAMPLE 4.3 Musical canon.
+Let and be strictly positive integers specifying respectively the number of voices and the offset of the canon.
+Considering a musical score, the aim of the query is to repeat the main melody times, such that the second voice repeats the melody with a time offset , and each next voice starts also after the previous one with time offset .
+For instance, suppose that is an encod, we denote the ing for a musical score.
+For all .
+Let and .
+Then static instance  In order to express by a SQTL query, we will use slices: the first one is itself and it will serve to output the first part of the melody for all voices (note that the first voice will play the entire melody thanks to this slice); the next slices are of size and they serve to output the end of the melody played by each voice.
+We illustrate this idea below with and (recall that the arrow between an input state and an output state is meant to capture that the output state is the answer of a temporal query evaluated at time point over the whole temporal instance):  slicing:  querying:  is  and consider the slicing where  Consider , and .
+We have , and we also have , and .
+Thus for , is elementary.
+Now consider the slicing such that , where , and the other slices are defined as above.
+In this case, is not elementary.
+According to the definition, note that the elementary property enforces that is a sequence of slices whose seeds are pair-wise distinct.
+Note also that, given a slice produced by an elementary slicing, there may be several time points as candidates to be the seed of this slice.
+Finally, it is important to outline that the elementary property entails that the number of slices in is less or equal to the size of the temporal instance : if and , we always have .
+We choose to focus our study on elementary slicing processes for practical reasons.
+Intuitively, for a given slicing process, the property enables the computation of a slice to be done in one of its seeds.
+Since the number of seeds is less or equal to the size of the input temporal instance, it ensures that slicing the temporal instance is a reasonable process assuming that (1) computing the seeds of a slicing is efficient and that (2) the computation of one slice given its seed is computationaly reasonable.
+We now present two kinds of slicing.
+Both are elementary and although we do not provide the formal analysis, we claim that they have a reasonable complexity.
+Note that both slicing are based on a temporal language called support.
+Thus, different support languages can lead to different slicing.
+We use the notation to denote the slicing process with support .
+Cut slicing  A slicing process is a function that maps temporal instances to finite sequences of temporal instances.
+Let .
+Each slice is a temporal instance for some and .
+If is a slice, we write when .
+Let be a temporal language.
+We now define a slicing process called cut with support , denoted .
+Let be a boolean query of .
+We denote the cut slicing based on .
+The evaluation of over , denoted , is the sequence defined by:  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  this language can express that the size of the temporal instance is even.
+However, no such formula exists in TL (see Lemma 4.1).
+A discussion about the cut and identity slicings is provided later on.
+Concerning , we have the following result.
+Figure 3. cut slicing Let  and  If  .
+Suppose that .
+then , otherwise  .
+Intuitively, two consecutive states and of belong to the same slice iff and have the same answer for in .
+For instance, consider the temporal instance of Figure 3 and let be an arbitrary boolean query of .
+In the figure, we display (resp. )
+under a state iff (resp.
+).
+Thus we have where ; ; ...; ; .
+We now provide some examples of cut slicing.
+E XAMPLE 4.4 Let be a binary relation schema and let be the following temporal instance over :  Let have  be the  FO  query  .
+where  ;  Thus, we ;  .
+We now consider two particular slicings called identity slicing and chop.
+We call identity slicing, denoted , the slicing such that for all temporal instance , is reduced to one slice, itself: thus .
+We illustrate the idea of below: : We denote  the slicing and for all , illustrate the idea of below:  such that .
+We  L EMMA 4.1  is not expressible in  TL  .
+Sketch of proof: Suppose by absurd there exists TL such that is equivalent to .
+Then in particular, is true in a state iff is false in .
+Hence, is true in iff is true in , in , in and so on.
+Intuitively, we can express by evaluating the following TL formula in the first state of the temporal instance:  This is in contradiction with the fact that is not expressible in TL, where is the boolean query which outputs true when the size (number of states) of the input is even.
+Properties of cut  Let .
+be a cut slicing and let  P ROPERTY 4.2 The sequence has: (1) no hole: for all , there exists at least one such that ; (2) no overlap: for all , there exists at most one such that ; Note that Property 4.2 implies that any cut slicing is elementary.
+The computation of a cut slicing is reasonable in the sense that it simply requires to "scan" the whole temporal instance and evaluate a temporal query at each time point.
+The complexity of computing a cut slicing essentially depends on the complexity of the support language used.
+Property 4.2 shows an important limitation of cut slicing.
+For instance, it is not possible to simulate the sliding windows used in streaming query languages (see [2] for a survey), because such windows are intuitively overlapping.
+In order to cope with the limitations of cut slicing, we introduce another slicing process.
+: E XAMPLE 4.5 Identity slicing and chop.
+The identity slicing can be expressed in FO by .
+Intuitively, in order to express with cut, one needs a formula that evaluates to every two states.
+Such a formula is expressible in TL, because  Regular slicing Regular slicing is based on the temporal query language ETL, introduced in the propositional case by Wolper [17] and extended to the first order case in [12].
+Query evaluation in ETL tries to match words from a  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  regular language with the sequence of states of the temporal instance.
+Let be a temporal language.
+We define a process called regular slicing with support , denoted .
+Let be boolean queries of .
+Let be an alphabet and let be a regular language over .
+Intuitively, a letter in the alphabet is associated with each formula .
+We denote (or if there is no ambiguity) the regular slicing based on and .
+We will try to match words from with subsequences of states in order to produce slices.
+Let be a temporal instance.
+For all , let be the following set of words:  Consider .
+We have because , and .
+The word is a greatest element of , thus the algorithm sets to .
+Since , , and are empty, no slice is obtained for the states , and .
+We have .
+The words and are greatest elements of , but all that matters is their length: the algorithm sets to in both cases.
+We have , thus the algorithm sets to .
+We also have and .
+Thus the algorithm sets to .
+Finally, the sequence of slices obtained by is:  and for all  Note that is a subset of .
+A greatest element of is a word of of maximal length.
+The evaluation of over , denoted , is the sequence of slices obtained by applying the algorithm of Figure 4. ; While If Let  ; do is not empty be a greatest element of ; ;  ;  E XAMPLE 4.7 Conditional point-wise query revisited.
+Let be a temporal language and be a query of with free variable .
+In order to obtain the slicing of Example 4.1, let , and consider the boolean formula and the slicing .
+Intuitively, this regular slicing identifies sub-instances of maximal length such that is true (the answer to is not empty) everywhere, and such that the first state of these sub-instances satisfies both and .
+In Example 4.1, the states and both satisfy .
+End if ; ; End while ;  Figure 4.
+Evaluation of Obviously, the algorithm entails that any regular slicing is elementary.
+Intuitively, is scanned from the left to the right.
+In each state , we try to match words of with the states to the right of .
+If is empty then there is no match, and we proceed to the next state .
+Otherwise, we consider the maximal length of all possible matches, i.e.
+the word from , and we produce the slice .
+We now provide some examples of regular slicing.
+E XAMPLE 4.6 Let , and be boolean queries from a temporal language .
+Let and let be the regular language .
+Let .
+Below, we display (resp. )
+under a state iff (resp. )
+with :  E XAMPLE 4.8 Musical canon revisited with TL .
+In order to obtain the slicing of Example 4.3, let , let , and consider the boolean TL formulas , and .
+The slicing outputs two slices and , such that is (i.e.
+all the states of , from the first to the last one) and is the last two states of .
+Note that is not expressible in FO .
+E XAMPLE 4.9 Chop revisited with FO .
+Consider the slicing from Example 4.5.
+This slicing is expressible in FO : let , and consider .
+Properties of regular slicing ing.
+Let .
+P ROPERTY 4.3 The sequence i.e.
+for all , .
+Let  be a regular slic-  -  is monotone, -  Note that Property 4.3 implies that any regular slicing is elementary.
+Like for cut slicing, the computation of regular slicing is reasonable in the sense that it simply requires to "scan" the whole temporal instance and  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  evaluate a temporal query a la ETL at each time point.
+Again, the complexity of computing a regular slicing essentially depends on the complexity of the support language used.
+P ROPERTY 4.4 If denotes the size of , the sum of the sizes of the slices is less than : .
+Expressive power of  versus  The notion of expressive power for standard query languages can be naturally extended to slicing languages.
+We have the following results.
+T HEOREM 4.5 If subsumes strictly more expressive than  TL  then  is  .
+Sketch of proof: let be a boolean query of .
+We consider the slicing and we show that can be expressed by a regular slicing.
+Let and let be the regular language .
+Consider the following boolean formulas: , , , .
+Recall that subsumes TL , thus the formulas , , and are in .
+Then, the regular slicing is equivalent to .
+Intuitively, identifies subinstances of maximal length such that (resp. )
+is true everywhere and such that their first state also satisfies (resp.
+).
+We now show that the inclusion is strict.
+Intuitively, it suffices to show that may produce slice sequences with overlaps.
+This is impossible in .
+Let and consider the regular language and the boolean query .
+Let us consider the regular slicing .
+The evaluation of over the temporal instance is the sequence of slices such that for all , .
+This entails that for all : thus according to Property 4.2, is not expressible in .
+As a consequence of Theorem 4.5, all the examples of slicing provided in this article for are also expressible in .
+Recall from Example 4.5 that the identity slicing can be expressed in for all by .
+Note also that if subsumes TL, then can be expressed in : consider the alphabet , the regular language and the regular slicing .
+However, if does not subsume TL , we have the following negative result.
+L EMMA 4.6 The slicing language press the identity slicing.
+FO  can not ex-  Sketch of proof: let be a temporal instance.
+We consider a regular slicing in FO .
+In order to show the lemma, we first need the following results.
+1.
+For all FO formula , for all , iff .
+Intuitively, this means that the satisfaction of at time point in only depends on the state at time point .
+This result can be shown by induction on the formula .
+2.
+For all , the set associated with over is empty iff is empty over , where denotes the temporal instance .
+Intuitively, this means that does not depend on the states .
+This is a consequence of item 1 above.
+3.
+For all , the set is empty over iff is empty over .
+This is a direct consequence of item 2 above.
+Suppose by absurd that expresses the identity slicing .
+Consider .
+In the algorithm of figure 4, the first state of the slice obtained from is always .
+Thus necessarily, the set associated with over is not empty and for all , is empty over (otherwise, cannot express ).
+Then, item 3 entails that for all , is empty over .
+This entails that the evaluation of the regular slicing over the temporal instance is the empty sequence: a contradiction with the fact that expresses .
+T HEOREM 4.7 The slicing languages FO are incomparable.
+FO  and  Sketch of proof: on the one hand, Lemma 4.6 shows that there is a cut slicing in FO which cannot be expressed in FO .
+On the other hand, the regular slicing given in the proof of Theorem 4.5 in order to show the strictness of the separation is in FO but not in FO .
+In order to overcome the problem raised by Lemma 4.6, one can consider the following extension: let us add the booleans and to FO, with the same semantics as in TL.
+Then is expressible in FO with the regular slicing given above.
+In the rest of the article, we consider the above extension of FO.
+Although is now expressible in FO , we claim that Theorem 4.7 still holds, because the following slicing is not expressible in FO :  Roughly, a querying process is a function that maps finite sequences of temporal instances to temporal in-  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2936-8/07 $20.00 (c) 2007  stances.
+We now define the querying phase more formally.
+Like for the slicing, we need to consider a temporal language called support of the querying process.
+Given a query of , two types of querying are introduced.
+Both take as input a temporal instance together with a slicing of , and output a temporal instance .
+Intuitively: the first kind of querying based on , simply denoted , consists in evaluating over in the first state of each slice ; the second kind of querying based on , denoted , consists in evaluating over in each state of each slice ; Formally, we need to introduce two booleans which logically identify a slice inside the temporal instance .
+For all , we denote the temporal instance in which the boolean (resp. )
+is added in the first (resp.
+last) state of .
+Thus: (1) Case of .
+For each slice , is evaluated over at time point .
+We denote the .
+static instance .
+For each slice , is evaluated (2) Case of over at all time points between and .
+We denote the temporal .
+instance denote either or .
+The answer of Let over and , denoted , is the concatenation of the temporal instances , ,..., .
+We now turn back to our running examples.
+E XAMPLE 4.10 Conditional point-wise revisited.
+As mentioned in Example 4.1, we may apply in the querying phase in order to output the temporal instance .
+E XAMPLE 4.11 Musical canon revisited with TL.
+We consider once again the query described in Example 4.3.
+Given the slicing of Example 4.8, note that (resp. )
+is the temporal instance where is in (resp. )
+and is in (resp.
+).
+Intuitively, we would like to apply  over each state of the slice  and:  over each state of the slice  .
+Thus, let  Then, outputs the temporal instance in Example 4.3.  displayed  SQTL languages: summary Now that the slicing and querying processes are formally defined, we combine them in order to define SQTL languages.
+Recall that any slicing process needs a (temporal) language as a support, as well as any querying process does.
+Language supports for slicing and for querying do not need to be the same.
+For instance, let and be temporal languages; denotes the SQTL language built with a slicing (where can be either or ) based on the language and a querying based on the temporal language .
+FO For instance, TL denotes the SQTL language such that its slicing component is TL and its querying component has support FO.
+is a pair SQTL queries A query in where is a slicing in and is a querying in i.e.
+is either or for some .
+Given a temporal instance , the evaluation of over leads to the temporal instance .
+E XAMPLE 4.12 Musical canon revisited with TL We consider the regular slicing TL .
+, from Example 4.8 (recall that are TL formulas) and the TL query , from Example 4.11.
+Then, is a query TL in which expresses the t2t query TL specified in Example 4.3.
+The result below states that the SQTL languages defined in this article are proper extensions of both the temporal languages and the point-wise languages.
+T HEOREM 4.8 Let and be two temporal languages.
+Let be either or .
+Over strictly temporal instances, the following holds: 1.
+2.  , and PW  Sketch of proof: The inclusions are straightforward.
+Let be a query of .
+We show that there exists a slicing process such that the SQTL query (resp. )
+of is equivalent to (resp.
+).
+Indeed, let be a slicing process expressing the identity slicing.
+Recall that we made the assumption to use the extension of FO that adds the booleans and .
+Thus, the identity slicing is expressible in with any support language .
+Furthermore, it is easy to see that and .
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2936-8/07 $20.00 (c) 2007  The strictness of the inclusions is shown over strictly temporal instances.
+Indeed, on the one hand, the answer of any query of can only be a temporal instance of size 1 and there exists queries of whose answer is a temporal instance of size greater than 1.
+On the other hand, the answer of any query of PW can only be a temporal instance of size greater than 1, and there exists queries of whose answer is a temporal instance of size 1.
+Recall that and PW are incomparable.
+Thus, Theorem 4.8 leads to the expressive power hierarchy displayed below:  PW  5  Discussion  In fact, we initially investigated a family of t2t languages already based on the two-phase paradigm of slicing-querying but with a restricted form of querying, further called local querying.
+Intuitively, the restriction concerns the scope of the query: for each slice, the query is "strictly" evaluated over the slice, disregarding the other states of the temporal instance.
+More formally, the restriction entails that, in the definition of the evaluation of a querying , given the slices of , we no more consider the temporal instances associated with , but itself, or, in other words, .
+The motivation for considering local querying is that it leads to more tractable t2t languages and that this restriction is a reasonable one for some class of applications.
+In the case of streaming [2, 9], where a stream is a potentially infinite temporal instance, it is of course not reasonable in practice to have a querying phase which requires the whole stream.
+Indeed, for streaming applications, in order to ensure that computations only need a finite amount of auxiliary memory, it turns out that the querying process is required to be local but moreover a similar restriction over the slicing process is required too: the slicing process needs to be local and bounded.
+For instance, the slicing process FO is local in the sense that the FO query used in such a process is evaluated w.r.t.
+one state of the stream.
+However, even a slicing process as simple as FO is not bounded in the sense that the size of each slice  cannot be bounded.
+Obviously, if the slicing process is not bounded then locality of the querying phase is not sufficient to reach the finite auxiliary memory requirement.
+We are currently studying properties of t2t languages with local querying.
+This investigation focuses on comparative expressiveness and closure properties under composition and under nesting.
+Although the result obtained are not presented here, we would like to make a few comments about the impact of closure properties.
+The interest of studying closure under composition (resp.
+under nesting), for instance, is that it gives information about the impact of adding composition (resp.
+nesting) to a language on its expressive power.
+For complexity reason or for the sake of some applications, it may be desirable to choose language supports for slicing and querying having a weak expressiveness (for instance, choosing FO as the language support for may be required in order to preserve locality of slicing).
+This choice has an impact on the global expressive power of the t2t language and then adding composition (resp.
+nesting), when the language is not closed, may be a way to recover some expressiveness.
+The SQTL languages presented in section 5 are of course not complete.
+There exists some t2t queries that cannot be expressed using these languages: the query of Example 4.2, despite the fact that it is a simple query (it can be expressed through an elementary slicing process combined with the identity querying see Example 4.2), is not expressible in any SQTL language based on cut or regular slicing.
+Intuitively, this is because regular slicing is monotone (Property 4.3) and because regular slicing subsumes cut slicing in most cases (Theorem 4.5).
+This entails that we may need to study other slicing processes.
+We believe that binary operators may be needed in order to increase the expressive power of t2t languages, depending on the applications.
+Indeed, concatenation is obviously one such operator.
+Consider two video descriptors, one containing speaker presentations about different topics and the other one containing documentaries on these topics.
+Both video descriptors include annotation, among which are topic identifiers (e.g.
+politics, economics).
+One may simply want to produce a single video by merging (shuffling) the presentations and the documentaries by topics.
+Assuming that the two video descriptors have been concatenated, we believe that it can be shown that shuffling them can be expressed if the support languages are as expressive as TL .
+This observation raises questions similar to the ones concerning the closure properties and the impact of adding composition.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2936-8/07 $20.00 (c) 2007  Finally, we would like to mention that providing a generic computational model for t2t queries through Relational temporal machines has been investigated in [4].
+References [1] S. Abiteboul, L. Herr and J.
+Van den Bussche.
+Temporal Connectives versus Explicit Timestamps in Temporal Query Languages.
+In Journal of Computer and System Science, 58(1):54-68, 1999.
+[2] B. Babcock, S. Babu, M. Datar, R. Motwani, and J. Widom.
+Models and Issues in Data Stream Systems.
+In Poceedings of the 21st Conference on Principles of Databases Systems, pages 1-16, 2002.
+[3] N. Bidoit, S. De Amo, and L. Segoufin.
+Order independent temporal properties.
+In Journal of Logic and Computation, 14(2):277-298, 2004.
+[4] N. Bidoit and F. Hantry.
+Relational Temporal Machines.
+In Proceedings of the 14th International Symposium on Temporal Representation and Reasoning, 2007.
+[5] N. Bidoit and M. Objois.
+Temporal query languages expressive power: TL vs. T- WHILE.
+In Proceedings of the 12th International Symposium on Temporal Representation and Reasoning, pages 74-82, 2005.
+[11] Y. Gurevich and S. Shelah.
+Fixed-point extensions of first-order logic.
+In Annals of Pure and Applied Logic, 32:265-280,1986.
+[12] L. Herr.
+Langages de Requete pour les Bases de Donnees Temporelles.
+Ph.D thesis, Universite Paris Sud, 1997.
+[13] D. Leivant, Inductive definitions over finite structures.
+In Information and Computation, 89:95- 108, 1990.
+[14] Y. N. Moschovakis.
+Elementary Induction on Abstract Structures, North Holland, Amsterdam, 1974.
+[15] Richard T. Snodgrass, Michael H. Bohlen, Christian S. Jensen and Andreas Steiner.
+Transitioning Temporal Support in TSQL2 to SQL3.
+In Temporal Databases: Research and Practice, O. Etzion, S. Jajodia, and S. Sripada (eds.
+), Springer, pp.
+150-194, 1998 [16] M. Y. Vardi.
+A temporal fixpoint calculus.
+In Proceedings 5th ACM Symposium on Principles of Programming Languages, pages 250-259, 1988.
+[17] P. Wolper.
+Temporal Logic Can Be More Expressive.
+In Information and Control, pages 72-99, 1983.
+[6] A. K. Chandra and D. Harel.
+Structure and comlexity of relational queries.
+In Journal of Computer and System Science, 25(1):99-128, 1982.
+[7] J. Chomicki and D. Toman.
+Temporal Logic in Information Systems.
+In Logics for databases and information systems, Kluwer Academic Publishers, chapter 3, pages 31-70, 1998.
+[8] E. A. Emerson.
+Temporal and Modal Logic, In Handbook of Theoretical Computer Science, Volume B: Formal Models and Semantics, Jan van Leeuwen, Ed., Elsevier Science Publishers (1990) 995-1072.
+[9] L. Golab, M. Tamer Ozsu.
+Issues in data stream management.
+In ACM SIGMOD Record, 32(2):5- 14, 2003.
+[10] Y. Gurevich.
+Toward a logic tailored for computational complexity.
+In Computation and Proof Theory, pages 175-216, M. M. Ritcher et al.
+editor, Springer Verlag, LNM 1104, 1984.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2936-8/07 $20.00 (c) 2007

@@ -1,0 +1,533 @@
+Automata-based Verification of Linear Temporal Logic Models with Bounded Variability Carlo A. Furia ETH Zurich, Switzerland caf@inf.ethz.ch  Abstract--A model has variability bounded by v/k when the state changes at most v times over any linear interval containing k time instants.
+When interpreted over models with bounded variability, specification formulae that contain redundant metric information--through the usage of next operators--can be simplified without affecting their validity.
+This paper shows how to harness this simplification in practice: we present a translation of LTL into Buchi automata that removes redundant metric information, hence makes for more efficient verification over models with bounded variability.
+To show the feasibility of the approach, we also implement a proofof-concept translation in ProMeLa and verify it using the Spin off-the-shelf model checker.
+I. I NTRODUCTION AND OVERVIEW Linear temporal logic (LTL) formulae model linear sequences of discrete states that evolve "one step at a time".
+The state may change between some pairs of adjacent steps and not change between others; we say that a linear model has variability bounded by v/k (read "v over k") when the state changes at most v times over any interval containing exactly k steps.
+Bounded variability limits the amount of information necessary to define a model: characterizing the state over v time instants is sufficient to completely describe the temporal behavior over a window of length k. Consider now an LTL formula ph that describes distances among states by means of the next operator X : for example, X X X p says that p holds in the future, at a distance of 3 steps.
+If ph describes distances as large as k (i.e., k nested occurrences of X ) but we are interested only in its models with variability bounded by v/k for v < k, ph contains metric information that is redundant, as all the "action" occurs only over up to v steps.
+In previous work [1], we showed how to remove the redundant information and produce a smaller formula ph' whose validity is equivalent to ph's validity over models with variability bounded by v/k; the size of ph' depends on v but not on k, hence the size of ph' is significantly smaller than the size of ph when v [?]
+k. Unfortunately, this result turns out to have mostly theoretical interest: the transformation from ph to ph' reduces the size due to k but also introduces a polynomial blow-up that, while it does not affect the worstcase complexity of the validity problem, is too conspicuous  Paola Spoletini Universita degli Studi dell'Insubria, Italy paola.spoletini@uninsubria.it  in practice: ph' is often still too large to be verified with standard tools for LTL.
+The present papers shows how to get around this practical shortcoming.
+The solution has two elements.
+First, Section III presents a different transformation of ph into a formula Ph that is equivalent for models with variability bounded by v/k.
+The size of Ph also does not depend on k but, surprisingly, is otherwise exponential in another of ph's size parameters!
+This exponential blow-up is, however, completely immaterial: Section IV describes a direct translation of Ph into equivalent Buchi automata that can be analyzed efficiently in practice.
+More precisely, some components of the translation use alternating Buchi automata extended with finite-domain counters; these make for a direct implementation of them into the ProMeLa language input to the Spin model checker.
+Section V presents a few details of the ProMeLa implementation and describes experiments where we used the technique presented in the rest of the paper to check for satisfiability--over models with bounded variability--an LTL example specification of a simple "elections" scenario.
+The large distances used in the specification, required to describe time units at different levels of granularity, make its verification unfeasible for standard LTL techniques that do not exploit the bounded variability assumption.
+Related work: One of the original motivations to study models with bounded variability comes from the desire to reason about systems with heterogeneous time granularities [2], where large and small distances coexist.
+A few authors have discussed the modeling challenges brought by such systems [3], [4], [5], [6], [7], [8], and have demonstrated their relevance in some application domains such as medical data.
+Model checking and verification using LTL and automata is a subject extensively studied for over three decades.
+The complexity of checking the validity of LTL formulae [9], [10] and the relations between LTL and Buchi automata [11], [12] are well-known; Section II recalls some of the main results, which are used in the rest of the paper.
+The automata-theoretic approach [11], [12] to LTL has produced not only a comprehensive theoretical framework, but also practical scalable implementations such as the Spin model  checker [13], which we used in the experiments discussed in Section V. The characterization of repeated "stuttering" steps in LTL models has been studied by Lamport [14] and others [15], [16], [17].
+In spite of the extensive work on LTL, to our knowledge the present paper and our previous work [1] are the first approaches that target LTL verification for models with bounded variability.
+Some of the ideas used in our work are inspired--and named after--similar notions introduced for dense time models; in particular, Pnueli operators [18] and bounded variability itself [19], [20].
+As we explain in Section III, our previous work [1] represents a theoretical counterpart to the present paper; in particular, we re-use some techniques of [1] to establish the correctness of a similar transformation.
+While the presentation of the present paper is entirely self-contained, we warn readers already familiar with [1] that we have occasionally changed the notation and the details of some definitions to better focus the presentation on the novel contributions.
+B.
+Linear Temporal Logic LTL syntax: LTL formulae are defined by: LTL [?]
+ph ::= [?]
+| p | !ph | ph1 [?]
+ph2 | ph1 U ph2 | X ph where p ranges over a set P of propositional letters; we use the standard abbreviation for [?]
+(false), [?]
+(or), = (implies), = (iff); and for the derived temporal operators Fph (eventually: [?
+]U ph), Gph (always: !F!ph), and X k ph (distance: * * * X} ph), where k >= 0.
+The size |ph| of an LTL formula |X X {z k  ph is the size of its encoding as a string.
+Qualitative and propositional LTL: L(U) denotes the qualitative subset of LTL, which does not use the X operator.
+P(P) denotes the purely propositional subset of LTL over P, which does not use any temporal operator.
+A formula p [?]
+P(P) unambiguously identifies a subset of 2P ; for example, !p corresponds to all subsets X of P such that p 6[?]
+X.
+Based on this correspondence, we will use the two notations equivalently when convenient.
+P+ (P) denotes the positive subset of P(P) which only uses [?]
+and [?].
+LTL semantics: The satisfaction relation |= defines the semantics of a generic LTL formula ph, interpreted at position i [?]
+N over a word w. w, i |= [?]
+w, i |= p iff p [?]
+w(i) w, i |= !ph iff w, i 6|= ph w, i |= ph1 [?]
+ph2 iff w, i |= ph1 and w, i |= ph2 w, i |= ph1 U ph2 iff for some j >= i, w, j |= ph2 and for all i <= k < j, w, k |= ph1 w, i |= X ph iff w, i + 1 |= ph w |= ph iff w, 0 |= ph [[ph]] denotes the set {w [?]
+W(P) | w |= ph} of all models of ph.
+ph is satisfiable if [[ph]] 6= [?]
+and is valid if [[ph]] = W(P).
+Two formulae ph1 , ph2 are equivalent if [[ph1 ]] = [[ph2 ]]; they are equi-satisfiable if they are either both satisfiable or both unsatisfiable.
+II.
+P RELIMINARIES A.
+Words and Variability Words and trees: An o-word (or simply word) w over a set S of propositional letters is a mapping w : N - 2S that associates to every discrete instant i (also called step) the subset w(i) [?]
+S of propositions that hold at i. W(S) denotes the set of all words over S. A tree is a set T [?]
+N* of sequences of natural numbers that is prefix-closed, that is, if x*c [?]
+T --for x [?]
+N* and c [?]
+N--then x [?]
+T as well.
+The elements of T are called nodes; the empty sequence o denotes T 's root; and if x * c [?]
+T we say that x * c is a successor of x.
+A node without successors is called leaf.
+A path of T is a sequence p0 , p1 , .
+.
+.
+of nodes of T such that p0 = o and, for every j >= 0, either pj is a leaf or pj+1 is a successor of pj .
+A S-labeled tree is a pair hT, li where T is a tree and l : T - S assigns an element of S to each node of T .
+Stuttering: A step i [?]
+N is stuttering in a word w if w(i + 1) = w(i) and there exists a later step j > i such that w(j) 6= w(i).
+Conversely, a non-stuttering step (nss for short) i is such that either w(i + 1) 6= w(i) or, for all j > i, w(j) = w(i).
+Intuitively, a stuttering step is redundant: it records information that is repeated identically in the next step, hence it only carries information about distance between states.
+A word is stutter-free if it has no stuttering steps.
+Two words are stutter-equivalent if removing all their stuttering steps reduces both to the same stutter-free word.
+Bounded variability: Given two positive integers v, k, a word w has variability bounded by v/k (or simply is v/k bounded) if, for all i [?]
+N, at most v steps among i, i + 1, .
+.
+.
+, i + k - 1 are non-stuttering in w. A set W of words has variability bounded by v/k if every word w [?]
+W is v/k bounded.
+W(S, v/k) denotes the set of all words over S with variability bounded by v/k.
+Proposition 1.
+* [9] The satisfiability problems for LTL and for L(U) are PSPACE-complete.
+* [14] The set [[ps]] of all models of any qualitative formula ps [?]
+L(U) is closed under stutter-equivalence.
+Pnueli operators: The qualitative extended Pnueli operators (or simply Pnueli operators) are defined by: n;hn1 ,...,nk i  Pk  (ps1 , .
+.
+.
+, psk )  for k, n [?]
+N, n1 , .
+.
+.
+, nk [?]
+N [?]
+{[?
+]}, and ps1 , .
+.
+.
+, psk [?]
+L(U).
+L(U, Pn) denotes LTL extended with the Pnueli operators.
+The size |ph| of a L(U, Pn) formula ph is the size of its encoding as a string, assuming a unary encoding for k, n, n1 , .
+.
+.
+, nk .
+The satisfaction relation for Pnueli operators n;hn1 ,...,nk i  w, i |= Pk 2  (ps1 , .
+.
+.
+, psk )  holds if there exist k positions i = i0 <= i1 <= * * * <= ik such that, for all 1 <= j <= k, the following hold: (1) w, ij + 1 |= psj ; (2) if nj 6= [?]
+then there are no more than nj nss in [ij-1 , ij - 1]; (3) there are no more than n nss in [i, ik ].
+[0, C1 ]x* * *x[0, Cn ] is the Cartesian product of the counters' domains.
+We define the semantics of an alternating automaton A with counters as a regular alternating automaton A with: states Q = Q x C; initial state q0 = hq0 , 0, .
+.
+.
+, 0i; and transition function d such that d(hq, c1 , .
+.
+.
+, cn i, s) = th if and only if d(q, s, c1 , .
+.
+.
+, cn ) = th.
+The size of A also defines the size of A.
+Proposition 2 ([1]).
+The satisfiability problem for L(U, Pn) is PSPACE-complete.
+Example 3.
+Consider the word w: 1 a b  2 a b  3 a b  4 a b  5 a b  6 a b  7 a b  8 a b  Example 5.
+The following alternating automaton with one counter c over [0, 2] accepts the language [[G(X b [?]
+X 2 b)]].
+9 a b  [?]
+where nss are in bold and underlined, and x denotes !x.
+For 5;h3,2,[?
+],3i the positions 1, 2, 6, 6, w, 1 |= P4 (a, !b, a [?]
+b, b) 3;h3,2,2,1i holds.
+On the contrary, w, 1 6|= P4 (a, !b, a [?]
+b, b): if i1 , .
+.
+.
+, i4 are the positions that match the semantics of the operator, it must be i3 >= 6, but there are 4 > 3 nss in the interval [1, 6].
+b, c < 2/c - 0 !b, c < 2/c - c + 1  [?
+], c = 0/c - 0  q1  * q0  [?
+], c = 2/c - 0 [?]
+In the figure, a bullet marks pair of edges corresponding to conjunctive transitions, and the outgoing edges to the symbols [?]
+and [?]
+denote transitions equal to the logic values [?]
+and [?].
+The automaton spawns a separate parallel computation at every step (corresponding to the G); the computation counts up to two time steps and terminates successfully only if a b is encountered before the counter reaches 2.
+C. Alternating Buchi Automata An alternating (Buchi) automaton A is a tuple hS, Q, q0 , d, F i, where S is the finite input alphabet, Q is the finite set of states, q0 [?]
+Q is the initial state, d : Q x S - P+ (Q) is the transition function, and F [?]
+Q is the set of final states.
+If d(q, s) is purely disjunctive when it is defined, A is an ordinary nondeterministic (Buchi) automaton.
+The size |A| of an alternating automaton A is |Q| + |d|, where |d| is the sum of the formula sizes |d(q, s)| for all q, s where d is defined.
+A run r of an alternating automaton over a word w over S is a Q-labeled tree hTr , lr i such that: (1) the root o [?]
+Tr has label lr (o) = q0 ; (2) if x [?]
+Tr is a node in the tree with label lr (x) = q and the transition function defines d(q, w(|x|)) = th, then there is a set P = {q1 , .
+.
+.
+, qk } [?]
+Q such that p |= th--where we define p(0) = P--and, for all 1 <= j <= k, x * j [?]
+Tr is a node of Tr with lr (x * j) = qj .
+A path p of a run r is any path in Tr , hence an infinite sequence q0 , q1 , .
+.
+.
+of states; it is accepting if qi [?]
+F for infinitely many i's.
+A run r is accepting if all its infinite paths are accepting.
+A word w is accepted if there exists an accepting run on it.
+[[A]] denotes the set of all words accepted by A (also called the language of A).
+III.
+F ROM LTL TO L(U, Pn) Consider a generic LTL formula ph; without loss of generality, we can write ph in separated-next form with the occurrences of X separated from the rest of the formula as   ^ ph [?]
+psU [?]
+G  (xi = X di pi ) , 1<=i<=M  where: psU [?]
+L(U) is the purely qualitative part of the formula; for i = 1, .
+.
+.
+, M , xi [?]
+P is a propositional letter and pi [?]
+P(P) is a propositional formula; and 0 < d1 <= * * * <= dM are nonnegative distances.
+Also, m <= M denotes the number of distinct distances d1 = D1 < * * * < Dm = dM among d1 , .
+.
+.
+, dM .
+Our ultimate goal is to determine if ph is satisfiable over words in W(P, v/V ) where v is any positive integer and V = dM is the maximum distance appearing in ph.
+When V is large, |ph| is large as well; however, if v [?]
+V , ph encodes information that is redundant to decide its satisfiability over words with variability bounded by v/V .
+In [1], we described a polynomial-time transformation of ph into an equi-satisfiable formula ph' [?]
+L(U, Pn) whose size is O(|P|2 +vM 2 +v 2 M ).
+Since the size of ph' does not depend on V , if v is significantly smaller than V --in particular, exponentially smaller--then checking the satisfiability of ph' is much easier than checking the original formula ph.
+The transformation from ph to ph' stands as a theoretical result but is impractical because of the quadratic increase in size it introduces, which even becomes O(v 4 ) when we express  Proposition 4 ([12]).
+* The emptiness problem for languages defined by nondeterministic Buchi automata is NLOGSPACE-complete.
+* For any alternating automaton of size n there exists an equivalent nondeterministic automaton of size 2O(n) .
+* For any LTL formula ph there exists an equivalent alternating automaton of size O(|ph|).
+Automata with counters: Consider n integer counters, each with finite domain [0, Ci ] for i = 1, .
+.
+.
+, n. An alternating automaton A with n counters has the same components as a regular alternating automaton, but its transition function has signature d : Q x S x C - P+ (Q x C) where C = 3  Theorem 6. ph is satisfiable over words in W(P, v/V ) if and only if Ph is satisfiable over words in W(P [?]
+{s}).
+the Pnueli operators in plain L(U); this blow-up is normally too conspicuous to handle with standard LTL tools.
+To overcome these practical shortcomings, we follow the same principles used for ph' in [1] to build Ph  [?]
+Section IV shows how to exploit automata-theoretic techniques to check efficiently the satisfiability of Ph, hence, thanks to Theorem 6, to decide the satisfiability of ph over models with bounded variability.
+Section V demonstrates that the automata-theoretic techniques are directly implementable using standard model-checking tools.
+psU [?]
+pss [?]
+psP ,  where psU , pss are qualitative formulae in L(U), and psP [?]
+L(U, Pn) uses Pnueli operators.
+psU is the same in ph and Ph.
+pss marks the nss of propositions in P through a fresh letter s 6[?]
+P that toggles precisely when some proposition in P changes truth value.
+Namely, if no proposition ever changes value then s holds, and any proposition changing triggers s to do the same (see [1, Sec.
+IV] for a formal definition in L(U), which is however straightforward).
+To present psP , we have to introduce some more notation.
+Let B [?]
+{0, 1}M denote a sequence of M Boolean values b1 , .
+.
+.
+, bM ; then, for i = 1, .
+.
+.
+, M , [bi g] is g if bi = 1 and !g if bi = 0. psP enumerates all possible 2M truth assignments to x1 , .
+.
+.
+, xM :   ^ psP [?]
+G  X 1 [?]
+* * * [?]
+X M = psB  ,  IV.
+F ROM L(U, Pn) TO AUTOMATA This section describes an efficient translation of the components of Ph into automata.
+Each component psk becomes an automaton Ak = hS, Qk , q0k , d k , F k i such that [[psk ]] = [[Ak ]]; whenever clear from the context, we drop the superscript k from the automaton components' names.
+For simplicity of presentation, we assume that the alphabet S of all automata equals the set of all propositional letters used in any formula, and omit the straightforward details of how to handle letters appearing only in certain components.
+We do not discuss the translation of psU [?]
+L(U) into AU , because psU can have any structure, hence we just rely on standard translations of LTL into alternating automata.
+B[?
+]{0,1}M  where, using the notation just introduced, Xi = [bi xi ] for i = 1, .
+.
+.
+, M .
+For each truth assignment B, psP constrains the truth value of p1 , .
+.
+.
+, pM over the following v nss:  A.
+Marking Non-stuttering Steps The automaton As for pss has 2 * 2|P| + 1 states {q0 } [?]
+| P [?]
+P}: two for each subset of P, and a distinct initial state q0 ; all states other than q0 are accepting.
+Computations start in the initial state q0 .
+According to the initial values of the propositions in P, the automaton goes to a state in q + (if s holds) or in q - (if s doesn't):  1 ,...,dm i psB [?]
+Pv;hd (Y1 , .
+.
+.
+, Ym ) , m V where Yj = dk =Dj [bk pk ] is the conjunction of all pk 's corresponding to the same distance Dj in ph, for j = 1, .
+.
+.
+, m; and, for j = 1, .
+.
+.
+, m and D0 = 0, dj is ( Dj - Dj-1 if Dj - Dj-1 <= v - j + 1 , dj [?]
+[?]
+otherwise .
+{qP+ , qP-  d(q0 , P [?]
+{s}) = qP+  The intuition behind the transformation from ph to Ph is as follows.
+At every step, ph constrains the future values of the pi 's over a time window of length V = dM according to the current value of the xi 's.
+If the variability is bounded by v/V , however, no more than v changes of the proposition in P--which determine the value of the pi 's--are possible.
+Correspondingly, psP converts the distance constraints in ph into qualitative constraints over nss: rather than saying that p1 must occur at distance d1 , p2 at distance d2 , and so on, psP only requires that p1 occurs first, followed by p2 , and so on.
+Since Ph is qualitative, we can transform one of its models into a model for ph by adding stuttering steps so that the pi 's follow the original metric constraints in ph.
+The additional constraints introduced by the di 's ensure that this "padding" is always possible (since we cannot remove nss, we must ensure that there are not "too many" of them between any two consecutive distances).
+Using the same techniques used in [1], it is not difficult to make this intuition rigorous and prove the following.
+and d(q0 , P ) = qP- ,  for P [?]
+2P .
+The automaton leaves states of the form qP+ only if the values of the propositions change and s turns false; otherwise, s must hold continuously: d(qP+ , P [?]
+{s}) = qP+  and d(qP+ , Pb) = qP- b,  where Pb ranges over the complement set of propositions 2P \ P .
+Similarly, As leaves states of the form qP- only if the values of the propositions change and s turns true; otherwise, s must not hold: d(qP- , P ) = qP-  and  d(qP- , Pb [?]
+{s}) = qP+ b.
+Figure 1 shows As for P = {a, b}, where every transitions that enters a state qP+ has label P [?]
+{s}, every transition that enters a state qP- has label P , and the initial transitions are dotted for readability.
+4  - q{a,b}  + q{a}  q[?
+]-  + q{b}  - q{b}  q[?
+]+  - q{a}  Figure 1.
+Automaton As for pss , when P = {a, b}.
+now on, we omit from the presentation all transitions from states of the form qi- that follow by duality.
+- The transition from qi+ to qi+1 is also possible when the local counter equals di : when s takes a new value we are already past the nss that occurred in the previous step, and the new nss is counted in the next round starting with cL = 1: - d(qi+ , !s [?]
+Yi , eG , di ) = hqi+1 , eG + 1, 1i .
+B. Translating Pnueli Operators B  The automaton A for psB has 2m + 2 states {q0 , qF } [?]
+{qi+ , qi- | 1 <= i <= m} and two counters cG [?]
+[0, v] and cL [?]
+[0, d] where d = maxi di ; cG is the "global" counter that counts the following v nss, whereas cL is the "local" counter that measures each of the di 's.
+Computations start in the initial state q0 and should end in the only accepting state qF .
+At any point during a computation, AB is in state qi* when it is ready to read Yi , .
+.
+.
+, YM before cG reaches v, with * = + if s held in the latest step, and * = - otherwise.
+In the following, dG ranges over [0, v], eG over [0, v - 1], diL over [0, di ] [?]
+[0, v], and eiL over [0, di - 1] [?]
+[0, v - 1].
+The automaton stays in qi+ (resp.
+qi- ) without changing the counters if s holds (resp.
+does not hold) and Yi is false:  Notice that the value of eiL does not matter in transitions corresponding to di = [?
+], hence we need not update the local counter (we omit the straightforward details).
+Now, we define the initial and final transitions.
+Initially, AB goes to q1+ or q1- according to the first value of s, e.g.
+: d(q0 , s [?]
+!Y1 , 0, 0) = hq1+ , 0, 0i ,  d(qi+ , s [?]
+!Yi , dG , diL ) = hqi+ , dG , diL i ,  d(q0 , s [?]
+Y1 , 0, 0) = hq1+ , 0, 0i [?]
+hq2+ , 0, 0i .
+d(qi- , !s [?]
+!Yi , dG , diL ) = hqi- , dG , diL i ,  + The last successful transition from qm may lead to qF :  When s toggles but Yi is false, AB rotates between qi+ and qi- while incrementing both counters by one: d(qi+ , !s d(qi- , s  [?]
+[?]
+!Yi , eG , eiL ) !Yi , eG , eiL )  = =  hqi- , eG hqi+ , eG  + +  1, eiL 1, eiL  + - d(qm , !s [?]
+Ym , eG , eiL ) =hqF , 0, 0i[?
+]hqm , eG +1, eiL +1i,  + 1i ,  + + d(qm , s [?]
+Ym , dG , diL ) =hqF , 0, 0i[?
+]hqm , dG , diL i.
++ 1i ,  The transition to qF is possible also when the local counter equals dm , the global counter equals v, or both:  with i <= m. When Yi holds, if AB nondeterministically guesses that this is the "right" occurrence of Yi it goes to +- qi+1 and resets the local counter; otherwise, it remains in +- qi .
+For i < m, define d(qi+ , s [?]
+Yi , dG , diL ) as  + d(qm , !s [?]
+Ym , v, diL ) = hqF , 0, 0i , + d(qm , !s [?]
+Ym , dG , dm ) = hqF , 0, 0i .
++ hqi+1 , dG , 0i [?]
+hqi+ , dG , diL i ,  and  d(qi+ , !s  [?]
+Yi , eG , eiL )  - hqi+1 , eG  + q{a,b}  q0  Finally, the accepting state is absorbing:  as  d(qF , [?
+], 0, 0) = [?]
+.
++ 1, 1i [?]
+hqi- , eG + 1, eiL + 1i .
+The transitions introduced so far do not allow for some of the following steps to coincide.
+To account for this case, we introduce O(m2 ) transitions that "jump" multiple states  The transitions outgoing qi- when Yi holds are obtained by duality with the substitutions - - + and !s - s. From 5  s [?]
+a [?]
+!b  s[?]
+!s  s  !s  s  [?]
+b  a[?]
+[?
+], 0, 0  a  s[?]
+qF  s  [?]
+a[?]
+b  !b q3-  !s [?]
+!b  s  b  s  q2+  !b  a s[?
+]a  [?]
+b  !s  [?]
+[?]
+q1-  !s  !s  s  !s  b  s  !s [?]
+q4-  [?]
+s  !s  !s s[?
+]a  b  [?]
+[?]
+!s q0  !
+a[?]
+a  !s [?]
+a [?]
+b  q3+  [?]
+!s [?]
+a  s  s [?]
+!b  q2-  !s  a  !s [?]
+a  q1+  s  !s  s  !b  !b  !s [?]
+a  a[?]
+q4+  s[?]a[?
+]b  a  !s  !b  [?]
+b  s  !s [?]
+a [?]
+!b  Figure 2.
+6;h3,2,[?
+],1i  Automaton AB for psB = P4  (a, !b, a [?]
+b, b).
+while reading multiple Yi 's.
+For 1 <= i <= m, i < k < m, we add the transitions: AB 2  - d(qi+ , !s [?]
+Yi [?]
+* * * [?]
+Yk , eG , diL ) = hqk+1 , eG + 1, 1i ,  B2  *  q0  *  B1  AB1  + d(qi+ , s [?]
+Yi [?]
+* * * [?]
+Yk , dG , diL ) = hqk+1 , dG , 0i ,  d(qi+ , Yi [?]
+* * * [?]
+Ym , dG , dL ) = hqF , 0, 0i ,  Figure 3.
+Schema of automaton AP .
++ d(q0 , s [?]
+Y1 [?]
+* * * [?]
+Yk , 0, 0) = hqk+1 , 0, 0i , - d(q0 , !s [?]
+Y1 [?]
+* * * [?]
+Yk , 0, 0) = hqk+1 , 0, 0i ,  C. Overall Automaton  d(q0 , Y1 [?]
+* * * [?]
+Ym , 0, 0) = hqF , 0, 0i .
+The automaton A for Ph is a nondeterministic Buchi automaton, given by the intersection of 3 components: AU is a standard encoding of LTL into nondeterministic Buchi automata, of size 2O(|psU |) ; As is a nondeterministic Buchi automaton of size  O 2|P| ;  AP is an alternating automaton of size O 2M m2 v 2 , where the v 2 factor accounts for counters.
+The size of AU is fixed and reflects the fact that satisfiability of LTL is PSPACE-complete; we need not worry about it.
+AP is an alternating automaton; to compose it with the others, we have to convert it into a nondeterministic automaton, but this involves an additional exponential blowup in the worst-case.
+The usage of universal alternation is, however, quite restricted in AP : at every step, AP activates exactly one new component of size O(m2 v 2 ) in parallel with the others, and each of these components is active for no longer than v nss.
+Therefore, the exponential size of AP is immaterial in practice: if we compute the intersection and  6;h3,2,[?
+],1i  Figure 2 shows AB for P4 (a, !b, a [?]
+b, b); for readability, the "jump" edges we described last are dotted, and the update of the counters are omitted.
+The automaton AP for psP combines the various AB through conjunctive alternation, as illustrated in Figure 3.
+First, coalesce all their initial states into a single one, also called q0 , and all their final states into another one, also called qF ; this gives an automaton with 2 + m2M +1 states.
+Then, for each B [?]
+{0, 1}M , replace each initial transition of the component AB of the form d B (q0B , S, 0, 0) = thB , S [?]
+P(P [?]
+{s}), with: d(q0 , S [?]
+X1 [?]
+* * * [?]
+XM , 0, 0) = hq0 , 0, 0i [?]
+thB ; that is, at any step, the value of the propositions x1 , .
+.
+.
+, xM activates a uniquely determined component AB , while a parallel computation remains in q0 ready for the next step.
+6  check for emptiness on the fly, we have to deal with an active nondeterministic Buchi automaton of size O(2M + m2 v 3 ).
+The "actual" size of A--given by the product of the size of its components as Buchi automata--is then only singly exponential in M , v, and |P|; this matches the theoretical complexity of [1], and is manageable in practice as we demonstrate in Section V.  to the semantics of conjunctive alternation (see Figure 3) and re-uses processes that have terminated for new computations.
+The process running Pnueli acts as an acceptor that filters out the models generated by PsiUOpModel that also satisfy psP .
+Finally, the functionality corresponding to As , which is independent of the particular form of ph, is directly implemented in the global environment: at every new step, the previous value of the propositions is compared with the new value, and s is complemented whenever the two differ.
+Experiments: We verified the ProMeLa model using the Spin model checker.
+The verification consisted in checking the absence of invalid end states; if successful, this guarantees that Spin can expand the complete ProMeLa model, hence it can perform emptiness check and exhaustive checking of arbitrary LTL properties.
+The experiments ran Spin 6.10 on a Ubuntu box (kernel 2.6.32) with Intel QuadCore2 CPU at 2.40 GhZ with 4 GB of RAM.
+We ran verification on the model with a variability bound v/V = v/1460, for values of v between 6 and 38; for all such values, the results were the following in terms of total running time (in seconds), memory used (in MB), number of primitive states generated (in millions), and maximum expansion depth reached (in thousands).
+V. E XAMPLE AND I MPLEMENTATION The example used in our experiments is repeated from [1], and it is representative of several similar examples in the literature on time granularity.
+The elections example: Consider elections that occur every four years, in one of two consecutive days.
+Proposition q marks the first day of every quadrennial, hence it holds initially and then precisely every 365 * 4 = 1460 days.
+The elections e occur once within every quadrennial; precisely they occur 40 or 41 days before the end of the quadrennial.
+Formula ph in SNF describes this behavior:     (u = !e U q) (x1 = X d1 u) [?]
+(v = !q [?]
+!q U q)   [?]
+(x2 = X d2 v)    [?]
+(q = x2 [?]
+x5 ) [?
+]G [?]
+(x3 = X d3 q) ph [?]
+q[?
+]G     [?]
+(q = !x1 )  [?]
+(x4 = X d4 q)  [?]
+(e = !q [?]
+x1 )  [?]
+(x5 = X d5 q) [?]
+(e = x3 [?]
+x4 ) {z } |  T IME ( S ) 48  psU  M EM .
+(MB) 2012  # S (106 ) 41.8  D (103 ) 569  Since v is merely a global upper bound on the relative distance between events, not a distance that must be reached, the performance is insensitive to changes in the value of v as long as changing v does not change the values of the dj 's (defined in Section III); this is the case for the chosen range 6 <= v <= 38, and allows for some scalability.
+Even if this is only a proof-of-concept as the example is not overly complicated, it is representative of a larger class of systems, and it demonstrates that our approach is feasible and scales.
+On the contrary, verifying the original formula ph "as is" is unfeasible with state-of-the-art techniques because of the sheer size of ph due to the V = 1460 nested occurrences of X .
+For example, the tool LTL2BA [21]-- that translates LTL formulae into Buchi automata encoded in ProMeLa--runs out of resources while generating the automaton, and even an ad hoc implementation in ProMeLa using features such as counters would become too large for Spin to exhaustively analyze.
+Our encoding is instead significantly more concise and requires a sustainable amount of resources.
+with d1 = d2 = 1, d3 = 40, d4 = 41, d5 = 1460, and P = {q, e, u, v, x1 , .
+.
+.
+, x5 }.
+A variability of 6/1460 makes such specification tight, as it allows at most 6 nss over a windows of length 1460: 2 of them accounts for q becoming true and then false again once, another 3 nss mark a similar double transition of e, and one extra nss is required by the auxiliary propositions u, v, x1 , .
+.
+.
+, x5 .
+Implementation in ProMeLa: We transformed ph into Ph for the elections example, according to Section III.
+Then, we implemented the automaton A described in Section IV for such Ph in the ProMeLa language [13].
+ProMeLa is an expressive process description language for the Spin explicit-state model checker, suitable to describe finite-state computations and their coordination.
+Our implementation of A in ProMeLa has two main components, grouped in a global environment that handles coordination between them.
+The first component PsiUOpModel corresponds to Buchi automaton ApsU and is a fairly standard encoding of the L(U) formula psU ; PsiUOpModel is a ProMeLa process that acts as a (nondeterministic) generator of all models of psU .
+The other component Pnueli implements the alternating automaton AP ; the expressiveness of ProMeLa makes for a straightforward implementation of the counters, which are just process integer variables.
+The code for Pnueli is partitioned in four parts, corresponding to the pairs of states qi+ , qi- for i = 1, .
+.
+.
+, 4, plus a general coordination section that activates new components at every time step according  VI.
+F UTURE W ORK In future work, we plan to build an automated translator of LTL into ProMeLa implementing the construction for bounded variability introduced in the paper.
+With the translator, we will be able to perform more experiments with some of the domain-specific examples available in the literature (see the related work in Section I).
+In addition, we will 7  try to construct simplifications similar to those discussed in the paper that are directly applicable to automata model (as opposed to LTL formulae), with the ultimate goal of applying the model-checking paradigm--based on the combination of automata and logic--under the bounded variability assumption.
+Acknowledgements: Thanks to the anonymous reviewers for useful comments.
+[9] A. P. Sistla and E. M. Clarke, "The complexity of propositional linear temporal logics," JACM, vol.
+32, no.
+3, pp.
+733-749, 1985.
+[10] E. A. Emerson, "Temporal and modal logic," in Handbook of Theoretical Computer Science, 1990, pp.
+996-1072.
+[11] M. Y. Vardi and P. Wolper, "An automata-theoretic approach to automatic program verification," in LICS.
+IEEE, 1986, pp.
+332-344.
+R EFERENCES  [12] J. Esparza, O. Kupferman, and M. Vardi, "Verification," in Handbook on Automata Theory, 2012.
+[1] C. A. Furia and P. Spoletini, "On relaxing metric information in linear temporal logic," in TIME.
+IEEE, 2011, pp.
+72-79.
+[13] G. J. Holzmann, The SPIN Model Checker: Primer and Reference Manual.
+Addison-Wesley, 2003.
+[2] C. A. Furia, D. Mandrioli, A. Morzenti, and M. Rossi, "Modeling time in computing: a taxonomy and a comparative survey," ACM Computing Surveys, vol.
+42, no.
+2, pp.
+1-59, 2010.
+[14] L. Lamport, "What good is temporal logic?"
+in IFIP Congress.
+North Holland/IFIP, 1983, pp.
+657-668.
+[3] A. Belussi, C. Combi, and G. Pozzani, "Formal and conceptual modeling of spatio-temporal granularities," in IDEAS.
+ACM, 2009, pp.
+275-283.
+[15] D. Peled and T. Wilke, "Stutter-invariant temporal properties are expressible without the next-time operator," IPL, vol.
+63, no.
+5, pp.
+243-246, 1997.
+[4] C. Combi and S. Degani, "Building logical specifications of temporal granularities through algebraic operators," in TIME.
+IEEE Computer Society, 2009, pp.
+107-114.
+[16] K. Etessami, "A note on a question of Peled and Wilke regarding stutter-invariant LTL," IPL, vol.
+75, no.
+6, pp.
+261- 263, 2000.
+[5] M. Franceschet and A. Montanari, "Temporalized logics and automata for time granularity," TPLP, vol.
+4, no.
+5-6, pp.
+621-658, 2004.
+[17] A. Kucera and J. Strejcek, "The stuttering principle revisited," Acta Informatica, vol.
+41, no.
+7/8, pp.
+415-434, 2005.
+[18] Y. Hirshfeld and A. M. Rabinovich, "Logics for real time: Decidability and complexity," Fundamenta Informaticae, vol.
+62, no.
+1, pp.
+1-28, 2004.
+[6] C. Combi, A. Montanari, and P. Sala, "A uniform framework for temporal functional dependencies with multiple granularities," in SSTD, ser.
+LNCS, vol.
+6849.
+Springer, 2011, pp.
+404-421.
+[19] T. Wilke, "Specifying timed state sequences in powerful decidable logics and timed automata," in FTRTFT, ser.
+LNCS, vol.
+863.
+Springer, 1994, pp.
+694-715.
+[7] A. Burns and I. J. Hayes, "A timeband framework for modelling real-time systems," Real-Time Systems, vol.
+45, no.
+1-2, pp.
+106-142, 2010.
+[20] C. A. Furia and M. Rossi, "MTL with bounded variability: Decidability and complexity," in FORMATS, ser.
+LNCS, vol.
+5215.
+Springer, 2008, pp.
+109-123.
+[8] E. Corsetti, E. Crivelli, D. Mandrioli, A. Morzenti, A. Montanari, P. San Pietro, and E. Ratto, "Dealing with different time scales in formal specifications," in Int.
+Workshop on Software Specification and Design, 1991, pp.
+92-101.
+[21] P. Gastin and D. Oddoux, "Fast LTL to Buchi automata translation," in CAV, ser.
+LNCS, vol.
+2102, 2001, pp.
+53-65.
+8

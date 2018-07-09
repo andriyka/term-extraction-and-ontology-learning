@@ -1,0 +1,1052 @@
+Temporal Description Logics: A Survey Carsten Lutz Inst.
+of Theoretical Computer Science TU Dresden, Germany lutz@tcs.inf.tu-dresden.de  Frank Wolter Department of Computer Science University of Liverpool, U.K. wolter@liverpool.ac.uk  Michael Zakharyashev School of Computer Science and Information Systems Birkbeck College London, U.K. michael@dcs.bbk.ac.uk Abstract We survey temporal description logics that are based on standard temporal logics such as LTL and CTL.
+In particular, we concentrate on the computational complexity of the satisfiability problem and algorithms for deciding it.
+1.
+Introduction Description Logics (DLs) are a well-known family of logic-based knowledge representation formalisms with a number of relevant applications.
+For example, DLs enjoy significant popularity as ontology languages, which has resulted in the standardization of a description logic as part of W3C's ontology language OWL.
+Other relevant applications of DLs include the representation of and reasoning about conceptual database models.
+Notably, extended entity-relation (EER) models and UML class diagrams can be embedded into DLs, and DL reasoners can be used to verify their consistency and to derive implicit consequences of the model [16].
+In many applications of DLs, temporal aspects play an important role.
+For example, the description of a concept in an ontology often involves reference to temporal patterns-- consider, e.g., the definition of Malaria in a bio-medical ontology.
+Likewise, time plays a crucial role when using DLs to represent conceptual models of temporal databases.
+These observations have resulted in a rather diverse literature on temporal description logic (TDLs).
+Proposals for TDLs include combinations of DLs with Halpern and Shoham's logic of time intervals [28, 40], formalisms inspired by action logics [2], and the treatment of time points and intervals as a datatype [35].
+For more information, see the previous surveys [3, 4].
+In contrast to the existing surveys, we focus on combinations of standard DLs such as ALC with standard temporal logics (TLs) such as LTL (linear time temporal logic) and CTL (computational tree logic).
+Such combinations are based on a two-dimensional semantics, where one dimension is for time and the other for the DL domain.
+They were first proposed by Schild [38] in 1993, and since then have experienced constant development.
+Notably, TDLs of this kind are well-suited for capturing the temporal aspects of concepts in ontologies, and for encoding temporal EER models [5].
+We mainly discuss complexity results and algorithms for satisfiability checking, which is the most important reasoning problem for DLs and TDLs.
+In particular, satisfiability can be used to decide concistency of (encoded) temporal EER models.
+For all TDLs considered in this paper, satisfiability is inter-reducible with subsumption in polynomial time.
+Thus, the covered results also apply to the latter problem, which is highly relevant for reasoning about ontologies.
+When constructing a two-dimensional TDL, a number of design decisions have to be made.
+For example, one has to choose a concrete DL and a TL to be combined.
+In this paper, we mainly use ALC for the DL part and LTL for the TL part.
+Another important decision is whether to apply the TL operators to DL concepts, roles, TBoxes, or ABoxes.
+The structure of this survey roughly reflects the available choices regarding this second issue.
+After some preliminaries in Section 2, in Section 3 we analyze the application of TL operators to concepts and roles.
+In Sections 4 and 5, we consider the application of these operators to TBoxes and ABoxes, respectively.
+Section 6 is devoted to TDLs whose DL component is the lightweight description logic DL-Lite, and Section 7 is concerned with TDLs whose TL component is CTL.
+Throughout the paper, we also discuss  whether or not the choice of a different DL has an impact on the presented results.
+2.
+Preliminaries We introduce the basics of DLs and define a temporal semantics for the TDLs considered in this survey.
+2.1  Description Logic  Traditionally, DLs focus on representing the terminological knowledge of an application domain.
+The central ingredient to such a representation are concepts, which are built from a countably infinite set NC of concept names and a countably infinite set NR of role names, by applying the available concept constructors.
+In the basic propositionally closed description logic ALC, these constructors are A,  >,  !C,  C u D,  [?
+]r.C,  where A ranges over NC , C and D range over concepts, and r ranges over NR .
+As usual, we use [?]
+as an abbreviation for !>, C t D for !
+(!C u !D), and [?
+]r.C for ![?]r.!C.
+The main use of concepts is in TBoxes, which define and interrelate terminological notions.
+Formally, TBoxes are finite sets of concept inclusions (CIs) C v D. Complementing TBoxes, which represent knowledge at the conceptual level, ABoxes represent knowledge at the instance level.
+Formally, an ABox is a finite set of assertions C(a) and r(a, b), where a and b are individuals from a countably infinite set NI of individual names.
+The semantics of DLs is based on the notion of an interpretation I = ([?
+]I , *I ), where [?
+]I is a nonempty domain and *I is a function that maps every concept name A [?]
+NC to a subset AI [?]
+[?
+]I , every role name r [?]
+NR to a relation r I [?]
+[?
+]I x [?
+]I , and every individual name a [?]
+NR to an element aI [?]
+[?
+]I .
+The interpretation *I can be lifted to composite concepts as follows: >I (!C)I (C u D)I ([?
+]r.C)I  = = = =  [?
+]I , [?
+]I \ C I , C I [?]
+DI , {d [?]
+[?
+]I | [?
+]d0 [?]
+C I (d, d0 ) [?]
+rI }.
+An interpretation I is a model of a concept C if C I 6= [?
+]; it is a model of a TBox T if C I [?]
+DI for all C v D in T , and a model of an ABox A if aI [?]
+C I for all C(a) [?]
+A and (aI , bI ) [?]
+rI for all r(a, b) [?]
+A.
+A concept C is satisfiable w.r.t.
+a TBox T if there is a common model of C and T .
+2.2  Temporal Interpretations  There are many ways of using standard temporal logic operators such as deg (at the next moment),  (eventually),  $?
+(always in the future), and U (until) in order to add a temporal dimension to DLs.
+For example, we can introduce these operators as extra concept constructors that allow us to describe the temporal behaviour of concept membership.
+Alternatively or additionally, the temporal operators can be applied to roles, TBoxes, and ABoxes.
+The resulting TDLs differ in many aspects, in particular modelling capabilities and computational properties.
+What unifies all of them, however, is a common semantics.
+A temporal interpretation I = ([?
+]I , *I ) consists of a nonempty domain [?
+]I and a function *I that maps every x [?
+]I , every concept name A [?]
+NC to a subset AI [?]
+I I role name r [?]
+NR to a subset r [?]
+x [?]
+x [?
+]I , and every individual name a [?]
+NR to an element aI [?]
+[?
+]I .
+Intuitively, the elements of represent time points, ordered by <.
+Thus, (n, d) [?]
+AI means that, in the interpretation I, d is an instance of A at time point n, and similarly for role names.
+Individual names do not have the temporal index because they are assumed to be rigid, i.e., interpreted in the same way at every point of time.
+Temporal interpretations as introduced above are obviously a special case of temporal first-order structures (without function symbols and equality, and with at most binary predicates); see [24].
+Equivalently, a temporal interpretation I can be defined as an infinite sequence I(0), I(1), .
+.
+.
+of (non-temporal) interpretations that share the same domain [?
+]I and interpret individual names in the same way.
+We will use this alternative definition whenever more suitable.
+The restriction that all I(i) share the same domain is known as the constant domain assumption, i.e., objects are never destroyed or created over time.
+Using the alternative definition, it is also easy to define temporal interpretations with expanding domains ([?
+]I(0) [?]
+[?
+]I(1) [?]
+* * * ), decreasing domains ([?
+]I(0) [?]
+[?
+]I(1) [?]
+* * * ), and varying domains (no restrictions imposed).
+The temporal interpretations defined above assume discrete linear time that is bounded to the past and unbounded to the future.
+Of course, there are many other models of time: to obtain Dedekind-complete time, one can replace with the real numbers; to give up infinite future, one can use finite (but unbounded) initial parts of , etc.
+To keep things simple, however, we mainly use (N, <) as our model of time and only deviate from it when necessary.
+3.
+Temporal Concepts In this section, we discuss TDLs that are suited for reasoning about the temporal evolution of concepts.
+3.1  Introducing LTLALC  We define the temporal description logic LTLALC whose concepts are formed using the concept constructors of  ALC enriched with the temporal constructors degC and CUD, as known from propositional linear time temporal logic (LTL); see, e.g., [23].
+As usual, we use C as an abbreviation for >UC and $?C for !!C.
+TBoxes are defined in the same way as in the case of ALC, but now using LTLALC concepts instead of ALC concepts.
+For simplicity, we work without ABoxes for now.
+For example, the following CI states that any non-EU country has to be first an EU member candidate before it can be become an EU member: !EU member u EU member v (EU candidate U EU member).
+Like in propositional LTL, we can further enrich LTLALC by adding additional temporal operators, e.g., past operators for 'at the previous moment' and 'since' [46, 5] or fixedpoint operators [22].
+For the purposes of this paper, we will concentrate on deg and U, and only mention additional temporal operators when necessary.
+The semantics of LTLALC is based on temporal interpretations.
+To extend *I to composite concepts, we use the same clauses as in Section 2.1 for the Booleans, plus the following ones: ([?
+]r.C)I (degC)I (CUD)I  = {(n, d) | [?
+](n, d0 ) [?]
+C I (n, d, d0 ) [?]
+rI }, I = {(n, d) | (n + 1, d) !
+[?]
+C }, I = {(n, d) | [?
+]m >= n (m, d) [?]
+D [?]
+C/ (k, d) [?]
+C I for n <= k < m }.
+A temporal interpretation I is a model of a concept C if C is satisfied at time point 0, i.e., (d, 0) [?]
+C I for some d [?]
+[?
+]I .
+It is a model of a TBox T iff C I [?]
+DI for all C v D in T .
+Thus, the CIs of a TBox are regarded as temporally global constraints in the sense that they should hold at every moment of time.
+An LTLALC concept C is satisfiable w.r.t.
+a TBox T if there is a common model of C and T .
+It is not hard to see that this is equivalent to saying that there is a model I of T with C I 6= [?].
+The problem of concept satisfiability w.r.t.
+TBoxes in LTLALC is to decide, given a concept C and a TBox T , whether C is satisfiable w.r.t.
+T .
+Intuitively, LTLALC can be viewed as a two-dimensional combination of ALC with LTL [24].
+If we treat concept names as propositional variables of LTL, then every temporal interpretation I and every element d [?]
+[?
+]I give rise to the LTL structure Md defined by Md (n) = {A [?]
+NC | (n, d) [?]
+AI },  for all n >= 0.
+In this sense, the roles in LTLALC are a second dimension: they allows us to switch between different LTL structures Md and Md0 without changing the current time point.
+The different expressive and computational properties of LTLALC and other TDLs mainly depend on the degree of interaction between the temporal component and the DL  component.
+One effect of this interaction in LTLALC is the loss of the finite model property (FMP).
+In pure ALC, satisfiability of a concept C w.r.t.
+a TBox T implies satisfiability in a model with a finite domain.
+In contrast, the following LTLALC TBox T is such that the concept A is satisfiable w.r.t.
+T , but in every model I of A and T , the domain [?
+]I must be infinite: A v  deg$?
+(!A  u [?]r.A).
+In spite of this effect, the interaction between LTL and ALC in LTLALC is actually rather weak, as illustrated in the next section.
+3.2  LTLALC with Expanding Domains  In this section and the subsequent one, we analyze the complexity of concept satisfiability in LTLALC .
+We start by considering models with expanding domains because this case is particularly simple.
+Note first that constant domains and expanding domains give rise to different versions of concept satisfiability.
+For example, the following TBox has a (temporal) model with expanding domains, but no model with constant domains: > v  deg(A  u [?]r.!A).
+(*)  A key observation regarding LTLALC with expanding domains is that this logic is closely connected to the fusion of LTL and ALC, a general combination method for modal logics studied, e.g., in [11, 23].
+To make this connection explicit, we introduce an alternative interpretation for LTLALC .
+Let succ [?]
+/ NR be a special role name that is not allowed in LTLALC concepts.
+A (non-temporal) interpretation I is called a fusion interpretation iff succI is a total function.
+For d, e [?]
+[?
+]I , we write d A e to indicate that e is reachable from d by applying succI to d zero or more times.
+To interpret an LTLALC concept in I, we use the clauses from Section 2.1 together with the following ones: (degC)I = {d | succI (d) [?]
+C I }, !
+(C U D)I = {d | [?
+]e [?]
+D I d A e [?]
+[?
+]e0 6= e C/ (d A e0 A e = e0 [?]
+C I ) }.
+The following lemma due to Schild [38] shows that temporal interpretations with expanding domains and fusion interpretations are equivalent for LTLALC concepts and TBoxes.
+Lemma 1.
+Let C be an LTLALC concept and T a TBox.
+Then there is a temporal model of C and T with expanding domains iff there is a fusion model of C and T .
+We give a proof sketch.
+For the 'if' direction, let I be a fusion model of C and T .
+W.l.o.g.
+we may assume that I is tree-shaped, i.e., the directed graph GI = (V, E) with S V = [?
+]I and E = succI [?]
+r[?
+]NR rI is a tree.
+Let dr [?]
+[?
+]I be the root of the tree.
+We can rename the elements of [?
+]I so that [?
+]I dr rI succI  [?]
+x [?
+], for some set [?
+], is renamed to an element of {0} x [?
+], [?]
+{((n, d), (n, e)) | n >= 0 [?]
+d, e [?]
+[?
+]}, [?]
+{((n, d), (n + 1, d) | n >= 0 [?]
+d [?]
+[?
+]},  for all r [?]
+NR .
+It is now straightforward to convert I into a temporal interpretation I = I(0), I(1), .
+.
+.
+with expanding domains that is a model of C and T .
+For the 'only if' direction, it is straightforward to convert a temporal model I = I(0), I(1), .
+.
+.
+for C and T into a fusion interpretation I with [?
+]I [?]
+{(n, d) | d [?]
+[?
+]I(n) }.
+Lemma 1 shows that concept satisfiability in LTLALC w.r.t.
+TBoxes and with expanding domains can be reduced to concept satisfiability w.r.t.
+TBoxes in any extension of ALC that provides for functional roles and allows us to express CUD under the fusion semantics given above (note that degC can be expressed as [?
+]succ.C under this semantics).
+An example of such an extension is ALC with functional roles and the role operators known from propositional dynamic logic (PDL): composition, union, reflexive-transitive closure, and test [20, 8].
+As shown in [38, 21], satisfiability w.r.t.
+TBoxes is E XP T IME-complete in this DL, and PS PACE-complete if transitive closure can only be applied to functional roles and no TBoxes are admitted.
+These upper bounds thus transfer to LTLALC with expanding domains, and corresponding lower bounds carry over from ALC.
+Theorem 2 ([38]).
+Concept satisfiability in LTLALC with expanding domains is PS PACE-complete without TBoxes and E XP T IME-complete with TBoxes.
+Recall that satisfiability in LTL is PS PACE-complete [41] and satisfiability in ALC is PS PACE-complete without TBoxes [39] and E XP T IME-complete with TBoxes [37].
+Thus, LTLALC is computationally rather well-behaved: concept satisfiability is not harder than in the component logics.
+Additionally, the characterization in terms of fusion models opens a way to practical reasoning systems that are not too different from standard ALC reasoners.
+3.3  LTLALC with Constant Domains  In [38], Lemma 1 is stated for the constant domain case (modulo some neglectable differences in the model of time).
+Alas, this was not correct.
+For example, the TBox (*) above has a fusion model, but no temporal model with constant domains.
+If is used instead of as the set of time points   in temporal interpretations, then an analogue of Lemma 1 for constant domains can be obtained by requiring that fusion models interpret succ as a total and surjective function.
+Satisfiability in LTLALC can then be decided by reduction to the extension of ALC described in the previous section and additionally enriched with inverse roles.
+In our case, where is used as the set of time points, such a simple fix does not seem to work.
+In the following, we give a dedicated algorithm for deciding satisfiability in LTLALC with constant domains.
+Our algorithm performs type elimination, as first used by Pratt in the context of PDL [30].
+Let C be an LTLALC concept and T a TBox.
+W.l.o.g.
+we can assume that T is of the form {> v CT }.
+Let sub(C, T ) be the set of all subconcepts of C and CT , and cl(C, T ) the closure under single negations of the set sub(C, T ) [?]
+{deg(CUD) | CUD [?]
+sub(C, T )}.
+A type for C and T is a subset t [?]
+cl(C, T ) such that the following conditions are satisfied: * A [?]
+t iff !A [?]
+/ t, for all A [?]
+cl(C, T ), * C u D [?]
+t iff {C, D} [?]
+t, for all C u D [?]
+cl(C, T ), * CUD [?]
+t iff D [?]
+t or {C, deg(CUD)} [?]
+t, for all CUD [?]
+cl(C, T ), * CT [?]
+t. Let P(C, T ) denote the set of all types for C and T .
+For t, t0 [?]
+P(C, T ), we say that t and t0 are compatible if degC [?]
+t implies C [?]
+t0 , for all degC [?]
+cl(C, T ).
+A temporal type for C and T has the form (t, i), with t [?]
+P(C, T ) and i [?]
+.
+We say that (t, i) is realizable w.r.t.
+T if there is a temporal model I of T and a d [?]
+[?
+]I such that for all D [?]
+cl(C, T ), we have (i, d) [?]
+D I iff D [?]
+t. Clearly, C is satisfiable w.r.t.
+T if there is a type t [?]
+P(C, T ) such that C [?]
+t and (t, 0) is realizable w.r.t.
+T .
+The following algorithm generates all temporal types that are realizable w.r.t.
+T .
+For every n >= 0, let d(n) = min{n, |P(C, T )|}.
+The algorithm starts with the set of temporal types M0 := P(C, T ) x {0, .
+.
+.
+, |P(C, T )|} and then generates a sequence of sets M0 [?]
+M1 [?]
+M2 * * * , where Mj+1 is obtained from Mj by eliminating all temporal types (t, i) that violate one of the following conditions: 1. for all [?
+]r.D [?]
+t, there is a temporal type (t0 , i) [?]
+Mj such that {D} [?]
+{!E | ![?
+]r.E [?]
+t} [?]
+t0 ; 2. there is a temporal type (t0 , d(i + 1)) [?]
+Mj such that t and t0 are compatible; 3. if i > 0, there is a temporal type (t0 , i - 1) [?]
+Mj such that t0 and t are compatible;  4. for all CUD [?]
+t, there is a sequence of temporal types (t1 , i1 ), (t2 , i2 ), .
+.
+.
+, (tk , ik ) [?]
+Mj such that (i) (t1 , i1 ) = (t, i), (ii) i`+1 = d(i` + 1) for 1 <= ` <= k, (iii) D [?]
+tk , (iv) t` and t`+1 are compatible and C [?]
+t` for 1 <= ` < k. The algorithm stops when Mj = Mj+1 .
+In this case, we call Mj the final set computed by the algorithm.
+Intuitively, the algorithm repeatedly eliminates temporal types that are not realizable.
+Thus, we return 'satisfiable' iff the final set contains a temporal type (t, 0) with C [?]
+t, and 'unsatisfiable' otherwise.
+The correctness of the algorithm is proved in the appendix.
+It follows from the proof that a temporal type (t, i) with i >= |P(C, T )| is realizable iff the temporal type (t, |P(C, T )|) is realizable.
+This explains the use of the function d. It is not hard to see that the algorithm runs in exponential time.
+Thus, we obtain the following result.
+Theorem 3.
+Concept satisfiability in LTLALC w.r.t.
+TBoxes and with constant domains is E XP T IME-complete.
+Satisfiability with expanding, decreasing, and varying domains can be polynomially reduced to satisfiability with constant domains.
+Thus, the result from Theorem 2 applies to those cases as well.
+Here, we exemplarily consider the case of decreasing domains.
+Let C be a concept and T a TBox.
+W.l.o.g.
+we may assume that T is of the form {> v CT }.
+To reduce satisfiability with decreasing domains to satisfiability with constant domains, we introduce a fresh concept name E that denotes the existence of a domain element in an interpretation.
+Let C * be obtained from C (and CT* from CT ) by replacing every subconcept [?
+]r.D with [?]r.
+(E uD), every subconcept degD with deg(DuE), and every subconcept DUD 0 with (D u E)U(D 0 u E).
+Then, C and T have a model with decreasing domains iff C * uE and {E v CT* , degE v E} have a model with constant domains.
+Such reductions work in all TDLs considered in this paper.
+So from now on we concentrate on constant domains.
+3.4  Rigid Roles  In DL, additional constraints for roles have become an important means to increase the expressive power.
+A typical example is the introduction of transitive roles or role inclusions.
+In TDL, the most important constraint of this type is rigid roles.
+A role r has a rigid interpretation in I if (n, d) [?]
+r I  iff (m, d) [?]
+r I , for n, m [?]
+, d [?]
+[?
+]I .
+The role geographical part of is a typical rigid role, whereas member of will mostly be non-rigid.
+We remark that, in contrast to roles, no additional constraints are required to express that a concept is rigid: the CIs C v $?C and !C v $?
+!C imply that (n, d) [?]
+C I iff (m, d) [?]
+C I , for all n, m [?]
+.
+Theorem 4.
+Concept satisfiability in LTLALC w.r.t.
+TBoxes and with a single rigid role is S11 -hard, thus undecidable and not even recursively enumerable.
+This result can be proved by reduction of a well-known S11 -complete problem, namely the recurrent tiling problem [29]: given a set S = {t0 , .
+.
+.
+, tn } of tile types, dex -grid with cide whether it is possible to cover the tiles of these types such that t0 appears infinitely often in the first row.
+Recall that each ti is a 4-tuple of colours hleft(ti ), right(ti ), up(ti ), down(ti )i, and a tile of type tj can be a right (up) neighbour of a ti -tile only if right(ti ) = left(tj ) (up(ti ) = down(tj )).
+We encode this problem in LTLALC with a single rigid role r. Let A0 , .
+.
+.
+, An be concept names representing the given tile types, and let the TBox T contain the following CIs: 1.
+> v [?
+]r.>, > v 2.
+Ai v [?]r.
+3.
+Ai v deg  t Ai ,  i<=n  Ai u Aj v [?
+], for i 6= j,  t  Aj , i <= n,  t  Aj , i <= n.  up(ti )=down(tj )  right(ti )=lef t(tj )  Then the concept $?A0 is satisfiable w.r.t.
+T iff S can tile the x -grid with tiles of type t0 appearing infinitely often in the first row.
+We sketch the proof of the 'only if' direction.
+Let (0, d0 ) be an instance of $?A0 in a model I of T .
+By the first CI in T , there is an infinite sequence (0, d0 )rI (0, d1 )rI (0, d2 )rI .
+.
+.
+at time point 0.
+We can use it as the first column of the grid.
+Since r is a rigid role, this sequence is found also at any other time point, which gives us the rest of the grid.
+By the second and third CIs, every point of the grid is covered by a unique tile, and the last two CIs guarantee that the colours of the tiles match.
+In the reduction above, one dimension of the grid is implicit in the flow of time.
+The second dimension is generated by the infinite chain enforced by the first CI in T .
+Without TBoxes or with only acyclic ones (see [10] for a definition), such a chain cannot be enforced.
+In these cases, concept satisfiability becomes decidable, though it is still very expensive.
+Theorem 5 ([24]).
+In LTLALC with rigid roles, concept satisfiability w.r.t.
+acyclic TBoxes is decidable.
+The problem is hard for non-elementary time already for concepts containing only one rigid role and no non-rigid roles.
+The intuition behind the proof of this result is as follows.
+Define the role depth rd(C) of an LTLALC concepts C as the number of nestings of existential restrictions [?
+]r in C. For example, rd(A u [?
+]r.B) = 1 and rd([?
+]r1 .
+(B u [?
+]r2 .A)) = 2.
+In the same way as for ALC, one can show that any satisfiable LTLALC concept C is satisfiable in a temporal interpretation I in which no  path (n, d0 )rI (n, d1 )rI * * * rI (n, dk ) has length larger than rd(C).
+Thus, it is not possible to generate the infinite second dimension of an x -grid.
+However, the complexity of deciding satisfiability of a concept C still grows superexponentially with rd(C), and in [24] it is shown that the satisfiability problem for concepts C with rd(C) <= n is nE XP S PACE-complete, for all n >= 1.
+The lower bound is proved using the yardstick technique of Stockmeyer [42] and the upper bound uses, in addition to the bound on the length of paths, the fact that each I(n) can be assumed to be tree-shaped.
+We will return to the issue of rigid roles in Section 5.
+3.5  Temporal Roles  Although already rigid roles are computationally difficult, there are cases where more expressive power is needed for talking about the temporal evolution of roles.
+In particular, it is natural to apply temporal operators not only to concepts, but also to roles.
+For example, to define roles 'will always be a member of' and 'will be a member of over and over again,' one can use the roles $?member of and $?member of, respectively.
+Formally, a temporal role is a role name prefixed by a finite sequence of $?
+and  operators, and the corresponding semantic clauses are (r)I ($?r)I  = {(n, d, d0 ) | [?
+]m >= n (m, d, d0 ) [?]
+rI }, = {(n, d, d0 ) | [?
+]m >= n (m, d, d0 ) [?]
+rI }.
+Unfortunately, it is easy to modify the proof of Theorem 4 to show undecidability of concept satisfiability w.r.t.
+TBoxes in LTLALC when TBoxes are allowed to contain a single temporal role of the form $?r: simply replace r by $?r in the reduction of the recurrent tiling problem.
+Without TBoxes, satisfiability of LTLALC concepts with temporal roles has not yet been investigated.
+In fact, results have only been obtained for the case where LTL is replaced by standard modal logics such as K or S5 [45, 24, 7].
+We briefly discuss the S5 case.
+It has been argued in [7] that, for the encoding of temporal conceptual database models, it is often sufficient to use the operators u ('at some time point') and $?u ('at all time points') applied to concepts and roles, instead of LTL operators.
+The semantics of u is defined as (u C)I (u r)I  = {(n, d) | [?
+]m (m, d) [?]
+C I }, = {(n, d, d0 ) | [?
+]m (m, d, d0 ) [?]
+rI },  and $?u is dual to u .
+Observe that u and $?u do not distinguish between future and past.
+For this reason, these operators behave exactly like the modal S5 operators, and we denote the resulting language by S5ALC .
+The following result is proved in [7].
+The technique used for proving the upper bound is an extension of a proof in [45].
+Theorem 6 ([7]).
+In S5ALC with temporal roles, concept satisfiability w.r.t.
+TBoxes is 2E XP T IME-complete.
+3.6  Varying the DL Component  Theorem 2 is rather robust under extensions of the DL component ALC.
+For example, if L is a DL between ALC and SHIQ (for a definition see, e.g., [33]) then LTLL concept satisfiability w.r.t.
+TBoxes and with expanding domains has the same complexity as satisfiability in L w.r.t.
+TBoxes, and the same holds for the case without TBoxes.
+Theorem 3 and the constant domain case is equally robust.
+In particular, concept satisfiability in LTLSHIQ w.r.t.
+TBoxes is E XP T IME-complete, both with expanding and constant domains.
+As a lower bound, Theorem 4 applies to any extension of ALC, and it is more interesting to look at DL components that are weaker than ALC.
+One such DL is EL, which is obtained from ALC by dropping negation (and thus also t and [?]).
+In LTLEL , every concept is satisfiable w.r.t.
+every TBox.
+For this reason, it is more interesting to consider concept subsumption w.r.t.
+TBoxes: given a TBox T and a concept inclusion C v D, decide whether C v D follows from T .
+In pure EL, concept subsumption w.r.t.
+TBoxes is tractable [13].
+However, it is shown in [6] that concept satisfiability in LTLALC with TBoxes and rigid roles can be reduced to concept subsumption in LTLEL with TBoxes and rigid roles.
+Thus, Theorem 4 already applies to the case of LTLEL .
+Theorem 5 is less robust than Theorems 2 and 3.
+It can be shown by a straightforward extension of the proof in [24] that the result still holds for ALCI, the extension of ALC with inverse roles.
+We conjecture that it also holds for ALCQ, the extension of ALC with qualified number restrictions.
+However, concept satisfiability with rigid roles and without TBoxes becomes undecidable if only a single transitive rigid role r is added.
+Intuitively, the reason is that we can then enforce an infinite r-path also without a TBox.
+Undecidability is proved in [24] using a reduction of Post's Correspondence Problem.
+In particular, it follows that concept satisfiability in LTLSHIQ without TBoxes and with rigid roles is undecidable.
+The proof in [24] even applies to finite (but unbounded) flows of time.
+However, it then relies on constant domains: a straightforward combination of the arguments from [26, 34] and [24] shows that concept satisfiability in LTLALC with rigid transitive roles in expanding domain models with finite flows of time is decidable, though not in time bounded by a primitive recursive function.
+In [7], it has been proved that Theorem 6 holds for ALCQI in place of ALC.
+4.
+Temporal TBoxes The TDLs considered in Section 3 allow one to describe the temporal evolution of concepts and roles, but not of con-  cept inclusions.
+For example, the simple assertion 'eventually, all European countries will be EU members forever' cannot be expressed using only temporal concepts and roles, but requires the application of temporal operators to CIs.
+countries will be EU members forever can be expressed by the temporal ALC TBox  4.1  but no (non-temporal) LTLALC TBox can capture this.
+When working with temporal TBoxes, we are interested in temporal TBox satisfiability: given a temporal TBox ph, decide whether there is a model I of ph.
+It is not necessary to consider concept satisfiability w.r.t.
+a temporal TBox because a concept C is satisfiable w.r.t.
+a temporal TBox ph if, and only if, the temporal TBox !
+(> v !C) [?]
+ph is satisfiable.
+We start by allowing the application of temporal operators only to CIs.
+Temporal ALC TBoxes  To allow the application of temporal operators to concept inclusions, we replace TBoxes with TBox formulas.
+Formally, a temporal TBox is built inductively from C v D,  !ph,  ph [?]
+ps,  degph,  phUps,  where, C v D ranges over concept inclusions and ph, ps range over temporal TBoxes.
+We usually make explicit the description logic L in which concept inclusions are formulated.
+For example, by mentioning a temporal ALC TBox we mean that temporal operators may be only applied to its CIs (but not to their concepts), while in a temporal LTLALC TBox we allow applications of these operators to both CIs and concepts (but not to roles).
+The truth of a temporal TBox ph in a model I depends on the time point under consideration.
+We define the truth relation I, n |= ph as follows: I, n |= C v D  iff  {d | (n, d) [?]
+C I } [?]
+{d | (n, d) [?]
+D I },  I, n |= !ph  iff  I, n 6|= ph,  I, n |= ph [?]
+ps iff I, n |= ph and I, n |= ps, I, n |= degph iff I, n + 1 |= ph, !
+I, n |= phUps iff [?
+]m >= n I, m |= ps and C/ [?
+]n <= k < m I, k |= ph .
+We say that I is a model of a temporal TBox ph if I, 0 |= ph.
+There is thus a fundamental difference between a temporal interpretation I being a model of a (non-temporal) ALC TBox T and of the related temporal ALC TBox V CvD[?
+]T C v D: in the former case, the CIs in T are interpreted globally and thus have to be satisfied at all time points; in the latter case, they are interpreted locally and only have to be satisfied at time point 0.
+Indeed, it is easy to see that a temporal interpretation !
+C/ I is a model of T iff it V is a model of CvD[?
+]T $?
+C v D .
+The expressive power obtained by applying temporal operators to concepts and concept inclusions is incomparable.
+In a (non-temporal) LTLALC TBox, we can say that the extension of the concept Independent country does not decrease using the CI Independent country v $?Independent country, but this cannot be expressed by a temporal ALC TBox.
+On the other hand, the assertion that eventually all European  $?
+(European country v EU member),  Theorem 7.
+Satisfiability of temporal ALC TBoxes is E XP T IME-complete.
+Similarly to the case of LTLALC without rigid roles, the proof uses the fact that the interaction between ALC and LTL is rather limited.
+Indeed, the only interaction between the ALC interpretations at distinct time points is via the truth of TBox axioms.
+This setup is similar to the temporalization of logics as studied in [19].
+To prove the upper bound, let ph be a temporal ALC TBox.
+Denote by Cph the set of concept inclusions occurring in ph, and denote by ph* the LTL-formula that is the result of replacing every CI a in ph with a propositional variable pa .
+Then ph is satisfied in some temporal interpretation if, and only if, ph* is satisfiable in an LTL-model in which, for each n, the set Xn = {a | a [?]
+Cph , n |= pa } [?]
+{!a | a [?]
+Cph , n |= !pa } is satisfiable in an ALC-model.
+The direction from left to right is clear.
+Conversely, consider such an LTL-model satisfying ph* .
+Take, for each n [?]
+, an ALC interpretation In satisfying Xn .
+We may assume that the domains [?
+]In are countably infinite and coincide.
+Define I by setting I(n) = In , for n >= 0.
+It is not hard to see that ph is satisfied in I.
+Using this characterization, it is straightforward to prove an E XP T IME upper bound by combining decision procedures for LTL and ALC.
+A corresponding lower bound carries over from ALC.
+The proof above also shows that a temporal ALC TBox is satisfiable in a model with constant domains if, and only if, it is satisfiable in a model with varying domains.
+4.2  Temporal LTLALC TBoxes  We now consider temporal LTLALC TBoxes, which allow the application of temporal operators to both concepts and concept inclusions.
+We have seen that, when temporal operators are applied only to concepts or only to concept inclusions, the interaction between the TL component and the DL component of a TDL is rather limited.
+In contrast,  temporal LTLALC TBoxes can enforce subtle interactions.
+For example, the temporal LTLALC TBox deg!
+(>  v !A) - !
+(> v deg!A)  expresses the Barcan-formula [?
+]xdegA(x) - deg[?
+]xA(x) from modal predicate logic [24].
+It is satisfied in all interpretations with constant domains.
+Due to such interactions, reasoning about temporal LTLALC TBoxes cannot be reduced to reasoning in the two components logics in a straightforward way.
+Theorem 8 ([46, 24]).
+Satisfiability of temporal LTLALC TBoxes is E XP S PACE-complete.
+We confine ourselves to a sketch of the upper bound.
+The crucial observation in most proofs of the PS PACE upper bound for satisfiability in LTL is that every satisfiable LTLformula is satisfied in a model of the form M(0), .
+.
+.
+, M(n), (M(n + 1), .
+.
+.
+, M(m))o , where the M(i) are propositional valuations and m is at most exponential in the length of ph.
+When considering temporal interpretations I satisfying a temporal LTLALC TBox ph, such regular models need not exist.
+For example, the TBox !
+C/ ph = $?
+!
+(> v !A) [?]
+(A v deg$?
+!A) is not satisfied in any regular model simply because all interpretations I(n) have to be distinct.
+The fundamental idea for proving an E XP S PACE upper bound is that, by abstracting from the domains of interpretations I(n) using so-called quasimodels, one can regain a semantics in which regular models always exist.
+Quasimodels are abstractions of temporal interpretations I = I(0), I(1), .
+.
+.
+in which the non-temporal interpretations I(i) are replaced by sets Ksi of types, called quasistates.
+Types are defined in the same way as in Section 3.3, but based on the subconcepts of all concepts that occur in the temporal TBox ph for which satisfiability is to be checked.
+Using the observation that there exist 'only' double-exponentially many quasistates, we can apply regularity arguments as used in the LTL case to quasimodels.
+To satisfy a TBox ph, it suffices to considers regular quasimodels of the form Ks0 , .
+.
+.
+, Ksn , (Ksn+1 , .
+.
+.
+, Ksm )o , where m is bounded double-exponentially in the length of ph.
+This explains the increase in complexity from PS PACE to E XP S PACE.
+Of course, a number of conditions have to be imposed on sequences Ks0 , Ks1 , .
+.
+.
+of quasistates so that they can serve as a quasimodel.
+We will not describe the conditions in detail here, but refer the reader to [24].
+The  conditions guarantee that one can re-construct a temporal interpretation from a quasimodel.
+For example, for each Ksi , there has to exist an interpretation Ii satisfying exactly the types in Ksi (where concepts starting with a temporal operator are regarded as concept names).
+This condition ensures that the description logic part of a quasistate is satisfiable.
+For the temporal part, it is required that for each S type t [?]
+Ksn , there exists a run r : - i>=0 Ksi such that * r(i) [?]
+Ksi , for i >= 0, * r(n) = t, * degC [?]
+r(n) iff C [?]
+r(n + 1), * CUD [?]
+r(n) iff there exists m >= n with D [?]
+r(m) and C [?]
+r(k) for all n <= k < m. When constructing a temporal interpretation I from a quasimodel, the domain [?
+]I of I consists of all such runs.
+The condition that is the domain of a run reflects the fact that we are interested in satisfiability in models with constant domain.
+The proof can easily be adapted to expanding domains.
+In particular, the domains of runs are then upward-closed subsets of .
+This yields an E XP S PACE upper bound also for the case of expanding domains.
+Alternatively, this bound can be shown using the reduction to constant domains mentioned at the end of Section 3.3.
+Tableau-based algorithms for checking satisfiability of temporal LTLALC TBoxes that combine a Wolper-style tableau algorithm for LTL [44] with a tableau algorithm for ALC have been developed in [43] (for expanding domains) and [36] (for constant domains).
+Both algorithms are based on quasimodels.
+An implementation for expanding domains is presented in [27].
+4.3  Varying the DL Component  The only noteworthy properties of ALC used in the proof of Theorem 7 are that (i) any satisfiable Boolean combination of concept inclusions is satisfiable in a countably infinite model, and (ii) satisfiability of Boolean combinations of concept inclusions in ALC is in E XP S PACE (and indeed even in E XP T IME).
+Thus, Theorem 7 generalizes to any DL with these properties, such as SHIQ.
+In general, if ALC is replaced by a decidable fragment F of first-order logic without equality, and temporal operators are applied to closed formulas only (which is the case for the standard translation of temporal ALC TBoxes into first-order temporal logic), then the complexity of the resulting fragment of first-order temporal logic will have exactly the same complexity as F, if it is at least PS PACE-hard.
+Theorem 8 can also be generalized to standard DLs such as SHIQ.
+Notably, a temporal extension of the description logic DLR, which provides for n-ary relations, was  considered in [5].
+The generalization to fragments of firstorder temporal logics has been studied systematically, and the resulting fragments are known as monodic fragments [31].
+In monodic fragments, temporal operators are applied to formulas with at most one free variable.
+Note that this is the case for the standard translation of temporal LTLALC TBoxes into first-order temporal logic.
+The quasimodel technique has been refined to deal with a variety of monodic fragments [24].
+5.
+Temporal ABoxes So far, we have neglected ABoxes in TDLs.
+Similar to TBoxes, there are two approaches to including them: either use a non-temporal ABox that is interpreted in a temporal interpretation, or define temporal ABoxes in which temporal operators can be applied to ABox assertions.
+We start with the former.
+A temporal interpretation I is a model of a (nontemporal) ABox A if A is satisfied in I at time point 0, i.e., (0, aI ) [?]
+C I for all C(a) [?]
+A and (0, aI , bI ) [?]
+rI for all r(a, b) [?]
+A.
+The relevant reasoning problem is ABox consistency w.r.t.
+TBoxes: given a (non-temporal) ABox A and a (non-temporal) TBox T , decide whether there is a common temporal model of A and T .
+In all standard TDLs, ABox consistency w.r.t.
+TBoxes has the same complexity as concept satisfiability w.r.t.
+TBoxes.
+In particular, Theorems 2 and 3 easily generalize to ABox consistency.
+The case of temporal ABoxes is more interesting.
+Formally, a temporal ABox is a formula built inductively from C(a),  r(a, b),  !ph,  ph [?]
+ps,  degph,  phUps,  where C(a) and r(a, b) range over ABox assertions and ph, ps range over temporal ABoxes.
+The truth relation for temporal ABoxes is defined in the same way as for temporal TBoxes, with the obvious additional clauses for atoms C(a) and r(a, b).
+The relevant reasoning problem is temporal ABox consistency w.r.t.
+TBoxes: given a temporal ABox A and a (non-temporal) TBox T , decide whether A and T have a common model.
+A common generalization of temporal ABoxes and temporal TBoxes is provided by temporal knowledge bases (KBs), which allow atoms of the form C v D, C(a), and r(a, b), and whose syntax and semantics are otherwise defined in the same way as for temporal TBoxes and ABoxes.
+The relevant reasoning problem is temporal KB consistency: given a temporal KB K, decide whether K has a model.
+Theorems 7 and 8 can both be extended from temporal TBox satisfiability to temporal KB consistency.
+To extend Theorem 8, one needs to develop a notion of quasimodels that takes into account ABoxes, as done in [24].
+Theorem 7 relies on the fact that temporal ALC TBoxes can enforce  only a weak interaction between the TL component and the DL component.
+The interaction is no stronger in the case of temporal KBs, and indeed it is not difficult to extend the sketched proof of Theorem 7 to show that temporal ALC KB consistency is E XP T IME-complete.
+Notably, the proof shows that a temporal ALC KB cannot even be used to define rigid concepts.
+It is thus natural to increase the expressive power of temporal KBs by adding rigid concepts and/or rigid roles.
+Already the addition of rigid concepts increases the interaction between the TL component and the DL component in a non-trivial way and leads to an increase in complexity.
+Theorem 9 ([9]).
+In ALC, temporal KB consistency with rigid concepts is NE XP T IME-complete.
+The lower bound holds even if concepts [?
+]r.C and [?
+]r.C are disallowed.
+The lower bound is proved by a reduction of the tiling problem that requires the tiling of a torus of exponential size.
+The ALC component is used to ensure that, already at time point 0, each position of the torus is represented by a domain element.
+Positions are described by a binary encoding in terms of rigid concept names, and the tiling is also represented using rigid concept names.
+Rigidity of the concept names ensures that the tiling is preserved in all later time points, and it remains for the TL component to check that positions are represented uniquely, and that colours of adjacent tiles are identical.
+The upper bound is proved by a reduction to reasoning in the component logics ALC and LTL.
+The proof is somewhat similar to the one of Theorem 7, but needs to take into account the increased interaction between the ALC and LTL components.
+In particular, it starts by guessing the combinations of rigid concept names that are satisfied in the temporal model.
+In contrast to temporal KB consistency, temporal ABox consistency with TBoxes and rigid concepts is still E XP T IME-complete [9].
+When rigid concepts and roles are added to temporal KBs, the complexity increases further.
+At first sight, one might even think that temporal KB consistency becomes undecidable because we can easily enforce the existence of an x -grid; cf.
+Theorem 4.
+However, without temporal operators on concepts, we are not able to express that adjacent tiles have the same colour (axiom 3 in the proof of Theorem 4).
+Theorem 10 ([9]).
+In ALC, temporal KB consistency with rigid concepts and rigid roles is 2E XP T IME-complete.
+The lower bound already applies to temporal ABox consistency w.r.t.
+TBoxes.
+The upper bound is again proved by a reduction to reasoning in the components ALC and LTL.
+The increased interaction between the two components due to rigid roles is addressed by replacing the individual ALC consistency  checks (one for each time point) with a single such check that, intuitively, integrates all time points.
+If only the temporal operators  and $?
+are allowed in a temporal ALC KB, then consistency with rigid concepts and rigid roles is E XP T IME-complete [9].
+temporal LTLDL-Litebool TBoxes can be embedded into the one-variable fragment of first-order temporal logic, which is known to be E XP S PACE-complete; see, e.g., [24].
+The converse embedding is also possible, and thus we obtain the following result.
+6.
+Temporal DL-Lite  Theorem 11 ([6]).
+Consistency of temporal LTLDL-Litebool KBs with rigid roles is E XP S PACE-complete.
+In this section, we survey recent results on temporal DLLite.
+The DL-Lite family of lightweight DLs has been introduced and investigated in [14, 15, 1] with the aim of establishing maximal DLs for which the data complexity of query answering stays within L OG S PACE.
+In our brief survey, we consider three members of this family: the most expressive DL-Litebool and its Horn and Krom fragments DL-Litehorn and DL-Litekrom .
+DL-Litebool has the following concept constructors, for q >= 1: A, [?
+], >, >= q r, >= q r - , !C, C u D, | {z } B  Concepts built only from the constructors marked with B are called basic.
+In contrast to ALC, DL-Litebool has inverse roles (r - ) and number restrictions (>= q r) which, however, are not qualified: a [?]
+(>= q r)I means that there are at least q distinct r-arrows starting from a, but the concept membership of their destination cannot be specified (thus [?
+]r.C is not expressible in DL-Litebool ).
+DL-Litehorn is the sublanguage of DL-Litebool with CIs of the form uk Bk v B, for basic B, Bk .
+Finally, DL-Litekrom allows only CIs of the form B1 v B2 , B1 v !B2 , !B1 v B2 with basic Bi .
+Note that all of these logics can say that a role r is functional: >= 2 r v [?].
+Concept satisfiability w.r.t.
+TBoxes is NP-complete for DL-Litebool , P-complete for DL-Litehorn , and NL OG S PACE-complete for DL-Litekrom ; see [1] and references therein.
+Consider now temporal extensions of these DLs.
+We survey what is currently known about the problem of deciding consistency of temporal LTLDL-Lite KBs with rigid roles, i.e., temporal operators can be applied to concepts, concept inclusions, and ABox assertions, and some roles may have a rigid interpretation.
+Note that only the application of Boolean operators to concepts (but not to CIs and ABox assertions) is restricted in temporal LTLDL-Litekrom KBs, and likewise for LTLDL-Litehorn .
+Recall that satisfiability of temporal LTLALC TBoxes with rigid roles is highly undecidable by Theorem 4.
+As in the case of Theorem 10, it may thus look as if consistency of temporal LTLDL-Litebool KBs with rigid roles is undecidable because we can easily enforce the existence of an x -grid.
+However, despite offering temporal operators on concepts, DL-Litebool is not capable of expressing that adjacent tiles have the same colour.
+In fact, it turns out that  The complexity of deciding consistency of temporal LTLDL-Litekrom KBs is an open problem.
+However, for temporal LTLDL-Litekrom KBs in which only the next-time operator deg is applied to basic concepts within CIs, consistency is PS PACE-complete.
+The proof of this result uses the fact that there are polynomially many CIs that are consequences of a set of Krom CIs (they are Krom CIs as well), and the 'local' character of the deg operator applied to concepts.
+In contrast, for temporal LTLDL-Litehorn KBs, the following rather surprising result can be shown by encoding the E XP S PACEcomplete x 2n corridor tiling problem.
+Theorem 12 ([6]).
+Consistency of temporal LTLDL-Litehorn KBs with rigid roles is E XP S PACE-complete.
+One of the main reasons for these 'positive' results is as follows: as there is no constructor [?
+]r.C in DL-Lite, we can actually encode rigid roles using temporal constraints on unary predicates.
+Although we obtain unintended models where roles are not rigid, the language is too weak to notice this.
+7.
+Branching Temporal Logic The linear time temporal logic LTL considered so far is not able to distinguish between possible, actual, and necessary future developments.
+Suppose, for example, that we want to describe countries that can join the EU in the future.
+The concept inclusion EU candidate v EU member, expresses that, sooner or later, every EU candidate will join the EU.
+However, this statement seems too strong.
+What we actually mean is that, under certain circumstances, an EU candidate may join the EU in the future---there is still a possibility that it will stay outside the union forever.
+A natural way of formalising statements of this sort is to switch to branching time and add the CTL path quantifiers A and E that allow quantification over 'possible (future) histories.'
+If E is understood as 'it is possible that' and A as 'it is necessary that,' then EU candidate v EEU member means that each EU candidate has the possibility (a possible history) to join the EU.
+At each moment of time, this  statement is consistent with, say, E(EU candidate v A!EU member).
+A natural branching model of time consists of infinite trees where the root represents the current moment of time (or genesis) and the branches starting from the root represent possible histories.
+There are several temporal logics for branching time; see, e.g., [25].
+Here we only consider computational tree logic CTL* [18] and its fragment CTL [17].
+The language of CTL* is the straightforward extension of the language of LTL with the path (or history) quantifiers E and A.
+In CTL, the path quantifiers and temporal operators may occur only in the form E(CUD), Adeg(C v D), etc.
+(so A(C v degD) is not a well-formed CTL formula).
+A branching time interpretation I = (TI , [?
+]I , *I ) consists of an o-tree tree TI = (W, <), a nonempty domain [?
+]I , and a function *I that maps every A [?]
+NC to some AI [?]
+W x [?
+]I and every r [?]
+NR to rI [?]
+W x [?
+]I x [?
+]I .
+The elements on each full branch h of TI are ordered by <, and each such branch j is required to be order-isomorphic to ( , <).
+Intuitively, branches h represent possible histories, and their elements represent time points in these histories.
+Thus, the usual temporal operators can be applied to a given history, while E and A quantify over the set of all histories that include the current time point.
+This means that the interpretation of a complex concept depends not only on the time point w, but also on the history h that this time point belongs to, e.g., * (w, h, d) [?]
+AI iff (w, d) [?]
+AI , for a concept name A, * (w, h, d) [?]
+(C) iff there exists w [?]
+h such that w < w0 and (w0 , h, d) [?]
+C I , I  0  * (w, h, d) [?]
+(EC)I iff there exists a full branch h0 in T such that w [?]
+h0 and (w, h0 , d) [?]
+C I .
+We consider temporal CTL*ALC and CTLALC TBoxes and KBs.
+Thus, we allow the application of temporal operators and (in the case of CTL* ) path quantifiers to concepts, concept inclusions, and ABox assertions (in the case of KBs), but not to roles.
+Both problems are defined by extending the definitions for LTLALC in a straightforward way.
+In particular, the truth-relation (I, w, h) |= ph for temporal CTL*ALC KBs ph is defined by combining the inductive definitions above with those for ALC.
+The addition of branching to temporal interpretations changes the computational properties of TDLs in a drastic way.
+We remind the reader that CTL* and CTL are 2E XP T IME- and E XP T IME-complete, respectively.
+The problem with TDLs based on CTL* and CTL is that, intuitively, they are '2 12 -dimensional' with branches contributing 12 .
+This is not a good sign as we know from [24] that almost all 3D products of modal-like logics are undecidable.
+Theorem 13 ([32]).
+Satisfiability of temporal CTL*ALC TBoxes is undecidable.
+The original proof in [32] was given for one-variable firstorder CTL* with only one temporal operator .
+It is not hard to see, however, that quantification over a single variable can be simulated by means of concept inclusions of the form > v C and the Boolean operators on CIs, which are available even in CTL*DL-Litebool (which is, therefore, also undecidable).
+Positive decidability results can be obtained by restricting the application of temporal operators and path quantifiers in various ways [12].
+An example is the replacement of CTL* with CTL as the temporal component.
+Theorem 14 ([32, 12]).
+Consistency of temporal CTLALC KBs is decidable.
+The proof extends the quasimodel technique for LTLALC sketched in Section 4 to CTLALC .
+The existence of a quasimodel is decided by an embedding into into the monadic second-order theory of trees, and thus only a nonelementary upper bound is known.
+Many challenging open problems remain to be investigated in branching time TDLs.
+In contrast to linear time TDLs, no tight complexity results are known and simpler reasoning problems than satisfiability of temporal CTLALC TBoxes have not yet been investigated.
+References [1] A. Artale, D. Calvanese, R. Kontchakov, and M. Zakharyaschev.
+DL-Lite in the light of first-order logic.
+In Proceedings of AAAI-07, pages 361-366.
+MIT Press, 2007.
+[2] A. Artale and E. Franconi.
+A temporal description logic for reasoning about actions and plans.
+Journal of Artificial Intelligence Research, 9:463-506, 1998.
+[3] A. Artale and E. Franconi.
+A survey of temporal extensions of description logics.
+Annals of Mathematics in Artificial Intelligens, 30(1-4):171-210, 2000.
+[4] A. Artale and E. Franconi.
+Temporal description logics.
+In Handbook of Time and Temporal Reasoning in Artificial Intelligence, pages 375-388.
+Elsevier, 2005.
+[5] A. Artale, E. Franconi, F. Wolter, and M. Zakharyaschev.
+A temporal description logic for reasoning over conceptual schemas and queries.
+In Proceedings of JELIA-02, volume 2424 of LNCS, pages 98-110.
+Springer , 2002.
+[6] A. Artale, R. Kontchakov, C. Lutz, F. Wolter, and M. Zakharyaschev.
+Temporalising tractable description logics.
+In Proceedings of TIME-07.
+IEEE Press, 2007.
+[7] A. Artale, C. Lutz, and D. Toman.
+A description logic of change.
+In Proceedings of IJCAI-07, pages 218-223, 2007.
+[8] F. Baader.
+Augmenting concept languages by transitive closure of roles: An alternative to terminological cycles.
+In Proceedings of IJCAI-91, pages 446-451.
+Morgan Kaufmann, 1991.
+[9] F. Baader, S. Ghilardi, and C. Lutz.
+LTL over description logic axioms.
+In Proceedings of DL-08, CEUR Workshop Proceedings.
+CEUR-WS.org, 2008.
+[10] F. Baader, R. Kusters, and F. Wolter.
+Extensions to description logics.
+In Description Logic Handbook, pages 219-261.
+Cambridge University Press, 2003.
+[11] F. Baader, C. Lutz, H. Sturm, and F. Wolter.
+Fusions of description logics and abstract description systems.
+Journal of Artificial Intelligence Research, 16:1-58, 2002.
+[12] S. Bauer, I. Hodkinson, F. Wolter, and M. Zakharyaschev.
+On non-local propositional and weak monodic quantified CTL.
+Journal of Logic and Computation, 14(1):3-22, 2004.
+[13] S. Brandt.
+Polynomial time reasoning in a description logic with existential restrictions, GCI axioms, and -- what else?
+In Proceedings of ECAI-04, pages 298-302.
+IOS Press, 2004.
+[14] D. Calvanese, G. De Giacomo, D. Lembo, M. Lenzerini, and R. Rosati.
+DL-Lite: Tractable description logics for ontologies.
+In Proceedings of of AAAI-05, pages 602-607.
+MIT Press, 2005.
+[15] D. Calvanese, G. De Giacomo, D. Lembo, M. Lenzerini, and R. Rosati.
+Data complexity of query answering in description logics.
+In Proceedings of KR-06, pages 260-270, 2006.
+[16] D. Calvanese, M. Lenzerini, and D. Nardi.
+Description logics for conceptual data modeling.
+In Logics for Databases and Information Systems, pages 229-263.
+Kluwer Academic Publisher, 1998.
+[17] E. Clarke and E. Emerson.
+Design and synthesis of synchronisation skeletons using branching time temporal logic.
+In Logic of Programs, volume 131 of LNCS, pages 52-71.
+Springer, 1981.
+[18] E. Emerson and J. Halpern.
+Sometimes and never revisited: on branching versus linear time temporal logic.
+Journal of the ACM, 33(1):151-178, 1986.
+[19] M. Finger and D. Gabbay.
+Adding a temporal dimension to a logic system.
+Journal of Logic, Language and Information, 2:203-233, 1992.
+[20] M. Fischer and R. Ladner.
+Propositional modal logic of programs.
+In Proceedings of STOC-77, pages 286-294.
+ACM Press, 1977.
+[21] M. Fischer and R. Ladner.
+Propositional dynamic logic of regular programs.
+Journal of Computer and System Sciences, 18:194-211, 1979.
+[22] E. Franconi and D. Toman.
+Fixpoint extensions of temporal description logics.
+In Proceedings of DL-03, volume 81 of CEUR Workshop Proceedings.
+CEUR-WS.org, 2003.
+[23] D. Gabbay, I. Hodkinson, and M. Reynolds.
+Temporal Logic: Mathematical Foundations and Computational Aspects, Volume 1.
+Oxford University Press, 1994.
+[24] D. Gabbay, A. Kurucz, F. Wolter, and M. Zakharyaschev.
+Many-Dimensional Modal Logics: Theory and Applications.
+Elsevier, 2003.
+[25] D. Gabbay, M. Reynolds, and M. Finger.
+Temporal Logic: Mathematical Foundations and Computational Aspects, Volume 2.
+Oxford University Press, 2000.
+[26] D. Gabelaia, A. Kurucz, F. Wolter, and M. Zakharyaschev.
+Non-primitive recursive decidability of products of modal logics with expanding domains.
+Annals of Pure and Applied Logic, 142(1-3):245-268, 2006.
+[27] C. Gunsel.
+A tableaux-based reasoner for temporalised description logics.
+PhD thesis, University of Liverpool, 2005.
+[28] J. Y. Halpern and Y. Shoham.
+A propositional modal logic of time intervals.
+Journal of the ACM, 38(4):935-962, 1991.
+[29] D. Harel.
+Effective transformations on infinite trees, with applications to high undecidability, dominoes, and fairness.
+Journal of the ACM, 33:224-248, 1986.
+[30] D. Harel, D. Kozen, and J. Tiuryn.
+Dynamic Logic.
+MIT Press, 2000.
+[31] I. Hodkinson, F. Wolter, and M. Zakharyaschev.
+Decidable fragments of first-order temporal logics.
+Annals of Pure and Applied Logic, 106:85-134, 2000.
+[32] I. Hodkinson, F. Wolter, and M. Zakharyaschev.
+Decidable and undecidable fragments of first-order branching temporal logics.
+In Proceedings of LICS-02, pages 393-402.
+IEEE Press, 2002.
+[33] I. Horrocks, U. Sattler, and S. Tobies.
+Practical reasoning for very expressive description logics.
+Logic Journal of the IGPL, 8(3):239-264, 2000.
+[34] B. Konev, F. Wolter, and M. Zakharyaschev.
+Temporal logics over transitive states.
+In Proceedings of CADE-05, pages 182-203, 2005.
+[35] C. Lutz.
+Interval-based temporal reasoning with general TBoxes.
+In Proceedings of IJCAI-01, pages 89-94.
+Morgan Kaufmann, 2001.
+[36] C. Lutz, H. Sturm, F. Wolter, and M. Zakharyaschev.
+Tableaux for temporal description logic with constant domains.
+In Proceedings of IJCAR-01, volume 2083 of LNCS, pages 121-136, 2001.
+[37] K. Schild.
+A correspondence theory for terminological logics: preliminary report.
+In Proceedings of IJCAI-91, pages 466-471.
+Morgan Kaufmann, 1991.
+[38] K. Schild.
+Combining terminological logics with tense logic.
+In Proceedings of EPIA-93, volume 727 of LNCS, pages 105-120.
+Springer, 1993.
+[39] M. Schmidt-Schauss and G. Smolka.
+Attributive concept descriptions with complements.
+Artificial Intelligence, 48:1- 26, 1991.
+[40] A. Schmiedel.
+Temporal terminological logic.
+In W. Dietterich, Tom; Swartout, editor, Proceedings of AAAI-90, pages 640-645.
+MIT Press, 1990.
+[41] A. Sistla and E. Clarke.
+The complexity of propositional linear temporal logics.
+Journal of the ACM, 32:733-749, 1985.
+[42] L. Stockmeyer.
+The Complexity of Decision Problems in Automata Theory and Logic.
+PhD thesis, MIT, 1974.
+[43] H. Sturm and F. Wolter.
+A tableau calculus for temporal description logic: the expanding domain case.
+Journal of Logic and Computation, 12:809-838, 2002.
+[44] P. Wolper.
+The tableau method for temporal logic: An overview.
+Logique et Analyse, 28:119-152, 1985.
+[45] F. Wolter and M. Zakharyaschev.
+Modal description logics: modalizing roles.
+Fundamenta Informaticae, 39:411-438, 1999.
+[46] F. Wolter and M. Zakharyaschev.
+Temporalizing description logics.
+In Frontiers of Combining Systems II, volume 1794 of LNCS, pages 379-401.
+Springer, 2000.
+A. Correctness of the Algorithm in Section 3.3 Let M0 , .
+.
+.
+, Mm be the sets computed by the algorithm.
+Set n := |P(C, T )| and Ti := {t | (t, i) [?]
+Mm } for i <= n. Lemma 15.
+For all i < n, we have 1.
+Ti [?]
+Ti+1 ; 2.
+Ti = Ti+1 implies Ti = Ti+` for all ` <= n - i.
+Proof.
+(1) Let M = Mm [?]
+{(t, j) | (t, `) [?]
+Mm for some ` >= j}.
+We show that M satisfies conditions 1-4 of the elimination procedure.
+Based on this, it is trivial to show by induction on i that M [?]
+Mi for all i <= m, which implies (1).
+We only consider condition 4.
+Let (t, j) [?]
+M and CUD [?]
+t. If (t, j) [?]
+Mm , we are done.
+Otherwise, we have (t, `) [?]
+Mm for some ` >= j.
+It follows that there are temporal types (t1 , i1 ), .
+.
+.
+, (tk , ik ) [?]
+Mm satisfying (i)-(iv) for (t, `) [?]
+Mm .
+Define a sequence (t01 , i01 ), .
+.
+.
+, (t0k , i0k ) by setting (t0p , i0p ) := (tp , d(i + p - 1)) for 1 <= p <= k. By definition of M , this sequence exists in M .
+It clearly satisfies (i)-(iv) for (t, j) [?]
+M .
+(2) Assume that Ti = Ti+1 and let M = Mm [?]
+{(t, j) | (t, i) [?]
+Mm and i <= j <= n}.
+As before, it suffices to show that elimination conditions 1- 4 are satisfied for M .
+Let (t, j) [?]
+M \ Mm .
+We concentrate on conditions 3 and 4.
+The definition of M yields (t, i) [?]
+Mm and so (t, i + 1) [?]
+Mm since Ti = Ti+1 .
+Hence, there is a (t0 , i) [?]
+Mm such that t0 and t are compatible.
+Again by definition of M , (t0 , j - 1) [?]
+M , and we are done.
+Now let CUD [?]
+t. As (t, i) [?]
+Mm , there is a sequence of temporal types (t1 , i1 ), .
+.
+.
+, (tk , ik ) [?]
+Mm satisfying (i)-(iv) of elimination condition 4 for (t, i) [?]
+Mm .
+By definition of M , (t` , p) [?]
+M for 1 <= ` <= k and i <= p <= n. Thus, the sequence (t01 , i01 ), .
+.
+.
+, (t0k , i0k ) defined by setting (t0` , i0` ) := (t` , d(i + ` - 1)) exists in M .
+It clearly satisfies (i)-(iv) for (t, j) [?]
+M .
+Define an infinite set M := {(t, i) | (t, d(i)) [?]
+Mm } and let the conditions 10 -40 be obtained from the elimination conditions 1-4 by replacing each occurrence of d(w) with w and allowing applications of these conditions also to temporal types (t, i) with i > n. Lemma 16.
+For all types (t, i) [?]
+M , conditions 10 -40 are satisfied.
+Proof.
+Since |T0 | <= n, Lemma 15 implies that Tn-1 = Tn or Tn = [?].
+In the latter case, condition 2 implies that Mm , and so also M , is empty, which means that we are done.
+If Tn-1 = Tn , it is easy to use the fact that Mm satisfies conditions 1-4 to show that M satisfies conditions 10 -40 .
+A temporal pre-interpretation P = ([?
+]P , *P ) consists of a nonempty domain [?
+]P and a partial function *P from x [?
+]P to P(C, T ).
+We are now ready to prove correctness of the algorithm.
+For soundness, assume that the algorithm returns 'satisfiable,' i.e., there is a (t, 0) [?]
+Mm with C [?]
+t. Then (t, 0) [?]
+M .
+We construct a sequence of temporal preinterpretations P0 , P1 , .
+.
+.
+such that for all i >= 0, d [?]
+[?
+]Pi , and j <= i, Pi (j, d) is defined and (Pi (j, d), j) [?]
+M.  (+)  To start, we set [?
+]P0 := {d0 } and P0 (0, d) = t. To define Pi+1 , we start with Pi+1 := Pi and proceed in two steps.
+For Step 1, let T [?]
+P(C, T ) be such that * for each d [?]
+[?
+]Pi+1 and [?
+]r.D [?]
+Pi+1 (i, d), there is a t [?]
+T with {D} [?]
+{!E | ![?
+]r.E [?]
+Pi+1 (i, d)} [?]
+t; * T [?]
+{t | (t, i) [?]
+M }.
+Such a T exists by (+) and since M satisfies condition 10 .
+For each t [?]
+T , add a fresh element et to [?
+]Pi+1 .
+By (+) and condition 30 , there is a sequence (t0 , 0), .
+.
+.
+, (ti , i) [?]
+M such that ti = t. For j <= i, set Pi+1 (d, j) := tj .
+For Step 2, consider each d [?]
+[?
+]Pi+1 .
+First assume that there is no concept DUE [?]
+Pi+1 (d, i) with E [?]
+/ Pi+1 (d, i).
+By (+) and condition 20 , there is a (t, i + 1) [?]
+M such that Pi+1 (d, i) and t are compatible.
+Set Pi+1 (d, i + 1) := t. Now assume that there is a concept DUE [?]
+Pi+1 (d, i) with E [?]
+/ Pi+1 (d, i).
+Assume w.l.o.g.
+that there is no D 0 UE 0 [?]
+Pi+1 (d, i) and j <= i with D 0 UE 0 , !E 0 [?]
+Pi+1 (d, `) for j <= ` <= i, but DUE, !E [?]
+/ Pi+1 (d, j).
+Let (t1 , i), .
+.
+.
+, (tk , i+k -1) be a minimal sequence satisfying (i)-(iv) of condition 40 .
+Since E[?]
+/ Pi+1 (d, i), the length of this sequence is at least two.
+Put Pi+1 (d, i + 1) := t2 .
+This finishes the construction of Pi+1 .
+S Let P := i>=0 Pi .
+We convert P into a temporal interpretation I = ([?
+]P , *I ) as follows: * AI := {(i, d) | A [?]
+P(i, d)}; * rI := {(i, d, d0 ) | ![?
+]r.D [?]
+P(i, d) = !D [?]
+P(i, d0 )}.
+It is routine to verify that (0, d0 ) [?]
+C I and I is a model of T .
+Now for completeness.
+Assume that C is satisfiable w.r.t.
+T and let I be a temporal model of C and T .
+For d [?]
+[?
+]I and i >= 0, set tpI (i, d) := {D [?]
+cl(C, T ) | (i, d) [?]
+D I }.
+Define M := {(t, d(i)) | t = tpI (j, d) for some j >= i and d [?]
+[?
+]I }.
+It is straightforward to verify that M satisfies conditions 1- 4.
+Thus, it is easily proved by induction on i that M [?]
+Mi for 1 <= i <= m. As I is a model of C, there is a (t, 0) [?]
+M with C [?]
+t. Thus, the algorithm returns 'satisfiable.'

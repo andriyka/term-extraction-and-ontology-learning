@@ -1,0 +1,729 @@
+Efficient Regular Linear Temporal Logic using Dualization and Stratification CeEsar SaEnchez IMDEA Software Institute, Madrid, Spain Institute for Applied Physics, CSIC, Spain Email: Cesar.Sanchez@imdea.org  AbstractaWe study efficient translations of Regular Linear Temporal Logic (RLTL) into automata on infinite words.
+RLTL is a temporal logic that fuses Linear Temporal Logic (LTL) with regular expressions, extending its expressive power to all D-regular languages.
+The first contribution of this paper is a novel bottom up translation from RLTL into alternating parity automata of linear size that requires only colors 0, 1 and 2.
+Moreover, the resulting automata enjoy the stratified internal structure of hesitant automata.
+Our translation is defined inductively for every operator, and does not require an upfront transformation of the expression into a normal form.
+Our construction builds at every step two automata: one equivalent to the formula and another to its complement.
+Inspired by this construction, our second contribution is to extend RLTL with new operators, including universal sequential composition, that enrich the logic with duality laws and negation normal forms.
+The third contribution is a ranking translation of the resulting alternating automata into non-deterministic BuEchi automata.
+To provide this efficient translation we introduce the notion of stratified rankings, and show how the translation is optimal for the LTL fragment of the logic.
+Keywords-temporal logic; formal verification; formal methods;  I. I NTRODUCTION We study the problem of formal temporal verification of reactive systems, which starts from a specification of the intended behavior in some temporal logic.
+In this paper we study the logic RLTL [1], [2] that extends LTL [3], [4] with regular expressions.
+The automata-theoretic approach to model checking reduces this verification problem to automata constructions and automata decision problems.
+The verification process begins by translating the negation of the formula into an equivalent automaton on infinite words.
+This automaton accepts all the traces that violate the specification.
+Then, the automaton is composed synchronously with the system description.
+Finally, a non-emptiness check reveals whether the system admits some counterexample trace.
+Modernly, specifications are translated into alternating automata because their richer structure enables a direct This work was funded in part by the EU project FET IST-231620 HATS, MICINN project TIN-2008-05624 DOVES, CAM project S2009TIC-1465 PROMETIDOS, and by the COST Action IC0901 Rich ModelToolkit-An Infrastructure for Reliable Computer Systems.
+JuliaEn Samborski-Forlese IMDEA Software Institute, Madrid, Spain Email: Julian.SF@imdea.org  translation from temporal logics, postponing a potentially exponential blow-up.
+Another advantage of alternation is the easy dualization (see Muller and Schupp [5]) provided by the availability of both conjunctive and disjunctive transition relations.
+However, to obtain an automaton accepting the complement language of a given automaton, one also needs to complement the acceptance condition (see for example [6]).
+For LTL one can first translate a formula (e.g., the negation of the specification) into negation normal form (NNF) by pushing negation to the propositional level, and then use automata with weak acceptance conditions [7], [8], in which the structured of the automaton consists of strongly connected components (SCC) all of which are either accepting or rejecting.
+Extensions of LTL with regular expression, like RLTL, do not have negation normal forms.
+Hence, a translation of the logical negation operator must be given, precluding the use of weak acceptance conditions.
+In this paper we show how to translate RLTL into strong parity automata on words (APW) with a particular internal structure, and study the complementation construction for the resulting APW.
+The classical complementation for the parity condition increments in one unit the color assigned to every state, turning an arbitrary sequence of states from accepting into rejecting (and viceversa).
+However, if this construction is used to translate the logical negation operator, the total number of colors in the resulting automaton can grow linearly in the size of the formula.
+The best known algorithm [9] for translating an APW with n states and k colors into a non-deterministic BuEchi automaton requires 2O(nk log nk) .
+In this work, we use a faster complementation construction based on the following intuition.
+Traces of runs of the automaton get trapped in an SCC, meaning that all states in a suffix of a given trace belong to some SCC of the automaton.
+Hence, it is sufficient for a complementation construction to consider SCCs independently.
+This idea enables a translation of RLTL (including the negation operator) into APW using only colors 0, 1 and 2.
+These automata are equivalent to alternating Streett automata on words (ASW) with one accepting pair (denoted ASW{1}).
+The translation proceeds inductively, building at each step a pair of complement automata.
+Then, inspired by this translation we enrich RLTL with new constructs, including universal sequential composition.
+The enriched logic admits  a negation normal form.
+Finally, we study the translation into non-deterministic BuEchi automata (NBW).
+Streett{1} rankings (see [10]) directly allow to translate an ASW{1} into an NBW of size 2O(n log n) .
+Here, we use again the particular stratified structure of the ASW{1} automata obtained from RLTL expressions.
+Each stratum in the generated ASW{1} is either BuEchi (only colors 1 and 2) or coBuEchi (colors 0 and 1), making these automata equivalent to hesitant automata AHW (see [11]).
+We introduce a notion of stratified ranking and show that for all RLTL operators (except one), the ranking of each state can be statically predetermined.
+This result produces NBW with size 2O(n log m) where m is the size of the largest stratum that cannot be predetermined.
+In particular, all LTL operators generate strata of size 1, which result into NBW of size 2O(n) when using our method to translate LTL into NBW.
+The rest of the of paper is structured as follows.
+Section II presents the preliminaries, and Section III introduces RLTL.
+Section IV shows the translation from RLTL into stratified ASW{1}, and Section V the translation into NBW, including stratified rankings.
+Section VI shows our empirical study.
+Finally, Section VII concludes.
+II.
+P RELIMINARIES +  We use B (X ) for the positive Boolean formulas over a set of propositions X .
+These formulas are built from true, false and elements of X , using aSS and a".
+A minimal model M of a positive Boolean formula I, is a subset of X such that M satisfies I, but no strict subset of M satisfies I,.
+For example, given the set Q = {q0 , q1 , q2 , q3 }, the formula I,1 = (q1 aSS q2 ) a" q3 is a B + (Q) formula.
+The minimal models of I,1 are {q1 , q2 } and {q3 }.
+Given a positive Boolean formula I, there is a dual formula I,e obtained by switching aSS and a", and switching true and false.
+For example, the dual of I,1 above is I,e1 = (q1 a" q2 ) aSS q3 , or equivalently in disjunctive normal form I,e1 = (q1 aSS q3 ) a" (q2 aSS q3 ).
+The minimal models of I,e1 are {q1 , q3 } and {q2 , q3 }.
+An alternating automaton is a tuple A : hIL, Q, I', I, F i where IL is a propositional alphabet, Q is a finite set of states, I' : Q A IL a B + (Q) is the transition function, I a B + (Q) is the initial condition, and F is the acceptance condition.
+A frame of an automaton A is the tuple hIL, Q, I', Ii.
+A frame is called non-deterministic whenever I, and I'(q, a) for all states q and symbols a, have singleton sets as minimal models.
+In other words, I and I'(q, a) are equivalent to disjunctive formulas.
+A frame is called universal if I, and I'(q, a) for all states q and symbols a, have a unique minimal model.
+In other words, I and I'(q, a) are equivalent to conjunctive formulas.
+A frame is deterministic if it is both non-deterministic and universal, that is if both the initial condition and transition functions correspond to true, false or a single successor state.
+In general a frame is neither universal nor non-deterministic, but fully alternating.
+A transition function I' can be extended to positive Boolean formulas I' : B + (Q)AIL a B + (Q) in the standard way, taking I'(q, a) as the base case and letting I'(true, a) = true, I'(false, a) = false, I'(A a" B, a) = I'(A, a) a" I'(B, a) and I'(A aSS B, a) = I'(A, a) aSS I'(B, a).
+Given a word w a ILD , a run of w on a frame F : hIL, Q, I', Ii is a DAG (V, E) with nodes V a Q A N, s.t.
+: 1) The set {m | (m, 0) a V } is a minimal model for I.
+2) a(q, k) a V , {q 0 | (q 0 , k + 1) a V aSS ((q, k), (q 0 , k + 1)) a E} is a minimal model for I'(q, w[k]).
+A trace of a run is an infinite path in the run, or a finite path finishing in an state with no successor in the run.
+A non-deterministic frame may admit multiple different runs for a given word, but each run contains a unique trace.
+A universal frame admits just one run for each word, but this run may contain multiple traces.
+In general a frame admits multiple runs each with multiple traces.
+Given a frame F : hIL, Q, I', Ii, the specular frame is e Ii, e where Ie is the dual of I and I'e is the dual Fe : hIL, Q, I', e a) is the dual formula of I'(q, a) for transition function: I'(q, all states q and symbols a.
+The graph of a frame has Q as a set of nodes and contains an edge p a q whenever q is in some minimal model of I'(p, a) for some symbol a.
+The graphs of a frame and its specular frame are identical, because if q is in some minimal model of I'(p, a) then q is e a).
+Therefore, a frame also in some minimal model of I'(p, admits a trace iff its specular frame also admits the trace.
+An automaton equips a frame with an acceptance condition, which determines whether an infinite sequence of states is accepting.
+A finite trace finishing in a state (q, i) with no successor is accepting.
+Given an infinite sequence of states D : q0 , q1 , q2 .
+.
+.
+we let inf(D) be those states from Q that occur infinitely many times in D. In this paper we consider the following acceptance conditions: aV BuEchi: F a Q.
+D is accepting when inf(D) aS F 6= a. aV coBuEchi: F a Q.
+D is accepting when inf(D) aS F = a. aV parity: F : Q a {0 .
+.
+.
+d}.
+D is accepting when max{F (q) | q a inf(D)} is even.
+The elements of {0 .
+.
+.
+d} are called colors.
+aV Streett: F = {hB1 , G1 i, hB2 , G2 i, .
+.
+.
+, hBk , Gk i}.
+D is accepting when for all 1 a$?
+i a$?
+k, if inf(D) aS Bi 6= a then inf(D) aS Gi 6= a. aV Streett{1}: F = (B, G).
+D is accepting when if inf(D)aS B 6= a then inf(D) aS G 6= a. aV hesitant: F a Q, and H = h(S0 .
+.
+.
+, Sk ), <, Iai is a partition of Q induced by the SCCs, ordered by < according to reachability in the automaton graph, and Ia marks each partition as either BuEchi or coBuEchi.
+A trace D is accepting when a inf(D) a Si , Si is BuEchi and inf(D) aS F 6= a, or a inf(D) a Sj , Sj is coBuEchi and inf(D) aS F = a.
+Observation: A parity acceptance condition with colors {0, 1, 2} corresponds to the Streett condition (B, G) with B = {q | F (q) = 1} and G = {q | F (q) = 2}.
+The Streett  pair (B, G) forces (for a trace to be accepting) that if some state marked 1 is visited infinitely often, then some state marked 2 is also visited infinitely often.
+The other possible case is that only states that are not marked either B or G states are visited infinitely often.
+In this case, the trace is also good for the parity automaton.
+We use stratum to refer to an SCC of an automaton graph.
+The stratification of hesitant automata given by the partition implies that every infinite trace gets trapped in a stratum Si .
+Then, the BuEchi or coBuEchi condition on the stratum determines whether the trace is accepting.
+We use ABW (resp.
+AcBW, APW, ASW and AHW) to represent BuEchi (resp.
+coBuEchi, parity, Streett and hesitant) alternating automata on words.
+We use APW{0, 1, 2} for APW that only use colors 0, 1 and 2 and ASW{1} for ASW with only one pair.
+When a trace D is accepted according to an acceptance condition F , we write D a acc(F ).
+A run of an alternating automaton is called accepting whenever all its traces are accepting.
+We say that a word w is in the language of automaton A, and we write w a L(A), whenever there is an accepting run for w on A.
+The following definition and theorem relate the notions of specular pairs and complement languages.
+Definition 1 Two automata A and B over the same alphabet are a specular pair whenever their frames are specular and for all paths D in the frame graph D a acc(FA ) if and only if D a / acc(FB ).
+Theorem 2 (Specular Automata and Complement) Let A and B be a specular pair of automata.
+Then L(A) = ILD \ L(B).
+Theorem 2 reduces the proof that two automata with dual frames are complements to checking that the traces that can happen have opposite acceptance.
+In the next section, we use this result to build an incremental translation, in which we only need to check the new traces added at each step.
+III.
+T HE L OGIC RLTL Regular Linear Temporal Logic [1], [2] is a formalism for specifying w-regular languages.
+The logic is defined in two stages, similarly to PSL [12] or ForSpec [13].
+In the first stage we build regular expressions that define finite non-empty segments of infinite words.
+In the second stage, we build RLTL expressions to define sets of infinite words.
+The syntax of each of these two formalisms contain only a finite collection of constructor symbols.
+In particular, the language of RLTL contains no fix-point binders or automata constructors.
+Regular Expressions: The basic elements of regular expressions are basic expressions, which are Boolean combinations of a finite set of atomic propositions, whose truth  value is interpreted in a single state.
+The syntax of regular expressions is given by the following grammar:    Ia ::= Ia + Ia  Ia ; Ia  Ia a Ia  p where p ranges over basic expressions.
+The intended interpretation of the operators +, ; and a are the standard union, concatenation and binary Kleene-star.
+Our version of regular expressions describe segments of infinite words.
+Given an infinite word w a ILD , a position is a natural number.
+We use w[i] for the symbol at position i in word w. Given an infinite word w and two positions i and j, the tuple (w, i, j) is called the segment of the word w between positions i and j.
+Note that a segment consists of the whole word w with two tags, not just the sequence of symbols that occur between two positions.
+This allows the extension of regular expressions to past expressions [2], but in this paper we only study future expressions.
+A pointed word is a pair (w, i) formed by a word w and a position i.
+The formal semantics of regular expressions is defined as a binary relation RE between segments and regular expressions, as follows.
+Given a basic expression p, regular expressions r and s, and a word w: aV (w, i, j) RE p, whenever w[i] satisfies p and j = i + 1. aV (w, i, j) RE r + s whenever either (w, i, j) RE r or (w, i, j) RE s, or both.
+aV (w, i, j) RE r ; s whenever for some k, (w, i, k) RE r and (w, k, j) RE s. aV (w, i, j) RE r a s whenever either (w, i, j) RE s, or for some sequence (i0 = i, i1 , .
+.
+.
+im ) and all k a {0, .., m a 1}, (w, ik , ik+1 ) RE r and (w, im , j) RE s. RLTL: Expressions in Regular Linear Temporal Logic define languages over infinite words.
+The key elements of RLTL are the power operators that generalize many constructs from different linear-time logics and calculi.
+The syntax of RLTL expressions is defined by the grammar:      D ::= a  D a" D  AZD  Ia ; D  D|IaiiD  D|IaiD where Ia ranges over regular expressions.
+The symbol a" stands for union of languages (logical disjunction), and AZ represents language complement (logical negation).
+The symbol ; stands for the concatenation of an expression over finite words followed by an expression over infinite words.
+The operator a defines the empty language (logical false).
+The operators D|IaiiD and its weak version D|IaiD are called the power operators.
+The expressions x|riiy and x|riy (read x at r until y, and, respectively, x at r weak-until y) are built from three elements: y (the attempt), x (the obligation) and r (the delay).
+For x|riiy to hold, either the attempt holds, or the obligation is met and the whole expression evaluates successfully after the delay.
+For x|riiy to hold, the obligation must be met after a finite number of delays.
+On the contrary, x|ziy does not require the attempt to be met after a finite  number of delays, allowing the obligation and delay to be repeated ad infinitum.
+These two simple operators allow the definition of many other temporal operators.
+For example, the strong until operator x U y of LTL can be seen as an attempt for y to hold, or otherwise an obligation for x to be met and a delay of a single step.
+Similarly, the D-regular expression xD can be interpreted as a weak power operator having no possible escape and a trivially fulfilled obligation, with a delay indicated by x.
+Then, conventional D-regular expressions can describe sophisticated delays with trivial attempts and obligations, while conventional LTL constructs allow complex attempts and obligations but trivial one-step delays.
+Power operators generalize both types of constructs.
+The completeness of RLTL with respect to D-regular languages follows immediately from the expressibility of D-regular expressions.
+In particular, Wolperas example [14] of an Dregular language not definable in LTL (p happening at every even state) can be defined as p|true ; trueia.
+The size of an RLTL formula is defined as the total number of its symbols.
+The semantics of RLTL relates expressions and pointed words.
+Given two RLTL expressions x and y, a regular expression r, and a word w: aV (w, i)  a never holds.
+aV (w, i)  x a" y iff either (w, i)  x or (w, i)  y. aV (w, i)  AZx iff (w, i) 6 x. aV (w, i)  r ;y iff for some k, (w, i, k) REr and (w,k)  y. aV (w, i)  x|riiy iff (w, i)  y or for some sequence (i0 = i, i1 , .
+.
+.
+im ), for all k < m: (w, ik , ik+1 ) RE r and (w, ik )  x, and (w, im )  y. aV (w, i)  x|riy whenever either x|riiy or for some infinite seq (i0 = i, i1 , .
+.
+.
+), for all k > 0, (w, ik , ik+1 ) REr and (w, ik )  x.
+The semantics of x|riiy establishes that either the obligation y is satisfied at the point i of the evaluation, or there is a sequence of delaysaeach determined by raafter which y holds, and x holds before each individual delay.
+The semantics of x|riy also allow the case where y never holds, but x always holds before any number of evaluations of r. Languages are associated with RLTL expressions as usual: a word w a ILD is in the language of an expression x, denoted by w a L(x), whenever (w, 0)  x.
+Using [10], [9] to translate APW into NBW would produce 2 NBW with 2O(n log n) states for the old translation and 2O(n log n) states for the one presented here.
+In Section V below we show how to reduce it further to 2O(n log m) (where m is the size of the largest stratum), and 2O(n) for the LTL fragment of RLTL.
+The translation is described inductively.
+For every operator, we show how to compute the specular automata pair, starting from the automata pairs for the sub-expressions.
+In particular, assume that (Ax , Ax ) and (Ay , Ay ) are specular pairs for RLTL expressions x and y and that Nr is an NFA for regular expression r. We use q aa Fr for aq a Qr and I'(q, a) aS Fr 6= a,a and we use q 6aa Fr for aq a Qr and I'(q, a) aS Fr = a.a Empty: The pair (Aa , Aa ) has state set Q = {q0 }, and initial conditions I = q0 and I = q0 .
+The acceptance conditions are F (q0 ) = 0 and F (q0 ) = 0.
+The transition relations are I'(q0 , ) = false and I'(q0 , ) = true.
+This choice of I' and I' allow all traces to be accepting for Aa and no trace to be accepting for Aa , so Aa accepts all words and Aa accepts no word, as desired.
+Disjunction: The state space of Axa"y : hIL, Q, I', I, F i and Axa"y : hIL, Q, I', I, F i are Q = Qx aS Qy .
+The initial conditions are I = Ix a" Iy and I = Ix aSS Iy .
+The transition functions and acceptance condition are: if I'(q, a) I'(q, a) F (q) F (q) q a Qx I'x (q, a) I'x (q, a) Fx (q) Fx (q) q a Qy I'y (q, a) I'y (q, a) Fy (q) Fy (q) Sequential: The state space of both Ar;x : hIL, Q, I', I, F i and Ar;x : hIL, Q, I', I, F i are Qr aSQx .
+The initial conditions are I = Ir and I = Ier .
+The transition function is: if I'(q, a) I'(q, a) I'er (q, a) q 6aa Fr I'r (q, a) q aa Fr I'r (q, a) a" Ix I'er (q, a) aSS Ix q a Qx I'x (q, a) I'x (q, a) The acceptance condition is: for q a Qx then F (q) = Fx (q) and F (q) = Fx (q).
+For q a Qr then F (q) = 1 and F (q) = 0.
+Complementation: Consider now an RLTL subexpression x, with specular pair (Ax , Ax ).
+Since (w, i)  Ax if and only if (w, i) 6 Ax , it follows that (Ax , Ax ) is a specular pair for AZx.
+IV.
+RLTL INTO APW USING S PECULAR PAIRS  Power: Let q0 be a fresh state, not present in Qx or Qy .
+The state spaces of Ax|riiy : hIL, Q, I', I, F i and Ax|riiy : hIL, Q, I', I, F i are Qr aSQx aSQy aS{q0 }.
+The initial conds.
+are I = q0 and I = q0 .
+For the transition relation: if I'(q, a) I'(q, a) q = q0 I'(Iy a" (Ix aSS Ir ), a) I'(Iy aSS (Ix a" Ir ), a) q 6aa Fr I'r (q, a) I'er (q, a) q aa Fr I'r (q, a) a" q0 I'er (q, a) aSS q0 q a Qx I'x (q, a) I'x (q, a) q a Qy I'y (q, a) I'y (q, a)  We present here a translation of RLTL expressions into APW{0, 1, 2} based on Theorem 2.
+The main idea is to generate, at each step, a specular automata pair with the first automaton accepting the same language as the expression.
+By duality, the specular automaton accepts the complement language.
+Handling logical negation becomes trivial: one simply needs to switch the elements of the pair.
+A previous translation of RLTL presented in [2] needed n colors (n being the size of the formula) instead of 3.
+For the acceptance condition: if F (q) F (q) q a Qx Fx (q) Fx (q) Fy (q) Fy (q) q a Qy 0 q a Qr or q = q0 1 Even though the frame of these automata could have been defined without introducing q0 (by cleverly choosing I and I'), the introduction of q0 is justified by the necessity to distinguish in the acceptance condition traces that visit q0 infinitely often versus traces that get trapped in Qr .
+Weak Power: Again, the state spaces of both Ax|riy : hIL, Q, I', I, F i and Ax|riy : hIL, Q, I', I, F i is Qr aSQx aSQy aS {q0 } for a fresh state q0 .
+For the initial condition I = q0 and I = q0 .
+The transition relation and acceptance condition are exactly the same as for the Power operator except for the following cases: ( ( 1 if q = q0 2 if q = q0 F (q) = F (q) = 0 if q a Qr 1 if q a Qr Theorem 3 Let D be an RLTL expression and AD be the automaton obtained using the construction described in this section.
+Then, L(D) = L(AD ).
+The proof of Theorem 3 is greatly simplified by Theorem 2 because at every stage the construction builds automata with specular frame, so one only needs to reason about the acceptance of traces that get trapped in SCCs formed by the freshly added states.
+The construction also satisfies two important properties: 1) each stage introduces a new stratum (SCC) that cannot be reached from strata added in previous stages.
+That is, traces that move to the automaton of a sub-expression do not visit the stratum added for the containing expression.
+2) The stratum at each stage is decorated only with color 0 (an accepting stratum), only with color 1 (a rejecting stratum), only with colors 0 and 1 (a coBuEchi stratum) or only with colors 1 and 2 (a BuEchi stratum).
+These two observations imply that the automaton has the particular structure of a stratified ASW{1} or equivalently of hesitant automaton AHW.
+We show in Section V how to efficiently translate these automata into NBW using a refined version of Streett rankings.
+A Universal Sequential Operator: In the previous construction, we observe that the specular automaton for the sequential operator r ; x describes the set of traces in which aall occurrences of r (if any) are followed by failing occurrences of xa.
+This observation inspires the introduction of the universal sequential operator r AV x, whose semantics is: aV (w, i)  r AV x iff forall k s.t.
+(w, i, k) RE r, (w, k)  x.
+The translation of r AV x is precisely Ar;AZx above, and the specular automaton is exactly Ar;AZx .
+Note that the stratum  corresponding to r in ArAVx has a universal frame, obtained by dualizing the non-deterministic transition relation of Nr .
+The duality laws AZ(r ; x) aA r AV AZx and AZ(r AV x) aA r ; AZx hold immediately.
+Universal Power Operators: Similarly, we define new operators xkriiy and xkriy, duals of x|riy and x|riiy, respectively.
+These new operators force repetitions to hold at all possible delays, instead of at some possible delay.
+The semantics are: aV (w, i)  xkriiy iff (w, i)  y and for all seq (i = i0 , .
+.
+.
+, im ) with (w, ik , ik+1 ) RE r, either (w, ij )  x for some j a$?
+k or (w, ik+1 )  y, and for all infinite seq (i = i0 , i1 .
+.
+.)
+with (w, ik , ik+1 ) RE r and (w, ik )  y, there is an m with (w, im )  x. aV (w, i)  xkriy iff (w, i)  xkriiy, or (w, i)  y and for all k and j with (w, i, j) RE rk then (w, j)  y.
+The translation of xkriiy is Ax|riy (the dual being Axkriiy = Ax|riy ), and the translation of xkriy is the pair (Ax|riiy , Ax|riiy ).
+The following duality laws hold: AZ(x|riiy) aA AZxkriAZy  AZ(x|riy) aA AZxkriiAZy  AZ(xkriy) aA AZx|riiAZy  AZ(xkriiy) aA AZx|riAZy  (1) (2)  Finally, x aSS y is defined with translation (Axa"y , Axa"y ).
+The deMorgan laws hold: (AZAZx aA x), (AZ(x a" y) aAAZx aSSAZy) and (AZ(x aSS y) aAAZx a"AZy).
+Orienting these duality laws from left to right allows to push logical negation AZ to the propositional level, so RLTL extended with these operators admits a negation normal form.
+Note that this negation normal form is obtained after the translation by specular pairs.
+It does not follow immediately that the existence of such a normal form enables a translation into automata with weak acceptance condition, because one has to show translations for the new operators, including essentially all elements of pairs in the translation of RLTL presented above.
+V. F ROM S TRATIFIED ASW{1} INTO NBW This section shows how to translate the alternating automata obtained in Section IV into NBW.
+We first revisit the notion of Streett ranking from [10], which in turn is based on the notion of coBuEchi ranking [15].
+Then, we refine rankings to exploit the stratification of the automata obtained as a result of the translation from RLTL.
+We first show a general translation of ASW{1} into NBW.
+Rankings for ASW{1}: We use [k] an abbreviation for the set {0 .
+.
+.
+k}.
+The following definitions assume a given ASW{1} automaton A with n states, acceptance condition (B, G), a word w a ILD and a run G : (V, E) of A on w. Definition 4 An S{1}-ranking is a function f : V A N a [2n] that satisfies: (i) if q a B then f (hq, li) is even, (ii) for all hq, li a hq 0 , l0 i in E, either q a G or f (hq, li) aL f (hq 0 , l0 i).
+It follows that for every path D on a run DAG G, either D visits infinitely often G states or, after some prefix, condition (ii) applies continuously.
+Hence, since the image of f is bounded, the value of f converges to a value: there is a number l, such that, for every l0 > l, f (D(l0 )) = f (D(l)).
+The following definition of odd S{1}-ranking relates the convergence to an odd value with the fact that B states are visited only finitely often.
+Then, the construction of the NBW below is justified by Lemma 6.
+Definition 5 (odd S{1}-ranking) An S{1}-ranking is odd whenever, for every path D of G, either (i) D visits infinitely often G states, or (ii) f converges to an odd value on D. Lemma 6 G is an accepting run iff there is an odd S{1}-ranking for G. An equivalent NBW: We describe here the translation from ASW{1} into NBW.
+The main idea is to encode in the states of the NBW cuts of a run DAG of the ASW{1}, decorated with enough information to check whether an oddranking exists.
+In particular, each state of the alternating automaton present in a given state of the NBW is labeled with a ranking value.
+This annotation must respect the definition of ranking (Def.
+4).
+Additionally, the set of states of the ASW{1} that form a state of the NBW are partitioned into those that owe an improvement in the ranking (either a visit to a G state or a decrease in the ranking), and those that already showed improvement.
+Membership to the owe set is propagated, so an accepting state is one in which all constituent states have seen some progress since the last accepting state.
+After an accepting state, the owe set is reset.
+Formally, we start from an ASW{1} automaton A : hIL, QA , IA , I'A , {(B, G)}i and we build an NBW N : hIL, QN , IN , I'N , FN i as follows: aV QN contains elements of the form (S, O, f ) where S a QA is a subset of states of A, O a S, and f : S a [2n] is a function that satisfies: Q1.
+if q a B then f (q) is even.
+aV IN contains all those (M, O, f ) a QN where I1.
+M is a minimal model of IA and O = {q a M |qa / G and f (q) is even}.
+aV FN = {(S, O, f ) a QN | O = a}.
+Q 0 0 0 aV I'N : QN A IL a 2 N , such that (S , O , f ) a I'N ((S, O, f ), a) whenever there is one minimal model Mq of I'A (q, a) for each q a S satisfying: D1.
+S 0 = aSqaS Mq , D2.
+For all p a S 0 , the rank annotation f 0 (p) a$?
+min{f (q) | q a pred(p) \ G} where pred(p) = {q a S | p a Mq } denotes the set of predecessors of p. D3.
+O0 is given as follows.
+Let p a S 0 \ G, we have aV If O = a then p a O0 iff f 0 (p) is even.
+aV If O 6= a then p a O0 iff f 0 (p) = f (q) for some q a (pred(p) aS O).
+The states of N consist of a set S representing elements of a cut of a run DAG of A.
+The function f represents an S{1}-ranking, where Q1 guarantees that no B node receives an odd value, and D2 guarantees the non-increasing condition of rankings.
+Condition D1 ensures that successor states of N correspond to legal successor cuts of a run of A.
+Finally, condition D3 ensures that O contains those vertices of the run DAG that have not seen progress for some path leading to them, where progress is defined as visiting a G state, or experiencing a decrease in f .
+A reset of this check is represented by a final state, which can happen only when all paths to all states contain some progress, as captured by FN .
+Finally, I1 captures that the initial states of N correspond to initial cuts of runs of A.
+All these facts imply that a successful run DAG of A is matched by a successful run of N. Theorem 7 Let A be an ASW{1} and N the corresponding NBW.
+Then w a L(A) if and only if w a L(N ).
+The automaton obtained can be easily pruned with one simple observation: if there is an odd S{1}-ranking, then there is an odd S{1}-ranking where all decreases (according to D2) only drop to the highest legal value.
+That is: ( M or M a 1 if p a /B 0 f (p) = M or M a 2 if p a B where M = min{f (q) | q a pred(p) \ G}.
+This observation reduces the guessing in f to only two possibilities, providing a more efficient translation.
+The next paragraphs exploit the internal structure of stratified ASW{1} automata to introduce a faster solution, specific for the particular case of AHW.
+Rankings for Stratified ASW{1}: Consider a stratified ASW{1}.
+This is an automaton for which Q is divided into strata (S1 , .
+.
+.
+, Sk ) ordered according to <, and each stratum is labeled by a function Ia as either BuEchi (all states are either B or G) or coBuEchi (no state is G).
+The stratification structure implies that for every q a Si and successor p with p a Sj , either Sj = Si or Sj < Si .
+Remark: This automaton is equivalent to an AHW with H = h(S1 , .
+.
+.
+, Sk ), <, Iai and F =  [ i  {Si aS G | if Si is BuEchi} aS  [ {Si aS B | if Si is coBuEchi} i  We use mj = |Sj | to refer to the number of states in stratum Sj .
+We first define the notion of stratified S{1}-ranking: Definition 8 A stratified S{1}-ranking is a family of functions fj : Sj A N a [2mj ] that satisfies: (i) if q a Sj aS B then fj (hq, li) is even, (ii) for every hq, li a hq 0 , l0 i in E with q, q 0 a Sj , then fj (hq, li) aL fj (hq 0 , l0 i), unless q a G. Intuitively, a stratified ASW{1} ranking is like an ASW{1} ranking except values need not decrease when  moving across strata.
+Due to the stratification, every trace of a run gets trapped in a stratum of the automaton.
+Once the trace converges to a stratum, either the trace visits infinitely many good nodes, or the ranking converges to a single value.
+Again, the notion of odd ranking captures whether the suffix traces are accepting.
+Definition 9 A stratified S{1}-ranking is odd whenever, for every infinite path D of G, either (i) D visits infinitely often G states, or (ii) D gets trapped in stratum Sj and fj converges to an odd value on D. The following lemma justifies the construction of NBW using stratified rankings.
+Lemma 10 G is an accepting run iff there is a stratified odd S{1}-ranking for G. Stratified rankings drastically limit the guessing that is necessary in the construction of the states of the NBW, because each ranking is local to the stratum under consideration.
+The following choices produce a good ranking for stratum Sj , if there is one such a good ranking G1.
+If Sj is an accepting stratum and qj a Sj , fj (qj ) = 1.
+G2.
+If Sj is a rejecting stratum and qj a Sj , fj (qj ) = 2.
+G3.
+If Sj is BuEchi, then assign fj (qj ) = 2 to qj a B, and fj (qj ) = 1 to qj a G. G4.
+If Sj is coBuEchi then fj (qj ) a [2mj ].
+Note that this restriction eliminates the guessing except for coBuEchi strata, and consequently ranking guessing only happens to the states of Nr in expressions xkriiy.
+In terms of the LTL fragment, all delays are one step so the size of |Nr | = 1 and hence the maximum size of the coBuEchi strata is 1.
+In fact, for LTL sub-expressions of the form xkriiy, Nr consists of a single B state, which can be assigned value 2.
+Consequently, following the steps in this paper LTL expressions get translated into NBW of size 2O(n) .
+An equivalent NBW using Stratified Rankings: We refine the construction for general ASW{1} rankings, limiting the guesses using G1-G4.
+Also, only predecessors within the same stratum are considered when computing f : Q1s.
+if q a Sj aS B then fj (q) is even.
+D2s.
+fj0 (p) a$?
+min{fj (q) | q a pred(p) \ G} where pred(p) = {q a Sj | p a Mq } now only considers predecessors from the same stratum.
+D3s.
+O0 is given as follows.
+Let p a Sj0 \ G, we have aV If O = a then p a O0 iff fj0 (p) is even.
+aV If O 6= a then p a O0 iff fj0 (p) = fj (q) for some q a (pred(p) aS O aS Sj ).
+Theorem 11 Let A be a stratified ASW{1} and N the corresponding NBW using stratified rankings.
+Then w a L(A) if and only if w a L(N ).
+VI.
+E MPIRICAL E VALUATION This section reports the result of an empirical evaluation of the translation algorithms presented above.
+The evaluation was performed using a sequential implementation written in OCaml, available online at [16].
+The running times reported in Fig.
+1 were obtained using an Intel Core2 @ 2.83GHz with 8GB of RAM running a 64 bit Linux kernel.
+Fig.
+1 compares the number of states and the running time used to compute explicit NBW representations of two families of formulas (and their negation), for i = 8, 11, 17, 20.
+These choices are inspired by [8]:  aV Ai = p1 U (p2 U (.
+.
+.
+U pi ) .
+.
+.
+.
+The expression Ai is equivalent to the RLTL expression  p1 |trueii p2 |trueii.
+.
+.
+.
+ 5 5 5 aV Bi = p1 |true ii p2 |true ii.
+.
+.
+, where true stands for a five instant delay true ; true ; true ; true ; true.
+These are not expressible in LTL.
+The table illustrates that the general ASW{1} ranking is only practical for the smallest cases.
+Limiting the guessing to the highest ranks allows to handle slightly larger formulas.
+The stratified ranking translation results in a dramatic improvement, comparable to state of the art LTL translators, particularly considering that our prototype does not use simulations or handle propositional alphabets (only discrete alphabets).
+Simulation reductions have been reported [8] to be a very effective method to reduce the size of the NBW generated, but this optimization is currently ongoing work.
+VII.
+C ONCLUSIONS AND F UTURE W ORK This paper has presented a novel translation from the logic RLTL into alternating parity automata using only colors 0, 1 and 2, based on a bottom-up construction of specular pairs accepting complement languages.
+Inspired by the duality in the translation we introduce universal sequential operators that enrich the logic with negation normal forms.
+We also show that the resulting automata enjoy some stratified structure in their transition relation that makes all their strata purely BuEchi or coBuEchi.
+These automata are equivalent to hesitant automata.
+Then, we study translations of the resulting automata into NBW.
+The main result is the specialization of Street rankings to stratified automata to obtain a more efficient ranking translation.
+Unlike [11] our construction preserves the alphabet between the alternating automaton an the NBW.
+We are currently investigating alternative algorithms for model-checking RLTL specifications based on bounded model checking [17], antichains [18] and IC3 [19].
+R EFERENCES [1] M. Leucker and C. SaEnchez, aRegular linear temporal logic,a in Proc.
+of ICTACa07, ser.
+LNCS, vol.
+4711.
+Springer, 2007, pp.
+291a305.
+[2] C. SaEnchez and M. Leucker, aRegular linear temporal logic with past,a in Proc.
+of VMCAIa10, ser.
+LNCS, vol.
+5944.
+Springer, 2010, pp.
+295a311.
+size A8 A11 A17 A20 AZA8 AZA11 AZA17 AZA20 B8 B11 B17 B20 AZB8 AZB11 AZB17 AZB20  APW time(s) 7 0.048 10 0.172 16 0.936 19 1.796 7 0.048 10 0.172 16 0.940 19 1.792 35 0.268 50 1.084 80 5.064 95 10.041 35 0.268 50 0.908 80 5.072 95 9.753  Figure 1.
+NBW (direct) size time(s) 93 0.128 192 0.504 498 3.680 705 8.149 142 0.252 292 1.140 754 10.545 1066 25.718 2417 50.103 4952 360.571 12722 1h56m 17957 8h32m 3642 209.157 7452 26m56s 19122 18h15m 26982 58h8m  NBW (max2) size time(s) 93 0.100 192 0.336 498 1.700 705 3.184 100 0.100 202 0.336 514 1.688 724 3.160 2417 5.936 4952 26.846 12722 217.698 17957 598.129 2452 5.704 5002 25.106 12802 220.762 18052 674.070  NBW (strat) size time(s) 9 0.052 12 0.176 18 0.952 21 1.816 9 0.052 12 0.172 18 0.948 21 1.884 37 0.296 52 0.952 82 5.200 97 9.897 37 0.300 52 0.956 82 5.192 97 9.905  Number of states and running time to compute an APW{0, 1, 2} and an NBW.
+[3] A. Pnueli, aThe temporal logic of programs,a in Proc.
+of FOCSa77.
+IEEE CS Press, 1977, pp.
+46a67.
+[4] Z.
+Manna and A. Pnueli, Temporal Verification of Reactive Systems.
+Springer-Verlag, 1995.
+[5] D. E. Muller and P. E. Schupp, aAltenating automata on infinite trees,a Theoretical Computer Science, vol.
+54, pp.
+267a276, 1987.
+[6] W. Thomas, aComplementation of BuEchi automata revisited,a in Jewels are Forever, Contributions on TCS in Honor of Arto Salomaa.
+Springer, 1999, pp.
+109a120.
+[7] O. Kupferman and M. Y. Vardi, aWeak alternating automata are not that weak,a ACM Transactions on Computational Logic, vol.
+2, no.
+3, pp.
+408a429, 2001.
+[8] P. Gastin and D. Oddoux, aFast LTL to BuEchi automata translation,a in Proc.
+of CAVa01, ser.
+LNCS, vol.
+2102.
+Springer, 2001, pp.
+53a65.
+[9] C. Dax and F. Klaedtke, aAlternation elimination by complementation,a in Proc.
+of LPARa08, ser.
+LNCS, vol.
+5530.
+Springer, 2008, pp.
+214a229.
+[10] O. Kupferman and M. Y. Vardi, aComplementation constructions for nondeterministic automata on infinite words,a in Proc.
+of TACASa05, ser.
+LNCS, vol.
+3440.
+Springer, 2005, pp.
+206a221.
+[11] O. Kupferman, N. Piterman, and M. Y. Vardi, aExtended temporal logic revisited,a in Proc.
+of CONCURa01, ser.
+LNCS, vol.
+2154.
+Springer, 2001, pp.
+519a535.
+[12] D. Fisman, C. Eisner, and J. Havlicek, Formal syntax and Semantics of PSL: App.
+B of Accellera Property Language Ref.
+Manual, Ver.
+1.1, March 2004.
+[13] A. Armando, S. Ranise, and M. Rusinowitch, aA rewriting approach to satisfiability procedures,a Information and Computation, vol.
+183, no.
+2, pp.
+140a164, 2003.
+[14] P. Wolper, aTemporal logic can be more expressive,a Information and Control, vol.
+56, pp.
+72a99, 1983.
+[15] O. Kupferman and M. Y. Vardi, aFrom complementation to certification,a in Proc.
+of TACASa04, ser.
+LNCS, vol.
+2988.
+Springer, 2004, pp.
+591a606.
+[16] http://software.imdea.org/rounded/.
+[17] A. Biere, A. Cimatti, E. M. Clarke, and Y. Zhu, aSymbolic model checking without BDDs,a in Proc.
+of TACASa99, ser.
+LNCS.
+Springer, 1999, pp.
+193a207.
+[18] M. D. Wulf, L. Doyen, N. Maquet, and J.-F. Raskin, aAntichains: Alternative algorithms for LTL satisfiability and model-checking,a in Proc.
+of TACASa08, ser.
+LNCS, vol.
+4693.
+Springer, 2008, pp.
+63a77.
+[19] A. R. Bradley, aSAT-based model checking without unrolling,a in Proc.
+of VMCAIa11, ser.
+LNCS, vol.
+6538.
+Springer, 2011, pp.
+70a87.
+A PPENDIX This section shows a self-contained proof of Theorem 2.
+Positive Boolean Formulas:: Every positive boolean formula can be expressed in disjunctive normal form, as disjunction of conjunctions of propositions.
+Given a positive boolean formula I, there is a dual formula I,e obtained by switching aSS and a", and switching true and false.
+Some easy properties of dual formulas are: e and for every Proposition 12 (Duals) For every I, and I,, M a Mod (I,): e M aS M 0 6= a.
+1) For every M 0 a Mod (I,), e with q a M 0 .
+2) Let q a M .
+There is an M 0 in Mod (I,) For example, the dual of I,1 above is I,e1 = (q1 a" q2 ) aSS q3 , or equivalently in disjunctive normal form I,e1 = (q1 aSS q3 ) a" (q2 aSS q3 ).
+The minimal models of I,e1 are {q1 , q3 } and {q2 , q3 }.
+A choice function is a map f that chooses, for a model M of I, an element of M , i.e., f : Mod (I,) a X such f (M ) a M .
+Some interesting properties of choice functions follow: Proposition 13 (Choice Functions) Let I, be a formula and I,e its dual.
+Then e 1) If f is a choice function for I,, then Img f a Mod (I,).
+2) If M a mod (I,) then there is a choice function f of I,e such that Img f = M .
+Proof: We prove 13.1 first.
+Consider I, in disjunctive normal form.
+Each child subexpression of the root expression corresponds to a conjunction of states that form a model.
+The choice function f chooses one state from each model of I,.
+Expressing I,e dualy, each child subexpression of I, is a disjunction of the corresponding set of states.
+Hence, the element that f chooses in each child  S satisfies the corresponding disjunction, and Img f = M aMod(I,) f (M ) is e a model of I,.
+We now show 13.2.
+Let M be a minimal model of I,.
+Consider an arbitrary choice function f for I,e with: f (M 0 ) = q for some q a M aS M 0 .
+By Prop.
+12.1 for any M 0 there is one such q, so f is well defined, and by construction Img f a M .
+By Prop.
+13.1 Img f is a model of I,, and since M is a minimal model it has no proper sub-model, so Img f = M .
+ Automata and Games: We show now that specular automata accept complement languages, using game theory.
+From a given automaton A and a word w, we create a parity game called a word game as a tuple G(A, w) :  hVA , VP , EA , EP , f i where: VA = Q A D  VP = {(M, q, i) | M a Mod (I'(q, w[i]))} aS {(M, AV, 0) | M a Mod (I)}  EA = (q, i) a (M, q, i) for each M a Mod (I'(q, w[i]))  EP = (M, q, i) a (q 0 , i + 1) for q 0 a M  The game is played by two players: Automaton (A) and Pathfinder (P ).
+The set of positions V = VA aS VP is partitioned into positions in which A plays and those in which P plays.
+The game begins by A choosing a model of I, which determines the initial position (M, AV, 0) (here AV represent an irrelevant state).
+The legal moves of the game are captured by the relation E = EA aSEP which correspond to A choosing a model from a VA position, and P choosing the next successor from a given model from a VP position.
+A play is an infinite sequence of positions D : V0 v0 V1 v1 .
+.
+.
+with V0 being an initial position, vi obtained from Vi by a P move, and Vi+1 obtained from vi by an A move.
+The map f : V a {0 .
+.
+.
+d} determines the outcome of a play.
+We define the trace of a play D : V0 v0 V1 v1 .
+.
+.
+as the sequence of states trace(D) : p0 p1 .
+.
+.
+obtained by projecting the first component of the VP positions of the play (i.e., vi = (pi , i)).
+The following follows directly from the definition: Proposition 14 Every trace of a play of G(A, w) is also a trace of some run of A on w. As for parity automata the outcome of a play is determined by the highest color that is seen infinitely often in the play.
+Player A wins play D whenever: max{f (q) | q a inf(trace(D))} is even Otherwise, P wins play D. A strategy for player A is a map DA : (V a VA aS ) a V , that maps histories of positions into moves.
+Here,  denotes the empty sequence of positions, to let player A choose an initial state in the game.
+A memoryless strategy simply takes into account the last position: DA : VA aS  a V .
+Since parity games are memoryless determined it is enough to consider memoryless strategies.
+Similarly, a strategy for player P is a map DP : VP a V .
+A play D : V0 v0 V1 v1 .
+.
+.
+is played according to strategy DA whenever the initial position is V0 = DA () and all moves of A are played according to it Vi = DA (vi ).
+A strategy DA is winning for player A whenever all plays played according to DA are winning for A. Memoryless determinacy of parity games guarantees that either player A has a memoryless winning strategy or player P has a memoryless winning strategy.
+We say that D is a G AV DA play whenever D is played in G according to DA .
+We restrict our attention to strategies for A that choose minimal models, and strategies for P that are proper choice functions.
+This is not a drastic restriction.
+Clearly, if there  is a winning strategy for A that does not choose a minimal model, then any strategy that chooses a smaller minimal model is also winning.
+This is because the set of plays is reduced, and all plays in the unrestricted set are winning for A.
+Similarly, if DP is a winning strategy for P , then restricting its moves to be a proper choice functions (by restricting the image) also gives a winning strategy.
+In both cases, the set of successor moves is restricted but still confined within winning regions.
+This lemma is essentially Prop.
+2 from [6], where complementation of weak alternation automata by dualization is studied.
+of the form (q, i) a (q 0 , i + 1) for all q 0 a M .
+We have to show that D is successful run.
+We show by induction that all traces of D correspond to plays in G(A, w) played according to DA .
+For the base case (q, 0) is the initial state of the trace.
+By construction (q, 0) a DA () so (q, 0) is a possible choice of player P , and consequently a play prefix.
+For the inductive case, assume that trace prefix (q0 , 0) .
+.
+.
+(qi , i) is a play prefix, and let (qi , i) a (qi+1 , i + 1) be in ED .
+By construction DA (qi , i) contains position (qi+1 , i + 1) so player P can again move to it.
+This shows that the arbitrary trace of D correspond to a play played according to DA .
+  Lemma 15 w a L(A) if and only if A has a winning strategy in G(A, w).
+Specular Pairs and Complementation: We show now that specular automata accept complement languages.
+In the rest of the section we let A and Ae be a specular automata e : G(A, e w) be the pair, w be a word and G : G(A, w) and G corresponding word games.
+First we need some preliminary definitions.
+Proof: Assume w a L(A) and let D : (VD , ED ) be a successful run of w on A.
+We first build a strategy DA for A on G(A, w) and then show that DA is winning: DA () = (M0 , AV, 0)  with M0 = {q | (q, 0) a VD }  DA (q, i) = (M, q, i + 1)  with M = {q 0 | (q, i) a (q 0 , i + 1) a ED } The set M in (M, q, i + 1) is a model of I'(q, i) because D is a run.
+For positions (q, i) that do not appear in the run D, the strategy DA (q, i) = (M, q, i + 1) can assign any model M in Mod (I'(q, w[i])).
+This model is not relevant because no play played according to DA will visit these states.
+Consider now an arbitrary play D : V0 v0 V1 v1 .
+.
+.
+of G(A, w) played according to DA .
+We show by induction that trace(D) : p0 p1 .
+.
+.
+is a trace of D. aV base: By construction M0 is the set of initial positions of D. Since p0 , chosen by player P , is v0 a M0 , then v0 is a prefix of a trace of run D. aV induction step: assume p0 .
+.
+.
+pi is a prefix of some trace in D, so (pi , i) is in VD .
+Hence, DA (pi , i) = (M, pi , i + 1) for M being the set of successors of (pi , i) in ED .
+Consequently pi+1 = (q, i + 1) for some (pi , i) a (pi+1 , i + 1) in ED , so v0 .
+.
+.
+vi vi+1 is a longer prefix of a trace of run in D. This shows that trace(D) is a trace of the run D. Now, since D is a successful run all its traces must be accepting, and then: max{F (q) | q a inf(trace(D)} is even, which shows that DA is a winning strategy for G(A, w).
+We now show the other direction: we start from a winning strategy DA for A in G(A, w) and show that there is a successful run D of w on A.
+Let (M, AV, 0) = DA ().
+Then we let VD contain (q, 0) for all q a M .
+Note that M is a minimal model of I.
+Now, consider an arbitrary position (q, i) and let (M, q, i+1) be DA (q, i).
+We add to ED all pairs  Definition 16 We say that strategies DA (for A in G) and e are duals whenever both: DeP (for P in G) e AV DP play D aV for every G AV DA play D there is a G e s.t.
+trace(e D ) = trace(D).
+e AV DP play D aV for every G e there is a G AV DA play D s.t.
+trace(e D ) = trace(D).
+Theorem 17 (Dual Strategies) The following holds: (1) For every strategy DA for A in G, there is a dual strategy e DeP for P in G. (2) For every DP for P in G, there is a dual strategy DeA e for A in G. Proof: We prove the two statements separately: (1): Let DA be a strategy for A in G. This strategy DA is characterized by DA () = (M0 , AV, 0) where M0 a mod (I) DA ((q, i)) = (M, q, i + 1) where M a mod (I'(q, w[i])) By Prop.
+13.1 there are choice functions satisfying e aQ fM0 : Mod (I) e a)) a Q fhM,q,ai : Mod (I'(q,  Img fM0 = M0 Img fhM,q,ai = M  Moreover, these functions are proper choice functions.
+We e as follows: now define the dual strategy DeP for P in G DeP ((N0 , AV, 0)) = (fM0 (N0 ), 0) DeP ((N, q, i + 1)) = (fhM,q,ai (N ), q, i + 1) where M is the move of A in G from (q, i): DA (q, i) = (M, q, i + 1), and a = w[i].
+Our choice of choice functions fhM,q,ai guarantees that for every move of player P from e that, when followed M , there is a move for player A in G by fhM,q,ai results in the same state.
+The properties of fM0 and fhM,q,ai ensure that the strategy DeP is proper.
+We are ready to show that for every G AV DA play there is e AV DP play with the same trace, and vice-versa.
+aG  aaa Consider an arbitrary GAVDA play D : V0 v0 V1 v1 .
+.
+., and let DA () = (M0 , AV, 0) and DA (vi ) = (Mi+1 , qi , i + 1).
+We use qi for vi = (qi , i).
+Note that qi+1 a Mi+1 because all moves of player P in D are legal moves.
+We e AV DP play D f0 , ve0 , V f1 , ve1 .
+.
+.
+as follows: create the G e:V f a V0 = (N0 , AV, 0) where N0 is such that fM0 (N0 ) = q0 .
+One such N0 exists since Img fM0 = M0 and q0 a M0 (recall that (q0 , 0) is the result of a move of P in G from (M0 , AV, 0)).
+e the position a From (qi , i), player A chooses in G (Ni+1 , qi , i + 1), where Ni+1 is chosen such that fhMi+1 ,q,w[i]i = qi+1 .
+By induction, we show that vi = vei .
+First, ve0 = DeP ((N0 , AV, 0)) = (fM0 (N0 ), 0) = (q0 , 0) = v0 .
+Now, assume that for some i, vi = vei .
+Then, Vei = (Ni+1 , qi , i+1), and Vi = DA (qi , i) = (Mi+1 , qi , i+1).
+Now, vei+1 = DeP (Vei ) = DeP ((Ni+1 , qi , i + 1)) = = (fhMi+1 ,qi ,w[i]i (Ni+1 ), i + 1) = = (qi+1 , i + 1) = = vi+1 .
+Hence, trace(D) = trace(e D ).
+e AV DP play D aaa Consider an arbitrary G e : Ve0 ve0 Ve1 ve1 .
+.
+., and let qi and Ni be such that: vei = (qi , i) Ve0 = (N0 , AV, 0) Vei+1 = (Ni+1 , qi , i + 1) e AV DP play, it satisfies that Since D e is a G vei+1 = DeP (Vei+1 ) = (fhMi+1 ,qi ,w[i]i (Ni+1 ), i + 1) where Mi is obtained from DA (qi , i) = (Mi+1 , i + 1).
+Now, we define the play D : V0 v0 V1 v1 .
+.
+.
+as follows.
+First the move for A is played according to DA : V0 = DA () = (M0 , AV, 0)  Vi+1 = DA (vi )  with g0 : Mod (I) a Q e Img g0 a mod (I)  gq,i : Mod (I'(q, w[i])) a Q e w[i])) Img gq,i a mod (I'(q,  (3)  e as follows: We define the strategy DeA for A in G DeA () = Img g0  DeA ((q, i)) = Img gq,i  By (3), DeA is well defined.
+We show now that DeA and DP are dual strategies.
+First, consider (q, i) an arbitrary state and (M, q, i) a legal move for player A in G. Player P will move to (q 0 , i + 1) = DP ((M, q, i)) with e player A will move from q 0 = gq,i ((M, q, i)).
+In G, e to (q, i) into (Img gq,i , q, i).
+We let player P move in G 0 0 (q , i + 1), which is legal, since q a Img gq,i .
+Consider e now an arbitrary state (p, i) and the move of A in G: DeA ((p, i)) = (Img gp,i , p, i), and consider an arbitrary legal move for P , (p0 , i + 1), hence p0 a Img gp,i .
+Consequently, there is an M a Mod (I'(p, w[i])) such that gp,i ((M, p, i)) = p0 .
+Let A choose (M, p, i) as the move from (p, i), which is a legal move.
+Then, playing from (M, p, i) in G according to DP , the resulting state is (p0 , i + 1).
+This shows that DA and DeP are dual strategies.
+It is important to note that the moves of the players playing against the strategies are not restricted to follow proper strategies (give minimal models or be proper choice functions).
+Still, DA is winning precisely whenever DP is.
+ The following theorem follows directly from Lemma 15 and Theorem 17.
+This theorem allows to reason about complementation simply by reasoning about traces of two automata with dual frames.
+Then, we let the moves of P to be: v0 = (q0 , 0)  vi+1 = (qi+1 , i + 1)  We only need to show that these moves for P are legal.
+First, q0 = fM0 (N0 ), and since Img fM0 = M0 it follows that q0 a M0 , so moving from V0 into v0 is a legal move.
+Moreover, (qi+1 = fhMi+1 ,qi ,w[i]i (Ni )).
+Since Img fhMi+1 ,qi ,w[i]i = Mi+1 it follows that qi+1 a Mi+1 , so again moving from Vi+1 into vi+1 is a legal move.
+By construction, trace(D) = trace(e D ) again.
+(2): Assume now that DP is a (proper) strategy for P in G. The strategy DP is characterized by DP ((M0 , AV, 0)) = (q0 , 0)  DP ((M, q, i)) = (qi , i)  Since the strategy is proper there are proper choice functions: g0 : Mod (I) a Q  gq,i : Mod (I'(q, w[i])) a Q  Theorem 18 Let A and Ae be specular automata.
+Then e L(A) = ILD \ L(A).
+We show the correctness of Streett ranking algorithm.
+Lemma 19 Let G be an accepting run, and let G 0 be a nonempty sub-graph of G with no G vertices and only infinite paths.
+Then, there is some node in G 0 that cannot access any B node.
+Proof: Consider, by contradiction that there is no one such a node in G 0 = (V 0 , E 0 ), or equivalently, that all vertices in G 0 can access a B node: for all hq, li a V 0 , there is some hq 0 , l0 i a V 0 with q 0 a B and hq, li aaE 0 hq 0 , l0 i.
+Then, every node can be associated with a B node by a map next(hq, li) that returns one path to a B reachable  node (for example, the shortest non-empty path to a B state, and picking the smallest according to some lexicographic order among the shortest ones.)
+Then using induction define, starting from an arbitrary node hq, li a V 0 , an infinite path in G 0 that visits infinitely B nodes infinitely often by concatenating the paths returned by next.
+Let us call D one such path.
+Since D(0) = hq, li is a node of G 0 , and consequently a node of G, D(0) is reachable from some initial node by point 3 in the definition of a run.
+Let Dpre be a finite path in G from a node hq0 , 0i a V .
+The path Dpre D is a trace in G that visits G nodes finitely often (only nodes in Dpre can possibly be G nodes) and B nodes infinitely often in D. This trace contradicts that G is an accepting run.
+ We will use the following notation, for a given sub-graph G 0 of a run: def  access(G 0 , hq, li) = {hq 0 , l0 i | hq, li aa hq 0 , l0 i} 0  def  0  finite(G ) = {hq, li | access(G , hq, li) is finite} def  nobad(G 0 ) = {hq, li | access(G 0 , hq, li) aS B = a} def  width(G 0 , l) = |{hq, li a G 0 }|  Lemma 6 G is an accepting run iff there is an odd S{1}-ranking for G. Proof: We prove the two directions separately: aaa Assume there is an odd S{1}-ranking f for G and let D be an arbitrary trace of G. Since, f is odd, either D visits infinitely many G states, in which case D is accepting, or f (D) converges to an odd value.
+In this second case, there is l such that for all l0 > l, f (D(l0 )) = f (D(l)) and f (D(l)) is odd.
+By definition of S{1}-ranking (point (i)), D(l0 ) cannot be a B state, and consequently D visits only finitely many B states.
+Hence, D is an accepting trace.
+aaa Assume G is an accepting run for A. a Initial Stage The construction of f starts by removing from G all G vertices.
+Let VG be {hq, li | q a G}, then f (hq, li) = 0 for all hq, li a VG .
+Also, let V0 = finite(G \ VG ), we let f (hq, li = 0 for all hq, li a V0 .
+Also G0 = G \ (VG aS V0 ), which contains the original graph except the G nodes, and every node that reach G nodes in all its outgoing paths.
+a Incremental Stage The algorithm proceeds in at most n rounds, performing the following two operations in each round k. The round begins with subgraph G2k of G. a Phase I: Let V2k+1 = nobad(G2k ).
+Then, f (hq, li) = 2k + 1 for all hq, li a V2k+1 .
+G2k+1 = G2k \ V2k+1 .
+a Phase II: Let V2k+2 = finite(G2k+1 ).
+Then, f (hq, li) = 2k + 2 for all hq, li a V2k+2 .
+G2k+2 = G2k \ V2k+2 .
+The graphs G0 as well all graphs G2k+2 are either empty, or guaranteed to have only infinite paths, since all nodes that can only access finitely many nodes are removed.
+(a finite path ends in a node with no successor).
+Hence, if V2k is non-empty Lemma 19 guarantees that V2k+1 is non-empty as well: there is a node in V2k+1 that accesses infinitely many vertices, but no B node.
+In particular there is an infinite path that is removed in Phase I.
+Hence, for some level l, all l0 > l satisfy that width(G2k+1 , l0 ) + 1 a$?
+width(G2k , l0 ) Phase II only removes nodes, so width(G2k+2 , l0 ) a$?
+width(G2k+1 , l0 ) Since, initially width(G, l) a$?
+n for all levels l, it follows that, at the end of round k, for a sufficiently large l0 : width(G2k+1 , l0 ) a$?
+n a (k + 1) Consequently, at the end of Phase II of round n a 1: width(G2na1 , l0 ) a$?
+0.
+All remaining vertices in G2na1 can access only finitely many vertices.
+Hence G2n = a, and the algorithm terminates.
+Note that it is possible that G2k = a in an earlier round, but guaranteed that after round n, G2n = a.
+It remains to be seen that f is indeed an odd S{1}-ranking.
+The function f is a S{1}-ranking:: By construction, all B vertices are marked in Phase II of some round because B aS nobad(Gi ) = a, and hence receive an even value.
+Therefore, all B nodes satisfy condition (i) of the definition of S{1}-ranking.
+Now consider an arbitrary node hq, li.
+We consider three cases: 1) If hq, li is removed in the Initial Stage then q is either a G node, in which case (ii) holds trivially, or it is in V0 .
+In the latter case, all its outgoing paths hit a G node in a finite number of steps, and all the intermediate nodes are mapped to 0.
+Hence, if hq, li a hq 0 , l0 i, then f (hq 0 , l0 i) = 0 = f (hq 0 , l0 i) and f (hq, li) aL f (hq 0 , l0 i), and condition (ii) holds.
+2) If hq, li is removed in Phase I of round k, so hq, li a V2k+1 .
+Then all its outgoing paths either hit a node removed in a previous round or are in V2k+1 .
+In both cases hq, li a hq 0 , l0 i implies f (hq, li) aL f (hq 0 , l0 i).
+3) If hq, li is removed in Phase II of round k, so hq, li a V2k+2 .
+Then all its outgoing paths either hit a node removed in a previous round, or are in V2k+1  or in V2k+2 .
+In all cases hq, li a hq 0 , l0 i implies f (hq, li) aL f (hq 0 , l0 i).
+The function f is an odd S{1}-ranking:: Consider an arbitrary path D. If D visits infinitely many G nodes, then the condition for f being odd on D holds.
+If D does not visit infinitely many G nodes, then f converges on D to some value.
+This value cannot be even, because that would imply that all these infinitely many vertices are in some V2k+2 , but there are not infinite paths containing these kind of node: by construction all nodes label in Phase II have finite outgoing paths before changing ranking.
+This finishes the proof.
+ Theorem 7 Let A be an ASW{1} and N the corresponding NBW.
+Then w a L(A) if and only of w a L(N ).
+Proof: We prove the two directions separately: aaa We assume w a L(A) and show that w a L(N ).
+Let G be a run dag for w on A, and f an odd S{1}-ranking.
+Consider the sequence Q0 Q1 .
+.
+.
+of states of N induced by G and f as Qi = (Si , Oi , fi ) with the set of states in Si : Si  = {q | hq, ii a G}  and the pending states Oi : O0 = {p | hp, 0i a G with p a /G  and f (hp, 0i) is even}  Oi+1 = {p | hp, i + 1i a G with p a /G and f (hp, i + 1i) even}  Oi+1 = {p | hp, i + 1i a G  if Oi = a  and p a / G, and for some q a Oi , f (hp, i + 1i) = f (hq, ii)  and hq, ii a hp, i + 1i}  if Oi 6= a  and fi (q)  =  f (hq, ii)  It is routine to check that Q0 Q1 .
+.
+.
+is a run.
+We show that this run is accepting for N .
+By contradiction, if Q0 Q1 .
+.
+.
+is non accepting, there exists i such that, for all j aL i, Qj a / FN , hence Oj 6= a.
+By D3 every qj+1 a Oj+1 has a predecessor qj a Oj with fj (qj ) = fj+1 (qj+1 ) being an even value by definition of Oi above.
+Since, as shown above, every Oj 6= a, it follows that there is an infinite sub-dag of nodes in G of the form hqj , ji with f (hqj , ji) being even, and with infinitely many nodes having an incident edge.
+By KoEnigas lemma, since this dag is finitely branching, it has an infinite path, all whose nodes are assigned the same even value by f .
+This is a contradiction with f being an odd S{1}-ranking for G. Hence we find  that Q0 Q1 .
+.
+.
+is a run that accepts w which shows w a L(N ).
+aaa We assume now w a L(N ) and show that w a L(A).
+Let Q0 Q1 Q2 .
+.
+.
+be an accepting run for w on N and let G = (V, E) and f be an induced run and function V a [2n].
+We conclude from Q1 and D2, respectively, that properties (i) and (ii) of S{1}-ranking holds on f .
+Therefore f is a S{1}-ranking.
+Now let us show that f is an odd S{1}-ranking.
+To this end, consider an arbitrary path D in G for which we will show that either condition (i) or (ii) of the definition of odd S{1}-ranking holds.
+If D visits G nodes infinitely often, then condition (i) holds.
+Otherwise, there is an i after which no more G nodes are visited in D. Hence, since every node D(i0 ) with i0 > i + 1 has a predecessor not in G, D2 shows that f converges on D to some value.
+Let j aL i0 be such that f has converged already (i.e., f (D(j 0 )) = f (D(j)) for all j 0 aL j).
+Let Qk , Ql a FN with j a$?
+k < l be two accepting states in the run Q0 Q1 of w on N .
+It must be the case that D(k + 1) a / Ok+1 .
+Assume the contrary (i.e.
+D(k + 1) a Ok+1 ), since D visits no G node after k and f has converged, then we conclude by D3 that D(k 0 ) a Ok0 for all k 0 > k, hence that Ol 6= a, and finally that Ql a / FN by definition of FN which is a contradiction.
+Also since D(k + 1) a / Ok+1 and Qk a FN , D3 shows that f (D(k + 1)) is odd.
+Hence f converges on D to an odd value showing that condition (ii) of the definition of S{1}-ranking holds.
+This concludes that f is an odd S{1}-ranking for G. Finally Lem.
+6 shows that G is an accepting run, hence that w a L(A).
+ Lemma 20 G is an accepting run iff there is a stratified odd S{1}-ranking for G. Proof: We prove the two directions separately: aaa Assume there is a stratified odd S{1}-ranking {fj } for G and let D be an arbitrary trace of G. Since, {fj } is odd, either D visits infinitely many G states, in which case D is accepting, or D converges to a stratum Sj and fj (D) converges to an odd value.
+In this second case, there is l such that for all l0 > l, fj (D(l0 )) = fj (D(l)) and fj (D(l)) is odd.
+By definition of stratified S{1}-ranking (point (i)), D(l0 ) cannot be a B state, and consequently D visits only finitely many B states.
+Hence, D is an accepting trace.
+aaa Assume now that G is an accepting run for A.
+The construction of each fj works at each stratum independently.
+Fix Sj .
+First, one removes all G vertices and all those vertices not in Sj .
+The algorithm works exactly as with the proof of Lemma 6 by stages, at each stage first removing those states that cannot access B nodes,  and then remove those states that only access finitely many nodes.
+Since at each stage one removes at least one element from all cuts at a sufficiently large l, at the width of elements from Sj is at most |Sj |, the algorithm is guaranteed to finish in |Sj | rounds, generating an odd S{1}-ranking for stratum Sj .
+It is routine to check that {fj } is indeed a stratified S{1}-ranking.
+ Theorem 11 Let A be a stratified ASW{1} and N the corresponding NBW using stratified rankings.
+Then w a L(A) if and only of w a L(N ).
+Proof: The proof is analogous to Theorem 11.
+Fig.
+2 depicts the translation of RLTL into APW.
+q0 false  q0 true  Automaton Aa for a.  Specular automaton Aa .
+=  =  =  Ay  Ax  =  Ay  Ax  Automaton Axa"y for x a" y.  Specular automaton Axa"y .
+=  =  Ax  Ax  Automaton AAZx for AZx.
+1  Specular automaton AAZx .
+0  =  Nr  Ax  Nr  Automaton Ar;x for r ; x. q0  Ay  q0  Ay  Automaton Ax|riiy for x|riiy.
+Ay  Ax  q0  =  =  Ax  1  Nr  Automaton Ax|riy for x|riy.
+Figure 2.
+0  Nr  Specular automaton Ax|riiy .
+2  =  =  1  Nr  Ax  0  =  =  q0  Ax  Specular automaton Ar;x .
+1  =  =  Ay  1  =  Ax  0  Nr  Specular automaton Ax|riy .
+Specular automata pairs for a, x a" y, AZx, x ; y, x|riiy and x|riy.

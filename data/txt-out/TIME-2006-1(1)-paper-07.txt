@@ -1,0 +1,342 @@
+k-Anonymity in Databases with Timestamped Data Sergio Mascetti Claudio Bettini DICo, University of Milan, Italy  X. Sean Wang Dept of CS, University of Vermont, VT  Sushil Jajodia CSIS, George Mason University, VA  Abstract In this paper we extend the notion of k-anonymity in the context of databases with timestamped information in order to naturally define k-anonymous views of temporal data.
+We also investigate the problem of obtaining these views.
+We show that known generalization techniques, despite being applicable under certain conditions, have some limitations, and propose a new generalization algorithm based on the hierarchy of time granularities.
+Table 1.
+Relation with timestamped data.
+Address date and time Exam Addr1 2005-11-22T09:30 Ex 1 Addr2 2005-11-22T10:30 Ex 2 Addr2 2005-11-22T11:30 Ex 3 Addr1 2005-11-23T09:00 Ex 2 Addr1 2005-11-24T10:00 Ex 5  tify the data respondents or generalizing values.
+1.
+Introduction There are many databases that store timestamped data, such as those storing bank transactions, medical exam results, audit logs, insurance records, etc.
+These data may need to be transferred among organizations, or different branches of the same organization, and sometimes may even need to be available to the general public once appropriately anonymized.
+A common consensus is that the release of specific stored data, even if anonymized, is in many situations preferable to the release of a statistical summary of the same data.
+The notion of k-anonymity, proposed by Samarati [5], addresses the problem of releasing microdata while safeguarding the anonymity of the respondents to which the data refer.
+In this approach, a database relation provides k-anonymity if any attempt to link identifying information to its content maps the information to at least k individuals.
+k-anonymity is based on the identification in the relation schema of the set of attributes whose values may be used, possibly together with external information, to re-identify the data.
+For example, even if data about the ZIP code, date of birth and sex do not explicitly identify an individual, they may be linked to external information (e.g., public voter lists) to obtain name, address and city.
+These attributes are called Quasi-Identifiers (QI).
+Relations can be made kanonymous either by dropping attributes that uniquely iden-  Several papers have recently investigated kanonymization techniques (see [3] for a taxonomy of k-anonymization models).
+It is generally assumed that the database relation to be anonymized has a single tuple for each respondent.
+We argue that in databases with timestamped data this assumption is not reasonable and a trivial conversion of data in terms of a different schema to satisfy this requirement may not be effective.
+For example, consider a hospital's database containing information about patients and their medical exams.
+Suppose that some information about medical exams needs to be released after being appropriately anonymized.
+Table 1 represents information about the patients address, the date and time of the exam and the exam type, possibly together with the exam results and other sensitive information.
+Clearly, the hospital also knows the actual identity of each patient undertaking a specific exam, but this is not to be revealed.
+In order to enforce k-anonymity of this relation with known techniques, the relation should be first transformed in a different one satisfying the condition of having a single tuple for each patient.
+If we assume that the QI is composed by the attribute address only, and if we assume that, in Table 1, the second and the third tuples belong to the same patient and the remaining tuples to a different one, then one way to achieve the goal is to convert the data using a different schema, as shown in Table 2.
+Although the appropriateness of using timestamps in  Table 2.
+A different relation schema enabling the representation of a single tuple for each patient.
+Address addr1 addr2  Exam@ 2005-11-22 T09:30 Ex1 NULL  Exam@ 2005-11-22 10:30 NULL Ex2  ... ... ...  attribute names may be questionable 1, this would enable standard k-anonymization techniques to be applied.
+However, consider the case that the attacker can acquire spatiotemporal information about the patients, for example from a mobile phone service provider or from a location-based service provider.
+Since the attacker knows the users' location at specific times and knows the location of the hospital, he knows when a user is at the hospital.
+In order to protect anonymity, in this case we must consider time information (the date-time attribute) as part of the QI together with the address attribute.
+In this case, the conversion of the relation schema performed above poses a serious problem.
+Indeed, in Table 2 the dimension of QI becomes greater than the number of possible values of the temporal attribute.
+Since in existing approaches (e.g., [3, 5, 6]) the complexity of the anonymization algorithm is exponential in the size of the QI, and since the number of timestamps is usually large, this preprocessing phase simply makes the algorithms ineffective.
+In order to avoid the problems described above, in this paper we propose a slight revision of the main definitions of k-anonymity allowing anonymization techniques to be applied even on relations having multiple tuples associated to the same respondent.
+While this extension is very much needed to deal with databases with timestamped data, it is also quite convenient for general databases.
+Our approach is a proper extension of the formalism proposed in [3].
+The second part of the paper investigates anonymization techniques considering in particular the case when the temporal attribute is part of QI.
+After showing that known generalization algorithms, despite being applicable under certain conditions, have limitations regarding the anonymization of the temporal component, we propose a new generalization algorithm based on the hierarchy of time granularities.
+The main contributions of this paper are the following: (i) The original definition of k-anonymity of the view of a 1 This approach has some analogies with the attribute timestamped temporal database model [7].
+database relation is extended to relax the condition that a relation has only a single tuple for each respondent; (ii) We provide a new generalization algorithm specific for achieving k-anonymity by generalizing the temporal attribute.
+We show that the algorithm computes the least kanonymous generalization accordingly to a specific metric.
+Formal properties of the algorithm are investigated including a time complexity analysis.
+The rest of the paper is organized as follows.
+In Section 2 we provide some formal notions, including the revised definition of a k-anonymous relation.
+In Section 3 we investigate anonymization techniques, and propose in Section 4 a new algorithm.
+Section 5 concludes the paper.
+2.
+Extended notion of k-anonymity relations In the following we denote with R the database relation containing the data to be anonymized.
+We call UID a single hidden attribute of R that uniquely identifies the respondent of each tuple, i.e., the user to whom the tuple values refer to.
+In [5] the U ID attribute, if present, is removed at the beginning of the generalization process; in our approach, the attribute is used during the generalization process and is suppressed just before the data is released.
+Therefore, in this paper, when not differently stated, we assume that R is a database relation whose schema is composed by the attribute U ID, a set QI = {Q1 , .
+.
+.
+, Qn } of attributes for the quasi-identifier and a set DAT A of other attributes.
+Note that the values of the DATA attributes are assumed not to be externally available in combination to any information on data recipients, otherwise the attributes should have been included in QI.
+We define a function that, given a combination of values of QI, returns the set of respondents associated with tuples containing that combination.
+Definition 1 Given a relation R with D U the domain of U ID and DQ the Cartesian product of the domains of Q1 , .
+.
+.
+, Qn , the function u R : DQ - 2DU is defined as uR (q1 , .
+.
+.
+, qn ) = pUID (s(Q1 =q1 [?]...[?
+]Qn =qn ) (R)).
+Note that in this paper we use the relation algebra definition of the projection (p) operation, whose result does not contain duplicate tuples.
+The notion of frequency set (analogous to the one defined in [3]) can now be easily formalized.
+Definition 2 Let t be a tuple of R and q 1 , .
+.
+.
+, qn  = pQI (t).
+The frequency set of q 1 , .
+.
+.
+, qn  in R is defined as fR (q1 , .
+.
+.
+, qn ) = |uR (q1 , .
+.
+.
+, qn )|.
+In the following, when no confusion arises, we use u() and f () without indicating the database relation R.  Table 3.
+A relation that is not 2-anonymous.
+UID QI data Q T u1 q1 2006-01-03 d0 u2 q1 2006-01-03 d1 u1 q1 2006-01-11 d2 u4 q1 2006-01-12 d3 u5 q2 2006-02-07 d4 u6 q2 2006-02-10 d5  In SQL, the frequency set can be obtained with the query: SELECT COUNT (DISTINCT U ID) FROM R WHERE Q1 = q1 AND .
+.
+.
+AND Qn = qn .
+Definition 3 Relation R is said to be k-anonymous if, for each tuple t of R, f R (pQI (t)) >= k. Example 1 Consider the relation represented in Table 3.
+The relation is not 2-anonymous.
+Indeed, consider the third tuple and its projection on the QI: q 1 , 2006-01-11.
+Since it is the only tuple with this value for the QI, f (q1 , 2006-01-11) = 1.
+Definition 4 Given a relation R, a view V f is called a kanonymization of R if there exists a view V a of R such that: (i)Va is k-anonymous, (ii) V a is obtained from R by suppressing tuples or suppressing, modifying or distorting data in any attributes but U ID, and (iii) V f = pS (Va ) where S = Att(Va ) \ {U ID}.
+In the definition above, V a is a k-anonymous view of R; it should not be released because it contains the U ID.
+On the contrary, V f does not contains the U ID and can therefore be revealed; note that V f is intuitively k-anonymous since it is a projection of V a , but, according to Definition 3, k-anonymity cannot be checked since the absence of the attribute U ID does not allow to apply the function f ().
+3.
+Anonymization Techniques In the following of this paper we focus on the techniques that can be used to enforce k-anonymity assuming that the time attribute is part of the QI, i.e., QI = {Q1 , .
+.
+.
+, Qn , T }.
+We first show that, although we relax the assumption about a single tuple for each respondent, existing k-anonymization strategies can still be used in our approach.
+However, in Subsection 3.2 we observe that the existing algorithms make an assumption that constrains the number of temporal granularities that can be used to express a temporal attribute.
+Since a larger set of granularities can  lead to more desirable generalization we propose an alternative anonymization strategy, assuming that the time attribute of each relation can be expressed in terms of a temporal granularity chosen from an arbitrarily rich calendar.
+3.1.
+Adopting known generalization algorithms Several anonymization techniques have been proposed in the literature ([4, 5, 6, 3]).
+Among others, LeFavre et.
+al.
+([3]) defined an algorithm that computes all the possible k-anonymous generalizations of a given relation.
+A domain generalization relationship (<= D ) is defined between the domains of the attributes of QI: intuitively, D i <=D Dj indicates that the values in the domain D j are the generalization of the values in the domain D i .
+The algorithm proposed in [3] is based on three properties and one assumption about the domain generalization relationship.
+The properties intuitively state that: (i) if a relation is k-anonymous, then all its generalizations are k-anonymous (Generalization property); (ii) if a view V is generalized into a view V  , then the frequency set function of V  can be computed from the frequency set function of V (Rollup Property) and (iii) if a view is k-anonymous with respect to a quasi-identifier QI, then it is also k-anonymous with respect to any set of attributes P [?]
+QI (Subset property).
+In the formulation of the algorithm, it is also assumed that the domain generalization relationship is a total order.
+When temporal information is used in a database relation, it is generally represented in a date format like 2005-12-25 or 2005-12-25 15:35.
+A standard date format generalization of these values consists of dropping characters at the right of the string, obtaining, for example, 2005-12.
+Adopting a standard date format generalization, the algorithm presented in [3] can also be used in our approach for the following three reasons: (i) the three properties and the assumption about the domain generalization relationship are verified; (ii) relaxing the assumption about a single tuple for each respondent only affects the definition of frequency set, and (iii) the algorithm proposed in [3] does not deal with the computation of the frequency set.
+3.2.
+Using granularities to generalize temporal data A date format generalization as the one presented above is necessarily based on a total order of time granularities, and it is usually limited to the most common ones (e.g., year, month, day, hour).
+Hence, it may sometimes lead to timestamps that are being generalized too much, possibly making data unusable.
+A different approach consists in changing the time attribute in order to reflect the fact that its values denote granules of a specific time granularity.
+A larger set of granularities can help enhancing the tradeoff between generality (to guarantee k-anonymity) and specificity (to guarantee minimality).
+For example, a generalization of days in terms of weeks could be preferred to a generalization in terms of months if k-anonymity can be guaranteed with both of them.
+By adopting the framework proposed in [2], the set of granularities to be used in the generalization can be arbitrarily defined, taking into account the specific domain of data.
+For example, it is easy to define a granularity G that partitions the hours of the day into morning, afternoon, and night.
+Standard granularity operations could be used to present the result in a user-friendly way.
+Using granularities to generalize the values of the temporal attribute requires a different algorithm with respect to the one presented in [3].
+Indeed, we show that, if granularities are used to perform the generalization, the three properties and/or the total order assumption are not always guaranteed.
+In the following we need to go into some technical details involving granularities in order to illustrate the specific generalization process.
+We follow the formal notions defined in the consensus glossary [1].
+The definitions essential to the comprehension of this paper are reported in Appendix A.
+We indicate with G the granularity used to express the temporal attribute of R and with G the set of granularities that can be used to express the temporal attribute of R. We also denote with R H the generalization of R that is obtained using H to express the temporal attribute of R. If we denote with G(i) the granule of G with index i, relation RH can be obtained by computing, for each index i appearing in the temporal attribute of R, the index j of the granule of H that covers G(i).
+This computation can be performed with the * operation: j = i H G. Example 2 Consider the relation R presented in Table 3.
+The temporal attribute is expressed in terms of day.
+We can compute R week by applying the i week day operation to each value i of the temporal attribute.
+Table 4 shows the relation R week .
+Note that, differently from R, relation Rweek is 2-anonymous.
+The *H G operation is not always defined.
+For example, month iweek is not defined if week i starts in a month and ends in the following.
+Hence if i is a timestamp value in H R and iH is not G is not defined, then a generalization R feasible.
+In order to avoid this situation we assume that for each H [?]
+G, G is finer than H (G   H).
+This guarantees the function i H G is always defined.
+In practice, the generalization process disregards any granularity in G not satisfying this condition.
+Note that the   relation has the same role that the <= D relation has in the approach proposed in [3].
+Indeed, if we  Table 4.
+Generalization of the temporal attribute of Table 3 in terms of week UID u1 u2 u1 u4 u5 u6  QI Q q1 q1 q1 q1 q2 q2  T 2006-week 1 2006-week 1 2006-week 2 2006-week 2 2006-week 6 2006-week 6  data d0 d1 d2 d3 d4 d5  impose that the   relation is a total order in G, then all the three properties and the assumption of [3] are verified, and hence that anonymization strategy can be used.
+However, in general,   is not a total order.
+For example, if we want to generalize a temporal attribute expressed in terms of day we may want to use the granularities week and month.
+However, week   month and month   week.
+Hence, if we impose that that the   relation is a total order in G, then we cannot have both week and month in G. The following result shows that, with the additional assumption that the granularities in G have the same image of G, if the   relation is not a total order in G then no total order exists preserving the Generalization Property.
+Note that this is a reasonable assumption; Indeed H covers G follows from G   H and G covers H may be desirable since, intuitively, if G does not cover H, then H generalizes more than required without enhancing k-anonymity.
+We have a more involved version of Theorem 1 that also admits the case that G does not cover H. Theorem 1 If the   relation is not a total order in G, then there does not exist a relation <= D that is a total order in G and such that for each relation R and granularities H, H  [?]
+  G such that RH <=D RH , RH is k-anonymous implies R H is k-anonymous.
+From Theorem 1 follows that the strategy proposed in [3] cannot be applied, since it requires that <= D is a total order such that the Generalization property holds.
+4.
+An algorithm for time-based anonymization In this section we propose an algorithm for the anonymization of the private table based on the time attribute only.
+Such an algorithm may be useful in many cases, based on the following considerations: * the QI is generally composed by more than one attribute, but several researchers have pointed out that a  uniform generalization of all the attributes in the QI may not be desirable.
+* if we assume that QI is minimal (as assumed in [3]), then it is sufficient to generalize one of the attributes in order to obtain k-anonymity; * the particular semantics associated with the time attribute makes it a candidate for being generalized in many application domains.
+4.1.
+Least temporal generalization Our goal is to define an algorithm that, given a relation R and a set of granularities G, returns a granularity H such that RH is k-anonymous.
+In general, there exists a set S [?]
+G of granularities such that for each H [?]
+S, R H is k-anonymous.
+In this case, the algorithm should return the granularity H [?]
+S such that R H is the "least general"  among all the R H for each H  [?]
+S. Therefore, we define a metric gen() that is used to quantify the generalization of R; then, a total order relation <= g is used to compare gen(R H )  and gen(RH ) for each pair of granularities H, H  [?]
+G. Intuitively, the finer than relationship also defines an order on the generality of the relations expressed in terms of different granularities.
+Indeed, it is easily seen that if H    H  then RH k-anonymous implies R H k-anonymous.
+Hence, the following property on the gen() metric is desirable.
+Property 1 Given a relation R, a metric function gen(), a total order <=g on the co-domain of gen(), and granularities  H, H  [?]
+G, if H   H  , then gen(RH ) <=g gen(RH ).
+A first candidate metric is the one returning the minimum value of the frequency set of R for each value of the quasiidentifier.
+Definition 5 Given a relation R, we define gen m (R) = min(i[?
+]pQI (R)) fR (i).
+Note that this is equivalent to say that gen(R) is the maximum value k [?]
+N such that R is k-anonymous.
+We prove that Property 1 holds using the metric gen m () and the order <= on the natural numbers.
+Theorem 2 Given a relation R and two temporal granularities H and H  , if H   H  then genm (RH ) <=  genm (RH ).
+Another desirable property for a metric is to preserve kanonymity, as formally stated by Property 2.
+Property 2 Given two relations R and R  , a metric function gen(), and a total order <= g on the co-domains of gen(), if gen(R) <=g gen(R ) then, if R is k-anonymous, then R is k-anonymous.
+It is easily seen that metric genm () preserves kanonymity; Indeed, Property 2 holds using the metric genm () and the order <= on the natural numbers.
+As illustrated by Example 3, this metric has some drawbacks.
+Since only the minimal value is considered, in many  situations, we can have gen m (RH ) = genm (RH ) while,  intuitively, R H is less general then R H .
+To overcome this problem, a metric considering the average generalization of values with respect to the original relation can be introduced.
+Definition 6 Given a relation R, we define gen s (R) =  f (pQI (t)).
+R (t[?
+]R) The metric returns the sum, for each tuple t in the (possibly generalized) relation R, of the frequency set function of the QI of t. While in principle the metric should divide the sum by the number of different timestamps in the original relation, this amount is constant for all generalizations and can be ignored.
+We prove that Property 1 holds using the metric gen s () and the order >= on the natural numbers.
+Theorem 3 Given a relation R and two temporal granular ities H and H  , if H   H  then gens (RH ) >= gens (RH ).
+Note that Property 2 does not hold using the metric gens () and the order >= on the natural numbers.
+However, the metric gens () shows a higher discrimination power than genm () while preserving the generalization intuition.
+To exploit the benefits of both metrics it is possible to compose them.
+Definition 7 Given a relation R, we define gen c (R) = genm (R), gens (R).
+The idea of the metric gen c () is that, when two relations  RH and RH are compared, first gen m (RH ) is compared  with genm (RH ) and, if this metric cannot order the two relations, then the metric gen s () is applied.
+To order the results of the gen c () metric, we define a total order <=c on pairs of numbers such that a, b <= c a , b  if (a < a ) [?]
+(a = a [?]
+b >= b ).
+Theorem 4 Let R be a relation, H, H  be two granulari ties.
+If H   H  , then genc (RH ) <=c genc (RH ).
+Example 3 Consider relation R and R week shown in Tables 3 and 4, respectively.
+It is possible to generalize R with the relation R month as shown in Table 5.
+Note that Rmonth is 2-anonymous.
+Since both R week and Rmonth are 2-anonymous, and month and week are not ordered by the   relation, a metric should be applied.
+Applying gen m () we obtain genm (Rweek ) = genm (Rmonth ) = 2.
+On the contrary, if we apply the  UID u1 u2 u1 u4 u5 u6  QI Q q1 q1 q1 q1 q2 q2  T 2006-month 1 2006-month 1 2006-month 1 2006-month 1 2006-month 2 2006-month 2  data d0 d1 d2 d3 d4 d5  However, a smarter strategy can be adopted to strongly improve the performance of the algorithm: it is possible to exploit Property 1 to avoid considering granularities H  [?]
+G if a granularity H [?]
+G with H   H  has been considered, and RH is k-anonymous.
+Algorithm 1 presents this strategy.
+The main body of the algorithm simply initializes the values for the recursive Procedure 1.
+The metric gen c () and kanonymity are computed by Procedure 2.
+Algorithm 1 leastGeneralization  Table 5.
+Generalization of the temporal attribute of Table 3 in terms of month  gens () metric, we obtain gens (Rweek ) = 2 + 2 + 2 = 6 and gens (Rmonth ) = 3 + 2 = 5 identifying R week as "less general" than R month which is intuitively correct.
+It can also be easily seen that gen c (Rweek ) <=c genc(Rmonth ).
+Note that the order genc(Rweek ) <=c genc (Rmonth ) depends on the values of R. Indeed, it is possible that, for a certain R, genc (Rmonth ) <=c genc (Rweek ).
+Intuitively, this happens when most of the values of the temporal attribute of R are in the same week but in different months.
+Based on a metric it is possible to define which relations provide a least generalization while guaranteeing kanonymity.
+Definition 8 Given a relation R, a metric function gen() with a total order <=g on its co-domain, a set G of temporal granularities, an integer k, and H [?]
+G, we say that R H is a least k-anonymous generalization of R with respect to G if  RH is k-anonymous and gen(R H ) <=g gen(RH ) for each  H  [?]
+G such that R H is k-anonymous.
+Note that, depending on the metric, it is possible that the least k-anonymous generalization of R is not unique.
+This can happen with all the three metrics considered above.
+In the rest of the paper we use the metric gen c (), and we apply the total order <= c .
+However, our results are independent from this choice.
+4.2.
+Time-based anonymization algorithm Our goal is to design an algorithm that computes G  [?]
+G such that G is a least k-anonymous generalization of R with respect to G. A straightforward strategy to solve the problem consists in computing, for each granularity H [?]
+G, the metric genc(RH ) after checking the k-anonymity of R H , hence  identifying a granularity G  such that RG is a least kanonymization of R with respect to G.  * Input: a relation R, whose schema is composed by an attribute U ID, a set of attributes DAT A and a set of attributes QI = {Q1 , .
+.
+.
+, Qn , T } where T is a temporal attribute expressed in terms of a granularity G; a finite set G of granularities such that H, H  [?]
+G s.t.
+H is shift equivalent to H  and [?
+]H [?]
+G, G   H; an integer value k > 1.
+  * Output: G [?]
+G, if exists, s.t.
+RG is a least kanonymous generalization of R with respect to G; null otherwise.
+* Method: G = null; minimum = null; 3: A = select U ID, Q1 , .
+.
+.
+Qn , T from R order by Q1 , .
+.
+.
+, Qn , T ; 4: leastGenRec(A, G, G, k, minimum, G ); 5: return G ; 1: 2:  Since the algorithm exploits the   relation to prune some granularities, it must consider the granularities of G in the partial order imposed by the   relation.
+It is possible to represent the granularities and the   relation by a directed graph where the nodes are the granularities, and there is an edge from H to H  if and only if H   H  and H  [?]
+G|H   H    H  .
+If there is an edge from H to H  , we say that H  is directly coarser than H. In Algorithm 1 we assume that there are no granularities in G that are shift equivalent (see Appendix A) ; thanks to this assumption, there are no H, H  [?]
+G such that H   H  and H    H, therefore the graph is acyclic.
+Note that, since the   relation does not depend on R, the graph can be precomputed once for each set G. Procedure 2 shows how to compute k-anonymity and the genc () metric for the relation A H .
+Note that relation AH is not explicitly constructed but the temporal values are computed on-the-fly by applying the * H G operation.
+The central idea of this procedure is that, since the tuples of A are ordered according to the QI, then the tuples of A H are ordered according to the same attributes.
+Indeed, the values of the attributes Q 1 , .
+.
+.
+, Qn are the same in A and AH and the order of the temporal attribute is guaranteed by  Procedure 1 leastGenRec * Input: a relation A, whose schema is composed by an attribute U ID and a set of attributes QI = {Q1 , .
+.
+.
+, Qn , T } where T is a temporal attribute expressed in terms of a granularity G; a finite set G of granularities such that H, H  [?]
+G s.t.
+H is shift equivalent to H  and [?
+]H [?]
+G, G   H; granularities H, G [?]
+G; a value minimum; an integer value k > 1.
+* Output: the output is returned by possibly updating the value of the variables G  and minimum given in input.
+Procedure 2 gen * Input: a view A, whose schema is composed by an attribute U ID and a set of attributes QI = {Q1 , .
+.
+.
+, Qn , T } where T is a temporal attribute expressed in terms of a granularity G and that is ordered by Q1 , .
+.
+.
+, Qn , T ; a granularity H s.t.
+G   H; an integer value k > 1.
+* Output: the value of gen c (RH ) if RH is kanonymous, null otherwise.
+* Method: 1:  * Method: 1: 2: 3: 4: 5: 6: 7: 8: 9: 10: 11: 12:  n = gen(A, H, k); if (n = null) then if (minimum = null [?]
+n <=c minimum) then G = H; minimum = n; end if else for (each H  [?]
+G directly coarser than H) do G = G \{H  } leastGenRec(A, H  , G, k, minimum, G ) end for end if  the properties of the * H G operation: it can be easily proved that if i < j are indexes of the granularity G, then i H G <= H jH G .
+Since in A the tuples with the same values for the QI are contiguous, then it is possible to compute the kanonymity of A H and the value of gen c (AH ) by processing the tuples in order and checking when the value of the QI changes.
+The correctness of Algorithm 1 is stated by the following result.
+Theorem 5 The Algorithm leastGeneralization eventually terminates and the result is a granularity G  [?]
+G such that  RG is a least k-anonymous generalization of R with respect to G. An accurate analysis of the complexity of the algorithm leads to the following result.
+Theorem 6 The worst case time complexity of Algorithm 1 is O(n * |R| * log2 |R| + |G| * |R| * (n + u)) where n is the number of attributes in the QI and u = |p UID (R)|.
+Intuitively, time O(n * |R| * log 2 |R|) is required to order relation R according to the n attributes of the QI and time O(|R| * (n + u)) is required to execute the gen procedure that, in the worst case, is executed |G| times.
+2: 3: 4: 5: 6: 7: 8: 9: 10: 11: 12: 13: 14: 15: 16: 17: 18: 19: 20: 21: 22: 23: 24: 25:  t = first tuple of A; sum = 0; U = [?
+]; m = |pUID (R)|; t = next tuple after t; while (t = null) do if (pQ1 ,...,Qn (t) == pQ1 ,...,Qn (t ) [?]
+pT (t)H G == pT (t )H ) then G U = U [?]
+{pUID (t )}; else if (|U | >= k) then m = min(m, |U |); sum = sum + |U |; U = {pUID (t )}; else return null; end if t = t ; t = next tuple after t; end while if (|U | >= k) then m = min(m, |U |); sum = sum + |U |; return m, sum; else return null; end if  If an index is used to keep R ordered according to the attributes of the quasi-identifier, then the worst case time complexity is linear in the cardinality of R times the cardinality of G.  5.
+Conclusions In this paper we considered the problem of the anonymization of database relations with time-dependent tuples.
+We showed that current approaches cannot be straightforwardly applied to this type of databases and proposed an extension to the notion of k-anonymity to ac-  commodate this problem.
+We also propose a more effective generalization algorithm specifically designed for the anonymization of the temporal component.
+While outside the scope of this paper, our generalization technique may be integrated in algorithms for the concurrent generalization of the values of all the attributes in QI.
+These algorithms have the goal of obtaining domain-dependent least generalizations by tuning priorities and possibly threshold values for the generalization of the attributes in QI.
+References [1] C. Bettini, C. Dyreson, W. Evans, R. Snodgrass, and X. Wang.
+A glossary of time granularity concepts.
+In Temporal Databases: Research and Practice, volume 1399 of Lecture Notes in Computer Science, pages 406-413.
+Springer, 1998.
+[2] S. X. W. Claudio Bettini, Sushil Jajodia.
+Time Granularities in Databases, Data Mining, and Temporal Reasoning.
+Springer-Verlag, 2000.
+[3] K. LeFevre, D. J. DeWitt, and R. Ramakrishnan.
+Incognito: efficient full-domain k-anonymity.
+In SIGMOD '05: Proceedings of the 2005 ACM SIGMOD international conference on Management of data, pages 49-60.
+ACM Press, 2005.
+[4] A. Meyerson and R. Williams.
+On the complexity of optimal k-anonymity.
+In Proceedings of the Twenty-third ACM Symposium on Principles of Database Systems, pages 223-228.
+ACM Press, 2004.
+[5] P. Samarati.
+Protecting respondents' identities in microdata release.
+IEEE Trans.
+Knowl.
+Data Eng., 13(6):1010-1027, 2001.
+[6] L. Sweeney.
+Achieving k-anonymity privacy protection using generalization and suppression.
+International Journal on Uncertainty, Fuzziness and Knowledge-based Systems, 10(5):571-588, 2002.
+[7] A. Tansel, J. Clifford, S. Gadia, S. Jajodia, A. Segev, and R. Snodgrass.
+Temporal Databases: Theory, Design, and Implementation.
+Benjamin/Cummings, 1993.
+A.
+Time granularities and temporal relations A comprehensive formal study of time granularities and their relationships can be found in [2].
+In this paper, for lack of space we only introduce notions that are essential to show our results.
+Granularities are defined by grouping sets of instants into granules.
+For example, each granule of the granularity day specifies the set of instants included in a particular day.
+The whole set of time instants is called time domain, and for the purpose of this paper, the domain can be an arbitrary infinite set with a total order relationship, <=.
+Definition 9 A granularity is a mapping G from the integers (the index set) to subsets of the time domain such that: (1) if i < j and G(i) and G(j) are non-empty, then each element of G(i) is less than all elements of G(j), and  (2) if i < k < j and G(i) and G(j) are non-empty, then G(k) is non-empty.
+The first condition states that granules in a granularity do not overlap and that their index order is the same as their time domain order.
+The second condition states that the subset of the index set that maps to non-empty subsets of the time domain is contiguous.
+Each granule is identified by an integer.
+if we assume to map day(1) to the subset of the time domain corresponding to January 1, 2001, day(32) would be mapped to February 1, 2001, b-day(6) to January 8, 2001 (the sixth business day), and month(15) to March 2002.
+Independently, there may be a "textual representation" of each non-empty granule, termed its label, that is used for input and output.
+This representation is generally a string that is more descriptive than the granule's index.
+An associated mapping defines for each label a unique corresponding index.
+This mapping can be quite complex, dealing with different languages and character sets, or can be omitted if integers are used directly to refer to granules.
+For example, "August 2006" and "September 2006" are two labels each referring to the set of time instants (a granule) corresponding to that month.
+The image of a granularity is the union of the granules in the granularity.
+A granularity G covers a granularity H if the image of H is contained in the image of G. Two granularities H and G are shift equivalent if there exists an integer j such that G(i) = H(i + j) for every i in the index set.
+If G and H are granularities, then G is said to be finer than H, denoted G   H, if for each non-empty granule G(i), there exists a granule H(j) such that G(i) [?]
+H(j).
+When dealing with granularities, we often need to determine the granule (if any) of a granularity H that covers a given granule of another granularity G. For example, we may wish to find the month that includes a given week.
+This transformation is obtained with the up opera tion.
+Formally, for each index z, z H G is undefined if z  H   s.t.
+G(z) [?]
+H(z ) ; otherwise, zG = z , where z is the unique index value such that G(z) [?]
+H(z  ).
+The uniqueness of z  is guaranteed by the monotonicity of granularities.

@@ -1,0 +1,495 @@
+2013 20th International Symposium on Temporal Representation and Reasoning  A New Approach To Abstract Reachability State Space of Time Petri Nets Kais Klai Institut TELECOM SudParis CNRS UMR Samovar, France kais.klai@lipn.univ-paris13.fr  Naim Aber UniversiteE Paris 13, Sorbonne Paris CiteE LIPN, CNRS UMR, France naim.aber@lipn.univ-paris13.fr  raising the problem of handling an infinite number of states.
+In fact, the set of reachable states of the TPN is generally infinite due to the infinite number of time successors a given state could have.
+Two main approaches are used to treat this state space: region graphs [1] and the state class approach [3].
+The other methods [2], [21], [4], [9], [5], [14], [6], [10] are either refinements or improvements of these basic approaches.
+The objective of these representations is to yield a state-space partition that groups concrete states into sets of states with similar behaviour with respect to the properties to be verified.
+These sets of states must cover the entire state space and must be finite in order to ensure the termination of the verification process.
+In this work, we propose a new contribution for the abstraction and the verification of finite TPN-based timed systems.
+This paper is organised as follows: In Section II, some preliminaries about TPNs and the corresponding semantics are recalled.
+In Section III, we define the Timed Aggregate Graph (TAG) associated with a TPN and we discuss the main preservation results of the TAG-based approach.
+Section IV relates our work to existing approaches.
+In Section V, we discuss the experimental results obtained with our implementation compared to two well-known tools, namely Romeo [8] and TINA [5].
+Finally, a conclusion and some perspectives are given in Section VI.
+AbstractaTime Petri nets (TPN model) allow the specification of real-time systems involving explicit timing constraints.
+The main challenge of the analysis of such systems is to construct, with few resources (time and space), a coarse abstraction preserving timed properties.
+In this paper, we propose a new finite graph, called Timed Aggregate Graph (TAG), abstracting the behaviour of bounded TPNs with strong time semantics.
+The main feature of this abstract representation compared to existing approaches is the encoding of the time information.
+This is done in a pure way within each node of the TAG allowing to compute the minimum and maximum elapsed time in every path of the graph.
+The TAG preserves runs and reachable states of the corresponding TPN and allows for verification of both event- and state-based properties.
+Keywords-Real Time Systems; Time Petri Nets; State Space Abstraction; Model Checking of Timed Properties;  I. I NTRODUCTION Time Petri nets are one of the most used formal models for the specification and the verification of systems where the explicit consideration of time is essential, such as communication protocols, circuits, or real-time systems.
+The main extensions of Petri nets with time are time Petri nets [15] and timed Petri nets [19].
+In the first, a transition can fire within a time interval whereas, in the second, time durations can be assigned to the transitions; tokens are meant to spend that time as reserved in the input places of the corresponding transitions.
+Several variants of timed Petri nets exist: time is either associated with places (p-timed Petri nets), with transitions (t-timed Petri nets) or with arcs (a-timed Petri nets) [20].
+The same holds for time Petri nets [7].
+In [18], the authors prove that p-timed Petri nets and t-timed Petri nets have the same expressive power and are less expressive than time Petri nets.
+Several semantics have been proposed for each variant of these models.
+Here we focus on t-time Petri nets, which we simply call TPNs.
+There are two ways of letting the time elapse in a TPN [18].
+The first way, known as the Strong Time Semantics (STS), is defined in such a manner that time elapsing cannot disable a transition.
+Hence, when the upper bound of a firing interval is reached, the transition must be fired.
+In contrast, the Weak Time Semantics (WTS) does not make any restriction on the elapsing of time.
+For real-time systems, the dense time model (where time is considered in the domain RaL0 ) is the only possible option, 1530-1311/13 $26.00 AS 2013 IEEE 1550-1311/13 DOI 10.1109/TIME.2013.22  Laure Petrucci UniversiteE Paris 13, Sorbonne Paris CiteE LIPN, CNRS UMR, France laure.petrucci@lipn.univ-paris13.fr  II.
+P RELIMINARIES  AND  BASIC N OTATIONS  A t-time Petri net (TPN) is a P/T Petri net [17] where a time interval [tmin ;tmax ] is associated with each transition t. Definition 1: A TPN is a tuple N = P, T, Pre, Post, Ifi where: aV P, T, Pre, Postfi is a P/T Petri net where: a P is a finite set of places; a T is a finite set of transitions with P aS T = 0/ ; a Pre : T aa NP is the backward incidence mapping; a Post : T aa NP is the forward incidence mapping; aV I : T aa N A (N aS {+a}) is a time interval function s.t.
+I(t) = (tmin ,tmax ) (tmin a$?
+tmax ), where tmin (resp.
+tmax ) is the earliest (resp.
+latest) firing time of transition t. A marking of a TPN is a function m : P aa N where m(p), for a place p, denotes the number of tokens in p. A marked TPN is a pair N = N 1 , m0 fi where N 1 is a TPN and m0 is 103 117  a corresponding initial marking.
+A transition t is enabled by a marking m iff m aL Pre(t) and Enable(m) = {t a T : m aL Pre(t)} denotes the set of enabled transitions in m. If a transition ti is enabled by a marking m, then a(m,ti ) denotes the set of newly enabled transitions [2].
+Formally, a(m,ti ) = {t a T | (maPre(ti )+Post(ti )) aL Pre(t)aSS(maPre(ti )) < Pre(t)}.
+If a transition t is in a(m,ti ), we say that t is newly enabled by the successor of m by firing ti .
+Dually, a(m,ti ) = {t a T | (m a Pre(ti ) + Post(ti )) aL Pre(t) aSS (m a Pre(ti )) aL Pre(t)} is the set of oldly enabled transitions.
+The possibly infinite set of reachable markings of N is denoted Reach(N ).
+If Reach(N ) is finite we say that N is bounded.
+The semantics of TPNs can be given in terms of Timed Transition Systems (TTS) [12] which are usual transition systems with two types of labels: discrete labels for events (transitions) and positive real labels for time elapsing (delay).
+States of the TTS are pairs s = (m,V ) where m is a marking and V : T aa RaL0 aS {aL} a time valuation.
+In the following, s.m and s.V denote the marking and the time valuation respectively of a state s. If a transition t is enabled in m then V (t) is the elapsed time since t became enabled, otherwise V (t) = aL.
+Given a state s = (m,V ) and a transition t, t is said to be firable in s iff t a Enable(m) aSS V (t) = aL aSS tmin a$?
+V (t) a$?
+tmax .
+Definition 2 (Semantics of a TPN): Let N = P, T, Pre, Post, I, m0 fi be a marked TPN.
+The semantics of N is a TTS S N = Q, s0 , afi where: 1) Q is a (possibly infinite) set of states 2) s0 = (m0 ,V0 ) is the initial state such that:  0 if t a Enable(m0 ) at a T, V0 (t) = aL otherwise  transition must fire within its firing interval unless disabled by the firing of others.
+Second, a state change occurs either by the firing of transitions or by time elapsing: The firing of a transition may change the current marking while the time elapsing may make some new transitions firable.
+When a deadlock marking is reached, then only elapsing time is possible and the system remains in the same state.
+Given a TPN N and the corresponding TTS S N , a path Ia1 Ia2 s1 aa .
+.
+.
+, where Iai a (T aS RaL0 ), is a run of D = s0 aa S N iff (si , Iai , si+1 ) aa for each i = 0, 1, .
+.
+.
+.
+The length of a run D can be infinite and is denoted by | D |.
+The possibly infinite set of runs of S N is denoted [S N ].
+Without loss of generality, we assume that for each non empty run Ia1 Ia2 D = s0 aa s1 aa .
+.
+.
+of a STS corresponding to a TPN, there do not exist two successive labels Iai and Iai+1 belonging both to RaL0 .
+Then, D can be written, involving the reachable (d1 ,t1 ) (d2 ,t2 ) m1 aa .
+.
+.
+where di is the markings of N , as D = m0 aa time elapsed at marking mia1 before firing ti .
+In order to associate a run D of S N with a run of N , denoted P (D), we define the following projection function, where  denotes the concatenation operator between paths and Di , for i = 0, 1 .
+.
+.
+, denotes the suffix of D starting at state si .
+aSS s0 .m if | D |= 0 aS aS aS a" s .m(0,Ia1 )  P (D1 ) if Ia1 a T aa 0 P (D) = (Ia1 ,Ia2 ) 2 aS s0 .m aa  P (D ) if Ia1 a RaL0 aSS | D |aL 2 aS aS aS Ia1  P (D1 ) if Ia1 a RaL0 aSS | D |= 1 s0 .maa  3) a a Q A (T aS RaL0 ) A Q is the discrete and continuous transition relations: a) the discrete transition relation: t at a T : (m,V ) a a (m ,V  ) iff:  In this subsection, we propose to abstract the reachability state space of a TPN using a new graph called Timed Aggregate Graph (TAG) where nodes are called aggregates and are grouping sets of states of a TTS.
+The key idea behind TAGs is that time information is encoded inside aggregates.
+The time information includes the time the system is able to stay in the aggregate as well as a dynamic interval associated with each enabled transition.
+The first feature allows to encapsulate the delay transitions of the corresponding TTS (the arcs of a TAG are labeled with transitions of the corresponding TPN only), while the second allows to dynamically update the earliest and latest firing times of enabled transitions.
+It also allows to maintain the relative differences between the firing times of transitions (diagonal constraints).
+Before we formally define the TAG and illustrate how the attributes of an aggregate are computed, let us first formally define aggregates.
+Definition 3 (Timed Aggregate): A timed aggregate associated with a TPN N = P, T, Pre, Post, Ifi is a 4-tuple a = (m, E, h, H), where: aV m is a marking;  III.
+A BSTRACTION  OF A  TPN S TATE S PACE  A.
+Timed Aggregate Graph  aSS t a Enable(m) aSS m = m a Pre(t) + Post(t) aS aS aS aS a" tmin a$?
+V (t) a$?
+tmax aSS if t  a a(m,t) a" 0 aS )  a T : V  (t  ) = aS V (t if t  a a(m,t) at aS aS aS aS aL otherwise b) the continuous transition relation: ad a RaL0 , d (m,V ) a a (m ,V  ) iff: aSS at a Enable(m), V (t) + d a$?
+tmax aS aS aS aS a" m = m at a T :  aS aS V (t) + d if t a Enable(m); aS aS aS V  (t) = V (t) otherwise.
+The above definition requires some comments.
+First, the delay transitions respect the STS semantics: an enabled  118 104  p1  p2  t1 [1; 2]  t2 [1; 1]  p1  aV aV  p3  t1 [1; 1] t2 [2; 2] t3 [0; 1]  Figure 1.  aV  p2  p1  p2  t1 [1; 2]  t2 [2;a]  3) I' a A A T A A is the transition relation such that: for an aggregate a = m, h, H, Efi, a transition t s.t.
+t, Iat , I,t fi a E and an aggregate a = m , h , H  , E  fi, (a,t, a ) a I' iff the following holds: a) m = m a Pre(t) + Post(t) b) Iat a$?
+H c) at  , Iat  , I,t  fi a E,   a Ia  ) aL (t tmin > tmax a (tmin a Iat ) a (tmin min a t  ) tmax d) E  = E1 S aS E2 , where:   ,t  fi} aV E1 = t  aa(a,t) {t  ,tmin max S   aV E2 = t  aa(a,t) {t , Iat  a H, I,t  a max(0, Iat )fi} e) h = mint  ,Iat  ,I,t  fiaE  (max(0, Iat  )) f) H  = mint  ,Iat  ,I,t  fiaE  (I,t  ) Given an aggregate a = m, h, H, Efi and a transition t a t T , t is said to be enabled by a, denoted by aaa , iff: (1) a(Iat , I,t ) a (Z aS {aa}) A (N aS {+a}) s.t.
+(t, Iat , I,t ) a E and Iat a$?
+H, and, (2) there is no other transition t  , enabled by a.m, that should be fired before t. In fact, the first condition is sufficient if the static interval of t overlaps with any other transitionas interval but is not sufficient when tmin is greater  than tmax for some other transition t  .
+The firing of t from a leads to a new aggregate a = m , h , H  , E  fi whose attributes are computed by analysing the sets a (a,t) and a (a,t).
+This is the key idea behind the TAG.
+ aV The elements of E are processed by taking the transitions that are enabled by m and computing their earliest and latest firing times depending on their membership in a (a,t) and a (a,t).
+For each transition t  a Enable(a.m), if t  is newly enabled, then its dynamic earliest and latest firing times are statically defined by   tmin and tmax respectively.
+Otherwise, let t  , Iat  , I,t  fi a  a.E and t , Iat , I,t fi a a .E, then the maximum time elapsed by the system at a.m (i.e., a.H) is subtracted from Iat  and the minium time is substracted from I,t  .
+Indeed, the more the system can stay in a.m the less it can stay in a .m (and vice versa).
+Thus, the earliest firing time of t starting from a is max(0, Iat  a a.H) while its latest firing time is I,t  a max(0, Iat ).
+aV The computation of a .h (resp.
+a .H) is ensured by taking the minimum of the dynamic earliest (resp.
+latest) firing time of enabled transitions.
+Three TPN Examples  E = {t, Iat , I,t fi | t a Enable(m), Iat a (Z aS {aa}) aSS I,t a N aS {+a}} is a set of enabled transitions each asssociated with two time values; h = mint,Iat ,I,t fiaE (max(0, Iat )): the minimum time the system can stay in the aggregate a; H = mint,Iat ,I,t fiaE (I,t ): the maximum time the system can stay in the aggregate a.
+Each aggregate is characterised by three attributes that are computed dynamically: a marking m, a set E of enabled transitions and two times h and H. Each enabled transition t is associated with two time values: Iat represents the minimum time the system should wait before firing t and I,t represents the maximum time the system can delay the firing of t. Note that Iat can be negative which means that t can be fired immediately.
+Otherwise, Iat represents the the earliest firing time of t. Starting from this aggregate, the firing of t can occur between max(0, Iat ) and H. In the rest of this paper, Iat will be abusively called the dynamic earliest firing time of t and I,t its dynamic latest firing time.
+Finally, the h and H attributes represent the minimum and the maximum time, respectively, the system can spend at the current aggregate.
+As for states of a TTS, the attributes of an aggregate a are denoted by a.m, a.E, a.h and a.H. Now, we are ready to formally define the TAG associated with a marked TPN N .
+A TAG is a labeled transition system where nodes are timed aggregates.
+A TAG has an initial aggregate, a set of actions (the set of transitions of N ) and a transition relation.
+The initial aggregate is easily computed by considering static information of the TPN.
+In fact: (1) the marking attribute is the initial marking of N , (2) the minimum (resp.
+maximum) time the system can stay in the initial aggregate is equal to the minimum of the earliest (resp.
+latest) firing time of the enabled transitions and, (3) each enabled transition t is firable between tmin and tmax .
+Definition 4 (Timed Aggregate Graph): A TAG associated with a TPN N = P, T, Pre, Post, I, m0 fi is a tuple G = A , T, a0 , I'fi where: 1) A is a set of timed aggregates; 2) a0 = m0 , h0 , H0 , E0 fi is the initial timed aggregate s.t.
+: a) m0 is the initial marking of N b) h0 = mintaEnable(m0 ) (tmin ) c) H0 = mintaEnable(m0 ) (tmax ) d) E0 = {t,tmin ,tmax fi | t a Enable(m0)}  B. Equivalence relation between aggregates According to Definition 4, the dynamic earliest firing time of a transition can decrease infinitely which could lead to an infinite state space TAG.
+In the following, we define a relation allowing to identify equivalent aggregates.
+This equivalence relation will be used in the construction of a TAG so that each newly built aggregate is not explored as long as an already built equivalent aggregate has been.
+Definition 5: Let a and a be two time aggregates.
+a is said to be equivalent to a , denoted by a aA a , iff:  119 105  1) a.h = a .h, a.H = a .H and a.m = a .m 2) a(t, Iat , I,t fi, t, Iat , I,t fi) a (a.E A a .E), I,t = I,t :  a0 aggregate a0 a1 a2 a3 a4 a5  a) Iat = Iat or, b) max(0, Iat ) = max(0, Iat ) and i) ii) iii) iv)  t    (tmax   ) or, aT : < tmin ) a" (tmax < tmin   ) or, at a (T \ Enable(a.m)) : (tmax < tmin   at a (T \ Enable(a.m)) : tmax < tmin aSS  ) aSS (Ia a$?
+t  ) or, (Iat a$?
+tmax t max  at  a Enable(a.m) : tmax < tmin aSS   ) aSS (Ia a Ia ) ((Iat a Iat  ) a$?
+(tmax a tmin t t   (tmax a tmin )) a" ((Iat  a Iat ) = (Iat a Iat )).
+(h,H) (1,1) (0,0) (0,1) (0,0) (0,1) (0,0)  E {t1 , 1, 2fi, t2 , 1, 1fi} {t1 , 1, 2fi, t2 , a1, 0fi} {t1 , 0, 1fi, t2 , 1, 1fi} {t1 , 1, 2fi, t2 , 0, 1fi} {t1 , 0, 2fi, t2 , 1, 1fi} {t1 , a1, 0fi, t2 , 1, 1fi}  t1 t2  a1  t1  a5  t2  t1  t2  a2 t1  t2 t1  a3  aggregate a0 a1 a2 a3 a4  a$?
+Informally, the previous definition guarantees that two equivalent aggregates have the same behavior.
+First, point 1 guarantees that a and a have the same marking and the same minimum and maximum stay time.
+Second, each enabled transition t should have the same latest firing time (point 2).
+Then, if the earliest firing time of a given enabled transition t in a is different from its earliest firing time in a , then this should not influence the future behavior starting from a and a .
+First, the earliest firing times of t in a and a must be negative so that the firing of t from a and a do not lead to different aggregates.
+This condition is sufficient  if there is no transition t  such that tmax < tmin (point 2(b)i),   or if any transition t s.t.
+tmax < tmin is not enabled by a (point 2(b)ii).
+In the opposite case, other conditions must be fulfilled: First, if there exists a transition t  such that  tmax < tmin but t  is not enabled by a (point 2(b)iii), then  Iat and Iat should be both less or equal to tmax (i.e.
+t is firable anyway in both aggregates).
+Second, if t  is enabled by a (point 2(b)iv), either t is firable by both aggregates a  a Ia  ) is equal to and a or the difference (tmin a Iat ) a (tmin t    (tmin a Iat ) a (tmin a Iat  ).
+Figure 2 illustrates the TAGs corresponding to the first and the third TPNs of Figure 1.
+The TAG associated with the second TPN contains 18 aggregates and 38 edges, and is not presented here because of lack of space.
+In the first TAG, the marking associated with aggregates is omitted since it is always the same as the initial one.
+Although, the three models of Figure 1 are quite simple, they are representative enough to explain the TAG construction.
+Indeed, in the first one the transitions intervals overlap, while the case of disjoint intervals is considered through the second model.
+Finally, the third model illustrates the case of an infinite latest firing time.
+More significant examples are considered in Section V. In the following, we establish that the TAG, built under the previous equivalence relation between aggregates, associated with a bounded TPN is finite.
+For this, we show that the number of its aggregates is bounded and compute this bound.
+The following two lemmas establish two preliminary results before proving the finiteness of a TAG in Theorem 1.
+Lemma 1: Let N be a TPN and let G = A , T, a0 , I'fi be the corresponding TAG.
+Let a be an aggregate of G  marking (1,1) (1,0) (1,0) (1,1) (1,0)  (h,H) (1,2) (0,0) (1,2) (0,2) (0,2)  E {t1 , 1, 2fi, t2 , 2, afi} {t1 , a1, 0fi} {t1 , 1, 2fi} {t1 , 1, 2fi, t2 , 0, afi} {t1 , a1, 2fi}  Figure 2.  t2  t2 t1 t1  a2  a4  a1  a0 t1 t1  t1  a3 t2  a4  TAGs of Figure 1  and let t a Enable(a.m).
+Then, the number of possible dynamic intervals [Iat ; I,t ] associated with t in non equivalent aggregates is at most equal to Bt where   if t  a T : tmax < tmin bt Bt = bt a ct otherwise where bt = (tmin + 1)a (tmax + 1)a (tmin + (tmin a (tmin + 1)/2))  )+1  <t and ct = Maxt  aT : tmax (t a tmax min min Proof: The possible intervals are obtained by all the possible combinations of the earliest and latest firing times Iat and I,t , minus the invalid ones (i.e.
+those where Iat > I,t and those where Iat = tmin aSS Iat = I,t ).
+In the first case, we  consider that there is no transition t  such that tmax < tmin .
+Since negative values of Iat are equivalent to 0 the possible values of Iat are {tmin ,tmin a 1, .
+.
+.
+, 0} (i.e tmin + 1 possible values).
+Moreover, I,t a {tmax ,tmax a 1, .
+.
+.
+, 0} (i.e tmax + 1 possible values) and there are tmin + (tmin a (tmin + 1)/2) invalid intervals.
+The first tmin intervals are invalid by construction of the TAG since I,t can never reach Iat by decrement (Ia < H).
+Moreover, there are (tmin a (tmin + 1)/2) intervals where Iat > I,t , and these are invalid as well.
+In the second case, the previous reasoning is also valid, but one has to consider the difference between t and t  .
+Following the definition of the equivalence relation between aggregates, this difference is ignored when it allows the firing of t.  Thus, only tmin a tmax + 1 values are to be distinguished (for   t having the minimal tmax < tmin ) and should be combined with the number of possibilities obtained in the first case.
+Lemma 2: Let N be a TPN, let G = A , T, a0 , I'fi be the corresponding TAG and let m a Reach(N ).
+The number of aggregates in G having m as marking is at most equal to asa2Enable(m) (atas Bt ).
+Proof: Let m be a marking, the number of aggregates having m as a marking are different with respect to the E attribute.
+There are as many possibilities of partitionning enabled transitions into oldly and newly enabled as subset of Enable(m).
+For a given subset s of Enable(m) there are at most atas Bt (using Lemma 1) possible time intervals for  120 106  I,l+1tn+1 aL 0, thus Ial+1tn+1 a$?
+I,l+1tn+1 .
+By iterating this result we establish that Iantn+1 a$?
+I,ntn+1 and that I,ntn+1 aL 0.
+Moreover, it is clear that I,ia1tn+1 aL I,itn+1 (for all i = l + 1 .
+.
+.
+n).
+In particular, we have 0 a$?
+Iantn+1 a$?
+I,ntn+1 a$?
+I,na1tn+1 a$?
+AV AV AV a$?
+I,ltn+1 = tn+1max .
+Thus, the system can stay at mn for Iantn+1 .
+Furthermore, the fact that tn+1 is firable at an implies that it is also firable in mn leading to mn+1 , whose marking is the same as an+1.
+Let us show now that it is possible to stay at mn+1 for an+1 .H (or any d a$?
+an+1 .H) time units.
+We can use the same reasoning as above to show that for any transiton t enabled by mn+1 , Ian+1t a$?
+tmax .
+Since an+1.H = mintaEnable(mn+1 ) I,t we can deduce that the system can stay at mn+1 an+1.H (or any lower value) time units.
+its transitions.
+The two previous lemmas lead to the following theorem.
+Theorem 1: Given a TPN N , if N is bounded then the corresponding TAG is finite and its number of aggregates is at most equal to amaReach(N ) asa2Enable(m) ataEnable(m) Bt .
+C. Preservation Results In this section, we establish the main results of this paper: The TAG is an exact representation of the reachability state space of a TPN.
+For each path in the TAG (resp.
+in the TPN) it is possible to find a path in the TPN (resp.
+TAG) involving the same sequence of transitions and where the time elapsed within a given state is between the minimum and the maximum stay time of the corresponding aggregate.
+Theorem 2: Let N be a TPN and let G = A , T, a0 , I'fi be the TAG associated with N .
+Then, for any path D = t1 tn a1 aa .
+.
+.
+aa an in the TAG, ad a RaL0 s.t.
+d a$?
+an .H, a0 aa (d1 ,t1 ) (dn ,tn ) d m1 aa .
+.
+.
+aa mn aa in N , there exists a run D = m0 aa s.t.
+mi = ai .m and aia1 .h a$?
+di a$?
+aia1 .H, for i = 1 .
+.
+.
+n. t1 tn Proof: Let D = a0 aa a1 aa .
+.
+.
+aa an and let d a RaL0 satisfying d a$?
+an .H.
+We denote by Iait (resp.
+I,it ) the maximum between 0 and the dynamic earliest firing time (resp.
+the dynamic latest firing time) of a transition t at aggregate ai .
+Let us prove that the path (Ia0t ,t1 )  Theorem 3: Let N be a TPN and let G = A , T, a0 , I'fi be the TAG associated with N .
+Then dn+1 (dn ,tn ) (d1 ,t1 ) (d2 ,t2 ) m1 aa .
+.
+.
+aa mn aa , with di a RaL0 , for aD = m0 aa t1 tn an s.t.
+aia1 .h a$?
+di a$?
+i = 1 .
+.
+.
+n + 1, aD = a0 aaa1 aa .
+.
+.
+aa aia1 .H, mi = ai .m, for i = 0 .
+.
+.
+n and dn+1 a$?
+an .H.
+dn+1 (d1 ,t1 ) (d2 ,t2 ) (dn ,tn ) m1 aa .
+.
+.
+aa mn aa be a path Proof: Let D = m0 aa of N , with di a RaL0 , for i = 1 .
+.
+.
+n + 1.
+Let us prove by induction on the length of D the existence of a path D in the TAG satisfying Theorem 3. aV | D |= 0: Obvious since m0 = a0 .m (by construction) and since d1 is less or equal to mintaEnable(m0 ) tmax which is exactly the value of a0 .H.
+aV Assume Theorem 3 true for any path D s.t.
+| D |a$?
+n. (d1 ,t1 ) (d2 ,t2 ) (d dn+2 (dn ,tn ) ,tn+1 ) m1 aa .
+.
+.
+aa mn n+1 Let D = m0 aa aa mn+1 aa t1 t2 tn be a path of length n + 1.
+Let D = a0 aaa1 aa .
+.
+.
+aaan be the path in the TAG associated with the n-length prefix of D (by the induction hypothesis).
+We denote by Iait (resp.
+I,it ) the maximum between 0 and the dynamic earliest firing time (resp.
+the dynamic latest firing time) of a transition t at aggregate ai .
+Since an .m = mn and dn+1 a$?
+an .H, tn+1 is also enabled by an (by construction) and can be fired leading to an+1 whose marking is the same as mn+1 .
+Let us now show that dn+2 a$?
+an+1.H.
+If Enable(mn+1) = 0/ then mn+1 is a deadlock state and so is an+1 and dn+1 < an+1 .H = +a.
+Otherwise, let t a Enable(mn+1) let 1 a$?
+k a$?
+n + 1 be the largest integer, satisfying t aa (mk ,tk+1 ).
+The fact dn+2 implies that an+1 that mn+1 aa i=k di a$?
+tmax , then that dn+1 a$?
+tmax a ani=k di .
+By proving that di aL Iaiti+1 for all i = k .
+.
+.
+n, we can deduce that dn+1 a$?
+tmax a ani=k Iaiti+1 = I,n+1t .
+This result holds for any enabled transition t then dn+1 a$?
+mintaEnable(mn+1 ) (I,n+1t ) = an+1 .H.
+Finally, let us prove that di aL Iaiti+1 for all i = k .
+.
+.
+n. Let k a$?
+i a$?
+n, if Iaiti+1 = 0 then di aL Iaiti+1 .
+Otherwise, let 1 a$?
+l a$?
+i be the highest integer value, if any, satisfying ti+1 aa (ml ,tl ) (if such a value does not exist then l = 0).
+Then aij=l d j aL ti+1min (since ti+1 is fired from  (Iana1 ,tn )  tn d 1 m1 aa .
+.
+.
+aa mn aa satisfies the required rem0 aa sult.
+The particularity of this path is that the firing of each transition ti is performed at its dynamic earliest firing time.
+We proceed by induction on the length of D. Note first that, aia1 .h a$?
+Iaia1ti and Iaia1ti a$?
+aia1 .H (by construction), for i = 1 .
+.
+.
+n. aV | D |= 0: Since, m0 = a0 .m, a0 .H is the minimum value of the latest firing time of all transitions enabled by m0 d .
+and a0 .h a$?
+d a$?
+a0 .H.
+Thus m0 aa t1 tn an and aV Assume that for any path a0 aaa1 aa .
+.
+.
+aa for any d a RaL0 satisfying d a$?
+an .H, the path  (Ia0t ,t1 )  (Iana1 ,tn )  (Ia0t ,t1 )  (Iana1 ,tn )  tn d 1 m1 aa .
+.
+.
+aa mn aa is a run of N .
+m0 aa tn+1 t1 t2 tn Let D = a0 aaa1 aa .
+.
+.
+aaan aa an+1 be a path of length n + 1.
+Since an .h a$?
+Iantn+1 a$?
+an .H, we can use the induction hypothesis to exhibit a path  Iant  tn n+1 1 m0 aa m1 aa .
+.
+.
+aa mn aa .
+We show now that it is possible to complete this path by firing tn+1 from mn (after a delay Iantn+1 at this state).
+Note first that tn+1 is enabled by mn (since mn = an .m).
+Let l (with l < n) be the greatest integer, such that tn+1 aa (ala1 ,tl ), then tn+1 ,tn+1min ,tn+1max fi a al .E.
+Moreover, ai = l + 1 .
+.
+.
+n, tn+1 , Iaitn+1 , I,itn+1 fi a ai .E with Iaitn+1 = max(0, Iaia1tn+1 a aia1 .H) and I,itn+1 = I,ia1tn+1 a Iaia1ti .
+We know by construction that Iaia1ti a$?
+aia1 .H (condition for firing ti at aia1 ) (for all i = l + 1 .
+.
+.
+n).
+Using the fact that Ialtn+1 a$?
+I,ltn+1 and the fact that Ialtl+1 a$?
+al .H a$?
+I,ltn+1 , we can deduce that Ialtn+1 a al .H a$?
+I,l+1tn+1 = (I,ltn+1 a Ialtl+1 ) and that  121 107  mi ) which means that di aL ti+1min a aia1 j=l d j .
+Using the induction hypothesis d j > a ja1 .H for all j = l .
+.
+.
+i a 1, then di aL max(0, (ti+1min a aia1 j=l a ja1 .H)) = Iaiti+1 .
+the bounds of time intervals.
+Lime and Roux also used TPNs to model system behavior [14].
+They used the state class approach to build a timed automaton that preserves the behaviour of the TPN using as few clock variables as possible.
+The resulting model is then verified using the UPPAAL tool [13].
+However, even though UPPAAL can answer about quantitative temporal properties, it can only verify a subset of TCTL.
+Adding a new transition to measure elapsed time was proposed in [6] to perform TCTL modelchecking in TPNs.
+Using this transition, TCTL formulae are translated into CTL formulae.
+Then a ZBG for TPN is refined leading to a graph called Atomic Zone Based Graph (AZBG) that preserves CTL properties.
+Unlike the TAG, in all existing approaches, the time information does not appear explicitly in nodes.
+This limitation, in turn leads to additional and complex calculations such as: the manipulation of DBM to encode the zones (for zones-based approaches) and the classes (for stateclass based approaches), the approximations to counter the problem of unbounded transitions, conversion of graphs to timed automata (using UPPAAL) to model check properties, etc.
+In our work the time information is encoded within the aggregates allowing to check time properties just by browsing the graph, which has a significant impact on the construction complexity.
+The encoding of the timing information in the aggregates is such that the minimum and maximum elapsed time in every path of the TAG can be computed.
+Another difference with these approaches is that every TAG preserves the runs of the corresponding TPNs as well as the reachable states, which allows the preservation of both event- and state-based (linear and branching) logics.
+Using the above result one can use the TAG associated with a TPN in order to analyse both event and state based properties.
+In particular, we can check whether a given marking (resp.
+transition) is reachable (resp.
+is firable) before (or after) a some time.
+IV.
+R ELATED WORK This section reviews the most well-known techniques, proposed in the literature, that abstract and analyse the state space of real-time systems described by means of TPN.
+Abstraction techniques aim at constructing, by removing some irrelevant details, a contraction of the state space of the model, which preserves properties of interest.
+The existing abstraction approaches mainly differ in the state agglomeration criteria, the characterisation of states and state classes (interval states or clock states) and the kind of preserved properties.
+The States Class Graph (SCG) [3] was the first method of state space representation adapted to TPNs.
+A class (m, D) is associated with a marking m and a time domain D represented by a set of inequalities over variables.
+The variables represented in the SCG are the firing time intervals of enabled transitions.
+The SCG allows for the verification of some TPN properties like reachability and boundness.
+However, it preserves the linear time properties only.
+To address this limitation, a refinement of the method was proposed in [21], in the form of a graph called Atomic States Class Graph (ASCG).
+The authors use a cutting of state class by adding linear constraints so that each state of an atomic class has a successor in all the following classes.
+With this improvement, they are able to verify CTLa properties on TPN, but with the limitation that the time intervals of transitions are bounded.
+A new approach for the construction of atomic classes was proposed in [4] and allows the verification of CTLa without restriction on time intervals.
+The state class approach is implemented in a software tool called TINA [5].
+The Zones Based Graph (ZBG) [9] is another approach allowing to abstract the TPN state space.
+This approach is inspired by the Region Graph (RG) [1] technique, initially introduced for timed automata.
+In practice, the number of regions is too large for an effective analysis, thus, the regions are grouped into a set of zones.
+A zone is a convex union of regions and can be represented by a DBM (Difference Bound Matrix).
+In [9], the clocks of transitions are directly encoded within the zones.
+This allows to verify temporal and quantitative properties but not CTLa properties.
+As for timed automata, a disadvantage of the method is the necessary recourse to approximation methods (k-approximation or kxapproximation) in the case where the infinity is used in  V. E XPERIMENTAL RESULTS Our approach for building TAG-TPN was implemented in a prototype tool (written in C++), and used for experiments in order to validate the sizes of the graphs generated by the approach.
+Note that the prototype was not optimised for time efficiency yet, therefore no timing figures are given in this section.
+All results reported in this section have been obtained on 2.8 gigahertz Intel with four gigabytes of RAM.
+The implemented prototype allowed us to have first comparison with existing approaches with respect to the size of obtained graphs.
+We used the TINA tool to build the SCGs, ROMEO tool for the ZBGs and our tool for the TAGs.
+We tested our approach on several TPN models and we report here the obtained results.
+The considered models are representative of the characteristics that may occur in a TPN, such as: concurrency, synchronisation, disjoint firing intervals and infinite firing bounds.
+The first two models (Figure 3(a) and Figure 3(b)) are two parametric models where the number of processes can be increased.
+In Figure 3(a), the number of self loops (pn a tn a pn ) is increased while in Figure 3(b) the number of processes,  122 108  Parameters Nb.
+prod/cons 1 2 3 4 5 6 7 8 9 10 Nb.
+self-loops 1 2 3 4 5 Nb.
+processes 1 2 3 4 5 6 7 Nb.
+processes 1 2 3 4 5 6 7 8  SCG (with Tina) (nodes / arcs)  ZBG (with Romeo) TAG-TPN (nodes / arcs) (nodes / arcs) TPN model of producer/consumer 34 / 56 34 / 56 34 / 56 748 / 2460 593 / 1 922 407 / 1 255 4 604 / 21891 3 240 / 15 200 1 618 / 6 892 14 086 / 83 375 9 504 / 56 038 3 972 / 20 500 31 657 / 217 423 20 877 / 145 037 8 175 / 48 351 61 162 / 471 254 39 306 / 311 304 15 157 / 99 539 107 236 / 907 708 67 224 / 594 795 26 113 / 186 363 175 075 / 1 604 319 107 156 / 1 044 066 42 503 / 324 600 270 632 / 2 655 794 161 874 / 1 718 104 66 103 / 534 055 400 648 / 4 175 413 234 398 / 2 687 147 99 036 / 839 011 TPN example with concurrency (Figure 3(a)) 39 / 72 40 / 74 39 / 72 471 / 1 296 472 / 1 299 354 / 963 6 735 / 25 056 6 736 / 25 060 2 745 / 9 888 119 343 / 563 040 119 344 / 563 045 19 488 / 87 375 2 546 679 / 14 564 016 ?/?
+130 911 / 701 748 TPN example with synchronization (Figure 3(b)) 1/2 2/4 1/2 13 / 35 14 / 38 13 / 35 157 / 553 158 / 557 118 / 409 2 245 / 10 043 2 246 / 10 048 915 / 3 909 3 9781 / 21 7681 39 782 / 217 687 6 496 / 33 071 848 893 / 5 495 603 848 894 / 5 495 610 43 637 / 258 051 ?/?
+?/?
+282 514 / 1.90282e+06 Fischer protocol 4/4 4/4 4/4 18 / 29 19 / 32 20 / 32 65 / 146 66 / 153 80 / 171 220 / 623 221 / 652 308 / 808 727 / 2 536 728 / 2 615 1 162 / 3 645 2 378 / 9 154 2 379 / 10 098 4 274 / 15 828 7 737 / 24 744 7 738 / 37 961 15 304 / 66 031 25 080 / 102 242 25 081 / 139 768 53 480 / 265 040 Table I E XPERIMENTATION RESULTS  whose behavior is either local, by transition ti , or global, by transition t0 , is increased.
+In addition to these two illustrative examples, we used two other well known parametric TPN models.
+The first one [11] represents a composition of producer/consumer models by fusion of a single buffer (of size 5).
+The second (adapted from [16]) is Fischeras protocol for mutual exclusion.
+for the producers/consumers models show that the TAG yields better abstraction (linear order) than the SCG and the ZBG approaches.
+Each time a new module of producer/consumer is introduced, the size of graphs increases for all three approaches.
+However, the TAG achieves a better performance than the two other approaches.
+For the TPN of Figure 3(a), the obtained results show that the size of the TAG exponentially increases when the parallelism occurs in the structure of TPN.
+This is also the case also for the ZBG and the SCG methods, and we can see that our method behaves better when we increment the self-loop structures in the model.
+The ZBGas and the SCGas executions have aborted due to a lack of memory when the number of selfloops was equal to 5.
+The number of edges of the obtained graphs follows the same proportion.
+In the synchronisation pattern exmaple, our approach also behaves.
+Indeed, with, 1, 2 and 3 processes, the sizes of the obtained graphs are almost similar with the three approaches.
+But, from 4 synchronised processes, the size of the SCGs and the ZBGs increase exponentially, leading to a state explosion with 7 processes, whereas the TAGs have been computed  p1 p4 t1 [1; 5]  p5 p1  t3 [1; 5] p2  p3  p2 t0 [1; 5]  t4 [1; 5] t5 [1; 5]  t2 [1; 5]  t1 [1; 5]  (a) concurrency  (b) synchronisation  Figure 3.  t2 [1; 5]  TPN models used in the experiments  Table I reports the results obtained with the SCG, the ZBG and the TAG-TPN approaches, in terms of graph size (number of nodes/number of edges).
+The obtained results  123 109  successfully with 7 processes (and even more).
+The Fischer protocol model is the only model where our approach leads to relatively bad results (although the difference with the two other approaches is linear).
+Our first explanation is that, in case of disjoint firing intervals, the abstraction can be weak in some cases.
+In fact, when a transition t is enabled by an aggregate t and there exists a transition t  , not enabled  , a is considered non-equivalent (while by a, s.t.
+tmin > tmax it could be) to all aggregates where the earliest firing time of t is not the same.
+However, it could be that t and t  are never enabled simultanously, in which case the difference does not play any role.
+This issue should be investigated in order to refine our abstraction (e.g.
+by taking into account the structure of the TPN model).
+To conclude, the experimental results show (in most cases) an important gain in performance in terms of graph size (nodes/arcs) compared to the SCG and the ZBG approaches for the tested examples.
+Although we are aware that our approach needs to be confronted to more significant applications, the obtained preliminary results are promising.
+[5] B. Berthomieu and F. Vernadat.
+Time Petri Nets Analysis with TINA.
+In QEST, pages 123a124, 2006.
+[6] H. Boucheneb, G. Gardey, and O. H. Roux.
+TCTL Model Checking of Time Petri Nets.
+J. Log.
+Comput., 19(6):1509a 1540, 2009.
+[7] M. Boyer and O. H. Roux.
+Comparison of the Expressiveness of Arc, Place and Transition Time Petri Nets.
+In ICATPN 2007, volume 4546 of LNCS, pages 63a82.
+Springer, 2007.
+[8] G. Gardey, D. Lime, M. Magnin, and O.
+(h. Roux.
+Romeo: A Tool for Analyzing time Petri nets.
+In In Proc.
+CAV05, vol.
+3576 of LNCS, pages 418a423.
+Springer, 2005.
+[9] G. Gardey, O. H. Roux, and O. F. Roux.
+Using Zone Graph Method for Computing the State Space of a Time Petri Net.
+In FORMATS 2003, volume 2791 of LNCS, pages 246a259.
+Springer, 2003.
+[10] R. Hadjidj and H. Boucheneb.
+Improving state class constructions for CTL* model checking of time Petri nets.
+STTT, 10(2):167a184, 2008.
+[11] R. Hadjidj and H. Boucheneb.
+On-the-fly TCTL model checking for time Petri nets.
+Theor.
+Comput.
+Sci., 410(42):4241a 4261, 2009.
+VI.
+C ONCLUSION We proposed a new symbolic graph for the abstraction of the TPN state space.
+The proposed graph, called TAG, produces a finite representation of the bounded TPN behaviour and allows for analysing timed reachability properties.
+Unlike the existing approaches, our abstraction can be directly used to check both state and event-based logic properties.
+Our ultimate goal is to use the TAG traversal algorithm for the verification of timed reachability properties expressed in the TCTL logic.
+Several issues have to be explored in the future: We first have to carry out additional experimentation (using more significant use cases) to better understand the limits of our approach and to better compare the TAG technique to the existing approaches.
+Second, we believe that the size of the TAG can be further reduced while preserving time properties without necessarily preserving all the paths of the underlying TPN.
+We also plan to design and implement model checking algorithms for full TCTL logic.
+[12] K. G. Larsen, P. Pettersson, and W. Yi.
+Model-checking for real-time systems.
+In FCT a95, volume 965 of LNCS, pages 62a88.
+Springer, 1995.
+[13] K. G. Larsen, P. Pettersson, and W. Yi.
+UPPAAL: Status and Developments.
+In CAV, pages 456a459, 1997.
+[14] D. Lime and O. H. Roux.
+Model Checking of Time Petri Nets Using the State Class Timed Automaton.
+Discrete Event Dynamic Systems, 16(2):179a205, 2006.
+[15] P. M. Merlin and D. J. Farber.
+Recoverability of modular systems.
+Operating Systems Review, 9(3):51a56, 1975.
+[16] W. Penczek, A. PoElrola, and A. Zbrzezny.
+SAT-Based (Parametric) Reachability for a Class of Distributed Time Petri Nets.
+T. Petri Nets and Other Models of Concurrency, 4:72a 97, 2010.
+[17] C. A. Petri.
+Concepts of net theory.
+In MFCSa73, pages 137a146.
+Mathematical Institute of the Slovak Academy of Sciences, 1973.
+R EFERENCES [1] R. Alur and D. L. Dill.
+A theory of timed automata.
+Theor.
+Comput.
+Sci., 126(2):183a235, 1994.
+[18] M. PezzeE and M. Young.
+Time Petri Nets: A Primer Introduction.
+In Tutorial at the Multi-Workshop on Formal Methods in Performance Evaluation and Applications, 1999.
+[2] B. Berthomieu and M. Diaz.
+Modeling and Verification of Time Dependent Systems Using Time Petri Nets.
+IEEE Trans.
+Software Eng., 17(3):259a273, 1991.
+[19] C. Ramchandani.
+Analysis of asynchronous concurrent systems by timed Petri nets.
+Technical report, Cambridge, MA, USA, 1974.
+[3] B. Berthomieu and M. Menasche.
+An Enumerative Approach for Analyzing Time Petri Nets.
+In IFIP Congress, pages 41a 46, 1983.
+[20] J. Sifakis.
+Use of Petri nets for performance evaluation.
+Acta Cybern., 4:185a202, 1980.
+[4] B. Berthomieu and F. Vernadat.
+State Class Constructions for Branching Analysis of Time Petri Nets.
+In TACAS 2003, volume 2619 of LNCS, pages 442a457.
+Springer, 2003.
+[21] T. Yoneda and H. Ryuba.
+CTL model checking of time Petri nets using geometric regions.
+1998.
+124 110

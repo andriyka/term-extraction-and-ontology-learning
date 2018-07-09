@@ -1,0 +1,521 @@
+2013 20th International Symposium on Temporal Representation and Reasoning  A Tool for Deciding the Satisfiability of Continuous-time Metric Temporal Logic Marcello M. Bersani , Matteo Rossi , Pierluigi San Pietro:  Dipartimento di Elettronica Informazione e Bioingegneria, Politecnico di Milano, Italy : CNR IEIIT-MI, Milano, Italy Email: {marcellomaria.bersani, matteo.rossi, pierluigi.sanpietro}@polimi.it Abstract--Constraint LTL-over-clocks is a variant of CLTL, an extension of linear-time temporal logic allowing atomic assertions in a concrete constraint system.
+Satisfiability of CLTL-overclocks is here shown to be decidable by means of a reduction to a decidable SMT (Satisfiability Modulo Theories) problem.
+The result is a complete Bounded Satisfiability Checking procedure, which has been implemented by using standard SMT solvers.
+The importance of this technique derives from the possibility of translating various continuous-time metric temporal logics, such as MITL and QTL, into CLTL-over-clocks itself.
+Although standard decision procedures of these logics do exist, they have never been realized in practice.
+Suitable translations into CLTLover-clocks have instead allowed us the development of the first prototype tool for deciding MITL and QTL.
+The paper also reports preliminary, but encouraging, experiments on some significant examples of MITL and QTL formulae.
+I.  typically based on Timed Automata [6], but, to the best of our knowledge, they have never been realized in practice.
+This may suggest that these approaches are not easily implementable although they were the first used to prove the decidability properties of such logics.
+In general, the level of support for verification of continuous-time temporal logics is not as well developed as for discrete-time models.
+Uppaal [7] is the de-facto standard tool for verification of Timed Automata, but it does not support continuous-time temporal logics: not only satisfiability checking is not available in Uppaal, but even the formalization of system properties in temporal logic is not allowed, aside from rather simple invariants and reachability properties.
+Satisfiability Modulo Theories is a promising but well-consolidated theory, supported by efficient solvers that are able to decide problems of many disciplines.
+In particular, decidable SMT problems have been already considered in the recent past, for instance to solve reachability [8] and the bounded version of language inclusion [9] for Timed Automata.
+The idea is to give a direct representation of bounded runs of Timed Automata through an SMT formula, capturing a bounded unrolling of the transition relation.
+Similarly, also Bounded Model-Checking of Linear Temporal Logic on Timed Automata [10] can be tackled by reducing the problem to an instance of a SMT problem, by using a technique extending the traditional BMC procedure for LTL finite automata [11], but by restricting the set of valid runs to those that are periodic in the values of the clocks.
+Finite or periodic runs of Timed Automata can then be encoded in SMT formulae with explicit arithmetic.
+Nonetheless, also this approach has so far failed to produce a concrete decision procedure for logics such as MITL and QTL.
+This difficulty is caused by the gap of translating formulae into Timed Automata, a step which is avoided by our approach.
+I NTRODUCTION  Constraint-LTL [1], called CLTL, is an extension of lineartime temporal logic allowing atomic assertions in a concrete constraint system.
+By carefully choosing the constraint system, CLTL may be decidable, as well as expressive and well-suited to define infinite-state systems and their properties.
+In this paper, we define a variant of CLTL, called CLTLover-clocks (CLTL-oc), where arithmetic variables occurring in atomic assertions are evaluated as clocks.
+A clock "measures" the time elapsed since the last time the clock itself was "reset" (i.e., the variable was equal to 0); clocks can also be tested against a constant.
+By definition, in CLTL-oc each (discrete) instant i is associated with a "time delay" corresponding to the "time elapsed" between i and the next instant i 1.
+This allows mixing of discrete events with continuous-time, a typical situation arising in many computer-controlled applications.
+Satisfiability of CLTL-oc is here shown to be decidable by means of a reduction to a decidable SMT (Satisfiability Modulo Theories) problem, resulting in a complete Bounded Satisfiability Checking procedure.
+Although other automatabased decision procedures would be suitable to show decidability of CLTL-oc (e.g., [1]), the novelty of our reduction is that it can easily be implemented (by using standard SMT solvers).
+In fact, the paper also reports on a new tool, publicly available, to verify CLTL-oc formulae.
+Suitable translations into CLTL-oc have instead allowed us the development of the first available tool for deciding both MITL and QTL, hence showing the generality and effectiveness of our approach.
+Further evidence of this is provided by the fact that we have also been able to provide a translation of the extension of QTL with so-called Pnueli and counting modalities [12], thus providing its first concrete decision procedure.
+Although CLTL-oc may be used to specify and verify timed systems, a further advantage of our approach is that it is possible to translate various continuous-time metric temporal logics, such as MITL (Metric Interval Temporal Logic) [2] and QTL [3], into CLTL-oc itself.
+Standard decision procedures of MITL and QTL logics do already exist (e.g., [2], [4], [5]), 1530-1311/13 $26.00 (c) 2013 IEEE 1550-1311/13 DOI 10.1109/TIME.2013.20  We also report preliminary, but encouraging, experiments on some significant examples, such as the timed lamp and its properties, in CLTL-oc, MITL and QTL.
+The paper is organized as follows: Sect.
+II defines CLTLoc, and illustrates it by means of a running example (a 87 99  pp, s q, i |u p o p P p piq for p P AP  timed lamp).
+Sect.
+III proves that CLTL-oc is decidable, while Sect.
+IV outlines the corresponding SMT-based decision procedure.
+Sect.
+V briefly describes MITL and QTL, showing also the general idea behind their translation into CLTL-oc.
+Sect.
+VI illustrates the tool, showing verification results of CLTL-oc, MITL and QTL formulae.
+Sect.
+VII concludes.
+II.
+pp, s q, i |u Rpa1 , .
+.
+.
+, an q o ps pi pp, s q, i |u  |an |, xan qq P R  pp, s q, i |u ph ^ ps o pp, s q, i |u ph and pp, s q, i |u ps pp, s q, i |u X pphq o pp, s q, i  1 |u ph  pp, s q, i |u Y pphq o pp, s q, i  1 |u ph ^ i !
+0 pp, s q, i |u phUps o D j Y= i : pp, s q, j |u ps ^ pp, s q, n |u ph @ i $?
+n   j  C ONSTRAINT LTL ( OVER CLOCKS )  pp, s q, i |u phSps o D 0 $?
+j $?
+i : pp, s q, j |u ps ^  Constraint LTL (CLTL [1], [13]) is the decidable logic that is used in Sect.
+V to solve the satisfiability problem of various metric temporal logics over continuous time.
+CLTL formulae are defined with respect to a finite set V of variables and a constraint system D, which is a pair pD, Rq with D being a specific domain of interpretation for variables and constants and R being a family of relations on D, such that the set AP of atomic propositions coincides with set R0 of 0-ary relations.
+An atomic constraint is a term of the form Rpx1 , .
+.
+.
+, xn q, where R is an n-ary relation of R on domain D and x1 , .
+.
+.
+, xn are variables.
+A valuation is a mapping v : V N D, i.e., an assignment of a value in D to each variable.
+A constraint is satisfied by v, written v |uD Rpx1 , .
+.
+.
+, xn q, if pv px1 q, .
+.
+.
+, v pxn qq P R. Given a variable x P V over domain D, temporal terms are defined by the syntax: a : c | x | Xa, where c is a constant in D and x denotes a variable over D. Operator X is very similar to X, but it only applies to temporal terms, with the meaning that Xa is the value of temporal term a in the next time instant.
+Well-formed CLTL formulae are defined as follows:  pp, s q, n |u ph @ j   n $?
+i  TABLE I.
+S EMANTICS OF CLTL.
+unless it is "reset" (i.e., s pi 1, xq  0).
+We show in Sect.
+III that CLTL-oc is decidable.
+Before going further, to motivate our approach, we provide an example of a CLTL-oc formula representing a simple yet realistic timed system.
+Example 1: we consider the LTL specification of a timed lamp and its properties (studied in Sect.
+VI) from [14].
+The lamp is controlled by two buttons, labeled ON and OFF respectively, which cannot be pressed simultaneously.
+The lamp itself can be either on or off.
+When ON is pressed the lamp is immediately turned on, regardless of its current state, while if OFF is pushed then the lamp is immediately turned off, also regardless of its current state.
+After ON is pressed, the lamp will not stay on forever, but, if no more buttons are pressed, it will automatically turn off with a delay D, a positive real constant.
+By pressing the ON button before the timeout expiration then the timeout is extended by a new delay D.  ph : Rpa1 , .
+.
+.
+, an q | ph ^ ph | ph | X pphq | Y pphq | phUph | phSph where ai 's are temporal terms, R P R, X, Y, U and S are the usual "next", "previous", "until" and "since" operators of LTL, with the same meaning.
+The dual operators "release" R, and "trigger" T may be defined as usual, i.e., phRps is p phU ps q and phTps is p phS ps q.
+Our CLTL-oc formula makes use of atomic propositions on, off and l representing, respectively, events "push button ON" and "push button OFF" and the state "light is on".
+Clocks may be used to measure the exact time elapsed since the last on; clearly some clock must be "reset" (i.e., set to 0, in analogy to Timed Automata) whenever ON is pressed, while when a clock is equal to D then the timeout expires.Since the introduction of clocks is not straightforward, we first define a few shorthands called rst-c, testcD and test0 c$?D .
+They have the intuitive meaning (which will be formalized after the main specification) that they are true if, and only if, a clock c is reset or, respectively, c  D, or 0   c $?
+D. The specification of the lamp, still lacking the precise 	 clock specification, is defined by 5 the formula G i0 piq , where G pphq is the usual globally operator defined by KRph, of the following formulae:  The semantics of CLTL formulae is defined with respect to a strict linear order representing time pN,  q.
+Truth values of propositions in AP , and values of variables belonging to V are defined by a pair pp, s q where s : N  V N D is a function which defines the value of variables at each position in N and p : N N pAP q is a function associating a subset of the set of propositions with each element of N. The value of terms is defined with respect to s as follows: s pi, aq  s pi  |a1 |, xa1 q, .
+.
+.
+, s pi  ph o pp, s q, i |u ph  |a|, xa q  where xa is the variable in V occurring in term a and |a| is the depth of a temporal term, namely the total amount of temporal shift needed in evaluating a: |x|  0 when x is a variable, and |Xa|  |a| 1.
+The semantics of a CLTL formula ph at instant i Y= 0 over a linear structure pp, s q is recursively defined as in Table I, A formula ph P CLTL is satisfiable if there exists a pair pp, s q such that pp, s q, 0 |u ph.
+pon ^ offq on o rst-c Yplq n test0 c$?D turnoff o Yplq ^ poff _ testcD q l o turnoff S on.
+In this paper, we consider a variant of CLTL, where arithmetic variables are evaluated as clocks and set RzR0 is t , u.
+A clock "measures" the time elapsed since the last time the clock was "reset" (i.e., the variable was equal to 0).
+By definition, in CLTL-oc each i P N is associated with a "time delay" d piq, where d piq !
+0 for all i, which corresponds to the "time elapsed" between i and the next state i 1.
+More precisely, for all clocks x P V , s pi 1, xq  s pi, xq d piq,  (1) (2) (3) (4) (5)  Formula (1) ensures mutual exclusion; (2) states that the timeout must be (re)started whenever button ON is pressed; (3) constrains the time elapsed since the previous instant if the light was on at that moment (i.e., not more than D); (4) defines (for readability) an event turnoff, capturing the two cases when the lamp (supposed to be ON in the previous instant) must be turned off at the current instant (i.e., OFF being pressed or  100 88  a sequence of clock regions R0 R1 , .
+.
+.
+such that, for all time position i, Ri 1 is a time-successor of region Ri [6], except for the clocks that in Ri 1 are reset (i.e., whose value is 0).
+Let ph be a CLTL-oc formula and Aph be its Buchi automaton recognizing symbolic models of ph [15].
+Then, we define an automaton AR ph accepting all the symbolic models belonging to L Aph , such that the sequence of regions entailed by clock constraints within symbolic valuations obeys the timeR, d be the automaton where successor relation.
+Let AcR R is the set of all regions induced by the clocks, c is the maximum constant that all clocks are compared with and d is the transition relation containing all R R1 such that R1 R is a time-successor of R R, except for the clocks whose value is 0 in R1 .
+Automaton AR ph is defined as the product of Aph and automaton AcR recognizing the language of successive regions, which are induced by formula ph.
+It is worthy to be noticed that the following construction only guarantees that time elapses and all clocks progress by the same amount of time.
+Since we are dealing with a CLTL formulae where atoms may be relations over clocks, the construction of AR ph does not force the value of clocks which is instead constrained by the formula.
+This impacts the definition of the initial region, which does not follow the standard construction where all clocks are zero.
+In our case, we relax the assumption that all clocks start from 0, by simply considering each region as potentially initial.
+the timeout expiring); finally, (5) gives the specification of the light, as being on if, and only if, there was in the past an on event not followed by a turnoff.
+Initialization is implicit in the specification (at instant 0, the light is off).
+To complete the specification, we must formalize also the clock behavior.
+In CLTL-oc, "resetting a clock" c, e.g., following an on event is as simple as stating that on c 0; testing a clock c against a constant D and causing say, a turnoff is a simple as stating that c D turnoff.
+Unfortunately, the same clock cannot be tested and reset at the same time.
+A possible solution is to introduce two clocks c0 and c1 , rather than just one clock, so that they are reset alternatively: only one of the two clocks is reset and a new reset of the same clock will eventually occur only after the occurrence of a reset of the other clock.
+The behavior of this clock pair is described by the axiom G 6 7 , where formulae (6) and (7) are:  p q  n    n  i  i  i 1  i  2  0,1  0  1  2  2  2  c D  0 c D  0  1  0 c D  c D  i  iPt0,1u  III.
+We briefly recall some key elements of Aph (see [13] for further details).
+Let SV ph denote the set of symbolic valuations associated with ph.
+The closure of ph, denoted cl ph , is the smallest set containing all subformulae of ph and closed under negation.
+An atom G cl ph is a maximally consistent subset of formulae of cl ph , i.e., such that, for each subformula x in ph, either x G or x G. Automaton Aph is the tuple SV ph , Q, Q0 , e, F where Q is the set of all the atoms and e is defined as in the standard Vardi-Wolper construction.
+pq  i  i  0,1  i 1  2  i 1  P  N  P  pp q ^ p qq  (6) c  0 n X pcp q !
+0 U c  0q Pt u (7) c  0 n pc  0q and pq stands for the modulo 2 operator (i.e., p1q  0, p2q  0).
+Finally, the above clock shorthands rst-c, test  and test   $?
+are defined as follows: rst-c o c  0 _ c  0 a 0 c $?D test   $?
+o Pt u a  c  D ^ pcp q !
+D _ cp q  0q test  o  (c)  p q  2  P  p pq  D ECIDABILITY OF CLTL OVER CLOCKS  Our argument is divided in two parts.
+First, in this section, we show that a CLTL-oc formula ph can be translated into a suitable Buchi automaton AR ph , which recognizes the language of the regions of the clocks appearing in ph.
+If the automaton accepts some ultimately periodic words of the form uv o over the alphabet of clock regions induced by ph, then ph is satisfiable.
+In fact, through arguments akin to those in [6], we can show that an infinite sequence of successive regions is representative of a trace of a CLTL-oc formula.
+Automaton AR ph is built using a slight variation of the construction used in [1] and [13]; it differs from those built in the earlier works in that its symbolic runs include the sequences of symbolic valuations that satisfy ph [1] and also constraints representing the clock regions induced by ph.
+Second, in Sect.
+IV we provide a way to solve in practice the satisfiability of CLTL-oc, through the method used in [13] to solve satisfiability of CLTL.
+The technique relies on encoding CLTL formulae into formulae of a decidable fragment of first-order logic, which can then be solved by off-the-shelf SMT solvers.
+The decision procedure hinges on finding a finite sequence of assignments to the clocks appearing in the CLTL formula ph, which satisfies ph and such that it is a witness of an ultimately periodic sequence of successive clock regions.
+Since the clock regions define a partition of the space of clock assignments, each assignment of values to clocks uniquely identifies a region, hence an exhaustive definition of all the regions is not needed.
+q  pq  pq   pq P  p pq   Rq.
+Y 1 pG, Rq YYYN pG , R1q if, and only if, sv P SV pphq satisfies G, the pair pG, G1 q is onestep consistent, R N R1 P d and sv Y R is satisfiable.
+Set I  Q  R of initial states consists of states (atoms) of Q that are consistent with respect to regions in R; i.e., the set of arithmetical constraints in G P Q union R is a satisfiable 1 Now, we define AR ph as tuple SV ph , Q R, I, e , F sv R  Relation e 1 is defined as follows:  0  0  0  conjunction of formulae.
+A run r of AR ph is a sequence:  Y Y N .
+.
+.
+pG , R q YYYYY N pG , R q .
+.
+.
+pG , R q YYYYY where pG , R q P I.
+Let pp, s q be a sequence where p : N N pAP q and s : N  V N R. pp, s q witnesses r, i.e., pp, s q |u r, when for all i Y= 0: p piq  G X AP and s, i |u sv Y R .
+Lemma 1.
+Let ph be a CLTL-oc formula.
+pp, s q |u ph if, and only if, there is an accepting run r of A such that pp, s q |u r. Proof: We first show that, if pp, s q |u ph, then there is 0  0  0  sv0 R0  i  i  svi Ri  i 1  i 1  0  i  i  i  R ph  an accepting run of automaton AR ph .
+In [1] it is shown that a CLTL formula ph is satisfiable if, and only if, there is a run r sv0 sv1 .
+.
+.
+of automaton Aph recognizing symbolic models of the formula.
+We have to show that when the variables of ph behave like clocks, then the sequence of valuations defines a    To represent correctly the elapsing time as measured by clocks, symbolic models of CLTL-oc formulae has to define  101 89  sequence of successive clock regions, hence r is also a run of AR ph .
+In fact, we have that s, i |u svi .
+Since the set of clock regions is a partition of the clocks space, there is only one region R P R such that s, i |u Ri , with Ri  R. Therefore, s, i |u svi Y Ri and model pp, s q induces a sequence of regions R0 R1 .
+.
+.
+.
+By construction, each atom Gi is such that p piq  Gi X AP .
+Finally, we prove that each Ri Ri 1 in the sequence R0 R1 .
+.
+.
+is a pair of successive regions.
+In fact, if s pi, xq and s pi 1, xq are two adjacent valuations for a clock x of ph, then either there is a t !
+0 such that xpi 1q  xpiq t or xpi 1q  0 (reset).
+Therefore, Ri 1 is a time successor of Ri (except for the clocks whose value is 0 in Ri 1 ) and the sequence R0 R1 .
+.
+.
+is a sequence of successive regions which belongs to the language L pAcR q.
+At each position i, we have that p piq  Gi X AP and s piq |u svi Y Ri .
+Hence, pp, s q |u r.  show the PSPACE-completeness for CLTL-oc using arguments similar to those used in [6] to show how the transition relation of the automaton checked for language emptiness can be computed in PSPACE.
+In fact, consider a CLTL-oc formula ph.
+If we indicate with |ph| the number of subformulae of ph, with N the number of clock variables in ph, and with K the biggest constant against which the clock variables of ph are compared, since the number of clock regions is OpN !
+fi K N q [6], the |ph| fi N !
+fi K N q. number of states of automaton AR ph is O p2 However, to check for the emptiness of L pAR ph q we do not need to build the whole state space, but only a constant number of vertices at a time.
+Since the space needed to store a vertex of automaton AR ph , when using a binary encoding for K, is polynomial in |ph| logpK q, the algorithm for checking the emptiness of AR ph is in PSPACE.
+We now show that, if automaton AR ph has an accepting run r, then CLTL formula ph is satisfiable.
+The Vardi-Wolper construction of the Buchi automaton Aph guarantees that at each position of the run r a subset of the subformulae of ph are satisfied and ph is witnessed at position 0.
+By construction, the sequence of symbolic valuation sv0 sv1 .
+.
+.
+is a symbolic model of ph and such that it admits arithmetical model; i.e., there is an infinite sequence of valuations of the variables occurring in ph and satisfying the constraints in svi , for all i [1].
+By construction, the sequence R0 R1 .
+.
+.
+is a sequence of successive clock regions in the language L pAcR q.
+Therefore, by standard arguments from Timed Automata, we can build a sequence of delays d piq such that, for each clock x P V , it is xpi 1q  xpiq d piq, unless x is reset (i.e.
+xpiq  0).
+IV.
+We outline how to decide the satisfiability problem for CLTL-oc formulae by a SMT-based technique instead of automata.
+The technique is based on previous work [16] [15], in which we used a k-bounded satisfiability problem to solve the satisfiability of CLTL formulae by using a polynomial reduction to a SMT problem.
+k-bounded satisfiability is complete, and deciding the satisfiability of a CLTL formula can be done by means of a finite amount of k-bounded satisfiability tests, for increasing values of k. To deal with variables that behave like clocks, the method developed in [15] is extended to represent time progress.
+Given a CLTL formula ph, we say that ph is k-bounded satisfiable if there exists an ultimately periodic sequence of symbolic valuations sv0 , .
+.
+.
+, svl1 psvl .
+.
+.
+svk1 qo , which is a symbolic model of ph and such that there is a partial assignment of values to all the variables occurring in ph only for a finite number of positions in time, from 0 to k 1.
+In other words, in k-bounded satisfiability we look for a finite sequence of symbolic valuations sv0 , .
+.
+.
+, svl1 psvl .
+.
+.
+svk1 svk q, where svk  svl , which admits a k-bounded arithmetical model and that is representative of an infinite symbolic model for ph of the form sv0 , .
+.
+.
+, svl1 psvl .
+.
+.
+svk1 qo .
+While in PSPACE, in practice k-bounded satisfiability can be quite efficient, at least when the value of k is small enough to perform the check: checking k-bounded satisfiability is then equivalent to solve a few SMT problems in P. Obviously, the upper bound for k is in general exponential in the size of the formula.
+Observe that time progression in automaton AR ph is not guaranteed by the construction.
+However, this requirement is easily achieved by the CLTL formula: G pXx  0 _ Xx !
+xq ^ pGF px  0q _ FG px !
+cpxqqq (where cpxq is the biggest constant clock x is compared to), for all clocks x P V .
+Finally, the following result is a direct consequence of Lemma 1 and of properties of CLTL and Timed Automata.
+Theorem 1.
+Satisfiability for CLTL-oc is decidable.
+Proof: Let ph be a CLTL-oc formula.
+By Lemma 1 we can build automaton AR ph , recognizing symbolic models of ph, that has an accepting run (i.e., whose accepted language is non-empty) iff ph is satisfiable.
+Checking the emptiness of the language L pAph q is done by standard techniques which look for cycles in the graph of AR ph embedding (at least) one accepting control state.
+The language of AR ph is not empty if there exists a path of AR ph of the form p  In [15] we show how to solve k-bounded satisfiability for CLTL formulae over a class of arithmetical constraints that include the family of clock constraints used in Sect.
+II.
+The kbounded satisfiability problem is solved through a polynomialtime reduction to the satisfibility problem of a formula in the theory of Equality and Uninterpreted Functions combined with Linear Integers/Reals Arithmetic.
+The combination of the two theories is decidable and its decision procedure is implemented by many SMT-solvers.
+The reduction of [15] has been implemented in the ae2 zot plugin of the Zot tool [17].
+Therefore, an instance of the k-bounded satisfiability problem for CLTL formulae has the complexity of the underlying SMT problem, which depends on the arithmetic theory required.
+In our case, since clocks are in R, we solve SMT problems in QF-EUF Y LRA, whose complexity is P. A peculiarity of the SMT-based approach is that, if the set of symbolic  G0 , R0 q .
+.
+.
+pGl1 , Rl1 qpGl , Rl q .
+.
+.
+pGk , Rk q  where Gk  Gl , Rk  Rl and all atoms belonging to F occur at least once in pGl1 , Rl1 qpGl , Rl q .
+.
+.
+pGk1 , Rk1 q.
+The word which is recognized by the run is an ultimately periodic one over the language SV pphq Y R of the form: p  S OLVING CLTL- OVER - CLOCKS SATISFIBILITY  o  sv0 , R0 q .
+.
+.
+psvl1 , Rl1 q ppsvl , Rl q .
+.
+.
+psvk1 , Rk1 qq .
+1) Complexity.
+: The satisfiability problem for CLTL-oc is PSPACE-hard, as any LTL formula (whose satisfiability problem is PSPACE-complete) is also a CLTL formula.
+We can  102 90  valuations partitions of the space D|V | (with D the domain of the variables in V ), then a sequence of valuations uniquely induces a sequence of symbolic valuations.
+By solving the k-bounded satisfiability problem for a formula ph we obtain, from the model of the QF-EUF formula, the sequence of valuations satisfying the constraints occurring in the formula, which induces a symbolic model.
+Hence, unlike automatabased techniques, our approach does not require the explicit construction of the set SV pphq.
+We exploit this to avoid building the set of clock regions induced by CLTL formulae.
+d x y  1  k  0.2  0.9  2.4  0.5  0.6  ...  0.1  0.3  1.2  0  0.5  ...  2.1  2.3  3.2  5.5  6  Rl1  Rl  R  svl  Rk  1.1 svk  6.6  Fig.
+1.
+A (portion of) bounded model satisfying infinitely often formula py !
+0qUpx  0q.
+P er pacpRph qq enforces regions Rl and Rk (dashed rectangles) to be equal, where Rl  txl   yl , 1   xl   2, 2   yl u and Rk  txk   yk , 1   xk   2, 2   yk u.
+Solid rectangles represent symbolic valuations svl  svk where constraints x  c are not written because included in the regions.
+The set of all constraints a N b (representing a   b) between all the pairs of elements in tx, y, 0, 2u defines a symbolic valuation.
+Value xk1  0 satisfies constraint G pF px  0qq and values yi , with i P rl  1, k  1s, witnesses F pG py !
+cpy qqq.
+The complete definition of |ph|k can be found in [15].
+We provide some of its formulae for the sake of space.
+Formula 1 $?
+l $?
+k  1 sets position l of the loop in r1, k  1s.
+The semantics of the formula ph  py !
+0qUpx  0q is achieved by means of the fixpoint definition of U over all positions in 0, k that is ki0 phi o pxi  0q _ pyi !
+0 ^ phi 1 q.
+The semantic equivalence of position k and l, i.e., all the subformulae of ph have the same truth value at k and l, is enforced by phl o phk , pxl  0q o pxk  0q, pyl !
+0q o pyk !
+0q.
+The eventuality of px  0q in the periodic part, when ph holds at position k, is guaranteed by phk n l $?
+iph $?
+k ^ pxiph  0q.
+To solve the satisfiability of CLTL-oc we still use kbounded satisfiability to look for ultimately periodic models, but we extend the method in order to represent clock regions and time progression.
+Representing clock regions is quite straightforward and exploits the fact that regions partition the space of all possible clock valuations.
+In other words, a clock valuation identifies a clock region, so it is not necessary to precompute the set of all clock regions from the formula.
+The only requirement to be enforced is the periodicity of the sequence of clock regions corresponding to clock valuations.
+If one is looking for a model of length k, the sequence of clock regions is of the form: R0 .
+.
+.
+Rl1 pRl .
+.
+.
+Rk1 qo , which is obtained from a finite sequence R0 .
+.
+.
+Rl1 pRl .
+.
+.
+Rk1 Rk q with the periodicity constraint Rl  Rk .
+The QF-EUF encoding of CLTL formulae is defined to enforce periodicity of all atomic formulae (atomic propositions and clock constraints) between positions k and l. For instance, given two clocks x, y, if x  y holds at position k (i.e., xpk q  y pk q) then, by the periodicity constraints, it must also hold at position l: xpk q  y pk q o xplq  y plq.
+To obtain a periodic sequence of regions we provide the solver with all the clock constraints which may occur in the definition of regions in Rph (but not all the regions).
+Given a CLTL-oc formula ph, we define the set acpRph q as the set of all clock constraints induced by ph.
+Let ph1 be a CLTL formula, Cph be the set of clocks appearing in ph1 , and x, y P Cph .
+If cpxq is the maximum constant with which clock x is compared in ph1 and P t , , !u, the set acpxq  tx  c | @c P r0, 1, .
+.
+.
+, cpxqsuztx   0u is the set of all clock constraints between x and constant cpxq, while set acpx, y q  tx  y u is the set of all clock constraints between x and y.
+Then, set acpRph q is defined as: x,y P Cph ,xy acpxqY acpx, y q.
+We indicate with P erpacpRph qq the set of QF-EUF periodicity constraints on arithmetic constraints acpRq, that is, @th P acpRq thpk q o thplq.
+Time elapsing is obtained by forcing all clocks in ph1 to progress by the same amount of time between two positions of the model.
+Let i P r0, k  1s; then, constraint xpi 1q  xpiq d piq _ xpi 1q  0, where d piq !
+0, is imposed to represent a positive elapsing time, for all clocks x P Cph .
+We indicate with Adv pCph q the set of constraints that impose the uniform time advancement of clocks in Cph .
+Since all variables in the theory of Reals are defined over R and all x P Cph behave like clocks, we force xpiq Y= 0 for all x P Cph and for all i P r0, k s. We indicate the conjunction of these constraints as nN eg pCph q.    V.  E NCODING M ETRIC T EMPORAL L OGICS  We exploit the decision procedure for CLTL-oc outlined in Sect.
+IV to define mechanisms for deciding various metric temporal logics over continuous time.
+In fact, we have defined several satisfiability-preserving reductions from metric temporal logics to CLTL-oc; hence, satisfiability of formulae of these former logics can be determined by solving the corresponding problem for CLTL-oc.
+In particular, the logics we have targeted so far are: MITL [2], QTL [18], and QTL with counting and Pnueli modalities [12].
+In this section, after briefly recalling the definition of MITL and QTL, we present some highlights from the aforementioned reductions.
+1  1  Let AP be a finite set of atomic propositions.
+The syntax of (well formed) formulae of MITL is defined as follows:    ph : p | ph ^ ph |  1  1  k  l  ph | phUI ph  with p P AP and I is an interval of the form xa, by or of the form xa, 8y, where a, b P N are constants, with a   b. Interval xa, by can be, in general, left open or closed (respectively, p or r) but only right closed (written as s).
+We omit the interval I when it is r0, 8q.
+1  M, t M, t  1  1  1  p  o  p  ph  o  M, t |u ph M, t  P  M, t  |u  ph^ps  o  M, t  |u  phUI ps  o Dt  1  M ptq  P  We solve the satisfiability problem of CLTL-oc formula ph by feeding the SMT solver the set of constraints |ph1 |k Y P erpacpRph qq Y Adv pCph q Y nN eg pCph q, where |ph1 |k is the bounded representation of ph1 described in [15].
+p  AP  P  |u  ph and M, t  t  I : M, t  TABLE II.
+1  1  |u  |u  1  |u |u  ps ps and M, t  2  |u  ph @t  2  P rt,  t  1  q  S EMANTICS OF MITL.
+The semantics of MITL is defined in Table II with respect to signals.
+A signal is a function M : R N 2AP (with R the set of nonnegative reals).
+A MITL formula ph is satisfiable if there exists a signal M such that M, 0 |u ph (in this case, M is called a model of ph).
+The globally GI and eventually FI  1  The complete definition of |ph|k can be found in [15].
+103 91  operators can be defined by the usual abbreviations: FI ph JUI ph and GI ph  FI p phq.
+  false to true), this occurred more than b instants ago (i.e., the clock associated with ps that is not reset now is Y= b).
+QTL is similar to MITL, but it is based on a single metric operator, Fp0,1q (and its past counterpart Pp0,1q ), so its syntax is the following:1 ph:   p|ph^ph|  |  |  |  th  |  ph phUp0,8q ph Fp0,1q ph phSp0,8q ph Pp0,1q ph.
+We now briefly show how to encode MITL and QTL formulae into CLTL-oc ones .
+For space reasons we only provide some highlights of the reduction in a special case.
+Let us restrict signals to those where intervals are leftclosed and right-open (l.c.r.o.
+signals, ).
+In addition, given a MITL formula ph we are interested in signals that are non-Zeno [20] models of ph, i.e., such that in every finite interval of the temporal domain there is a finite number of change points of the value of the atomic propositions of ph.
+For these (l.c.r.o.)
+signals, the temporal domain can be partitioned in a countable set of adjacent l.c.r.o.
+intervals such that in each such interval the value of every subformula of ph is constant.
+Then, for each subformula th of ph (th P subf pphq) we introduce  a CLTL-oc predicate th that represents the value of th in the intervals in which the temporal domain is partitioned.
+We also introduce the following abbreviations:     x  x        !x   Yp x q^ x    GpGx0,1s pp ^ q q n Fx1,2s pp p ^ q qUpGx0,0.5s q qq Gp p ^ q n Gx1,2s pq  psR  iPt0,1u  (8)  The case for th becoming true is not shown for brevity.
+Consider the case th  Pr0,bq pps q.
+Formula (9) captures the condition in which th becomes true.
+This occurs when ps becomes true and either the current instant is the origin (O is an abbreviation for Y pJq), or ps has never become true since the origin, or the last time ps changed value (necessarily from 1 Note  (10) (11)  (12) (13)  Predicates p and q become false before each position 2k 1.5 by requiring that p ^ q occurs until an interval of length 0.5 where both p and q are false.
+Let tpk P p2k 1, 2k 1.5q be the instant where p becomes false, and tqk  tpk dk P p2k 1, 2k 1.5q the one where q becomes false; let dk  tpk  tqk be the length of the interval where p does not occur while q does.
+Formula (13) lengthens signal p of dk time units over the next interval starting from 2k: p holds in rtpk 1, tpk 2 dk q.
+The series of values dk is strictly monotonic decreasing because each value is arbitrarily strictly less than the previous one, i.e., dk !
+dk 1 , for all k. Therefore, the sequence of d piq is not periodic, although the sequence of clock regions of induced by the clocks in the CLTL-oc formula corresponding to the formulae above is indeed periodic.
+Formula (8), then, captures the condition in which formula th  Fp0,bs pps q becomes false: in this case, ps must become false, and it cannot become true again for b instants (i.e., ps cannot become true again before its associated clock that is reset when ps becomes false hits b).
+!
+th o !ps ^  iPt0,1u   Y= b (9)  Both signals p and q hold over intervals longer than one time unit, because of the l.c.r.o.
+assumption.
+In addition, we require that q is at least as long as p by means of formula G pp n q q. Formulae (10)-(11) admit, in general, models that can be periodic; therefore, we have to restrict the set only to aperiodic models.
+This may be achieved by enforcing that, over intervals of the form r2k 1, 2k 2s, with k Y= 0, signal q is strictly longer than p, while over intervals r2k 1.5, 2k 2q both p and q are false, as required by the followig two formulae:  For simplicity, we focus our attention on temporal operators Fp0,bs pps q and Pr0,bq pps q.
+We remark that it can be shown that, if ps holds only in l.c.r.o.
+intervals, so do Fp0,bs pps q and Pr0,bq pps q (the same does not hold, for example, for Fp0,bq pps q).
+For each subformula th P subf pphq we introduce two clocks, zth0 and zth1 , which measure the time from the last change point (either th or !th , so we have th _ !th o zth0  0 _ zth1  0), and whose resets alternate.
+zpsi $?
+b  pO^ ps q _  i zps  Gx0,1s p ^ GpGx0,1s p n Gx2,3s pq Gx0,1s q ^ GpGx0,1s q n Gx2,3s q q.  where x , for example, captures the situation in which x changes value from false to true, with the formula being true in the current interval.
+fi  ps^ (c)  psS  a  Example 2: consider the conjunction of the following MITL formulae defining the behaviour of two signals p, q as depicted in Figure 2.
+Signal p holds in r2k, 2k 1 eq, for all k, and is false elsewhere, as formalized by the MITL formulae  Yp x q^ x   ps     To conclude this section, we provide an example of MITL formula (to be evaluated over l.c.r.o.
+signals) over two atomic propositions p, q whose model is intrinsically aperiodic in the values of the delays between changepoints in the values of p and q.
+The existence of formulae admitting only aperiodic models shows that, in the decision procedure of Sect.
+IV, the periodicity must be enforced on the set of constraints defining regions, but not on the actual values of the clocks, nor on the time differences d; i.e., the encoding of CLTL formula ph1 does not include constraints d pk q  d plq and xpk q  xplq.
+In other words, for the example below there does not exist a periodic sequence of time increments d p0qd p1q .
+.
+.
+pdl .
+.
+.
+dk1 qo representing the time elapsing for aperiodic models even if the sequence of clock regions is periodic.
+For brevity, we omit the semantics of QTL, which is however similar to the one in Tab.
+II.
+Note that, despite its apparent simplicity, QTL has the same expressive power as MITL [19].
+x  o  fi  ^ O _ Y  VI.
+I MPLEMENTATION & E XPERIMENTAL R ESULTS  The decision procedure of Sect.
+IV for CLTL-oc is implemented in a plugin, called ae2 zot, of our Zot toolkit [17], whereas the reductions outlined in Sect.
+V are implemented in the qtlsolver tool, available from [21].
+The tool translates  that MITL can be enriched with the "metric since" SI past operator.
+104 92  fi      QTL        We used the above two encodings and the CLTL-oc decision procedure to carry out some verification experiments on the example of the Timed Lamp described in Sect.
+II.
+More precisely, we have built several descriptions of the behavior of the lamp: (i) the CLTL-oc model presented in Sect.
+II; (ii) a MITL specification assuming l.c.r.o.
+signals; (iii) a QTL specification in which predicates on and off are constrained to be true only in isolated instants.
+On each of these specifications we have carried out three experiments, assuming D  5: a check of the satisfiability of the specification, to show that it is consistent (sat); the (dis)proof of property "the light never stays on for more than D time units" (p1 ); the proof of property "if at some point the light stays on for more than D time units, then there is an instant when on is pressed, and then it is pressed again before D time units" (p2 ).
+Depending on the temporal logic and of the restrictions on the signals (l.c.r.o.
+or not) the formalization of the timed lamp and of the properties can change.
+    Fig.
+2.
+Aperiodic model for MITL formula of Example 2  MITL or QTL into CLTL-oc, which can be checked for satisfiability by ae2 zot.
+The resulting toolkit has a 3-layered structure, where CLTL-oc is the intermediate layer between SMT-solvers and various temporal formalisms that can be reduced to CLTLoc.
+This not only supports (bounded) satisfiability verification of different languages, but it also allows the expression of different degrees of abstraction.
+For instance, QTL and MITL abstract away the notion of clocks, inherently encompassed within temporal modalities, which are instead explicit in CLTL-oc (as witnessed by the example of the timed lamp in Sect.
+II) and available to a user, e.g., to express or verify properties where clocks are very convenient.
+In fact, preliminary experimental results point out that the time required to solve CLTL-oc may be significantly smaller than the one needed for more abstract classes of languages, such as MITL.
+This gap is caused by the "effort" required to capture the semantics of temporal modalities, which, on the other hand, allow for more concise and manageable high-level specifications.
+One can then take advantage of the layered structure, which allows the resolution of a formula to be compliant also with constraints imposed at lower layers, for instance by adding at the CLTLoc layer some extra formula limiting the set of valid models (e.g., by discarding certain edges of some events or by adding particular timing requirements).
+Also the third layer (the SMT solver) may be used to add further constraints, e.g., to force the occurrence of a proposition or of a certain clock value at a specific discrete position of the finite model.
+In the case of the CLTL-oc specification of the timed lamp, in order to formalize properties p1 and p2 we introduce an auxiliary clock caux , which is reset every time the light is turned on, i.e., caux o l ^ Y p lq.
+Then, in CLTL-oc property p1 is captured by formula G pY plq n caux $?
+Dq.
+In addition, property p2 is formalized by the following formula: F pl ^ caux Y= Dq n F pon ^ Xp rst-cUpon ^ test0 c$?D qqq (14)  The behavior of the timed lamp can be captured by the following MITL formula over l.c.r.o.
+signals (we write G for Gr0,8q , and S for Sr0,8q ): G  l o p off S onq ^ Pr0,Dq ponq    ^ pon n  offq    (15)  In MITL over l.c.r.o.
+signals, where predicates hold over nonnull intervals, we limit the length of intervals in which on (and off) holds to be at most 1 by adding the following constraint: G  Gp0,1s ponq ^    Gp0,1s poffq .
+(16)  Over unrestricted signals, instead, we force on to hold only in isolated instants by adding QTL constraint (similarly for off) G  The current implementation of qtlsolver supports various reductions.
+More precisely, it realizes the MITL-to-CLTLover-clock translation tailored to l.c.r.o.
+signals, as highlighted in Sect.
+V. It also implements a translation from a generalized version of QTL to CLTL-oc.
+This translation does not assume any special shape for signals, except that they be finitely variable; it natively supports operators Fx0,by and Gx0,by (and their past counterparts), where the bounds can be either included or excluded.
+These operators allow us to define concisely Fxa,by and Gxa,by as abbreviations.
+Forinstance, Gp3,6q pphq is equivalent to Gp0,3q Fp0,3q Gp0,3q pphq ; defining a similar equivalence using only the Fp0,1q and Gp0,1q modalities (see, e.g., [3]) involves the recursive expansions of each conjunct Gpn,n 1q pphq is of Gp3,4q pphq ^ Gr4,5q pphq ^ Gr5,6q pphq, where  equivalent to Gpn1,nq Fp0,1q Gp0,1q pphq .
+The following two encodings are currently available: MITL  providing the definition of generalized QTL operators with unrestricted signals (other than they be finitely variable), and MITL operators through abbreviations.
+pon  Up0,  8q Jq ^  pon  Sp0,  8q Jq    .
+(17)  Properties p1 and p2 over unrestricted signals are captured by the following QTL formulae (where F stands for Fr0, 8q ):   G Fr0,Ds p lq   F Gr0,Ds plq n F on ^ Fp0,Ds ponq  (18) (19)  Over l.c.r.o.
+signals property p1 is still captured by Formula (18); property p2 , instead, is more involved, and corresponds to the following formula: F Gr0,Ds plq    n  F  p    on ^ Pr0,Dq ponqqU on  (20)  Table VI reports the time and space required for the checks outlined above (all tests have been done using the Common Lisp compiler SBCL 1.1.2 on a 2.13GHz Core2 Duo MacBook Air with MacOS X 10.7 and 4GB of RAM; the solver was z3 4.0).
+All bounded satisfiability checks have been performed using a bound k  20.
+The first line of each row shows  providing a direct definition of MITL operators, assuming l.c.r.o.
+intervals;  105 93  limited to logics, but in principle also Timed Automata or Timed Petri Nets).
+TABLE III.
+E XPERIMENTAL RESULTS WITH THE TIMED LAMP, REPORTING T IME ( SEC ) AND HEAP SIZE (MB).
+Problem  Satisfiable?
+CLTL-o-c  MITL (l.c.r.o)  QTL (unrest.)
+sat  Yes  0.48/0.33 5.63  15.5/13.84 66.45  4.24/3.04 27.12  p1  Yes  0.52/0.35 6.22  36.74/33.16 102.47  17.2/14.86 63.5  p2  No  0.67/0.49 6.55  6.61/5.09 110.27  257.1/240.88 58.66  To the best of our knowledge, our approach is the first allowing an effective implementation of a fully automated verification tool for continuous-time metric temporal logics such as MITL and QTL.
+The tool is still a non-optimized prototype, whose performance might also be substantially improved in future versions.
+Still, verification of formulae requiring many clocks may always be infeasible, since satisfiability of MITL is EXPSPACE-complete (but we also support verification also of an interesting, PSPACE-complete fragment of MITL).
+However, in practice a large number of clocks is not very frequent, and the examples of MITL (and QTL) formulae that we studied were verified in a fairly short time.
+the total processing time (i.e., parsing and solving) and the time taken by the SMT-solver (both times in seconds).
+The second line reports the heap size (in Mbytes) required by Z3.
+In every case the specification is satisfiable, property p1 does not hold (the tool returns a counterexample), while property p2 holds ("unsat" is returned).
+In addition to the results shown in the table, a variant of Formula (14) where test0 c D is used instead of test0 c$?D (i.e., $?
+is replaced by  ) is shown to not hold, and a counterexample is obtained in less than 1 second.
+R EFERENCES [1] [2]  Finally, we present an interesting behavior over unrestricted signals.
+The behavior is captured by the following formulae, which state that p and q only occur in isolated instants, with p occurring exactly every 80 time units, and q occurring within 80 time units in the past from each p (origin excluded).
+  [3] [4]     Gp0,80q p pq n Gp80,160q p pq ^ G pp n Fp0,160q pq ^ pq n p qq U Jq ^ p ^ Gp0,80q p pq ^ Gp0,8q pp n Pp0,80q q q  [5] [6]  (21)  [7]  In this case, the bound k  10 is enough to prove that the formula is satisfiable and a model is produced in about 40 secs.
+In around the same time the solver shows that property Gpp n Fp0,80q pq qq holds for model (21) (up to the considered bound), whereas property Gpq n Fp0,80q pq qq does not.
+Note that, in Formula (21), the constants involved in the temporal modalities are significantly greater than the bound k required to obtain a model.
+In fact, any value is possible in principle for the clock increments between two consecutive discrete instants, controlled by the (nondeterministic) variable d. This highlights that the length of the intervals described by a CLTL-oc model is independent of the bound k, as long as this is big enough to capture all changepoints that are necessary to build a periodic sequence of regions.
+VII.
+[8]  [9]  [10]  [11]  [12]  [13]  C ONCLUSIONS  This paper investigates a bounded approach to satisfiability checking of an extension of CLTL where variables behave like clocks (CLTL-oc).
+The decidability of the logic (by means of an automata-based technique) is shown first, followed by an encoding into a decidable SMT problem.
+This encoding, implemented in our ae2 zot tool, allows, both in principle and in practice, the use of SMT solvers to check the satisfiability of CLTL-oc.
+We provide a short but non-trivial example of a CLTL-oc specification describing a timed behavior over continuous time, which should demonstrate the effectiveness of this approach, as we are able to (dis)prove various properties of the specification.
+The paper also outlines the encoding of two continuous time, metric temporal logics, namely MITL and QTL, that are implemented in our qtlsolver tool.
+This shows that CLTL-oc can be considered as a target language to reduce decision problems of various continuous-time formalisms (not  [14]  [15]  [16] [17] [18] [19] [20] [21]  106 94  S. Demri and D. D'Souza, "An automata-theoretic approach to constraint LTL," Inf.
+Comput., vol.
+205, no.
+3, pp.
+380-415, 2007.
+R. Alur, T. Feder, and T. A. Henzinger, "The benefits of relaxing punctuality," Journal of the ACM, vol.
+43, no.
+1, pp.
+116-146, 1996.
+Y. Hirshfeld and A. Rabinovich, "Timer formulas and decidable metric temporal logic," Inf.
+and Comp., vol.
+198, no.
+2, pp.
+148 - 178, 2005.
+O. Maler, D. Nickovic, and A. Pnueli, "From MITL to timed automata," in Proc.
+of FORMATS, ser.
+LNCS, 2006, vol.
+4202, pp.
+274-289.
+P.-Y.
+Schobbens, J.-F. Raskin, and T. A. Henzinger, "Axioms for realtime logics," Theor.
+Comput.
+Sci., vol.
+274, no.
+1-2, pp.
+151-182, 2002.
+R. Alur and D. L. Dill, "A theory of timed automata," Theoretical Computer Science, vol.
+126, no.
+2, pp.
+183-235, 1994.
+J. Bengtsson and W. Yi, "Timed automata: Semantics, algorithms and tools," in Lect.
+on Concurrency and Petri Nets, ser.
+LNCS.
+Springer, 2004, vol.
+3098, pp.
+87-124.
+P. Niebert, M. Mahfoudh, E. Asarin, M. Bozga, O. Maler, and N. Jain, "Verification of timed automata via satisfiability checking," in FTRTFT, ser.
+LNCS, 2002, vol.
+2469, pp.
+225-243.
+B. Badban and M. Lange, "Exact incremental analysis of timed automata with an SMT-solver," in FORMATS, ser.
+LNCS, 2011, vol.
+6919, pp.
+177-192.
+G. Audemard, A. Cimatti, A. Kornilowicz, and R. Sebastiani, "Bounded model checking for timed systems," in Proc.
+of FORTE, 2002, pp.
+243- 259.
+E. M. Clarke, D. Kroening, J. Ouaknine, and O. Strichman, "Completeness and complexity of bounded model checking," in VMCAI, ser.
+LNCS, vol.
+2937.
+Springer, 2004, pp.
+85-96.
+A. Rabinovich, "Complexity of metric temporal logics with counting and the Pnueli modalities," Th.
+Comp.
+Sci., vol.
+411, pp.
+2331-2342, 2010.
+M. M. Bersani, A. Frigeri, M. Rossi, and P. San Pietro, "Completeness of the bounded satisfiability problem for constraint LTL," in Reachability Problems, ser.
+LNCS, 2011, vol.
+6945, pp.
+58-71.
+M. Pradella, A. Morzenti, and P. San Pietro, "Bounded satisfiability checking of metric temporal logic specifications," ACM Transactions on Software Engineering and Methodology (TOSEM), 2013, to appear.
+M. M. Bersani, A. Frigeri, A. Morzenti, M. Pradella, M. Rossi, and P. San Pietro, "CLTL Satisfiability Checking without Automata," arXiv:1205.0946v1, 2012.
+----, "Bounded reachability for temporal logic over constraint systems," in TIME.
+IEEE Computer Society, 2010, pp.
+43-50.
+"Zot: a bounded satisfiability checker," available from zot.googlecode.com.
+Y. Hirshfeld and A. Rabinovich, "Quantitative temporal logic," in Computer Science Logic, ser.
+LNCS, 1999, vol.
+1683, pp.
+172-187.
+Y. Hirshfeld and A. M. Rabinovich, "Logics for real time: Decidability and complexity," Fund.
+Inf., vol.
+62, no.
+1, pp.
+1-28, 2004.
+C. A. Furia, D. Mandrioli, A. Morzenti, and M. Rossi, Modeling Time in Computing, ser.
+EATCS Monographs in Th.
+C. Sci.
+Springer, 2012.
+"qtlsolver," available from qtlsolver.googlecode.com.

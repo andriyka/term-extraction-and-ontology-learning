@@ -1,0 +1,211 @@
+15th International Symposium on Temporal Representation and Reasoning  A Heuristic Approach to Order Events in Narrative Texts Farid Nouioua LIPN, UMR 7030 du C.N.R.S.
+- Institut Galilee Universite Paris 13, 99 avenue J.B.Clement, F 93430, Villetaneuse Farid.Nouioua@lipn.univ-paris13.fr Another model to represent time for reasoning about actions is McDermott's chronicles [7].
+It uses a set of axioms which define its structure and properties.
+It considers an infinite set of partially ordered states; each one has a date which is a real number.
+A chronicle is a convex set of totally ordered states whose dates match the real axis.
+Chronicles can branch in future, which allows representing the free will.
+This model has been applied to planning and causality.
+This paper proposes a temporal model for causal reasoning.
+From a text describing an accident, we want to construct automatically a semantic representation which conveys enough features to trigger a causal reasoning to detect the cause of this accident.
+This work is a part of a larger architecture of a complete NLU system which detects the cause of a road accident from its textual description [8].
+In this system, a parser1 followed by some post-treatments extracts from the text the "linguistic literals": syntactic relations between the words of the text2.
+The linguistic literals trigger a first non monotonic reasoning process: the "linguistic reasoning".
+Its goal is to construct the "semantic literals" that are first-order literals able to express the events that really happened according to the author.
+The semantic literals feed in turn a second non monotonic causal reasoning which infers the cause of the accident [6].
+The linguistic reasoning translates a representation using NL words into another one using "concepts" including time.
+The temporal reasoning is then a part of the linguistic reasoning on which this paper is focused.
+Section 2 is devoted to the logical language used to represent the semantic content of a text.
+Section 3 discusses the reasoning used to extract temporal constraints and the algorithm which uses them to order the events of a text.
+The implementation and the experimental results are presented in section 5.
+Section 6 concludes and draws directions for future work.
+Abstract We describe a heuristic method to order the events evoked in texts describing road accidents.
+The method consists first in generating, by non monotonic inference rules, a set of precedence and simultaneity constraints between temporal references linked to particular words of the text.
+Then, the proposed algorithm updates the narration order of the events to satisfy these constraints and give the real order of the events described in this text.
+The temporal information is represented according to a linear temporal model which is enhanced in a first order reified language.
+1.
+Introduction Knowledge about time plays an important role in Natural Language Understanding (NLU) and in Artificial Intelligence (AI).
+The study of temporality in NL texts consists generally in identifying the temporal nature of the different events evoked in a text as well as the relations linking them.
+For French, [2] and [3] describe a method that computes the aspecto-temporal values of the different parts of a text by determining aspect and temporal operators as well as modalities and then applying them to the propositional content of the text to obtain processes.
+Another important work for French is the Sdt model (semantic of temporality) [5] which proposes four types of intervals: an enunciation interval for each sentence, a process interval, a reference interval and an interval representing the portion of the temporal axis delimited by each time complement or time subordinate.
+An implementation of this model can be found in [10].
+These approaches are not dedicated to trigger reasoning about texts.
+In AI, several models of time have been proposed to reason about actions and change.
+The Allen's generalized interval theory [1] is a well known example.
+It proposes a naive interval-based temporal reasoning framework.
+This model defines 13 explicit topological relations between intervals and studies the constraints between them and their propagation.
+1530-1311/08 $25.00 (c) 2008 IEEE DOI 10.1109/TIME.2008.13  1  Developed by Daniel Kayser for the texts of our corpus.
+The relations used are: subject/verb, object/verb, verb/complement, noun/complement, verb/qualification, noun/qualification and relations between couples of verbs.
+2  67  where a vehicle is under control to state t'=t+1 where it is no more under control.
+An action act or an event evt occur in a transition between two states t and t+1.
+However, to homogenize the representation, we associate to an action or an event only the index of the first state.
+Hence, a state t is characterized, in addition to persistent effects, by actions and/or events occurring in the transition t, t+1.
+For example, consider the following text (B52) : << Apres m1'etre arrete au1 feu1 rouge, je suis reparti au2 feu2 vert et c'est a ce moment que le vehicule B est venu me2 percuter fortement a3 l'arriere3>> (after being stopped at red light, I moved off at the green light and that's when the vehicle B struck me heavily at the rear).
+We distinguish in this text four states: in state 1, the author is stopped at the red light : holds(stops, author, 1), holds(red_light, author, 1); in state 2, the light turns green: holds(green_light, author, 2); in state 3 the author moves off: holds(moves_off, author, 3) and in state 4, vehicle B strikes the author's vehicle at the rear: holds(combine(strikes, author), veh_B, 4), holds(combine(shock_position, rear), author, 4).
+2.
+The target representation language 2.1.
+A first order reified logic The reification technique allows quantifying over predicates while staying within a first order framework.
+For example, instead of writing P(X,Y), we write Holds(P, X, Y) in which P becomes an argument (henceforth, we denote by "predicate" the predicate Holds of the reified language and by "properties" the predicates of the original).
+Since the predicate Holds must have a fixed arity (3 in this work) whereas the reified properties may have different arities, we use a specific binary function combine to construct new arguments from simpler ones.
+For example, the reification of the predicate follows(A, B, T) (A follows B at time T) is : Holds(combine(follows, B), A, T).
+2.2.
+The temporal model There are three times in our texts: the linear time of narration, the linear time of events (the real course), and the branching time which takes into account also the unrealized possible futures.
+The last model is undoubtedly the richest one but we found, for our particular application, that only the second time needs an explicit representation.
+This information together with the effective course of events allows the causal reasoning to detect violations of norms which represent the potential causes of the accident [8].
+Therefore, we use integers to represent temporal states.
+The general form of a semantic literal is: [!
+]holds(P, A, T) where P is a property, A is an agent or an object and T is the index of a temporal state.
+Another hypothesis of our work is that, as far as causal reasoning is concerned, it suffices to consider only the precedence and simultaneity relations that link the events of the text.
+Let us now explain what states are.
+The scene described in a text is seen as sequence of successive pictures taken from a continuous situation.
+A temporal state corresponds to an interval characterized by its "persistent effects" : the set of propositions that keep the same truth value during it.
+A transition between two states t and t+1 is performed by two ways : * An agent executes successfully, in state t, an action Act which allows to transit to state t'= t+1 by changing the truth value of at least one proposition.
+For example, if an agent A brakes at state t then, in state t'=t+1, A's speed decreases or A stops.
+* An external event evt occurs and causes the transition from a state t to a state t'=t+1 in which its effects hold.
+For example, meeting a glaze plaque in the road may cause transition from state t  3.
+The method We use Reiter's default logic [11] to write the inference rules.
+We have material implications of the form: A1 [?]
+...[?]
+An - B; normal defaults of the form: A1 [?]
+...[?]
+An : B, (denoted : A1 [?]
+...[?]
+An : B) and semiB normal defaults of the form : A1 [?]
+...[?]
+An: B[C1,..., Cm] B (denoted : A1 [?]
+...[?]
+An : B [C1,...,Cm]) where A1,..., An, B, C1, ..., Ck are first order literals.
+3.1.
+Inferring the atemporal semantic literals We first infer "intermediate semantic literals" which come close in form to final semantic literals but which still handle words and not concepts.
+The input of this task are subject/verb, object/verb and verb/complement relations that are indeed at the root of most semantic literals.
+The form of intermediate semantic predicates is: Holds_I(P_Prop_P, P_Ag, t_ref(M)).
+Prop_P and Ag_P indicate respectively "potential property" and "potential agent".
+Temp_ ref(M) denotes: "a temporal reference associated to word M".
+It will potentially be used to compute the effective temporal parameter of a semantic predicate.
+Here are two examples of the intermediate semantic literals extracted from text B52 : holds_I(arreter, auteur, t_ref(arreter)), holds_I(combine(percuter,auteur),veh_B,t_ref(percuter)) 3  68  Indices distinguish different occurrences of a same word.
+The following step is to infer the "atemporal semantic literals" that are identical to final semantic literals, except for the temporal parameter which remains unresolved (for more details about the inference rules of this level, see [8]).
+The atemporal semantic literals extracted from the text B52 are: holds(stops, author, t_ref(arreter)), holds(red_light, author, t_ref(a1)), holds(green_light, author, t_ref(a2)), holds(moves_off, author, t_ref(repartir)), holds(combine(strikes, author), veh_B, t_ref(percuter)), holds(combine(shock_ position, rear), author, t_ref(a3))  holds_I(combine(combine(Pr,V),X),A,t_ref(Pr)) - prec(H, t_ref(Pr)) (3) The rule (4) is used to infer, if a vehicle moves off at the green light after being stopped at the red light, that necessarily, the passage of the light to green happens after the state when it is red.
+type(A,vehicle) [?]
+prep(Pr1) [?]
+prep(Pr2) [?]
+sem_rep(V,arreter) [?]
+sem_rep(W,demarrer) [?]
+sem_rep(X,feu_rouge) [?]
+sem_rep(Y,feu_vert) [?]
+sem_rep(Z,apres) [?]
+holds_I(combine(combine(Pr1,V), X), A, t_ref(Pr1)) [?]
+holds_I(combine(combine(Pr2, W),Y),A,t_ref(Pr2)) [?]
+relation(Z,V,W) -  3.3.
+Inference of temporal constraints  prec(t_ref(Pr1), t_ref(Pr2))  (4)  By applying the above inference rules on our example, we obtain the following constraints: simul(t_ref(arreter),t_ref(a1)), simul(t_ref(percuter),t_ref(a3)), prec(t_ref(a2),t_ref(repartir)), prec(t_ref(a1), t_ref(a2)) Other rules are used to infer other temporal constraints in different other situations.
+Some of them still rather specific to the application domain, but some others use more general linguistic or common sense knowledge.
+For example we have rules that reason about grammatical tenses of verbs5 or use causal relations to state that a cause always precedes its effect.
+While inferring the atemporal semantic literals, a temporal reasoning generates constraints of the form: the temporal reference associated to a word M1 must precede directly (resp.
+be simultaneous with) that associated to word M2 : prec(t_ref(M1), t_ref(M2)) (resp.
+simul(t_ref(M1), t_ref(M2))).
+The default order of events given in narration must then be updated to satisfy these constraints.
+The temporal inference rules are based on simple interpretation of the temporal significance of some words and syntactical constructions in addition to general common sense knowledge.
+Here are examples of these inference rules: Rule (1) treats expressions describing situations where an agent is stopped at a stopping cause (red light, stop panel, ...).
+It infers the simultaneity of the stopping state and the presence of the stopping cause.
+3.4.
+Resolving the temporal constraints An algorithm receives the set of the temporal references t_ref(M1), ..., t_ref(Mn) present in the atemporal semantic literals (M1, ..., Mn appear in the text in this order) and the set of the temporal constraints R1, ..., Rm and associates to each reference t_ref(Mi ) an integer Ti > 0 representing its real order.
+S = T1, ..., Tn is called "the temporal structure".
+Here is the general schema of the algorithm:  type(A, vehicle) [?]
+type(X, stopping_cause) [?]
+prep(Pr) [?]
+sem_rep(V, arreter) [?]
+holds_I(V, A, H) [?]
+holds_I(combine(combine(Pr,V),X), A,t_ref(Pr)) - simul(H, t_ref(Pr)) (1)4 We use the rule (2) to extract from expressions telling that a vehicle receives a shock in some position (rear, front, ...) the simultaneity relation between the shock event and the position of this shock.
+* Initialization: Initialize the order Ti of each reference t_ref(Mi ) by i (the narration order) * Let R1, ..., Rm be the set of the constraints taken in an arbitrary order6.
+For each Rj, if S does not satisfy Rj (see below), then modify S to satisfy Rj.
+* If all constraints are satisfied, then replace each t_ref(Mi ) by Ti else repeat the previous step.
+Type(A, vehicle) [?]
+type(B, vehicle) [?]
+type(X, position) [?]
+prep(Pr) [?]
+sem_rep(V, heurter) [?]
+holds_I(combine(V, A), B, t_ref(V)) [?]
+holds_I(combine(combine(Pr,V),X),B,t_ref(Pr))[?]
+- simul(H, t_ref(Pr)) (2) We use the rule (3) to express that a light turning green precedes the moving off of the driver.
+5  One of the rules of this type which is commonly used in our texts, states that if two verbs V1 and V2 have the same subject S and that V1 is at the "imparfait" tense whereas V2 is in the "passe compose" tense, then generally, the temporal reference associated to V1 precedes that associated to V2.
+6 In our application, we have often a limited number of temporal relations.
+Considering them in any order gives satisfactory results.
+Type(A, vehicle) [?]
+prep(Pr) [?]
+sem_rep(V, demarrer) [?]
+sem_rep(X, feu_vert) [?]
+holds_I(V, A, H)[?]
+4  The predicate type regroups together words belonging to a same semantic type and the predicate sem_rep gives a same representative word to all words considered as synonyms.
+69  A constraint prec(t_ref(Mj), t_ref(Mi )) is satisfied iff: Tj = Ti -1 (immediate precedence).
+If the temporal structure S does not satisfy R, we modify it by "moving" t_ref(Mj) to be just before t_ref(Mi ), filling the gap left by this move if any and ensuring that the numbering starts always with 1.
+The possible cases are treated by the following algorithm:  simul(t_ref(arreter), t_ref(a1)), simul(t_ref(percuter), t_ref(a3)), prec(t_ref(a2), t_ref(repartir)), prec(t_ref(a1), t_ref(a2)) The unfolding of the algorithm on this example is illustrated as follows:  if (Ti <= Tj) if (t_ref(Mj) is not alone7 and Ti [?]
+1) Tj - Ti -1 ; (change the order of t_ref(Mj)); if (t_ref(Mj) is alone and Ti [?]
+1) Tk - Tk-1 ; (move the For (each Tk > Tj) references situated after t_ref(Mj) to fill the gap) Tj - Ti -1 ; (change the order of t_ref(Mj)) if (t_ref(Mj) is not alone and Ti = 1), For (each Tk) Tk - Tk+1 ; (keep the first place for t_ref(Mj)) Tj - 1 ; if (t_ref(Mj) is alone and Ti = 1) For (each Tk>= 1 and Tk < Tj) Tk - Tk+1 ; (keep the first place for t_ref(Mj) and fill the gap left by t_ref(Mj)) Tj - 1 ; if (Ti > Tj) if (t_ref(Mj) is not alone) Tj - Ti -1 ; (change the order of t_ref(Mj)) if (t_ref(Mj) is alone) For (each Tk > Tj) Tk - Tk-1 ; (move the references situated after t_ref(Mj) to fill the gap) Tj - Ti -1 ; (change the order of t_ref(Mj))  All the other constraints are satisfied by this last structure.
+Therefore, the list of the "final" semantic literals obtained from text B52 are:  We treat analogously the simultaneity constraints: a relation simul(t_ref(Mj), t_ref(Mi )) (Ti[?
+]Tj) is satisfied by "moving" the reference having the larger number.
+The following algorithm treats the possible cases.
+It considers without loss of generality that Ti < Tj.
+holds(stops, author, 1), holds(red_light, author, 1), holds(green_light, author, 2), holds(moves_off, author, 3), holds(combine(strikes, author), veh_B, 4), holds(combine(shock_position, rear), author, 4)  if (t_ref(Mj) is not alone) Tj - Ti (change the order of t_ref(Mj)) if (t_ref(Mj) is alone) For (each Tk > Tj) Tk - Tk-1 (move the references situated after t_ref(Mj) to fill the gap) Tj - Ti (change the order of t_ref(Mj))  4.
+Implementation and results To implement the system, we used the Answer Set Programming (ASP) paradigm [4].
+We chose for that the Smodels language based on stable models semantics (available at: http://www.tcs.hut.fi/Software/ smodels/).
+Our inference rules are translated into extended logic programs [9].
+The different parts of the reasoning process are coordinated by a C program.
+For evaluation purposes, we split the corpus in two samples: a training sample of 73 texts obtained at the beginning of our study and used for the development of the system, and a validation sample containing the other 87 texts collected later to test the system.
+3.5.
+An example Let us recall that the set of temporal constraints inferred from our example (text B52) are : 7  We say that a reference ref_temp(Mj) is alone iff it is the only reference whose order is Tj.
+70  To test the linguistic reasoning, we determined a priori, for each text, the set of its expected semantic literals and we compared them to the literals found by the system.
+We have already determined at the beginning of our study about 50 semantic predicates considered relevant and sufficient for the causal reasoning.
+Thus, it becomes easy to determine without ambiguity from a text, its expected semantic literals.
+To show the robustness of the linguistic reasoning we considered separately the case where its input is corrected manually and that where this input is exactly the output of the post-treatments module.
+For lack of space, we present only the results at the text level.
+according to a linear temporal model.
+This model is well adapted to reasoning about actions and has been used in a causal reasoning to detect automatically the cause of the accident described in the text.
+The proposed approach is based on a non monotonic reasoning that exploits linguistic and common-sense knowledge to generate precedence and simultaneity constraints.
+These constraints are then taken by an algorithm to update the default order of narration.
+This paper shows the feasibility and utility of a reasoning approach to NLU and, by considering NL texts as support of information to reasoning about actions, tries to make a bridge between these two fields of AI.
+Our temporal model remains rather simple.
+For future work we want to enrich it by representing branching time and refining the temporal constraints that may exist between the temporal states which will undoubtedly need to develop more abstract inference rules and to develop more sophisticated algorithms to resolve the resulting constraints.
+Table 1.
+Results at the text level Training sample Raw Corrected input input 73 Nb.
+of texts 60 63 without errors (82%) (86%) 5 with expected literals 8 (11%) (7%) not found with additional 0 0 literals with literals having 5 5 erroneous temporal (7%) (7%) parameter with literals having 2 0 erroneous non (3%) temporal parameters  Validation sample Raw Corrected input Input 87 35 39 (40%) (45%) 38 37 (44%) (40%) 4 4 (5%) (5%) 12 (14%)  12 (14%)  8 (9%)  0  6.
+References [1] J. Allen, H.A.
+Kautz, "A Model of Naive Temporal Reasoning", Formal Theories of the Commonsense World, Ablex Series in Artificial Intelligence, J. Hobbs & R.C.
+Moore (Eds.
+), 1985, pp.
+251-268.
+[2] M. De Glas, J.P. Descles, "Du temps linguistique comme idealisation d'un temps phenomenal", Intellectica, 1996, vol.
+23, pp.
+159-192.
+[3] J.P. Descles, D. Maire-Reppert, H. Oh, J. Berry, "Traitement Automatique du temps et de l'aspect pour l'analyse de textes".
+TAL, Revue Semestrielle de l'ATALA, 1994, vol.
+35(1), pp.
+83-95.
+[4] M. Gelfond, V. Lifschitz, "Classical negation in logic programs and disjunctive databases", New Generation Computing, 1991, vol.
+9(3-4), pp.
+363-385.
+[5] L. Gosselin, "Semantique et temporalite en francais Un modele calculatoire et cognitif du temps et de l'aspect", Duculot, 1996.
+[6] D. Kayser, F. Nouioua, "About Norms and Causes".
+International Journal on Artificial Intelligence Tools, 2005, vol.
+14(1-2), pp.
+7-23.
+[7] D.V.
+McDermott, "A Temporal Logic for Reasoning about Processes and Plans", Cognitive Science, 1982, vol.
+6, pp.
+101-155.
+[8] F. Nouioua, "Extraction et Utilisation des normes pour un raisonnement causal dans un corpus textuel", PhD Thesis, University of Paris XIII, 2007.
+[9] F. Nouioua, P. Nicolas, "Using Answer Set Programming in an Inference-based Approach to Natural Language Semantics", 5th International Workshop on Inference in Computational Semantics, 2006, pp.
+77-86.
+[10] Person C, "Traitement Automatique de la Temporalite du recit : implementation du modele linguistique SdT".
+PhD Thesis, University of Caen, 2004.
+[11] R. Reiter, "A Logic for Default Reasoning", Artificial Intelligence, 1980, vol.
+13(1-2), pp.
+81-132.
+Table 1 shows the obtained results.
+We consider that a text is erroneous if there is an error in at least one of its semantic literals.
+The linguistic reasoner errors are not concentrated in a part of the corpus: more than one half of the texts contain at least an error in the inferred semantic literals.
+This remark is crucial for the evaluation of the causal reasoning, which must be able to find correct answers even in the presence of some errors in its input.
+Temporal errors remain however limited.
+There is at least an error in temporal parameters for 14% of the validation texts, which can be considered as rather a good result.
+To improve these results, we think that we have to further generalize our inference rules by working at a more abstract level.
+5.
+Conclusion and Perspectives We presented in this paper a heuristic approach to order automatically the events evoked in a text describing a road accident.
+The system aims at producing a semantic representation of the text that contains temporal information about the course of the reported events.
+This information is represented  71

@@ -1,0 +1,214 @@
+Extending ITL with Interleaved Programs for Interactive Verification Gerhard Schellhorn joint work with  Bogdan Tofan, Gidon Ernst, Kurt Stenzel, Wolfgang Reif, Michael Balser, Simon Baumler Institute for Software and Systems Engineering University of Augsburg  TIME, Lubeck, 13.9.2011  Background: Development of Correct Software  General Setting: Specification of Software Systems with: Algebraic Specification, Z, Abstract State Machines (ASMs) Incremental Refinement of Designs: Algebraic, Data, ASM Refinement Verification of refinements: Tool support with KIV Interactive Verifier  Background: Proving Sequential Programs with KIV  KIV is an interactive theorem prover based on Structured algebraic specification of data types with higher-order logic Sequent calculus with proof trees wp-calculus for ASMs and Java Proof principle for sequential programs: symbolic execution (+ induction) [Burstall 74] (= incremental computation of strongest postconditions for instructions)  Concurrent systems: What Logic to use?
+Define a general logic which allows proofs for arbitrary properties: safety, liveness, deadlock, fairness, refinement (trace inclusion) can handle systems specifications that use abstract data types = interactive proving approach provides modular support for various forms of concurrency: Programs with interleaving ("threading") Synchronous and asynchronous programs Harel- and UML-Statecharts (no encoding to transition systems)  Concurrent systems: What Calculus to use?
+Define a calculus where proving properties (e.g.
+contracts) for sequential programs should not be more difficult than using wp-calculus compositional reasoning (e.g.
+rely-guarantee) is supported, as otherwise concurrency generates too many cases  Content of my talk: One particular answer to choosing a logic and a calculus, based on ITL [Moszkowski 00].
+Some applications for interleaved programs.
+Outline The Logic RGITL Compositional interleaving A semantics with system and environment steps Integration with HOL  Proof principles in RGITL Symbolic Execution Induction Rely-Guarantee  Application: Lock-Free Algorithms Motivation Simple Example: Treiber's Stack Linearizability and Lock-Freedom  Experiences, Future Work  Why base the logic on ITL?
++ ITL directly offers termination/nontermination by using finite & infinite intervals + ITL is (easily) compatible with higher-order logic.
++ ITL offers the concept: programs [?]
+formulas.
+The semantics of both is a set of intervals.
+- Some small extensions are needed: Is variable M in the program N := t?
+Recursive procedures - ITL does not offer a concept for interleaving.
+Interleaving: Informal Semantics Interleaved program {N := N2 ; N:= N2 } k N := N + 1 started with N = 2: N = 17 N = 25 N = 81 | STEP | STEP | STEP N = 16, N := N + 1 N := N2 , N = 5 N = 9, N := N2 t STEP r | STEP N = 4, N := N2 k N := N + 1 N = 3, N := N2 ; N := N2 t STEP r N = 2, {N := N2 ; N := N2 } k N := N + 1  Weak Fairness: {while N 6= 0 do N := N + 1} k N := 0 terminates  Interleaving and Compositionality  A substitution rule is basic for a calculus to scale: a-A  b-B A[?
+]B -C a[?
+]b -C  holds in ITL for [?]
+= sequential composition and other operators (similar to Hoare calculus) ideally, third premise should be trivial should hold for [?]
+interleaving too!
+Example for Noncompositional Interleaving in ITL In classical ITL: {while* N 6= 0 do N := 0} - {if* N 6= 0 then N := 0} (the star indicates, that the test does not take time)  (1)  Example for Noncompositional Interleaving in ITL In classical ITL: {while* N 6= 0 do N := 0} - {if* N 6= 0 then N := 0} (the star indicates, that the test does not take time)  (1)  Using the substitution rule: {while* N 6= 0 do N := 0} k {while* N 6= 1 do N := 1} - {if* N 6= 0 then N := 0} k {while* N 6= 1 do N := 1}  (2) (3)  which is wrong: (2) has nonterminating runs, which alternate between the loops (3) terminates, since at some time N := 0 is executed  Example for Noncompositional Interleaving in ITL In classical ITL: {while* N 6= 0 do N := 0} - {if* N 6= 0 then N := 0} (the star indicates, that the test does not take time)  (1)  Using the substitution rule: {while* N 6= 0 do N := 0} k {while* N 6= 1 do N := 1} - {if* N 6= 0 then N := 0} k {while* N 6= 1 do N := 1}  (2) (3)  which is wrong: (2) has nonterminating runs, which alternate between the loops (3) terminates, since at some time N := 0 is executed The problem is, that equivalence (1) ignores effects of the environment of the program  RGITL: Intervals with Environment Steps Basic idea: environment steps between program steps Semantics is based on Intervals I = sequence of states (I(0), I' (0), I(1), I' (1), .
+.
+. )
+state = valuation of variables I has finite (termination!)
+or infinite length # I [?]
+IN [?]
+{[?]}
+I alternates system steps (I(0),I' (0)), (I(1),I' (1)), .
+.
+.
+with environment steps (I' (0),I(1)), (I' (1),I(2)), .
+.
+.
+(similar to reactive sequences [deRoever 01]) Programs determine system steps only Primed and double primed (flexible) variables are needed: X, X' , X'' denote the value of X in I(0), I' (0), I(1) (X = X' = X'' in final states by convention)  Semantics of the Example in RGITL The semantics of while* N 6= 0 do N := 0 now are intervals where N has values (ni 6= 0): (0) (n0 , 0, 0)  /* first env step does not change N */  (n0 , 0, n1 , 0, 0)  /* env sets N to n1 */  (n0 , 0, n1 , 0, n2 , 0, 0) ... Nonterminating run (n0 , 0, n1 , 0, n2 , 0, .
+.
+.)
+= The two programs are not equivalent But: equivalence is provable with environment assumption: (2 N'' = N' ) - ({while* N 6= 0 do N := 0} - {if* N 6= 0 then N := 0})  RGITL: Syntax  Extends simply types lambda-expressions with static (x) and flexible variables (X,X' ,X'' ) formulas (= expressions of type bool) with: 3, 2, until, A, E /* all paths/exists path */, * , * /* strong/weak next state */, last /* termination */, ; /* chop */, * /* star */ k, knf /* weak fair/nonfair interleaving */, p(T;Y) /* procedure call with input an in-out parameters */ TL and HOL operators can be freely mixed  RGITL: Semantics  Expressions are evaluated over algebras (constructed as models of algebraic specs.)
+and an interval I = (I(0),I' (0),I(1),.
+.
+. )
+If formula ph evaluates to true, write: I |= ph TL Operators have standard semantics: (I(0), I' (0), I(1), I' (1), .
+.
+. )
+|= 2 ph iff for all n <= # I: (I(n), I' (n), I(n + 1), I' (n + 1), .
+.
+. )
+|= ph I |= A ph iff for all J with J(0) = I(0): J |= ph I |= last iff I = (I(0)) (I(0), I' (0), .
+.
+. )
+|= [?]
+X. ph iff ex.
+(a0 , a0' , .
+.
+.)
+with (I(0)[X - a0 ], I' (0)[X - a0' ], .
+.
+. )
+|= ph  Programs in RGITL  Programs a are formulas too: I |= a = the system steps in I are possible steps of a Programs: parallel assignments X := T, sequential (let, while, or, choose, rec.
+procedures) + a k b (interleaving), await C (block until C holds) Programs a are placed in a frame assumption [a]X,Y to indicate which variables are fixed in assignments (similar to TLA [Lamport 94], but no built-in stuttering) [X := T]X,Y - X' = T [?]
+Y' = Y [?]
+* last Typical goal: a [?]
+E - P "Executing a in environment E satisfies P"  Semantics of Interleaving Interleaving of two programs (or formulas) a and b is defined compositionally, by interleaving individual intervals = substitution rule is valid!
+Assume I1 |= a, I2 |= b Interleaving gives all intervals I which have Interleaved system steps from I1 and I2 (fair) The environment steps of I1 (I2 ) are the relevant alternating sequences of env.
+steps and system steps of b (a) in I I1 I I2  env of a  a a  env  b b  env  a  env  a  env  env of b  Formal def.
+in paper, including blocked steps (tricky): await ph [?]
+while* !
+ph do blocked  Outline The Logic RGITL Compositional interleaving A semantics with system and environment steps Integration with HOL  Proof principles of RGITL Symbolic Execution Induction Rely-Guarantee  Application: Lock-Free Algorithms Motivation Simple Example: Treiber's Stack Linearizability and Lock-Freedom  Experiences, Future Work  Proof principle 1: Symbolic Execution  Symbolic execution = Step forwards through an interval Advantage: no encoding of programs as transition systems with program counters (as in Step, TLA or Model checking) = readable goals Symbolic execution is done in two phases: Unwinding and Stepping to the next state  Symbolic Execution: Unwinding (1) Splits formulas ph with X = free(ph) into formulas p(X,X' ,X'' ) describing the first step * ps describing properties of the rest of the run  Termination gives formulas of the form q(X) [?]
+last examples:  2ph[?]ph[?
+]*2ph * ph [?]
+last [?]
+* ph  [X := T ; a]X ,Y [?]
+X ' = T [?]
+Y ' = Y [?]
+* [a]X ,Y [let X = T in a]Y [?]
+[?]
+X .
+(X = T [?]
+[a]X ,Y [?]
+2 X ' = X '' ) [choose X with ps in a ifnone b]Y  [?]
+[?]
+X .
+(ps [?]
+[a]X ,Y [?]
+2 X ' = X '' ) [?]
+(!
+[?]
+X .ps) [?]
+[b]Y  Symbolic Execution: Unwinding (2) To unwind interleaving and compounds unwind subprograms: If a [?]
+p(X , X ' , X '' ) [?]
+* a' then {a; b} [?]
+p(X , X ' , X '' ) [?]
+* {a' ; b} {a k b} [?]
+{a <k b} [?]
+{a k> b} {a <k b} [?]
+p(X , X ' , X '' ) [?]
+* {a' <k b} If a [?]
+q(X ) [?]
+last then {a; b} [?]
+q(X ) [?]
+b a <k b [?]
+q(X ) [?]
+b  Symbolic Execution: Stepping Stepping removes the first step of interval: Instead of (I(0),I' (0),I(1),I' (1),.
+.
+. )
+consider (I(1), I' (1),.
+.
+. )
+Use new static variables x0 , x1 to store I(0)(X) and I' (0)(X) of the old first step in I(1)(x0 ) and I(1)(x1 ) p(x0 , x1 , X ) [?]
+ps step p(X , X ' , X '' ) [?]
+* ps  q(x0 ) last q(X ) [?]
+last  Effect: computation of the strongest postcondition of the first statement, weakened with environment assumption = sequential programs are executed as in wp-calculus Temporal properties result in (often non-temporal) additional goals for intermediate states  Proof principle 2: Induction  Proofs use induction over well-founded orders Temporal induction reduced to well-founded induction by: 3 ph [?]
+[?]
+N. N = N '' + 1 until ph "There is a number N of steps after which ph holds" Note that N = N '' + 1 - N '' = N - 1 [?]
+N > 0 Proof of 2 ph by contradiction: Assume a number N of steps after which !
+ph holds Proof is then by well-founded induction over N Can be generalized to arbitrary safety properties (e.g.
+sequential programs without local variables)  Induction to prove Fairness Weak Fairness: In an interleaving a k b, program a eventually gets a chance to do a step (if not blocked) In TLA: separate formula talking about encoded steps with program counters = not an option of RGITL Alternative: General transformation of fair to unfair interleaved programs using counters [Apt,Olderog 91] In RGITL: Add an "a is scheduled flag" B: {B : a k b} - {a <k b} [?]
+(!
+B [?]
+{B : a k> b}) New Axiom: {a k b} - [?]
+B.
+3 B [?]
+{B : a k b} 3 B allows induction!
+Unfair interleaving satisfies almost the same axiom: a knf b [?]
+([?]
+B.
+3 B [?]
+{B : a knf b}) [?]
+(b [?]
+2 (!
+blocked) [?]
+E [?]
+x. a) E [?]
+X. a: "there is at least one run of a" (X = free(a))  Proof principle 3: Compositional Reasoning  Substitution principle allows to abstract each program in an interleaving to a property In particular: Rely/Guarantee rules are expressible Guarantee = Predicate for steps of a process G(X,X' ) Rely = Predicate on environment steps R(X' ,X'' ) Program a satisfies R/G, iff: a  env [?
+]R +  env [?
+]R  a - [?
+]G  As a TL formula: R -- G [?]
+!
+(R until (!
+G)) (not a special operator as in TLA [Lamport 94]!)
+Proof principle 3: Compositional Reasoning Basic principle: Prove Ri /Gi for interleaved programs ai (i = 1,2) Prove Gi - Rj for i 6= j, Ri transitive Then: a1 k a2 satisfies 2 G1 [?]
+G2  Provable by using the substitution principle, with + + + A [?]
+R1 -- G1 , B [?]
+R2 -- G2 , C [?]
+(X ' = X '' ) -- G1 [?]
+G2 a1 - A  a2 - B AkB-C a1 k a2 - C  First two premises = Assumptions for the two programs Third premise provable by induction, using + + R -- G - [?]
+B.
+3 B - (R [?]
+!
+B) -- G  Rely-Guarantee Theorem  Theorem (1) (2) (3) (4) (5)  +  pre [?]
+COp1 - R1 -- (G1 [?]
+(last - post1 )) + pre [?]
+COp2 - R2 -- (G2 [?]
+(last - post2 )) G1 [?]
+R - R2 , G2 [?]
+R - R1 , G1 [?]
+G2 - G reflexive(G1 , G2 ), transitive(R1 , R2 ) pre [?]
+(R1 [?]
+R2 ) - pre +  then pre [?]
+COp1 kCOp2 - R -- (G [?]
+(last - post1 [?]
+post2 ))  similar to [Xu,deRoever 97] (except cond.
+(5)) Their notation for (1): COp1 sat (pre, rely1 , guar1 , post1 ) Deadlock freedom provable too (using blocked - wait)  Outline The Logic RGITL Compositional interleaving A semantics with system and environment steps Integration with HOL  Proof principles of RGITL Symbolic Execution Induction Rely-Guarantee  Application: Lock-Free Algorithms Motivation Simple Example: Treiber's Stack Linearizability and Lock-Freedom  Experiences, Future Work  Motivation  Multi-core processors getting more and more common = Concurrent algorithms more important than ever Usually, concurrency is implemented using locks (semaphores, synchronize in Java etc.)
+Lock-free algorithms (also called nonblocking) are an interesting class of algorithms that does not use locks Instead they use CAS instructions (x86,Sparc, Itanium) or LL/SC (Alpha,PowerPC)  Example: Treiber's Stack  Defined in [Treiber 86] Implementation of a global stack Abstract view: Operations APush and APop Implementation with algorithms CPush and CPop Representation of stack as a linked list.
+Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n tmp top  CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n tmp top  CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n tmp top  CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  v  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n tmp top  CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  v  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n  v  tmp top ?
+CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n  v  tmp top ?
+CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n  v  tmp top ?
+CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { top := n, success := true; } else success := false; }  =  Treiber's Stack - Push CPush(v :Data; top : Pointer) { n := new(Node); n.val := v; sucess := false; while sucess = false do { tmp := top; /* other process .. */ /* .. may change top!
+*/ n.next := tmp; CAS(tmp, n, top)}  n tmp top  CAS(tmp, n, top; success) { /* atomic !
+*/ if* top = tmp then { ; } else success := false; }  v  Lock-Free Algorithms and their Use Principle of lock-free algorithms: read old data structure prepare modified version update with CAS.
+Retry on failure  Treiber's Stack is one of the simplest algorithms (inefficient for high loads; better: [Hendler et.
+al 04]) Lock-Free Algorithms exist for many data structures: Queues [Michael, Scott 96], Hashtables [Michael 02], [Gao et al 05], Linked Lists [Harris 01], [Heller 05] Used for: process queues, indexes of data bases and Web Servers, real-time 3D games, garbage collection Java library supports CAS; f implements lock-free data structures  Locks or no locks?
+Advantages of using Locks: Well understood, uniform principle = easier to verify than lock-free algorithms (essentially: verify sequential algorithm) Automatic checks for correct use of locks available Simple lock-free algorithms are inefficient at high loads: they waste processor time trying over and over Disadvantages of using Locks: Lock is a bottleneck (pessimistic strategy) Deadlocks and priority inversion possible What happens when the locking process crashes?
+Safety: Linearizability  Defined in [Herlihy & Wing 90] Scenario: Several processes (p,q,r), all running algorithm COp in parallel (e.g.
+CPush [?]
+CPop) Informal definition: Parallel run must be equivalent to a sequential run of AOp (APush [?]
+APop) []  APushp (a)  invp (CPush,a) invq (CPop)  [a] APopq (a)  [] APushr (b)  retq (CPop,a) invr (CPush,b) timeline  [b]  retp (CPush) retr (CPush)  Decomposition of Linearizability Theorem (Baumler et al.
+09) If for all 1 <= p, q <= n, p 6= q: + (1) COpp - Rp -- Gp (2) Gp - Rq , reflexive(Gp ), transitive(Rp ), R - Rp (3) COpp (CS) [?]
+2 (Rp [?]
+Abs(CS) = AS [?]
+Abs(CS ' ) = AS ' ) - skip* ; AOpp (AS); skip* then COp1* k .
+.
+.
+kCOpn* [?]
+2 R - AOp1* k .
+.
+.
+kAOpn* kskip*  COpp is a concrete algorithm (procedure) that implements an atomic operation AOpp R is the global environment assumption Linearizability expressed as special case of refinement Most linearizable algorithms allow reduction to two representative processes = reduction proved  Liveness: Lock-Freedom For Treiber's Stack: CPush may have to retry over and over = one single process might be starved Every time a retry is necessary, another CPush/CPop must have succeeded and terminated This is true, even if the scheduling is unfair, or when a process crashes Treiber's stack satisfies property of Lock-Freedom: As long as some operations are running, one of them will terminate  Decomposition of Lock-Freedom Theorem (Tofan et al.
+10) If for all 0 <= p, q, p 6= q: + (1) COpp - Rp -- Gp (2) Gp - Rq , reflexive(Gp ), transitive(Rp ), R - Rp (3) reflexive(U), transitive(U), R - Rp [?]
+U (4) COPp (CS) [?]
+2 Rp - 2 (!
+U(CS, CS ' ) [?]
+(2 U(CS ' , CS '' )) - 3 last) then COP0* k .
+.
+.
+kCOPn* [?]
+2 R - 2 progress where progress = "some operation active - some operation terminates"  Predicate U ("unchanged") describes conditions under which COPp (CS) terminates in environment Rp .
+At any time, COPp eventually terminates (3 last), if: It updates the shared state itself !
+U(CS, CS ' ), or It encounters no interference 2 U(CS ' , CS '' )  Theorem holds for weak fair and nonfair interleaving  General Experience with the Calculus Symbolic execution is natural to verify even concurrent programs: - rest of the program directly visible - feels much like debugging Main new difficulty for proofs is to determine the correct Relys and Guarantees (similar to invariants) in advance = Add techniques to automatically infer them We've done some significant case studies already: Hazard pointers for lock-free algorithms [= tomorrow] Medical protocols with synchronous parallel hierarchical plans [Protocure 06] Calculus is not yet as easy to use or automated as the wp-calculus for sequential programs (takes time and experience)  Some Open Issues  Guarantees often hold in a certain section of the code: currently boolean variables must be added manually = labels would be helpful, but are incompatible with chop: a;{L : b}: final state of a and first of b disagree on L express general refinement modulo stuttering Prove general commuting diagrams for forward and backward simulation (bounded nondeterminism!)
+Completeness in general is open (complete fragments of ITL and RG)  Proving Lock-Free Algorithms  Calculus is adequate to show correctness of proof obligations (POs) as well as proving instances of the POs for case studies Automation is not as high as in related work: Automatic checking of linearizability for short operations sequences with model checking [Alur10] Automatic proofs for some algorithms using RGSep [Vafeiadis01] Nevertheless, the algorithms we check are already more difficult than those that have been proved automatically  Current Work on Lock-Free Algorithms Support for Heap modularity is often beneficial = develop library with a lightweight embedding of separation Open issue: good frame rule for temporal logic?
+Generalize proof obligations (POs) for linearizability (POs shown require lin.
+points within executing thread = complete POs for arbitrary lin.
+points  Major Challenge: Interleaving assumes sequentially consistent memory, but: Processors use weak memory models (and Javas much debated memory model is even weaker)

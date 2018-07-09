@@ -1,0 +1,370 @@
+Preserving Anonymity of Recurrent Location-based Queries Daniele Riboni, Linda Pareschi, Claudio Bettini DICo - University of Milan riboni,pareschi,bettini@dico.unimi.it  Abstract--The anonymization of location based queries through the generalization of spatio-temporal information has been proposed as a privacy preserving technique.
+We show that the presence of multiple concurrent requests, the repetition of similar requests by the same issuers, and the distribution of different service parameters in the requests can significantly affect the level of privacy obtained by current anonymitybased techniques.
+We provide a formal model of the privacy threat, and we propose an incremental defense technique based on a combination of anonymity and obfuscation.
+We show the effectiveness of this technique by means of an extensive experimental evaluation.
+I. I NTRODUCTION Location based services (LBS) are Internet services that provide information or enable communication based on the location of users and/or resources at specific times.
+They are often designed to answer spatio-temporal nearest-neighbor or range queries issued from mobile devices, taking as one of the parameters the current location as identified through positioning technologies like GPS, cell tower triangulation, or WiFi positioning.
+Several commercial LBS like assisted car navigation, friend-finder, and proximity marketing are currently available.
+The success and popularity of these services will partly depend upon the privacy preserving technologies that will be designed and offered to final users.
+Indeed, compared with privacy issues in database publication, the spatio-temporal information contained in each user request, and the recurrence of requests in time, forces the consideration of new privacy threats and the design of specific defense techniques.
+The general privacy threat consists in the acquisition by an adversary of the association between an individual's identity and her private information.
+In some cases, location at a specific time, as included in a request, is considered private; in other cases the service invoked or the specific parameters are considered private, and location and time may be used by the adversary to re-identify the issuer.
+The actual threats do not depend only on the nature of private information; a careful specification of the adversary model in terms of which requests he may acquire, and which external knowledge he may have access to, is a precondition to the identification of the privacy threats, and to the design of defense techniques.
+In this paper we illustrate a privacy threat in LBS due to the ability of the adversary to acquire  Sushil Jajodia CSIS - George Mason University jajodia@gmu.edu  requests issued by multiple users, in the same time granule as well as in different time granules.
+An example is illustrated in Section II along with the specification of the adversary model.
+In particular, we show that even if each request has been anonymized with state of the art techniques, the adversary can still associate private information with specific individuals with a high probability.
+The attack is based on the observation that users tend to issue LBS requests with parameters influenced by their personal profile, including personal data like nationality, age, gender, and more importantly their interests.
+While profile data can evolve in time, it is a rather slow process and this is reflected in the persistence of the same or similar service parameters in a subset of the requests issued at different times by each user.
+We illustrate a specific method an adversary can use to update, upon observing the requests issued at each time granule, his knowledge about the probability of each user to be associated to certain service parameters.
+This knowledge refinement, coupled with the ability of an adversary to restrict the set of potential issuers of each request based on location information as used in previous work [1], [2], [3], leads to a dangerous privacy threat not previously recognized in the literature.
+Related work can be divided in two main streams.
+Obfuscation-based defenses aim at obfuscating the private information in each request so that even if the issuer is identified, the adversary cannot recognize the specific private values associated with the original issuer's request.
+These techniques have been mostly applied in the case location and time are considered private, as in [4].
+Anonymity-based defenses aim at preserving the anonymity of the issuers so that an adversary is not able to associate private information present in the requests with a specific individual.
+The defenses transform the so-called quasi-identifier information in requests so that the issuer becomes indistinguishable in a sufficiently large group of users (called anonymity set).
+Usually, service parameters are considered the data to be protected, and location information is considered a quasiidentifier, since the adversary may obtain information from external sources about the presence of a specific individual in the location from which the request was issued.
+A common technique is the generalization of the location to an area in order to include at least k potential issuers that become part of the anonymity set, enforcing k-anonymity.
+Most proposed  techniques have considered anonymization of requests in isolation, i.e., ignoring the possibility of the adversary to correlate requests at different times [1], [2], [3], [5], as well as requests by different users.
+Only a few approaches consider the threats involved in dynamically acquiring requests (often called historical attacks), as we do in this paper; the threats involved in the recognition of traces of requests by the same (anonymous) issuer have been considered in [6], [7], [8], [9] and defenses have been proposed.
+Traces are supposed to be recognized by comparing pseudo-identifiers in requests or by spatio-temporal reasoning.
+Our work differs in two aspects: a) the threat we consider occurs even if no trace is recognized, b) we consider the effects on the composition of anonymity sets due to concurrent requests by multiple users with the same request parameters.
+To our knowledge this last aspect has been ignored in all previous work in LBS privacy except in a preliminary work of ours [10], and in a more recent paper [11], and has close relationship with the diversity problem identified in database publication [12].
+Finally, we should mention that techniques based on private information retrieval have also been proposed for LBS [13] and they may be applied both for obfuscation and anonymity, since exchanged data is encrypted; however, their practical applicability seems limited both in terms of supported queries, and in terms of computational costs.
+The contributions of this paper can be summarized as follows: (i) We formalize a previously unrecognized privacy threat in LBS due to correlation between concurrent request by multiple users, as well as to incremental refinement of adversarial knowledge along the service history; (ii) We propose a novel defense technique protecting from the identified threat; (iii) We present an experimental evaluation in a profile-based proximity marketing scenario.
+In Section II we formalize the adversary model and illustrate the threat with an example.
+In Section III we formally define the adversarial inference method.
+In Section IV we propose a defense technique that is experimentally evaluated in Section V. Section VI concludes the paper.
+II.
+A DVERSARY ' S  MODEL AND MOTIVATING EXAMPLE  As in several related works, our reference scenario includes a trusted server (LTS) which is aware of the actual location of users.
+This assumption is not far from reality, since most of us rely on a mobile operator for mobile communications, that is aware of our approximate position.
+The LTS acts as a proxy, by filtering and generalizing each user's request before it is forwarded to the service provider (SP) which is considered untrusted.
+Each service request r is logically divided into three parts: IDdata, ST data, and SSdata, containing user identification data, location and time of request, and service parameters, respectively.
+We refer to the set of possible values of SSdata as Th = {th1 , .
+.
+.
+, thn }, and we assume that Th can be represented  SSdata= Bea  A1 1  Dan  SSdata=  SSdata=  3  Frank  1  Alice 2  Hal  Eric  Carl  A2  SSdata=  Joe  Gina Ian  (a) Scenario in time granule 1 (T G1 )  SSdata=  Eric  Carl  SSdata= Bea  A4  A3  2  Frank  Gina Hal  Dan  SSdata=  1  Ian  1  Alice  Joe  (b) Scenario in time granule 2 (T G2 ) Figure 1.
+Motivating example  as a taxonomy.
+The LTS transforms each request r into a request r0 , by dropping IDdata and generalizing the value of ST data, and possibly of SSdata too.
+The adversary's model considered in this paper is based on the following context assumptions: * The generalization algorithm adopted by the LTS is publicly known; * We assume that the LTS works at a given time granularity, so that at each time-granule a group of generalized requests is forwarded to the SP.
+We assume that only one request per time granule can be issued by each user.
+* The adversary may obtain the generalized requests issued in one or more time granules.
+We refer to this context assumption as CM H (Multiple-issuer Historical case).
+* The adversary may observe or obtain from external sources the position of specific individuals at given times.
+As in related work, we make a worst case assumption CST that considers complete location knowledge about potential issuers.
+* Correlation of requests at different time granules can only be done by analyzing SSdata.
+In principle, traces of requests made by the same individual can also be recognized on the basis of spatio-temporal reasoning or pseudo-identifiers included in requests.
+However, algorithms to deal with this case have been previously proposed [9], and can be seamlessly integrated with the one proposed in this paper.
+Note that in this work we assume that the adversary has no specific prior knowledge about the association between individuals and sensitive service parameters (e.g., "Alice is interested in vegetarian restaurants").
+Hence, his prior knowledge is modeled according to the following definition.
+Definition 1 (PRIOR KNOWLEDGE).
+The prior knowledge of the adversary is a function Kpri : U - U in which U is the  set of users, U = {(p1 , .
+.
+.
+, pn )|  X  pi = 1} (0 <= pi <= 1)  1<=i<=n  is the set of possible probability distributions of values on the sensitive attribute SSdata, and for all users in U , U = {( n1 , .
+.
+.
+, n1 )}.
+After observing generalized requests issued at time granule T G (and possibly also in time granules preceding T G) the adversary may compute his posterior knowledge, which is modeled according to the following definition.
+Definition 2 (POSTERIOR KNOWLEDGE).
+The posterior knowledge of the adversary is a function Kpos : U x T G - U in which U is the set of users, X T G is a set of time granules, and U = {(p1 , .
+.
+.
+, pn )| pi = 1} (0 <= pi <= 1) is 1<=i<=n  the set of possible probability distributions of values on the sensitive attribute SSdata computed after observing the requests issued in T G and in previous time granules.
+Note that the above definition is very general.
+An inference method to actually compute the posterior knowledge Kpos is presented in Section III.
+On the basis of Kpos , the goal of the adversary is to reconstruct the association between a user u and the sensitive service parameter th included in her request issued at T G. For instance, by observing that, according to Kpos (u, T G), the probability of th for u is considerably higher than the one for other users in U , the adversary may conclude that u issued a request having private value th.
+Various profile-based proximity services are prone to this kind of privacy threats.
+The following example considers the case of a proximity marketing service.
+Example 1.
+Consider a proximity marketing service that proactively provides location-aware advertisements about sales on items belonging to a set of interest categories.
+Each registered user periodically communicates her current location to the service provider in order to receive advertisements.
+However, since the service provider is untrusted, users communicate to the service only part of their interest categories, while they do not report the ones involving sensitive information such as health status, religious beliefs, and political affiliations.
+However, advertisements regarding the latter categories can be obtained on-demand by issuing anonymous queries in which the user's location is generalized by the LTS, and containing the category of interest (a value in {th1 , th2 , .
+.
+.
+, th12 }).
+Suppose that during T G1 a user Alice issues a request for sales regarding items of category th1 .
+By joining location information in requests issued at T G1 with the one communicated by its users, the adversary identifies two anonymity sets A1 and A2 (corresponding to users depicted in Figure 1(a)), both having cardinality 5.
+In our example, two of the three requests issued from users in A1 (including Alice) ask for th1 and one for th2 .
+Hence, the adversary can infer that the probability that Alice issued a request for th1  is 25 , while it is 51 for th2 .
+Next, suppose that the adversary can observe also requests issued at T G2 , including the one issued by Alice for th1 .
+Once again, the adversary can recognize two anonymity sets A3 and A4 of cardinality 5, corresponding to the users depicted in Figure 1(b).
+During the lapse of time between T G1 and T G2 users have changed their positions.
+With regard to Alice's anonymity set A4 , the adversary can observe that the set of requests issued by users in A4 is composed of a single request having private value th1 .
+Consequently, the adversary can notice that the presence of Alice in a given anonymity set is correlated with a frequency of the private value th1 that is higher than the average frequency of the same value in the whole set of requests.
+Hence, he can conclude that probably Alice issued requests for th1 .
+III.
+D ERIVING  POSTERIOR KNOWLEDGE  In this section we formally model the derivation of posterior knowledge in the historical multiple-issuers case.
+The following notation is necessary: * AC (r0 ) is the anonymity set of potential issuers of request r0 identified on the basis of r 0 and of context C. For instance, if r 0 is the request issued by Alice during T G1 (Example 1), AC (r0 ) = {Alice, Bea, Carl, Dan, Eric}.
+* R(A) = {r10 , .
+.
+.
+, rn0 } is the set of generalized requests issued by users in anonymity set A; in particular, [?
+]r10 , r20 [?]
+R(A) : r10 .ST data = r20 .ST data.
+For instance, if A is the anonymity set identified above (i.e., A = AC (r0 )), R(A) is the set composed of requests issued by Alice, Bea and Carl during T G1 .
+* Th(R) = {th1 , .
+.
+.
+, thl } is the set of values of SSdata included in the set R of generalized requests.
+For instance, if R is the set of requests identified above (i.e., R = R(A)), Th(R) = {th1 , th2 }.
+* mth,R is the number of requests in R which include the SSdata th; this value is called the multiplicity of th in R. For instance, if R = R(A) as above, the multiplicity of th1 in R is mth1 ,R = 2.
+* Given posterior knowledge Kpos (u, T G) = (i) (p1 , .
+.
+.
+, pn ), we denote by Kpos (u, T G) the probability associated to the i-th sensitive (i) value, i.e., Kpos (u, T G) = pi .
+Similarly, given (i) Kpri (u) = (p1 , .
+.
+.
+, pn ), Kpri (u) = pi .
+Intuitively, the probability that a user u issued one of the requests at time T Gn with parameter th is influenced by the frequency of observation of the same parameter in the requests in R(A) for each anonymity set A including u at T G1 , .
+.
+.
+, T Gn .
+The higher is the frequency, the more it is probable that u issued a request with parameter th.
+However, in most cases the cardinality of R(A) is smaller than the cardinality of A, since service users do not continuously issue requests.
+Therefore, when the adversary computes his  posterior knowledge based on requests issued in a given T G, he must consider the possibility that the user did not issue requests in T G. The following definition models the e = CM H+ST .
+adversary's inference method under C  e Definition 3 (INFERENCE METHOD).
+Given the context C, an ordered set of time granules T G = {T G1 , .
+.
+.
+, T Gm }, a set of requests R issued at T Gm , a user u [?]
+U , the set Th = {th1 , .
+.
+.
+, thn } of SSdata, the inference method to e consists in derive the posterior knowledge at T Gn under C the computation of: Kpos (u, T Gm ) = (p1 , .
+.
+.
+, pn ), where for each i [?]
+{1, .
+.
+.
+, n}: ( (i) Kpos (u, T Gm-1 ) if @r [?]
+R : u [?]
+ACe (r) pi = (i) bi + (1 - a) * Kpos (u, T Gm-1 ) otherwise mthi ,R(A) (i) (i) , where Kpos (u, T G0 ) = Kpri (u), bi = |A| |R(A)| a= , and A is the anonymity set the user u |A| belongs to (if such anonymity set exists).
+Intuitively, if user u does not belong to any anonymity set at T Gm (first case in the formula of Definition 3), the adversary does not acquire any new information about u.
+Hence, his posterior knowledge regarding u at T Gm does not change with respect to the one at T Gm-1 .
+In particular, if u never belonged to an anonymity set throughout T G, the adversary's posterior knowledge corresponds to his prior (i) knowledge Kpri (u).
+On the contrary (second case), if u belongs to an anonymity set A she is the potential issuer of a request r [?]
+R(A).
+The actual probability that u issued one request in R(A) is a [?]
+[0, 1]; hence, we call this parameter the learning rate of the adversary.
+Given a sensitive value thi , the parameter bi accounts for the probability that u issued a request at T Gm having that sensitive value (first addend in the formula).
+The second addend (1 - a) accounts for the probability that u did not issue a request at T Gm ; under (i) this hypothesis, the posterior knowledge Kpos (u, T Gm-1 ) at T Gm-1 is taken into account.
+Proposition 1.
+Kpos (u, T Gm ) computed by the inference method illustrated in Definition 3 is a probability distribution.
+It follows that the inference method illustrated in Definition 3 computes the adversary's posterior knowledge.
+Example 2.
+Continuing Example 1, we show how the adversary computes his posterior knowledge about the association of user Alice and sensitive value th1 after observing requests issued at T G1 and T G2 .
+Recall that the cardinality of the set Th of SSdata is 12.
+At the first time granule T G1 , for each user the adversary's prior knowledge Kpri is modeled 1 1 , .
+.
+.
+, 12 ).
+Hence, according by the uniform distribution ( 12 1 to Definition 3, Kpos (Alice, T G1) ' 0.43.
+After observing requests issued at time granule T G2 , the adversary's pos1 terior knowledge is Kpos (Alice, T G2 ) ' 0.54.
+Hence, after T G2 the value that associates Alice to th1 is considerably  Algorithm 1: HMID algorithm e - attack context; Pi - list Input: k - minimum k-anonymity level; C of potential issuers at T Gi ; Ri - requests issued at T Gi ; tc1 , .
+.
+.
+, tcL - t-closeness levels for each level of generalization of SSdata; MaxST - max level of generalization admitted for STdata.
+Output: R0i - set of anonymized requests.
+e Pi , Ri , k, tc1 , .
+.
+.
+, tcL , MaxST) 1 HMID( C, 2 begin 3 R0i := [?]
+4 Pi := HilbertOrdering(Pi , location) 5 repeat 6 forall level j = 1, .
+.
+.
+, L of generalization of SSdata do 7 int n := k 8 Aj = first n users in Pi 9 while MBR(Aj ) <= M axST and 10 11  t-cl(R(Aj ), j, Ri ) >= tcj and Pi 6= [?]
+do n := n + k Aj = first n users in Pi  12  QoSj := QoS(Aj , R(Aj ), j)  13 14 15 16 17 18 19 20 21  if no Aj exists that satisfies tcj then A := group users until: MBR(A) > M axST or A = Pi Ri := Ri \ R(A) ; Pi := Pi \ A else  j := level of generalization s.t.
+QoSj is maximum Pi := Pi \ Aj R(Aj ) := Anonymize(Aj , R(Aj )) R(Aj ) := Obfuscate(R(Aj ), j) R0i := R0i [?]
+R(Aj )  22 until Ri = [?]
+or Pi = [?]
+23 return R0i 24 end 1 t- cl( R, j, Ri ) 2 begin 3 D := PDF(R, SSdata) 4 D 0 := PDF(Ri , SSdata) 5 return KL(D, D 0 ) 6 end  higher than the value for the other users belonging to the same anonymity set as Alice (0.54 vs 0.27).
+IV.
+D EFENSE TECHNIQUE In order to measure the success of privacy attacks, as well as of defenses against them, it is necessary to define the criteria by which the adversary can choose the SSdata th to be associated with a user u.
+If the adversary chooses the correct value, the attack is successful.
+For the sake of this paper we adopt a criterion g, which consists in comparing (i) on (thi , u) = Kpos (u, T Gn ) P at time granule T Gn with the K (i) (u,T Gn )  pos average value o n (thi , U ) = u[?
+]U |U computed at | time granule T Gn in the considered population of service users U .
+Experimental evidence (reported in Section V) shows that this attack criterion is very effective.
+However, our defense technique can be also applied to different  criteria.
+We call confidence n the function: ( if o n (thi , U ) = 0 0 n (thi , u) = on (thi ,u) otherwise o n (thi ,U ) According to criterion g, the value th chosen by the adversary is the one having maximum confidence: n (th, u) = max {n (thi , u)}.
+thi [?
+]Th  HMID: defending with anonymity and obfuscation: As for any other defense technique, the objective of our technique, called historical multiple-issuers defense (HMID), is to guarantee the necessary level of privacy while maximizing the usefulness of the data.
+To this aim, HMID adopts both anonymity (obtained by generalizing STdata) and obfuscation (obtained by generalizing SSdata).
+Its specific goal is to find the combination of the generalization levels for STdata and SSdata that maximizes the data quality while enforcing the required privacy level.
+For the sake of LBS requests, data quality can be naturally measured as a function of the generalization level of user's location and of request parameters in anonymized requests.
+However, different applications may have different requirements that determine their actual quality of service (QoS).
+For instance, some services need very precise location information, while being quite tolerant with respect to the generalization of service parameters.
+On the other hand, for other services accurate users' location is not strictly required, while service parameters are the most prominent data.
+HMID copes with this aspect by supporting the definition of any kind of function LQoS to determine the QoS resulting from requests generalization.
+The privacy leak (pl) determined by an attack at a given time granule can be measured as the percentage of users that are correctly associated with their SSdata by an adversary e and criterion g. Hence, we define the based on context C level of privacy Lp as: (1 - pl).
+The desired level of privacy is guaranteed by enforcing k-anonymity coupled with a variant of the t-closeness technique originally proposed by Li et al.
+[14] for privacy protection of microdata released e the from databases.
+K-anonymity ensures that, based on C, issuer of each generalized request r is indistinguishable in an anonymity set A of at least k potential issuers.
+However, as shown in Example 1, k-anonymity is insufficient when the adversary may observe multiple requests issued in the same time granule.
+Indeed, in that case he may derive the association between a user and a request based on the SSdata in that request, and on the distribution of SSdata in the history of requests originated from the anonymity sets including that user.
+Hence, considering the whole set of requests issued in a time granule, our t-closeness variant aims at counteracting this kind of adversarial inference by smoothing the differences among the distribution of SSdata in requests originated from the different anonymity  sets.
+In particular, for each anonymity set A we ensure that the distance between the distribution of SSdata in requests originating from A and the distribution of SSdata in the whole set of requests issued during the same time granule is below a threshold t. Given a privacy threshold h (0 < h < 1), the value of t sufficient to guarantee Lp >= h is experimentally estimated; in general, a different value of t must be used for each SSdata generalization level.
+We measure the difference between the two distributions using the well known Kullback-Leibler (KL) divergence.
+If an anonymity set satisfies k-anonymity but does not fulfill our t-closeness variant, HMID adds more potential issuers to it (by further generalization of request location), until the required level of t-closeness is reached; if that level cannot be enforced, requests originating from that anonymity set are discarded, and their issuers are informed.
+In most cases the number L of levels in the hierarchy of SSdata is quite limited.
+Hence, HMID tries all the possible levels of SSdata generalization, coupled with the finest-grained generalization of STdata that satisfy both k-anonymity and our t-closeness variant, in order to find the combination of SSdata and STdata generalization levels that maximizes LQoS .
+As in most related works, for efficiency reasons we adopt a heuristic algorithm in order to group users in anonymity sets.
+In particular, as proposed in [15] we adopt a strategy based on the Hilbert [16] space-filling curve.
+The Hilbert space-filling curve is a function that maps a point in a multi-dimensional space into an integer; with this technique, two points that are close in the multi-dimensional space are also close, with high probability, in the one-dimensional space obtained by the Hilbert transformation.
+As it can be evinced from its pseudo-code (reported in Algorithm 1), the 2 complexity of HMID is O(L * |Uk| ).
+Since the dominant factor is U , an optimization consists in partitioning - based on location - the whole set U of users into a number of smaller subsets, and in applying HMID independently to every such set considering the set of requests originating from it.
+Algorithm: For each time granule T Gi , based on the sets Ri of requests and Pi of potential issuers, the algorithm returns a set of anonymized requests Ri0 .
+At first (line 4), the algorithm orders users in Pi according to their index obtained from the application of the Hilbert space filling curve on their current location.
+Then (lines 6 to 12), for each level j of possible SSdata generalization, a growing set Aj of users is grouped according to the Hilbert ordering until the minimum generalization level of STdata (computed as the minimum bounding rectangle including every user in Aj ) satisfying both k-anonymity and t-closeness is reached.
+The corresponding level QoSj of QoS is then computed.
+If it does not exist an SSdata generalization level satisfying both k-anonymity and t-closeness (lines 13 to 15), requests are discarded and their potential issuers are removed  Figure 3.
+Figure 2.  k-anonymity: privacy leak  A snapshot of pedestrians' and drivers' positions  from Pi .
+Otherwise (lines 17 to 21), the generalization level j of SSdata maximizing the QoS is chosen.
+The SSdata in requests originating from anonymity set Aj are generalized at level j, while STdata in the same requests are generalized by the minimum bounding rectangle including the location of every user in Aj .
+Original requests originating from Aj are removed from Ri , and the corresponding generalized requests are included in Ri0 .
+The algorithm continues until no other request remains in Ri .
+V. E XPERIMENTAL EVALUATION In this section we experimentally evaluate our defense technique in terms of enforced level of privacy and achieved data quality.
+Experimental setup: Experiments were performed on synthetic data obtained using the moving object generator described in [17].
+The simulation models a population of 50,000 persons moving in the San Francisco area, from a random starting point to a random destination, during a time period of 200 minutes (each one corresponding to a single time granule T Gm ).
+A snapshot showing the position of part of the users in a time granule is shown in Figure 2.
+The dimension of the considered area is about 100km2 , with an average density of 500 persons per km2 .
+This density was the highest we could obtain with the used generator to model 200 time granules.
+Note that this density is lower than the real one in a urban area; when considering a higher density, we expect the resulting generalized areas to be proportionally smaller than the ones obtained in our experiments.
+Persons are equally divided into pedestrians (that move at an average speed of 4 km/h) and people using public transportation (average speed of 20 km/h), and update their location at the LTS every one minute.
+The population is further divided into a group of active users of the proximity marketing service (i.e., users issuing  at least one anonymous query during the length of our simulation; 20% of the whole population), and a group of idle users.
+Each active user is randomly associated with one of the 12 possible SSdata contemplated in our motivating example; each request contains the SSdata of its issuer.
+We have performed the experiments under 3 different conditions: i) low frequency of requests (Freq.1: each active user has a probability ranging from 25% to 0.016% of issuing a request at a given time granule), ii) medium frequency of requests (Freq.2: from 75% to 6%), and iii) high frequency of requests (Freq.3: from 100% to 12.5%).
+In the following we compare HMID with different defense techniques from adversary's posterior knowledge e based on requests issued at time acquired under context C granules T G = {T G1 , .
+.
+.
+, T G200 }.
+The goal of defense techniques is to keep the Lp higher than 0.8 (i.e., at each time granule the adversary has less that 20% probability of correctly identifying the SSdata of a user).
+We measure by means of the parameter LQoS the level of QoS deriving from the transformations of service requests introduced by the defense techniques.
+To estimate the QoS we consider the information loss ILSS and ILST (having values from 0 to 1) deriving from SSdata and STdata generalization, respectively.
+Formally, LQoS = (1 - ILSS ) * (1 - ILST ).
+In particular, in a first set of experiments we measure ILSS adopting the information loss metrics introduced in [18]; we measure ILST by a function linearly growing from 0 (perimeter of the generalized location is 0) to 1 (perimeter greater or equal to 6Km).
+We call this metric LQoS1 .
+Defense based on k-anonymity: In the first set of experiments we evaluated the application of a standard e k-anonymity technique to protect against attacks under C. In this experiment, we adopt the Hilbert ordering to arrange users in anonymity sets.
+We have performed the experiments with different values of k. Results are shown in Figure 3 and Table I, and show that this technique is not well-suited to  k Area (Km2 ) Perimeter (m)  20 0.03 620  40 0.08 1001  80 0.19 1579  160 0.44 2439  320 0.97 3694  640 2.05 5456  Table I k- ANONYMITY: LOCATION GENERALIZATION  Figure 5.
+Figure 4.
+Freq.1 k-an.
+t-cl.
+HMID  Perimeter (Km) 5,48 5,26 3,57  Freq.2 k-an.
+t-cl.
+HMID  Perimeter (Km) 5,72 5,35 2,96  Freq.3 k-an.
+t-cl.
+HMID  Perimeter (Km) 6,16 5,55 2,30  Comparison based on QoS (LQoS1 ) Area (Km2 ) 2,06 2,00 1,09 Area (Km2 ) 2,23 2,10 0,86 Area (Km2 ) 2,57 2,24 0,58  % non-gen. 100% 100% 39%  % gen.1-lev.
+0% 0% 38%  % gen.2-lev.
+0% 0% 23%  % non-gen. 100% 100% 32%  % gen.1-lev.
+0% 0% 26%  % gen.2-lev.
+0% 0% 42%  % non-gen. 100% 100% 18%  % gen.1-lev.
+0% 0% 24%  % gen.2-lev.
+0% 0% 58%  Comparison in terms of: request frequency; perimeter and area of generalized location; % of requests with generalized SSdata.
+Table II G ENERALIZATION (HMID WITH LQoS1 ).
+the considered attack (Definition 3).
+Indeed, the minimum k required to keep the privacy leak below 0.2 (k=640) leads to generalized areas too wide to guarantee a satisfactory quality of service (2.2 km2, with an average perimeter of 5.7 km; see also Figure 4).
+The privacy leak grows considerably when using smaller levels of k. For instance, in order to keep the average generalized location area below 1 km2 a value of k <= 320 must be chosen; this value corresponds to a privacy leak greater than 0.3.
+Defense based on k-anonymity and t-closeness: This technique is similar to HMID, with the only difference that obfuscation of SSdata is not allowed.
+In these experiments the level of t sufficient to guarantee the required privacy level (Lp >= 0.8) is empirically estimated, and a minimum level of anonymity k = 20 is chosen.
+Experimental results (Figure 4, label t-closeness) show that, given the same privacy level, this technique slightly outperforms the baseline k-anonymity technique in terms of LQoS1 .
+Comparison based on QoS (LQoS2 )  HMID technique: In the last set of experiments we evaluated the HMID technique.
+We empirically chose the levels of t-closeness for three levels of SSdata obfuscation: non-generalized SSdata, generalized one level (from 12 to 6 SSdata), and generalized two levels (from 12 to 3 SSdata).
+The chosen t-closeness levels were sufficient to guarantee Lp > 0.8.
+Experimental results (Figure 4) show that HMID outperforms the other ones in terms of QoS while enforcing the same level of privacy Lp .
+A deeper analysis of the results is shown in Table II.
+In particular, HMID leads to smaller average perimeters and areas with respect to the other techniques.
+The percentage of requests with generalized SSdata depends on the frequency of requests.
+In order to evaluate the robustness of HMID with respect to different QoS metrics we performed a further set of experiments using different functions for IL SS and ILST .
+In particular, in this set of experiments we assigned a proportionally growing information loss to growing levels of SSdata generalization.
+Hence, IL SS is 0 if the service parameter is not generalized; ILSS is 31 if it is generalized one level; it is 23 if it is generalized two levels.
+With regard to ILST , we set no information loss if the perimeter of the generalized location is less than 2Km; information loss grows logarithmically from 0 to 1 until the perimeter is up to 6Km; it is 1 for perimeters larger than 6Km.
+We call the combination of these metrics LQoS2 .
+Experimental results are reported in Figure 5 and Table III, and show that HMID is robust with respect to different QoS metrics (possibly determined by the specific requirements of different services).
+VI.
+C ONCLUSION  AND FUTURE WORK  In this paper we addressed privacy issues for recurrent location-based queries.
+We showed that if an adversary may observe multiple concurrent requests, and similar requests are issued several times by the same issuers, the distribution of different service parameters in the requests can  Freq.1 k-an.
+t-cl.
+HMID  Perimeter (Km) 5,25 5,28 3,88  Freq.2 k-an.
+t-cl.
+HMID  Perimeter (Km) 5,72 5,33 3,03  Freq.3 k-an.
+t-cl.
+HMID  Perimeter (Km) 6,16 5,63 2,71  Area (Km2 ) 1,90 2,02 1,18 Area (Km2 ) 2,23 2,07 0,86 Area (Km2 ) 2,57 2,30 0,74  % non-gen. 100% 100% 48%  % gen.1-lev.
+0% 0% 36%  % gen.2-lev.
+0% 0% 16%  % non-gen. 100% 100% 34%  % gen.1-lev.
+0% 0% 24%  % gen.2-lev.
+0% 0% 42%  % non-gen. 100% 100% 25%  % gen.1-lev.
+0% 0% 27%  % gen.2-lev.
+0% 0% 47%  Table III G ENERALIZATION (HMID WITH LQoS2 ).
+significantly affect the level of privacy obtained by current anonymity-based techniques.
+We formalized this kind of privacy threats, we proposed a defense technique based on a combination of anonymity and obfuscation, and we showed that this technique outperforms ones based on k-anonymity and on a variant of t-closeness in terms of quality of service while enforcing the required privacy level.
+Future research directions include the extension of our formal model and defense techniques to other possible context assumptions; in particular, the ability of an adversary to have specific prior knowledge about the association among classes of users and sensitive request parameters.
+On the other side, the worst case assumption of the adversary having access to complete location information may be relaxed to more realistic cases.
+ACKNOWLEDGMENTS This work has been partially supported by the Italian Ministry of University and Research under grant PRIN2007F9437X (project ANONIMO), and by the National Science Foundation (NSF) under grant N. CNS-0716567.
+R EFERENCES [1] M. Gruteser and D. Grunwald, "Anonymous usage of location-based services through spatial and temporal cloaking."
+in Proc.
+of the 1st International Conference on Mobile Systems, Applications and Services.
+The USENIX Association, 2003.
+[2] P. Kalnis, G. Ghinita, K. Mouratidis, and D. Papadias, "Preventing location-based identity inference in anonymous spatial queries," IEEE Transactions on Knowledge and Data Engineering, vol.
+19, no.
+12, pp.
+1719-1733, 2007.
+[3] B. Gedik and L. Liu, "Protecting location privacy with personalized k-anonymity: Architecture and algorithms," IEEE Transactions on Mobile Computing, vol.
+7, no.
+1, pp.
+1-18, 2008.
+[4] M. L. Yiu, C. S. Jensen, X. Huang, and H. Lu, "SpaceTwist: Managing the Trade-Offs Among Location Privacy, Query Performance, and Query Accuracy in Mobile Services," in Proceedings of the 24th International Conference on Data Engineering (ICDE '08), 2008, pp.
+366-375.
+[5] D. Riboni, L. Pareschi, and C. Bettini, "Shadow attacks on users' anonymity in pervasive computing environments," Pervasive and Mobile Computing, vol.
+4, no.
+6, pp.
+819-835, 2008.
+[6] A. R. Beresford and F. Stajano, "Location privacy in pervasive computing," IEEE Pervasive Computing, vol.
+2, no.
+1, pp.
+46- 55, 2003.
+[7] C. Bettini, X. S. Wang, and S. Jajodia, "Protecting privacy against location-based personal identification."
+in Proc.
+of the 2nd workshop on Secure Data Management (SDM), ser.
+LNCS, vol.
+3674.
+Springer, 2005, pp.
+185-199.
+[8] T. Xu and Y. Cai, "Location anonymity in continuous location-based services," in Proc.
+of ACM International Symposium on Advances in Geographic Information Systems.
+ACM Press, 2007.
+[9] S. Mascetti, C. Bettini, X. S. Wang, D. Freni, and S. Jajodia, "ProvidentHider: an Algorithm to Preserve Historical kAnonymity in LBS," in Proceedings of the 10th International Conference on Mobile Data Management (MDM '09).
+IEEE Computer Society, 2009.
+[10] C. Bettini, S. Jajodia, and L. Pareschi, " Anonymity and Diversity in LBS: a Preliminary Investigation," in Proc.
+of the 5th Int.
+Conf.
+on Pervasive Computing and Communication (PerCom).
+IEEE Computer Society, 2007.
+[11] F. Liu and K. Hua, "Query l-diversity in location-based services," in To appear in the Proc.
+of the First International Workshop on Mobile Urban Sensing (MobiUS).
+IEEE Computer Society, 2009.
+[12] A. Machanavajjhala, J. Gehrke, D. Kifer, and M. Venkitasubramaniam, "l-Diversity: Privacy Beyond k-Anonymity," in Proceedings of ICDE 2006.
+IEEE Computer Society, 2006.
+[13] G. Ghinita, P. Kalnis, A. Khoshgozaran, C. Shahabi, and K.-L. Tan, "Private queries in location based services: Anonymizers are not necessary," in Proc.
+of SIGMOD.
+ACM Press, 2008.
+[14] N. Li, T. Li, and S. Venkatasubramanian, "t-closeness: Privacy beyond k-anonymity and l-diversity."
+in ICDE.
+IEEE, 2007, pp.
+106-115.
+[15] G. Ghinita, P. Kalnis, and S. Skiadopoulos, "PRIVE: anonymous location-based queries in distributed mobile systems," in Proceedings of the 16th International Conference on World Wide Web.
+ACM, 2007, pp.
+371-380.
+[16] A. R. Butz, "Alternative Algorithm for Hilbert's Space-Filling Curve," IEEE Trans.
+Comput., vol.
+20, no.
+4, pp.
+424-426, 1971.
+[17] T. Brinkhoff, "A Framework for Generating Network-Based Moving Objects," GeoInformatica, vol.
+6, no.
+2, pp.
+153-180, 2002.
+[18] X. Xiao and Y. Tao, "Personalized privacy preservation," in SIGMOD '06: Proceedings of the 2006 ACM SIGMOD international conference on Management of data.
+New York, NY, USA: ACM Press, 2006, pp.
+229-240.

@@ -1,0 +1,451 @@
+L OLA: Runtime Monitoring of Synchronous Systems Ben DaAngelo a Sriram Sankaranarayanan Bernd Finkbeiner a  Henny B. Sipma a  a  CeEsar SaEnchez a Sandeep Mehrotra aA  Will Robinson Zohar Manna  a a  a  Computer Science Department, Stanford University, Stanford, CA 94305 {bdangelo,srirams,cesar,sipma,manna}@theory.stanford.edu a   Department of Computer Science, Saarland University finkbeiner@cs.uni-sb.de  Abstracta We present a specidZcation language and algorithms for the online and ofdZine monitoring of synchronous systems including circuits and embedded systems.
+Such monitoring is useful not only for testing, but also under actual deployment.
+The specidZcation language is simple and expressive; it can describe both correctness/failure assertions along with interesting statistical measures that are useful for system prodZling and coverage analysis.
+The algorithm for online monitoring of queries in this language follows a partial evaluation strategy: it incrementally constructs output streams from input streams, while maintaining a store of partially evaluated expressions for forward references.
+We identify a class of specidZcations, characterized syntactically, for which the algorithmas memory requirement is independent of the length of the input streams.
+Being able to bound memory requirements is especially important in online monitoring of large input streams.
+We extend the concepts used in the online algorithm to construct an efdZcient ofdZine monitoring algorithm for large traces.
+We have implemented our algorithm and applied it to two industrial systems, the PCI bus protocol and a memory controller.
+The results demonstrate that our algorithms are practical and that our specidZcation language is sufdZciently expressive to handle specidZcations of interest to industry.
+I. I NTRODUCTION Monitoring synchronous programs for safety and liveness properties is an important aspect of ensuring their proper runtime behavior.
+An ofdZine monitor analyzes traces of a system post-simulation to spot violations of This research was supported in part by NSF grants CCR-0121403, CCR-02-20134, CCR-02-09237, CNS-0411363, and CCF0430102, by ARO grant DAAD19-01-1-0723, by NAVY/ONR contract N00014-03-1-0939, by the Siebel Graduate Fellowship, and by the BMBF grant 01 IS C38 B as part of the Verisoft project.
+aA  Synopsys, Inc.  the specidZcation.
+OfdZine monitoring is critical for testing large systems before deployment.
+An online monitor processes the system trace while it is being generated.
+Online monitoring is used to detect violations of the specidZcation when the system is in operation so that they can be handled before they translate into observable and cascading failures, and to adaptively optimize system performance.
+Runtime monitoring has received growing attention in recent years [1], [2], [3].
+While static veridZcation intends to show that every (indZnite) run of a system satisdZes the specidZcation, runtime monitoring is concerned only with a single (dZnite) trace.
+Runtime monitoring can be viewed as an extension of testing with more powerful specidZcation languages.
+The ofdZine monitoring problem is known to be easy for purely past or purely future properties.
+It is well known that for past properties, the online monitoring problem can be solved efdZciently using constant space and linear time in the trace size.
+For future properties, on the other hand, the space requirement generally depends on the length of the trace, which suggests that online monitoring may quickly become intractable in practical applications with traces exceeding 106 simulation steps.
+In this paper, we present a specidZcation language, intended for industrial use.
+The language can express properties involving both the past and the future.
+It is a functional stream computation language like L USTRE [4] and E STEREL [5], with features that are relevant to our problem at hand.
+It is parsimonious in its number of operators (expressions are constructed from three basic operators), but the resulting expressiveness surpasses temporal logics and many other existing formalisms  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  including dZnite-state automata.
+We provide a syntactic characterization of efdZciently monitorable specidZcations, for which the space requirement of the online monitoring algorithm is independent of the size of the trace, and linear in the specidZcation size.
+An analysis of some industrial specidZcations provided by Synopsys, Inc. showed that a large majority of these specidZcations lie in this efdZciently monitorable class.
+For the ofdZine monitoring problem, we demonstrate an efdZcient monitoring strategy in the presence of mixed past/future properties.
+We have implemented our algorithm and specidZcation language in a system called L OLA.
+L OLA accepts a specidZcation in the form of a set of stream expressions, and is then run on a set of input streams.
+Two types of specidZcations are supported: properties that specify correct behavior, and properties that specify statistical measures that allow prodZling the system that produces the input streams.
+An execution of L OLA computes arithmetic and logical expressions over the dZnite input and intermediate streams to produce an output consisting of error reports and the desired statistical information.
+A.
+Related Work Much of the initial work on runtime monitoring (cf.
+[6], [7], [8]) was based on temporal logic [9].
+In [10], non-deterministic automata are built from LTL to check violations of formulas over dZnite traces and the complexity of these problems is studied.
+LTL based specidZcations have already been pursued in tools such as the Temporal Rover [7] and Java PathExplorer [11].
+One limitation of this approach is that the logic must be adapted to handle truncated traces.
+The approach taken in [12] considers extensions of LTL for the case of truncated paths with different interpretations (weak and strong) of the next operator at the end of the trace.
+The choice of handling success/failure on a dZnite trace frequently depends on the situation being modeled.
+Another important difference between runtime veridZcation and static veridZcation is that liveness properties can never be violated on a dZnite trace.
+An appealing solution is to extend the specidZcation language to compute quantitative measures based on the trace.
+Temporal properties can be specidZed in L OLA, but one of the main goals is to go beyond property checking to the collection of numerical statistics.
+For example, instead of checking the property athere are only dZnitely many retransmissions of each package,a which is vacuously true over dZnite traces, we desire to evaluate queries like awhat is the average number of retransmissions.a Our  dZrst approach to combine the property proving with data collection appeared in [13].
+Following this trend, runtime veridZers can be used not only for bug-dZnding, but also for prodZling, coverage, vacuity and numerous other analyses.
+L OLA models runtime veridZcation as a stream computation.
+The dedZnition of L OLA output streams in terms of other streams resembles synchronous programming languages (notably L USTRE [4], E STEREL [5], Signal [14]), but there is a signidZcant difference: these languages are designed primarily for the construction of synchronous systems.
+Therefore, output values for a time instant are computed directly from values at the same and previous instants.
+This assumption makes perfect sense if we desire that the systems we specify be executable, and therefore be causal.
+However, runtime specidZcations are descriptive in nature.
+They include future formulas whose evaluation may have to be delayed until future values arrive.
+This requires stronger expressiveness in the language and the corresponding evaluation strategies.
+Other efforts in run-time veridZcation include [15], which studies the efdZcient generation of monitors from specidZcations written as extended regular expressions, and [16], which studies rewriting techniques for the efdZcient evaluation of LTL formulas on dZnite execution traces, both online and ofdZine.
+In [8], an efdZcient method for the online evaluation of past LTL properties is presented.
+This method exploits that past LTL can be recursively dedZned using only values in the previous state of the computation.
+Our efdZciently monitorable specidZcations generalize this idea, and apply it uniformly to both veridZcation and data collection.
+The system that most closely resembles L OLA is Eagle [17].
+Eagle allows the description of monitors based on greatest and least dZxed points of recursive dedZnitions.
+Many logical formalisms used to describe properties, including past and future LTL formulas, can be translated to Eagle specidZcations.
+These are then compiled into a set of rules that implements the monitor.
+L OLA differs from Eagle in the descriptive nature of the language, and in that L OLA is not restricted to checking logical formulas, but can also express numerical queries.
+II.
+L OLA OVERVIEW In this section we describe the specidZcation language.
+The monitoring algorithms will be presented in Section III.
+A. SpecidZcation Language: Syntax A L OLA specidZcation describes the computation of output streams from a given set of input streams.
+A  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  stream D of type T is a dZnite sequence of values from T .
+We let D(i), i aL 0 denote the value of the stream at time step i. DedZnition 1 (L OLA specidZcation) A L OLA specidZcation is a set of equations over typed stream variables, of the form s1 .. .
+= e1 (t1 , .
+.
+.
+, tm , s1 , .
+.
+.
+, sn ) .. .
+sn = en (t1 , .
+.
+.
+, tm , s1 , .
+.
+.
+, sn ),  where s1 , .
+.
+.
+, sn are called the dependent variables and t1 , .
+.
+.
+, tm are called the independent variables, and e1 , .
+.
+.
+, en are stream expressions over s1 , .
+.
+.
+, sn and t1 , .
+.
+.
+, tm .
+Independent variables refer to input streams and dependent variables refer to output streamsa .
+A L OLA specidZcation can also declare certain output boolean variables as triggers.
+Triggers generate notidZcations at instants when their corresponding values become true .
+Triggers are specidZed in L OLA as trigger D  where D is a boolan expression over streams.
+A stream expression is constructed as follows: aV If c is a constant of type T , then c is an atomic stream expression of type T ; aV If s is a stream variable of type T , then s is an atomic stream expression of type T ; aV Let f : T1 AT2 AAV AV AVATk a T be a k -ary operator.
+If for 1 a$?
+i a$?
+k , ei is an expression of type Ti , then f (e1 , .
+.
+.
+, ek ) is a stream expression of type T ; aV If b is a boolean stream expression and e1 , e2 are stream expressions of type T , then ite(b, e1 , e2 ) is a stream expression of type T ; note that ite abbreviates if-then-else.
+aV If e is a stream expression of type T , c is a constant of type T , and i is an integer, then e[i, c] is a stream expression of type T .
+Informally, e[i, c] refers to the value of the expression e offset i positions from the current position.
+The constant c indicates the default value to be provided, in case an offset of i takes us past the end or before the beginning of the stream.
+a In our implementation we partition the dependent variables into output variables and intermediate variables to distinguish streams that are of interest to the user and those that are used only to facilitate the computation of other streams.
+However, for the description of the semantics and the algorithm this distinction is not important, and hence we will ignore it in this paper.
+Example 1 Let t1 , t2 be stream variables of type boolean and t3 be a stream variable of type integer.
+The following is an example of a L OLA specidZcation with t1 , t2 and t3 as independent variables: s1 s2 s3 s4 s5 s6 s7 s8 s9 s10  = = = = = = = = = =  true t3 t1 a" (t3 a$?
+1) ((t3 )2 + 7) mod 15 ite(s3 , s4 , s4 + 1) ite(t1 , t3 a$?
+s4 , AZs3 ) t1 [+1, false] t1 [a1, true] s9 [a1, 0] + (t3 mod 2) t2 a" (t1 aSS s10 [1, true])  Stream variable s1 denotes a stream whose value is true at all positions, while s2 denotes a stream whose values are the same at all positions as those in t3 .
+The values of the streams corresponding to s3 , .
+.
+.
+, s6 are obtained by evaluating their dedZning expressions placewise at each position.
+The stream corresponding to s7 is obtained by taking at each position i the value of the stream corresponding to t1 at position i + 1, except at the last position, which assumes the default value false.
+Similarly for the stream for s8 , whose values are equal to the values of the stream for t1 shifted by one position, except that the value at the dZrst position is the default value true.
+The stream specidZed by s9 counts the number of odd entries in the stream assigned to t3 by accumulating (t3 mod 2).
+Finally, s10 denotes the stream that gives at each position the value of the temporal formula t1 Until t2 with the stipulation that unresolved eventualities be regarded as satisdZed at the end of the trace.
+B. SpecidZcation Language: Semantics The semantics of L OLA specidZcations is dedZned in terms of evaluation models, which describe the relation between input streams and output streams.
+DedZnition 2 (Evaluation Models) Let D be a L OLA specidZcation over independent variables t1 , .
+.
+.
+, tm with types T1 , .
+.
+.
+, Tm , and dependent variables s1 , .
+.
+.
+, sn with types Tm+1 , .
+.
+.
+, Tm+n .
+Let D1 , .
+.
+.
+, Dm be streams of length N +1, with Di of type Ti .
+The tuple D1 , .
+.
+.
+, Dn  of streams of length N + 1 with appropriate types is called an evaluation model, if for each equation in D si = ei (t1 , .
+.
+.
+, tm , s1 , .
+.
+.
+, sn ), D1 , .
+.
+.
+, Dn  satisdZes the following associated equations: Di (j) = val (ei )(j)  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  for 0 a$?
+j a$?
+N  where val (e)(j) is dedZned as follows.
+For the base cases: val (c)(j) = c .
+val (ti )(j) = Di (j) .
+val (si )(j) = Di (j) .
+For the inductive cases: val (f (e1 , .
+.
+.
+, ek )(j) = f (val (e1 )(j), .
+.
+.
+, val (ek )(j)) .
+val (ite(b, e1 , e2 ))(j) = if val (b)(j) then val (e1 )(j) else val (e2 )(j) .
+val (e[k,  c])(j) = val (e)(j + k) if 0 a$?
+j + k a$?
+N, c otherwise .
+The set of all equations associated with D is denoted by DD .
+Example 2 Consider the L OLA specidZcation D : s = t1 [1, 0] + ite(t2 [a1, true], t3 , t4 + t5 ).
+The associated equations DD are  dLs dLT dLa (j a 1), D dL' 2 dL' dL' dLV dLZ dL' dL' D1 (j + 1) + ite dL D3 (j), dL, j a [1, N ), dL' dL' dL' dL' dL' D4 (j) + D5 (j) dL, dLs dLT D(j) = D2 (N a 1), dL' dLV dLZ dL' dL' j = N, ite dL D3 (N ), dL, dL' dL' dL' dL' dL' D (N ) + D (N ) dL' 4 5 dL' dLl j = 0.
+D1 (1) + D3 (0)  A L OLA specidZcation is well-dedZned if for any set of appropriately typed input streams, all of the same length, it has exactly one evaluation model.
+Example 3 Consider the L OLA specidZcation D1 : s1 = (t1 a$?
+10).
+For the stream D1 : 0, .
+.
+.
+, 100, the associated equations are D1 (j) = (D1 (j) a$?
+10).
+The only evaluation model of D1 is the stream D1 (i) = true iff i a$?
+10.
+In fact, this L OLA specidZcation is well-dedZned, since it dedZnes a unique output for each possible input.
+However, the specidZcation D2 : s2 = s2 aSS (t1 a$?
+10)  is not well-dedZned, because there are many streams D2 that satisfy D2,D for some input stream.
+Similarly, the specidZcation D3 : s3 = AZs3  is not well-dedZned, but for this specidZcation the reason is that it has no evaluation models.
+To avoid ill-dedZned specidZcations we dedZne a syntactic restriction on L OLA specidZcations guaranteeing that any well-formed L OLA expression is also well-dedZned.
+DedZnition 3 (Dependency Graph) Let D be a L OLA specidZcation.
+A dependency graph for D is a weighted and directed multi-graph G = V, E, with vertex set V = {s1 , .
+.
+.
+, sn , t1 , .
+.
+.
+, tm }.
+An edge e : si , sk , w labeled with a weight w is in E iff the equation for Di (j) in DD contains Dk (j + w) as a subexpression of the RHS, for some j (or e : si , tk , w for subexpression Dk (j +w)).
+Intuitively, the edge records the fact that si at a particular position depends on the value of sk , offset by w positions.
+Note that there can be multiple edges between si and sk with different weights on each edge.
+Vertices labeled by ti do not have outgoing edges.
+Example 4 Consider the L OLA specidZcation over independent integer variables t1 , t2 : dLs dLT s2 [a1, 7] a$?
+t1 [1, 0], dL,.
+s1 = s2 [1, 0] + ite dL s2 [a1, 0], s2 s2 = (s1 + t2 [a2, 1]).
+Its dependency graph, shown in Figure 1, has three edges from s1 to s2 , with weights 1, 0, a1, and one zero weighted edge from s2 back to s1 .
+There is one edge from s1 to t1 , and one from s2 to t2 .
+A walk of a graph is a sequence v1 , .
+.
+.
+, vk+1 of vertices, for k aL 1, and edges e1 , .
+.
+.
+, ek , such that ei : vi , vi+1 , wi .
+The walk is closed iff v1 = vk+1 .
+The total weight of a walk is the sum of weights of its edges.
+DedZnition 4 (Well-Formed SpecidZcations) A L OLA specidZcation is well-formed if there is no closed-walk with total weight zero in its dependency graph.
+Theorem 1 Every well-formed L OLA specidZcation is well-dedZned.
+All proofs will be available in an extended version of this document.
+The following alternative characterization of well-formedness is useful for algorithmic purposes and for the ofdZine monitoring algorithm.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  @ABC GFED t1 o  1  @ABC GFED s1 l  1,0,a1  , GFED @ABC s 2  a2  0  @ABC / GFED t2  Fig.
+1: Dependency graph for the specidZcation of Example 4.
+Theorem 2 A L OLA specidZcation is well-formed iff no strongly connected component in G has both a positive and a negative weighted cycle.
+The converse of Theorem 1 is not true: not every welldedZned L OLA specidZcation need be well-formed.
+For instance, the specidZcation s = s aSS AZs is well-dedZned, but not well-formed.
+C. Statistics and Context-free Properties We shall now demonstrate the use of our specidZcation language for computing statistical properties over trace data.
+Numerical properties over traces are essential as (1) components of correctness properties that involve counts, maxima or minima over trace data, and (2) estimating performance and coverage metrics in the form of averages.
+L OLA can be used to compute incremental statistics, i.e., measures that are dedZned using an update function fIa (v, u) where u represents the measure thus far, and v represents the new incoming data.
+Given a sequence of values v1 , .
+.
+.
+, vn , with a special default value d, the statistic over the data is dedZned in the reverse sense as v = fIa (v1 , fIa (v2 , .
+.
+.
+, fIa (vn , d)))  or in the forward sense as v = fIa (vn , fIa (vna1 , .
+.
+.
+, fIa (v1 , d)))  Examples of such statistical measures include count with fcount (v, u) = u+1, sum with fsum (v, u) = v +u, max with fmax (u, v) = max (u, v), among many others; the statistical average can be incrementally dedZned as a pair consisting of the sum and the count.
+Given an update function fIa and a data-stream v , the following L OLA queries compute the statistic in the forward and reverse senses respectively: stat f = fIa (stat f [a1, d], v) , stat r = fIa (stat r [1, d], v) .
+For most common incremental statistical measures, either of these L OLA queries compute the same result.
+The choice of a monitoring strategy can dictate the use of one over another as will be evident in the subsequent section.
+The use of numeric data also increases the expressiveness of the language; it enables the expression of context-free properties.
+Commonly encountered contextfree properties include properties such as aevery request has a matching grant.a In programs, we may use such properties to verify that every lock acquired has been released, or that every memory cell allocated is eventually freed exactly once.
+Example 5 Consider the property: athe number of aas must always be no less than the number of bas.a This property can be expressed in L OLA as s = s[a1, 0] + ite((a aSS AZb), 1, 0) + ite((b aSS AZa), a1, 0) trigger(s a$?
+0)  Integer streams in a L OLA specidZcation enable the expression of context-free properties by being used as counters to model stacks.
+For instance, a two alphabet stack with alphabet symbols 0 and 1 can be modelled by a counter.
+Each pop is implemented by dividing the counter by 2, thereby eliminating the least signidZcant bit.
+Each push is modelled by a multiplication by 2 followed by addition, thereby setting the least signidZcant bit.
+Thus, with one (unbounded) counter, a L OLA specidZcation can express context-free properties.
+It can be shown that L OLA specidZcations with only boolean streams cannot express context-free properties.
+III.
+M ONITORING A LGORITHM In this section, we dZrst describe the setting for the monitoring problem considered in the paper.
+We then describe our monitoring algorithm using partial evaluation of the equational semantics.
+A.
+Monitoring Setup We distinguish two situations for monitoring a online and ofdZine monitoring.
+With online monitoring, system behaviors are observed as the system is run under a test/real-life setting.
+In a simulation setting, we can assume that the monitor is working in tandem with the simulator, with the monitor processing a few trace positions while the simulator waits, and then the monitor waiting while the simulation proceeds to produce the  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  next few positions.
+On the other hand, ofdZine monitoring assumes that the system has been run to completion, and the trace data was dumped to a storage device.
+This leads to the following restriction for online monitoring: the traces are available a few points at a time starting from time 0 onwards, and need to be processed online to make way for more incoming data.
+In particular, random access to the traces is not available.
+B. Online Monitoring Algorithm In online monitoring we assume that the trace is available one position at a time, starting from time 0.
+The length of the trace is assumed to be unknown and large.
+Let t1 , .
+.
+.
+, tm be independent (input) stream variables, and s1 , .
+.
+.
+, sn be dependent (output) stream variables.
+Let j aL 0 be the current position where the latest trace data is available from all the input streams.
+Evaluation Algorithm: The evaluation algorithm maintains two stores of equations: aV Resolved equations R of the form Di (j) = c, or Di (j) = c, for constant c. aV Unresolved equations U of the form Di (j) = ei for all other stream expressions ei .
+Initially both stores are empty.
+At the arrival of input stream data for a particular position j , 0 a$?
+j a$?
+N , that is, when D1 (j), .
+.
+.
+, Dm (j) become available, the following steps are carried out: 1) The equations D1 (j) = c1 , .
+.
+.
+, Dm (j) = cm are added to R, 2) The associated equations for D1 (j), .
+.
+.
+, Dn (j) are added to U , 3) The equations in U are simplidZed as much as possible; if an equation becomes of the form Di (j) = c, it is removed from U and added to R. If c is true and the corresponding output variable si is marked as a trigger, then a violation is reported.
+4) For each stream ti ( also si ), there is a non-negative constant ki such that Di (j aki ), if present in R can be safely removed.
+The constant ki aL 0 is dedZned as     k is non-negative and  .
+ki = max k  ti [ak, d] is a subexpression.
+Intuitively, for any position j , j + ki is the latest value in the future whose computation requires the value of Di (j).
+Example 6 To illustrate the last point, consider the specidZcation, s = s[a3, 0] + t.  Let D be the input stream.
+The value of ki for s is 3 and for t is zero.
+This indicates that for any input stream D , the value D (j) can be removed from R at position j itself.
+Similarly any D(j) a R may be removed from R at (or after) position j + 3.
+Equations in U are simplidZed using the following rules: 1) Partial evaluation rules for function applications such as, true aSS e a e, 0 + x a x AV AV AV  2) Rewrite rules for if-then, ite(true, e1 , e2 ) a e1 AV AV AV  3) Substitution of resolved positions from R. If Di (j) = c a R, then every occurrence of Di (j) in U is substituted by c and possibly simplidZed further.
+We illustrate the operation of the algorithm on a simple example.
+Example 7 Let t1 , t2 be two input boolean stream variables.
+Consider the specidZcation D : s = t2 a" (t1 aSS s[1, false]),  which computes t1 Until t2 .
+The associated equations for D are:  D2 (j) a" (D1 (j) aSS D(j + 1)) j + 1 a$?
+N D(j) = otherwise.
+D2 (j) Let the input streams, D1 and D2 be given by D1 D2  false true  false false  true false  true false  true false  true false  true false  At position 0, we encounter false, true.
+The equation for D(0) is D(0)  = D2 (0) a" (D1 (0) aSS D(1)) a true a" (false aSS D(1)) a true  and thus D(0) = true is added to the resolved store R. At position 1, we encounter false, false and thus we can set D(1) = false , which is also added to R. From j = 2 until j = 5, we encounter true, false.
+At each of these positions the equations D(j) = D(j + 1) are added to U .
+The equation store U now has the equations D(2) = D(3), D(3) = D(4), .
+.
+.
+, D(5) = D(6).
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  At position 6, we encounter true, false with the added information that the trace has ended.
+We set D(6) = false and add it to R. This lets us resolve the equations in U and set all the positions from 2 to 6 to false .
+Note that the equation associated with Di (j) on the LHS is added only after the current position reaches j , even if the term Di (j) appears on the RHS of some equation before position j is reached.
+The algorithm above works in time and space that is linear in the length of the trace and the size of the specidZcation.
+Since the memory usage can be as large as the length of the trace in the worst-case, the method may not work for long simulations and large traces.
+Example 8 Consider the following L OLA specidZcation: ended = false[1, true] s = ite(ended , t, s[1, true])  in which the output stream D takes the same value everywhere that the input stream D takes at the end of the trace.
+The partial evaluation algorithm maintains the unresolved D(0), .
+.
+.
+, D(N ).
+Such specidZcations cannot be monitored efdZciently.
+Furthermore, if the variable s appears in other expressions, the evaluation of the corresponding streams need to be delayed until D can be resolved.
+In the next section we characterize an efdZciently monitorable set of L OLA specidZcations based on the properties of their dependency graphs.
+The partial evaluation algorithm will be shown to work efdZciently for such specidZcations.
+C. EfdZciently Monitorable SpecidZcations We present a class of specidZcations that are efdZciently monitorable.
+These specidZcations are guaranteed to limit the number of unresolved equations in the memory to a pre-determined constant that depends only on the size of the specidZcation and not on the size of the trace.
+DedZnition 5 (EfdZciently Monitorable SpecidZcations) A L OLA specidZcation is efdZciently monitorable (EM) if its worst case memory requirement under our online monitoring algorithm is constant in the size of the trace.
+Example 9 Consider the specidZcation aEvery request must be eventually followed by a grant before the trace endsa, which can be expressed as follows: reqgrant = ite(request, evgrant, true) evgrant = grant a" evgrant[1, false] trigger (AZ reqgrant)  The specidZcation encodes the temporal assertion (request a aS(grant)).
+Another way that produces the same result is   waitgrant =    AZgrant aSS  request a" waitgrant[a1, false]     trigger ended aSS waitgrant  The stream waitgrant records if the monitor is currently waiting for a grant.
+The monitor waits for a grant whenever it encounters a request and stops waiting if there is a grant .
+If the trace ends while the monitor is still waiting, it triggers an error.
+The latter formulation is efdZciently monitorable, while the former is not.
+For instance, at every time instance, waitgrant(i) is instantly resolved given its previous value, and those of the input streams.
+Thus, the simple partial evaluation algorithm monitors the latter with very little, constant, buffering.
+The following theorem characterizes efdZciently monitorable L OLA specidZcations.
+Theorem 3 If the dependency graph of a L OLA query has no positive cycles then it is efdZciently monitorable.
+The converse of the theorem above does not hold in general.
+However, in the absence of an alternative syntactic characterization of EM specidZcation, we shall henceforth use the term EM specidZcation to denote queries whose dependency graphs do not contain positive cycles.
+Given graph G, that does not have any positive weight cycles, we construct a graph G+ , obtained by removing all negative weight edges from G. Furthermore, among all the edges in G between two nodes si and sj , we choose to add only that edge to G+ which has the maximum positive weight.
+The graph G+ has no self loops or multiple edges, and hence is a weighted directed acyclic graph (DAG).
+For each node si a G+ , we dedZne ai as follows: dLa edge from si , dL' dL,0, if there is no outgoing   w(ej )  ai =  e : s a a a a s j i j dL' , ow .
+dLlmax aj + w(ej )  is an edge in G+  Example tion: s1 s2 s3  10 Consider the following L OLA specidZca= t1 [1, false] aSS s3 [a7, false] = ite(s1 [2, true], t2 [2, 0], t2 [a1, 2]) = (s2 [4, true] a$?
+5)  The dependency graph G is shown in Figure 2.
+The values of the a function are as follows: a(t1 ) = a(t2 ) = 0, a(s1 ) = 1, a(s2 ) = 3, a(s3 ) = 7.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  a7  @ABC GFED s3  v 4  @ABC / GFED s2  2  2,a1   @ABC GFED t2  @ABC / GFED s1 1   @ABC GFED t1  (a) Dependency graph G.  @ABC GFED s3  4  @ABC / GFED s2  2  2   @ABC GFED t2  @ABC / GFED s1 1   @ABC GFED t1  (b) Derived graph G+ .
+Fig.
+2: The dependency graph G for Example 10 and its derived graph G+ .
+The signidZcance of the a function is clear through the following theorem.
+Theorem 4 The partial evaluation algorithm resolves any trace position Di (j) before time j + ai .
+The memory requirement is therefore constant in N for an efdZcient specidZcation.
+This number of unresolved positions in U is upper-bounded by O(a1 + AV AV AV + an ).
+For instance, computing the a values for the queries in Example 9, we dZnd that a(waitgrant) = 0.
+This shows that the value of waitgrant resolves immediately, given its previous value and the inputs.
+Our experimental results in the subsequent section show that requiring specidZcations to be efdZciently monitorable is not unreasonable in practice.
+Furthermore, streams involved in positive cycles can be discarded or even rewritten (as shown in Example 9) for the purposes of online monitoring.
+The framework developed generalizes naturally to an ofdZine monitoring algorithm.
+Please refer to the full version of this paper available online.
+IV.
+A PPLICATIONS There are numerous applications of this formalism.
+In this section, we describe two such applications obtained directly from the industry.
+Synopsys, Inc. provided some circuit simulation dumps, along with specidZcations written in the industry standard System Verilog Assertions (SVA)[18].
+We were able to hand-translate the SVA queries directly into L OLA specidZcations, a process that is potentially mechanizable.
+Our OC AML-based implementation of L OLA reads a trace dZle and the specidZcation dZle.
+It implements the online monitoring algorithm described in Section III with some direct optimizations.
+We have incorporated facilities for displaying dependency graphs of specidZcations.
+The following two case studies were considered:  a) Memory Controller: A Verilog model for a memory controller was simulated yielding 13 input streams.
+The corresponding SVA assertions were handtranslated into a L OLA specidZcation.
+The specidZcation had 21 intermediate streams and 15 output streams, all of which were declared triggers.
+Properties enforced included mutual exclusion of signals, correct transfers of address and data, and timing specidZcations (e.g.
+signal stability for 3 or 4 cycles).
+The specidZcations were not EM : the dependency graph had three positive-sum cycles, each encoding a temporal until operator.
+Figure 3 shows the performance of L OLA on these traces.
+b) PCI: We hand translated SVA assertions describing the PCI 2.2 specidZcations for the master.
+A circuit implementing the master was simulated for varying times to produce a set of traces to plot the performance.
+The specidZcation had 15 input streams, 161 output streams and 87 trigger streams.
+Our initial implementation contained three positive weight cycles.
+We were able to remove these by rewriting the queries carefully.
+Running times can also be found in Figure 3.
+Bugs were deliberately introduced into the circuit in order to evaluate the effectiveness of runtime veridZcation.
+L OLA reports numerous useful trigger violations for the longest trace.
+V. C ONCLUSIONS We have presented L OLA, a formalism for runtime veridZcation based on a functional language over dZnite streams equipped with a partial evaluation-based strategy for online evaluation.
+Our formalism combines runtime veridZcation of boolean temporal specidZcations with statistical measures to estimate coverage and specify complex temporal patterns.
+By evaluating our system on industrial strength specidZcations, we have demonstrated that L OLA can express relevant properties.
+Using dependency graphs, we have characterized efdZciently monitorable queries that can be monitored online efdZciently in terms of space.
+Based on our case-studies so far, the restriction to efdZciently monitorable specidZcations seems  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  # simulation steps 5000 10000 20000 50000 100000 200000 500000 1000000  Controller example # clock pos.
+edges time (sec) 250 0.18 500 0.35 1000 0.71 2500 1.78 5000 3.47 10000 6.83 25000 17.02 50000 33.70  PCI example # clock pos.
+edges 834 1667 3334 8334 16667 33334 83334 166667  time 4.62 8.87 19.04 29.47 52.53 99.17 236.96 467.98  Fig.
+3: Running times for both examples.
+All timings were measured on an Intel Xeon Processor running Linux 2.4 with 2Gb RAM.
+practical.
+In the future, we intend to study automatic techniques for rewriting non-EM specidZcations into efdZciently monitorable ones where possible, and in further collaboration with industry study the applicability of these techniques for larger case studies.
+We expect that for such use some syntactic sugar needs to be added to L OLA to facilitate specidZcation of common constructs.
+Also the error reporting needs to be improved by synthesizing explanations for each violation.
+Extensions to handle synchronous systems with many clocks, asynchronous systems, and distributed systems are also under consideration.
+R EFERENCES [1] K. Havelund and G. RosESSu, Eds., Runtime VeridZcation 2001 (RVa01), ser.
+ENTCS, vol.
+55.
+Elsevier, 2001.
+[2] aa, Runtime VeridZcation 2002 (RVa02), ser.
+ENTCS, vol.
+70, no.
+4.
+Elsevier, 2002.
+[3] O. Sokolsky and M. Viswanathan, Eds., Runtime VeridZcation 2002 (RVa03), ser.
+ENTCS, vol.
+89, no.
+2.
+Elsevier, 2003.
+[4] N. Halbwachs, P. Caspi, P. Raymond, and D. Pilaud, aThe synchronous data-dZow programming language LUSTRE,a Proc.
+of IEEE, vol.
+79, no.
+9, pp.
+1305a1320, 1991.
+[5] G. Berry, Proof, language, and interaction: essays in honour of Robin Milner.
+MIT Press, 2000, ch.
+The foundations of Esterel, pp.
+425a454.
+[6] I. Lee, S. Kannan, M. Kim, O. Sokolsky, and M. Viswanathan, aRuntime Assurance Based on Formal SpecidZcations,a in Proc.
+of the International Conference on Parallel and Distributed Processing Techniques and Applications, 1999.
+[7] D. Drusinsky, aThe temporal rover and the ATG rover,a in SPIN Model Cheking and Software VeridZcation, 2000, pp.
+323a330.
+[8] K. Havelund and G. RosESSu, aSynthesizing monitors for safety properties,a in Proc.
+of TACASa02.
+Springer, 2002, pp.
+342a 356.
+[9] Z.
+Manna and A. Pnueli, Temporal VeridZcation of Reactive Systems: Safety.
+New York: Springer, 1995.
+[10] O. Kupferman and M. Y. Vardi, aModel checking of safety properties,a Formal Methods in System Design, vol.
+19, no.
+3, pp.
+291a314, 2001.
+[11] K. Havelund and G. RosESSu, aAn overview of the runtime veridZcation tool java pathexplorer,a Formal Methods for Systems Design, vol.
+24, no.
+2, pp.
+189a215, 2004.
+[12] C. Eisner, D. Fisman, J. Havlicek, Y. Lustig, A. McIsaac, and D. V. Campenhout, aReasoning with temporal logic on truncated paths,a in Proc.
+of CAVa03, ser.
+LNCS, vol.
+2725.
+Springer, 2003, pp.
+27a39.
+[13] B. Finkbeiner, S. Sankaranarayanan, and H. B. Sipma, aCollecting statistics over runtime executions,a in [2].
+[14] T. Gautier, P. Le Guernic, and L. Besnard, aSIGNAL: A declarative language for synchronous programming of realtime systems,a in Proc.
+Conference on Functional Programming Languages and Computer Architecture.
+Springer, 1987, pp.
+257a277.
+[15] K. Sen and G. RosESSu, aGenerating optimal monitors for extended regular expressions,a in [3].
+[16] G. RosESSu and K. Havelund, aRewriting-based techniques for runtime veridZcation,a Journal of Automated Software Engineering (to appear).
+[17] H. Barringer, A. Goldberg, K. Havelund, and K. Sen, aRulebased runtime veridZcation,a in Proc.
+of 5th International Conference VMCAIa04, ser.
+LNCS, vol.
+2937.
+Springer, 2004, pp.
+44a57.
+[18] aSystem verilog assertion homepage,a 2003, [Online] Available: http://www.eda.org/sv-ac.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE

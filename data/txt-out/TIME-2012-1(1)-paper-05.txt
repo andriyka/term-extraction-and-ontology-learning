@@ -1,0 +1,317 @@
+Symmetric Temporal Theorem Proving Amir Niknafs-Kermani, Boris Konev, and Michael Fisher Department of Computer Science, University of Liverpool, UK Email: {niknafs, konev, mfisher }@liv.ac.uk  Abstract In this paper we consider the deductive verification of propositional temporal logic specifications of symmetric systems.
+In particular, we provide a heuristic approach to the scalability problems associated with analysing properties of large numbers of processes.
+Essentially, we use a temporal resolution procedure to verify properties of a system with few processes and then generalise the outcome in order to reduce the verification complexity of the same system with much larger numbers of processes.
+This provides a practical route to deductive verification for many systems comprising identical processes.
+1.
+Introduction Automated theorem proving, or automated deduction, involves the mechanical proof of mathematical theorems by a computer program.
+It has been applied into many different logics including temporal logic.
+Temporal proof is a technique used to ascertain whether a temporal logic formula is valid or not.
+We here consider automated temporal theorem proving, and focus on an extension of the resolution procedure developed by Robinson [23], namely the clausal resolution method for propositional temporal logic (PTL) [12].
+As this proof technique has a exponential time complexity, its use becomes more difficult as the PTL formulae considered become larger.
+Our approach here is to infer resolution steps in larger problems by considering, and extending, resolution steps in corresponding, but smaller, versions.
+Based on the steps that have been carried out for smaller formulae, we make a aguessa at the steps needed for larger formulae of a similar pattern.
+Clearly, this will only work if the formulae increase in a very regular way and if we have a very quick way to check correctness of the aguessesa.
+The stimulus for this work comes from temporal model checking [5], where the main problem is the state-space explosion that occurs as problems increase in size.
+In that field, symmetric techniques have been used to tackle larger problems by considering smaller instances.
+For example,  the SPIN model checker [18] has used symmetry in order to overcome the state space problems to some extent, and for some classes of system.
+Thus, our aim in this paper is to introduce a symmetric way to increase the efficiency of the resolution method as the size of the problem increases.
+After the introductory sections we show, in Section 3, how refutations in larger problems can be aguesseda from refutations in smaller, but similar, problems and checked for their correctness.
+In Section 4, we apply this technique to the deductive temporal verification of a cache coherence protocol [7].
+For small numbers of identical processes, propositional temporal provers can handle their deductive verification.
+However, if the number of processes becomes larger, or if the formula is fairly complex, then even temporal resolution provers such as TeMP [19] or TSPASS [21] may well fail to handle such problems.
+By applying our technique to such symmetric problems, we can carry out automated temporal proofs for larger numbers of processes just by extrapolating from simpler examples.
+Thus, the aim of this paper is to provide a technique that allows deductive temporal methods to be applied to larger problems.
+Just as model-checking can be applied to problems comprising large numbers of identical processes [2, 24, 4], this paper shows how propositional temporal proving can be productively used in a similar way.
+2.
+Preliminaries PTL is an extension of classical propositional logic providing operators dealing with time.
+We assume a discrete and linear model of time, with finite past and infinite future (the temporal structure is thus isomorphic to the set of Natural Numbers N).
+The set of well-formed PTL formulae is the smallest set containing all propositions and the Boolean constant >, such that whenever D and D are PTL formulae so are AZD, D aSS D, D and D U D. We call a literal a proposition or its negation.
+As always, other Boolean connectives and temporal operators (aL, a", a, a, , aS, W) can be defined as abbreviations, for example, aL is defined as AZ>; D a" D is defined as AZ(AZD aSS AZD); aSD is defined as > U D and D is defined as AZaSAZD.
+A state is a finite set of propositions, and a sequence of states D = s1 , s2 , .
+.
+.
+is an interpretation.
+For an interpretation D, i a N and a PTL formula D, we define the relation (D, i) |= D by induction on the construction of well-formed PTL formulae as follows (D, i) |= > (D, i) |= p (D, i) |= D aSS D (D, i) |= D (D, i) |= D U D  The rules of clausal temporal resolution can be found in [12, 6].
+The core of the method is the eventuality resolution rule, which deals with the eventuality clauses, and which can be abstractly described by: aSl  iff p is a proposition and p a si iff (D, i) |= D and (D, i) |= D iff (D, i + 1) |= D iff there exists j aL i such that (D, j) |= D and for all k : i a$?
+k < j, (D, k) |= D  The conclusion of an application of the rule is a universal clause.
+However, (L a AZl) can only be constructed by a combination of universal and step clauses.
+This loop formula, L, is a disjunction of conjunctions of literals (i.e.
+in DNF); therefore, its negation is a conjunction of clauses, which is added to the set of universal clauses.
+Loop formulae can be found in DSNF by using loop search [8] procedures, which are a key part of the clausal temporal resolution approach.
+Experiments show that, in practice, clausal temporal resolution provers spend most of their time searching for loop formulae and, therefore, speeding the loop search aspect up will significantly improve the performance of our provers.
+We say that D is true in D (in symbols, D |= D) if, and only if, (D, 0) |= D. Formula D is valid if it is true in any D, while D is unsatisfiable if there is no D in which D is true.
+We say that a PTL formula D entails a PTL formula D, in symbols D |= D, if, and only if, for every interpretation D, in which D is true, formula D is also true in D. D is entailed by D if, and only if, the PTL formula D a D is valid (or DaSSAZD is unsatisfiable).
+Establishing the (un)satisfiability of a PTL formula can be done with the help of clausal temporal resolution [11].
+Clausal temporal resolution operates on formulae in a special normal form and then applies simple resolution-like inference rules in search of a contradiction.
+It has been shown in [6] that every PTL formula can be translated in a satisfiability preserving way into Divided Separated Normal Form (DSNF), which consists of four parts, where la , lb , lc , ld and l are literals: _ aV a set of initial clauses, I, of the form la ;  3.
+Symmetric Temporal Theorem Proving We now consider the application of the temporal resolution approach to the deductive verification of properties of parametrized systems, typically distributed systems comprising N identical processes.
+We will consider how to prove properties of such systems as N grows.
+Thus, the basic inputs to our method are sequences of PTL formulae (specifications) D1 , D2 , .
+.
+.
+and (properties) D1 , D2 , .
+.
+.
+, representing instances of problems with 1, 2, etc, processes.
+Essentially, we aim to re-use information from the proof of the unsatisfiability of Di aSS AZDi in order to prove the unsatisfiability of Di+1 aSS AZDi+1 .
+To exploit symmetry in the input, every such Di should be an instance of the same parametrized problem, D, and every Di should be an instance of the same parametrized property, D. In this paper, we specify D and D, in a first-order temporal language (FOTL) and then instantiate free variables of D and D as elements of a fixed domain Dn = {1, .
+.
+.
+, N }.
+We sometime refer to elements of this domain Dn as processes as our examples here stem from the verification of parametrized distributed systems.
+As a practical example, consider the MSI cachecoherence protocol [7].
+This protocol involves a set of identical processes P = {p1 , p2 , .
+.
+.
+, pN }.
+Each process pi a P can be in one of the three different states of {ii , si , mi }, and if pi is active then it can interact with memory.
+In Fig.
+1 we provide a selection of PTL formulae used to describe the MSI protocol instantiated with N processes.
+A full explanation of MSI protocol in FOTL is given in [14].
+We now proceed to develop some definitions which we will use in characterising the pattern of temporal resolution  a  aV a set of step clauses, S, of the form ^ _ ( lc a  ld ); c  (L a AZl) AZL  d  _ aV a set of universal clauses, U, of the form ( lb ); and b  aV a set of eventuality clauses, E, of the form aSl.
+The meaning of a DSNF representation, (I, U, S, E), is given by its characteristic formula I aSSU aSSS aSSE and, when we talk about properties of the DSNF (such as satisfiability), we mean the corresponding property of its characteristic formula.
+Here, and in the follows, we do not make a distinction between a set of formulae and the conjunction of formulae in this set.
+Notice that clauses from I are only required to hold at moment 0 while clauses from U, S, E are required to hold at any moment of time.
+Importantly, it was shown in [6] that any DSNF problem can be transformed, in a satisfiability-preserving manner, to a DSNF problem having at most one element in E. 2  (i1 aSS i2 aSS AV AV AV aSS iN )aSS (a1 a" a2 a" AV AV AV a" aN )aSS ((s1 aSS AZr1 ) aSS (r1 a" AV AV AV a" rN ) a s1 )aSS .. .
+((sN aSS AZrN ) aSS (r1 a" AV AV AV a" rN ) a sN )aSS ((m1 aSS AZw1 ) aSS (w1 a" AV AV AV a" wN ) a i1 )aSS .. .
+((mN aSS AZwN ) aSS (w1 a" AV AV AV a" wN ) a iN )aSS aSSAVAVAV  At the start, all processes are in state i There is always at least one active process if a process pi is in state s and is not reading and there exists a process that reads then in the next moment pi is in state s if a process pi is in state m and is not writing and there exists a process that writes then in the next moment pi is in state i  Figure 1.
+Fragment of the MSI Protocol PTL Specification (for n processes).
+1.
+Instantiate a monadic first-order temporal formula D to give the PTL formula Di with a fixed i (initially, i = 1).
+loop formulae occurring in parametrized problems.
+Definition 1 A one-symmetric system is a system that can be represented by a monadic FOTL formula with equality.
+2.
+Run the clausal propositional resolution method on Di .
+3.
+If a contradiction is not derived, increment i and return to step 1 (in this case, the property requires some minimal number of processes before it holds).
+If a contradiction for i processes is derived, move to step 4.
+For example, the formula D: ax, y.
+(A(x) aSS B(y) a c) is a one-symmetric system where A and B are predicate names, which we also call states of a process, and c is a proposition.
+On the other hand,  4.
+From the results gathered from step 2, try to guess a loop set of potential loop formulae for the eventuality aSl in the instance of the specification with a larger number of processes Dj (with j > i).
+ax, y.A(x, y)  5.
+If the loop set is empty then increment i and go to step 1, else continue to step 6.  is not one-symmetric because predicate A has arity greater than 1.
+Then, an instance D2 of the first-order temporal formula D above is  6.
+Select a loop formula candidate L from the loop set and check if L is indeed a loop formula in this larger instance of the problem (i.e.
+Dj ).
+If the loop check procedure returns ayesa then go to step 7, otherwise remove L from the loop set and return to step 5.
+(a1 aSS b1 a c) aSS (a2 aSS b1 a c) aSS (a1 aSS b2 a c) aSS (a2 aSS b2 a c)  7.
+Once it is confirmed that L is indeed a loop formula, replace the negation rule applied for aSl with the conculision of AZL in Dj and run the temporal theorem prover.
+and for the formula D: ax.
+P (x)  8.
+If a contradiction is obtained, go to step 1 setting i = j, otherwise go back to step 5.  its instance DN is (p1 a" p2 a" ... a" pN ).
+Thus, if we fail to successfully guess a loop that works for refutations in problems with larger numbers of processes, then we must continue applying the full temporal resolution procedure to successively larger instances of the problem.
+If we do guess a suitable loop for a larger instance, then we can carry out proof in that instance without the necessity of temporal loop search (i.e.
+with a DSNF problem with empty E) a this is significantly faster.
+In what follows, we introduce machinery to analyse loop formulae collected from a successful run of the theorem prover on Di in step 2 of the algorithm.
+It should be clear that the MSI protocol presented above can be represented by a monadic FOTL formula and is, therefore, a one-symmetric system.
+We now provide an overview of how we use symmetry to remove some of the complexity in temporal resolution refutations for larger instances of a problem.
+For simplicity of presentation, in what follows we assume that D contains both the specification of the system and the negation of the property (and thus we are applying temporal resolution to D in an attempt to show unsatisfiability) and that E = {aSl}.
+3  3.1. aGuessinga Loop Formulae  Algorithm 1 1: procedure G ROUP F ORMULAE(L) .
+L is a loop Wk formula in form of j=1 lj 2: let F = {l1 , .
+.
+.
+, lk } 3: let t be the template for a li in F 4: let g= a 5: while F 6= a do 6: for all f in F do 7: let Q = a 8: if f can be represented with t then 9: add f to Q and remove f from F 10: end if 11: end for 12: add t 7a Q to g 13: let t be the template for another li in F 14: end while 15: return g 16: end procedure  In order to capture symmetry in the system, we define the notion of a template, which can be used to group together a set of formulae with the same behaviour and therefore, give a direction to our guesses.
+This template is also used to aguessa the loops needed for the temporal specification of the system containing a larger number of processes.
+Definition 2 A template is a set of expressions of the form p or px , where p is a state and x is a variable.
+Unlike monadic temporal formulae used to specify parametrized problems, templates are instantiated in such a way that different variables are mapped into different domain elements.
+To highlight this difference, we call variables occurring in a template variants.
+For example, in a template {ax , by } variants x and y can correspond to any process i and j where i 6= j.
+For D2 , i.e.
+{1, 2}, the above template instantiates into two sets {a1 , b2 } and {a2 , b1 }.
+Conversely, given a PTL formula  aV q is either empty aV or, if q not empty, then it contains all the states in t that are marked with the same variant with the variant renamed with a fresh one.
+f = (a1 aSS b1 ) a" (a2 aSS b2 ) a" (a2 aSS b1 aSS c)  For example, given a template t = {ax , bx , cy } ; ax and bx are both marked with x, so a possible q is {az , bz }, where z is a new variant name.
+In the TEMPLATE F OLLOW U PS algorithm below, we return all the possibilities for t0 based on what we know about t.  we can extract two templates: aV {ax , bx } and aV {ax , by , c} Note that f 0 = f a" (a1 aSS b2 aSS c) gives rise to the same templates as f.  Algorithm 2 1: procedure TEMPLATE F OLLOW U PS (template t) 2: let tem = t .
+every template follows itself 3: for all variant v in t do 4: Define q to be the set of elements in t that have v as their variant (with new variant assigned to q) 5: tem.add(t aS q) 6: end for 7: return tem 8: end procedure  Theorem 1 A conjunction of propositional literals has at most one template.
+Given a loop formula L (recall that a loop formula is in DNF), we simultaneously search for templates for conjunctions in L and group these conjunctions together so that all disjunctions with identical templates will be grouped together.
+We call this process grouping.
+Definition 3 A group is a function that maps a template t to a set of formulae F group : template a F  Similar to a loop formula, which can be thought of as a set of conjunctions, we define a loop-template as a set of templates t1 ,t2 ,...,tk .
+Intuitively, a loop template represents all conjunctions of literals from a loop formula.
+A looptemplate T is a predecessor of T 0 if, and only if,  To group the formulae with the G ROUP F ORMULAE algorithm below, we assume that the formulae are a loop (in DNF form) for a one-symmetric system.
+We say that a template t0 follows from another template t if, and only if, t0 = t aS q,  aV T and T 0 both have the same number of templates, and aV for each template t in T there is a template t0 in T 0 such that that t0 follows from t.  where q has the following properties: 4  Theorem 2 Let t, t0 be templates and L be a loop formula such that for no two conjuncts F, F 0 of L we have F a F 0 .
+Then if t0 follows from t, the loop formula L cannot contain instances of both t and t0 , unless t0 is a syntactic variation of t.  Algorithm 4 1: procedure G UESSED L OOP T EMPLATE 2(Li ,Li+1 ) 2: let g = G ROUP F ORMULAE(L) 3: let g 0 =G ROUP F ORMULAE(Li+1 ) 4: let guessedSet = a 5: let templateArray[g 0 .size] 6: for all template t0i in g 0 do 7: if t0i follows a template t a g then 8: let q = t0i /t with a new variant 9: let t00 = t0i aS q 10: templateArray[i]={t00 , t0i } 11: else  Based on this result, we first present a naive G UESSED L OOP T EMPLATE algorithm that enumerates possible loop templates that follow from the current loop template obtained by the G ROUP F ORMULAE algorithm.
+There are two Algorithm 3 1: procedure G UESSED L OOP T EMPLATE(L) 2: let g = G ROUP F ORMULAE(L) 3: let guessedSet = a 4: let templateArray[g.size] 5: for all template ti in g do 6: templateArray[i] = TEMPLATE F OLLOW U PS(ti ) 7: end for 8: take a template from each templateArray[i] add to guessedSet as a new guessedLoopTemplate 9: repeat the previous step until there is no more combinations left.
+10: return guessedSet 11: end procedure  templateArray[i] = TEMPLATE F OLLOW U PS(t0i ) end if end for take a template from each templateArray[i] add to guessedSet as a new guessedLoopTemplate 16: repeat the previous step until there is no more combinations left.
+17: return guessedSet 18: end procedure  12: 13: 14: 15:  ates a smaller guess for ti+2 : G0 = {{ax , ay , az , bd }, {ax , ay , bz }}.
+Now, once we have a guess for a loop formula we need to check whether it is indeed a loop or not.
+problems with the G UESSED L OOP T EMPLATE algorithm.
+First, it can potentially introduce n2 guesses, where n is the maximum number of propositions in a loop formula conjunct, which can be too many to practically consider.
+The second, more serious problem, is that the algorithm only produces templates that follow from the current loop template.
+In some cases, the loop formula for an instance of the symmetric system for a larger number of processes is not an instance of any template for a smaller number of processes.
+Therefore, we need more information to produce a loop.
+The algorithm G UESSED L OOP T EMPLATE 2 produces a smaller number of guesses based on loop formulae for Li and Li+1 where Li is the loop for a specification with specification with i processes and Li+1 is the loop for specification for a specification with i + 1 processes  3.2.
+Checking Loop Guesses In order to present an algorithm checking whether a given formula is a loop formula, we need to give more detail on how eventuality resolution works.
+Given a DSNF (I, U, S, E) with E = {aSl}, the loop formula L should satisfy the following properties (for details see [8]): 1.
+U aS S |= (L a AZl), 2.
+U aS S |= (L a L).
+It should be clear that under these conditions, (L a AZl) is a consequence of the DSNF as required to apply the eventuality resolution rule.
+Both properties can be checked in a similar manner.
+To check (2), we form a new DSNF1 (I 0 , U 0 , S 0 , E 0 ) as follows  Example.
+Suppose that for an instance of a symmetric system Di the loop formula is just a single conjunction of literals.
+Then the loop template is a singleton {ti }, where ti = {ax , by }.
+Using G UESSED L OOP T EMPLATE we obtain the following set of possible loop templates G for Di+1 :  I 0 = {L} U0 = U  S 0 = S aS {AZL} E0 = a  and run temporal resolution on the resulting set of clauses.
+If a contradiction is derived, L is a loop formula for the original DSNF.
+G = {{ax , by }, {ax , ay , bz }, {ax , by , bz }}.
+Suppose now that the loop template for Di+1 is ti+1 = {ax , ay , bz }.
+Guided by this additional knowledge, the G UESSED L OOP T EMPLATE 2 algorithm, gener-  1 Notice that although L and AZL are not in the required clausal form, they can be easily transformed in this form by applying de Morgan rules.
+5  Theorem 3 For a DSNF (I, U, S, E) with E = {aSl} and a formula L we have U aS S |= (L a L) if, and only if, (I 0 , U 0 , S 0 , E 0 ) is unsatisfiable.
+and loop search returns the following loop formula loop2 : (wait for l aSS i1 ) a" (wait for l aSS i2 )a" (wait for l aSS m1 aSS m2 ) a" (wait for l aSS s1 aSS s2 ).
+The T EST L OOP algorithm checks whether a formula L is indeed a loop formula.
+Note that carrying out such a check is typically much faster than attempting to find the loop itself.
+Algorithm 5 1: procedure T EST L OOP ( L , Di ) .
+L is a guessed loop for aSl .
+Di is the specification of the system 2: if L 6|= AZl then 3: return false 4: end if 5: Di a Di - {initialClauses aS aSl } 6: Di a Di aSS (L) aSS (AZL) 7: if Di  aL then 8: return true 9: else 10: return false 11: end if 12: end procedure  From this, we can extract the loop template T2 to be: dLa dLz {wait for l , iX }, dL, dL" {wait for l , mX , mY }, dLl dLz {wait for l , sX , sY } Now we can use the G UESSED L OOP T EMPLATE algorithm to create a set of loop templates T T to be used for MSI 3 and then derive a potential loop formula to be tested using the T EST L OOP algorithm.
+Unfortunately, at this stage we are unable to find an appropriate loop for MSI 3 , and therefore turn to the G UESSED L OOP T EMPLATE 2 algorithm.
+We run TSPASS on MSI 3 and extract the loop loop3 from it: (wait for l aSS i1 aSS i2 ) a" (wait for l aSS i1 aSS i3 ) a" (wait for l aSS i2 aSS i3 ) a" (wait for l aSS m1 aSS m2 aSS m3 ) a" (wait for l aSS s1 aSS s2 aSS s3 ) a" (wait for l aSS s1 aSS s2 aSS i3 ) a" (wait for l aSS s1 aSS s3 aSS i2 ) a" (wait for l aSS s2 aSS s3 aSS i1 ) a" (wait for l aSS m1 aSS m2 aSS i3 ) a" (wait for l aSS m1 aSS m3 aSS i2 ) a" (wait for l aSS m2 aSS m3 aSS i1 )  .
+L is a loop  4.
+Applying the Technique  The loop template for the above formulae is T3 (X, Y and Z are variants): dLa dLz {wait for l , iX , iY }, dL' dL' dL' dL' dL' dL' dL' dL, {wait for l , mX , mY , mZ }, dL' dL" {wait for l , sX , sY , sZ }}, dL' dL' dL' {wait for l , mX , mY , iZ }, dL' dL' dL' dL' dL' dLl dLz {wait for l , sX , sY , iZ }  The algorithms described in the previous section have been applied to the verification of the MSI Protocol [7].
+To check the anon-co-occurrence of statesa property, we add the negated property: aS(ax, y.
+(S(x) aSS M (y))) to the specification and then run the proof procedure.
+If the combined formula is unsatisfiable, then we know that the anon-co-occurrencea property holds.
+It is also worth mentioning that, we are using two different Theorem Provers, namely TSPASS[21] and TeMP [19].
+There are two reason for this combinations, one is that based on the specification one can perform better than other one.
+In addition, since they are used as aBlack Boxa each can produces different set of useful outputs which then can be used for later investigations.
+To describe the approach in detail, we provide a walk through a run of the algorithms.
+All the used algorithms have been programmed, however they have not yet put together.
+Also the decision of what prover to be used is decided by the user.
+Nevertheless, the automation of each part is relatively easy and is set for our future work.
+First, we ran the temporal prover TSPASS on an instance of the MSI protocol with two processes.
+Through the internal processes of TSPASS, the property is transformed into  At this stage we use T2 and T3 in G UESSED L OOP T EM PLATE 2(T2 , T3 ) to produce a set of template guesses T T4 for MSI 4 .
+As before, once we have the templates we produce the formulae and test them.
+One of the loop formulae candidates extracted from one of the templates in T T4 , namely from dLa dLz {wait for l , iX , iY }, dL' dL' dL' dL' dL' dL' dL' dL" dL, {wait for l , mX , mY , mZ , mq }, dL' {wait for l , sX , sY , sZ , sq }, dL' dL' dL' {wait for l , mX , mY , mq , iZ }, dL' dL' dL' dL' dL' dLl dLz {wait for l , sX , sY , sq , iZ } turns out to be the loop for MSI 4 .
+Using the same template and the same follow ups we can then produce a template for MSI 5 , MSI 6 , .... Table 4 2 Time  to prove property in MSI protocols without any changes to prove property with removing eventuality and adding the formulae as step clauses 3 Time  aS(AZwait for l ) 6  Number of processes 2 3 4 5 6 7 8 9  Original Problem2 0.060s 1.240s 16.124s 119.662s 1717.886s a a a  Modified Problem3 0.011s 0.036s 0.134s 0.640s 4.138s 35.108s 340.408s 4249.012s  results Unsatisfiable Unsatisfiable Unsatisfiable Unsatisfiable Unsatisfiable Unsatisfiable Unsatisfiable Unsatisfiable  Table 1.
+Performance Comparison using the TeMP [19] Clausal Resolution Prover provides some practical results in establishing the non-cooccurrence property for the MSI protocol of up to 9 processes.
+We have also successfully applied this technique  We have provided here the basis for this approach, implemented the key algorithms, and have applied it to the analysis of some parametrized systems.
+to proving properties of foraging behaviours of robotic swarms of increasing sizes described in [1].
+If we run the Temp prover to prove some properties in this system without using the algorithm described in this paper, it could prove for up to 3 processes, however, once we use this techniques we can prove the properties for up to 11 processes, thought we have not space to present the full results here.
+5.1  Related Work  A survey on the use of symmetry in model checking can be found in [25].
+Indexed Simplified Computational Tree Logic (ISCTL), introduced in [10], allows one to specify and verify properties of parametrised systems, where the index corresponds to the number of processes.
+Our research differs in that our main focus is the speed of reasoning rather than representation issues.
+Emerson and Kahlon [9] tackle the verification of temporal properties for parametrized model checking problems in an asynchronous systems.They reduced model checking for systems of arbitrary size n to model checking for systems of size (up to ) a small cutoff size c. Furthermore, in [22], Pnueli, Ruah and Zuck used the standard deductive INV rule for proving invariance properties, to be able to automatically resolve by finite-state (BBD-based) methods with no need of theorem proving.
+They have developed a system to model check a small instances of the parametrised system in order to derive candidates for invariant assertions.
+Therefore, their work results in an incomplete but fully automatic sound method for verifying bounded-date parametrized system.
+Even though the work above are all concern using symmetry in model checking, our work differs from them as it provides a heuristic method to reduce the inner complexity of theorem provers itself rather than combining it with different techniques.
+5.
+Concluding Remarks Temporal specification and verification have many applications, not only through model-checking techniques [17, 3], but also in security protocol analysis [16, 20], analysis of parametrized systems [13], and temporal planning [15].
+Deductive verification reduces checking properties of a system to checking the satisfiability of a particular formula.
+While this approach to verification is appealing due to its conceptual simplicity, it suffers from complexity issues as the size of the temporal formulae grows.
+In this paper we have considered a simplified, but widely applicable, model based on parametrized systems.
+The key idea is to consider a number of, essentially identical, components whose temporal specification leads to similar formulae.
+Then we use a standard clausal temporal resolution prover to prove some property of a system comprising a small number of processes.
+Once we have this proof, the loop formula within the clausal resolution refutation is captured and generalised for use in problems with a larger number of processes.
+Effectively, we use information about refutations on smaller versions of the problem to help us aguessa key formulae in refutations for larger problems.
+This guessing process, though heuristic, is easy to carry out.
+Importantly, it is also relatively easy to check whether the key formulae we guess do, in fact, lead us to a refutation for our larger problem.
+5.2  Future Work  The algorithms presented in this paper constitute a first step towards practical deductive verification of symmetric systems.
+While the preliminary results presented in Table 4 are encouraging, we clearly need a much greater performance improvement before systems involving a realistically 7  large number of processes can be verified.
+In addition, the procedure itself is not yet fully automated, which is a part of future work.
+We are looking at a possibility to extend this approach beyond the limitations of the one-symmetric systems.
+Point-to-point communication, even between absolutely identical processes, cannot be described by unary first-order predicates.
+One advantage of one-symmetric systems is that it suffices to require that different variants in a template are instantiated as different domain elements.
+Generalising the notions of a template and a loop template to the n-ary case proves to be challenging as we have to deal with more sophisticated restrictions on variants.
+We are also exploring ways to to extend the approach presented in this paper to proof generalisation: Rather than just guessing loop formulae, one can try to construct the entire temporal proof for a larger number of processes guided by the proof for a smaller number of processes.
+Finally, we are looking for a wider variety of examples to which we can apply this approach.
+This will not only test and refine the approach, but will also let us to identify sub-classes of parametrized systems in which this approach works particularly well.
+Linear-Time Temporal Logic.
+In Automated Reasoning with Analytic Tableaux and Related Methods, volume 2381 of LNCS, pages 85a99.
+Springer, 2002.
+[7] G. Delzanno.
+Automatic Verification of Parameterized Cache Coherence Protocols.
+In Proc.
+12th International Conference on Computer Aided Verification (CAV a00), pages 53a68, London, UK, 2000.
+Springer.
+[8] C. Dixon.
+Temporal Resolution Using a Breadth-First Search Algorithm.
+Annals of Mathematics and Artificial Intelligence, 22:87a115, 1998.
+[9] E. Emerson and V. Kahlon.
+Reducing model checking of the many to the few.
+Automated Deduction - CADE17, pages 236a254, 2000.
+[10] E. A. Emerson and J. Srinivasan.
+A decidable temporal logic to reason about many processes.
+In Proc.
+PODCa90, pages 233a246.
+ACM, 1990.
+[11] M. Fisher.
+Introduction to Practical Formal Methods Using Temporal Logic.
+John Wiley & Sons, 2011.
+[12] M. Fisher, C. Dixon, and M. Peim.
+Clausal Temporal Resolution.
+ACM Trans.
+Comput.
+Logic, 2:12a56, January 2001.
+References [1] A. Behdenna, C. Dixon, and M. Fisher.
+Deductive Verification of Simple Foraging Robotic Behaviours.
+Int.
+J. Intell.
+Comput.
+Cybern., 2(4):604a643, 2009.
+[13] M. Fisher, B. Konev, and A. Lisitsa.
+Practical InfiniteState Verification with Temporal Reasoning.
+In Verification of Infinite State Systems and Security, volume 1 of NATO Security through Science Series: Information and Communication, pages 91a100.
+IOS Press, 2006.
+[2] M. C. Browne, E. M. Clarke, and O. Grumberg.
+Reasoning about Networks with Many Identical Finite State Processes.
+Inf.
+Comput., 81(1):13a31, 1989.
+[14] M. Fisher and A. Lisitsa.
+Deductive Verification of Cache Coherence Protocols.
+In Proc.
+3rd International Workshop on Automated Verification of Critical Systems (AVoCS 2003), pages 177a186, Southampton, UK, 2003.
+[3] C. Cadar, D. Dunbar, and D. Engler.
+KLEE: Unassisted and Automatic Generation of High-Coverage Tests for Complex Systems Programs.
+In Proc.
+8th USENIX conference on Operating systems design and implementation (OSDIa08), pages 209a224, Berkeley, USA, 2008.
+USENIX Association.
+[15] M. Fox and D. Long.
+Time in Planning.
+In Handbook of Temporal Reasoning in AI, pages 497a537.
+Elsevier Science, 2005.
+[4] M. Calder and A. Miller.
+Automatic Verification of any Number of Concurrent, Communicating Processes.
+In Proc.
+17th IEEE International Conference on Automated Software Engineering (ASE), pages 227a230.
+IEEE Computer Society, 2002.
+[16] J. Y. Halpern.
+Reasoning about knowledge: A survey.
+In Handbook of Logic in Artificial Intelligence and Logic Programming, pages 1a34.
+Oxford University Press, 1995.
+[5] E. M. Clarke, A. Fehnker, S. K. Jha, and H. Veith.
+Temporal Logic Model Checking.
+In Handbook of Networked and Embedded Control Systems, pages 539a558.
+BirkhaEuser, 2005.
+[17] K. Havelund.
+Java PathFinder, A Translator from Java to Promela.
+In SPIN, 1999.
+[18] G. J. Holzmann.
+The SPIN Model Checker: Primer and Reference Manual.
+Addison-Wesley Professional, 2003.
+[6] A. Degtyarev, M. Fisher, and B. Konev.
+A Simplified Clausal Resolution Procedure for Propositional 8  [19] U. Hustadt, B. Konev, A. Riazanov, and A. Voronkov.
+TeMP: A Temporal Monodic Prover.
+In Proc.
+2nd International Joint Conference on Automated Reasoning (IJCAR), volume 3097 of Lecture Notes in Artificial Intelligence, pages 326a330.
+Springer, 2004.
+[20] S. A. Kripke.
+Semantical Considerations on Modal Logic.
+Acta Philosophica Fennica, 16:83a94, 1963.
+[21] M. Ludwig and U. Hustadt.
+Implementing a fair monodic temporal logic prover.
+AI Commun., 23:69a 96, April 2010.
+[22] A. Pnueli, S. Ruah, and L. Zuck.
+Automatic deductive verification with invisible invariants.
+pages 82a97.
+Springer, 2001.
+[23] J.
+A. Robinson.
+A Machine-Oriented Logic Based on the Resolution Principle.
+J. ACM, 12:23a41, 1965.
+[24] A. P. Sistla, V. Gyuris, and E. A. Emerson.
+SMC: A Symmetry-based Model Checker for Verification of Safety and Liveness Properties.
+ACM Trans.
+Softw.
+Eng.
+Methodol., 9(2):133a166, 2000.
+[25] T. Wahl and A. F. Donaldson.
+Replication and abstraction: Symmetry in automated formal verification.
+Symmetry, 2(2):799a847, 2010.
+9

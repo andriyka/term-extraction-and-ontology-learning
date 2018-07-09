@@ -1,0 +1,658 @@
+A Generic Toolkit for n-ary Qualitative Temporal and Spatial Calculi Jean-Francois Condotta1 Gerard Ligozat2 Mahmoud Saade1 1 CRIL-CNRS, Universite d'Artois, 62307 Lens Cedex, France 2 LIMSI-CNRS, Universite d'Orsay, 91403 Orsay, France ligozat@limsi.fr, {condotta, saade}@cril.univ-artois.fr  Abstract Temporal and spatial reasoning is a central task for numerous applications in many areas of Artificial Intelligence.
+For this task, numerous formalisms using the qualitative approach have been proposed.
+Clearly, these formalisms share a common algebraic structure.
+In this paper we propose and study a general definition of such formalisms by considering calculi based on basic relations of an arbitrary arity.
+We also describe the QAT (the Qualitative Algebra Toolkit), a JAVA constraint programming library allowing to handle constraint networks based on those qualitative calculi.
+1 Introduction Numerous qualitative constraint calculi have been developed in the past in order to represent and reason about temporal and spatial configurations.
+Representing and reasoning about spatial and temporal information is an important task in many applications, such as computer vision, geographic information systems, natural language understanding, robot navigation, temporal and spatial planning, diagnosis and genetics.
+Qualitative spatial and temporal reasoning aims to describe non-numerical relationships between spatial or temporal entities.
+Typically a qualitative calculus [1, 2, 3, 4, 5] uses some particular kind of spatial or temporal objects (e.g.
+subsets in a topological space, points on the rational line, intervals on the rational line) to represent the spatial or tem-  poral entities of the system, and focuses on a limited range of relations between these objects (such as topological relations between regions or precedence between time points).
+Each of these relations refers to a particular temporal or spatial configuration.
+For instance, in the field of qualitative reasoning about temporal data, consider the well known formalism called Allen's calculus [1].
+It uses intervals of the rational line for representing temporal entities.
+Thirteen basic relations between these intervals are used to represent the qualitative situation between temporal entities.
+An interval can be before the other one, can follow the other one, can end the other one, and so on.
+The thirteen basic relations are JEPD (jointly exhaustive and pairwise disjoint), which means that each pair of intervals satisfies exactly one basic relation.
+Constraint networks called qualitative constraint networks (QCNs) are usually used to represent the temporal or spatial information about the configuration of a specific set of entities.
+Each constraint of a QCN represents a set of acceptable qualitative configurations between some temporal or spatial entities and is defined by a set of basic relations.
+The consistency problem for QCNs consists in deciding whether a given network has instantiations satisfying the constraints.
+In order to solve it, methods based on local constraint propagation algorithms have been defined, in particular methods based on various versions of the path consistency algorithm [6, 7].
+In the literature most qualitative calculi are based on basic binary relations.
+These basic relations are always JEPD.
+Moreover, the operators of intersection, of composition and of inverse used for reasoning with these relations are always defined in a  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  similar way.
+Hence we can assert that these qualitative calculi share the same structure.
+Recently, non binary qualitative calculi have been proposed.
+The difference between binary calculi and non binary calculi resides in the fact that new operators are necessary for the non binary case, namely the operator of permutation and the operator of rotation.
+In this paper we propose and study a very general definition of a qualitative calculus.
+This definition subsumes all qualitative calculi used in the literature.
+Moreover, to our knowledge, implementations and software tools have only been developed for individual calculi.
+The QAT (Qualitative Algebra Toolkit) has been conceived as a remedy to this situation.
+Specifically, the QAT is a JAVA constraint programming library developed at CRILCNRS at the University of Artois.
+It aims to provide open and generic tools for defining and manipulating qualitative algebras and qualitative networks based on these algebras.
+This paper is organized as follows.
+In Section 2, we propose a formal definition of a qualitative calculus.
+This definition is very general and it covers formalisms based on basic relations of an arbitrary arity.
+Section 3 is devoted to qualitative constraint networks.
+After introducing the QAT library in Section 4, we conclude in Section 5.
+2 A general definition of Qualitative Calculi 2.1  Relations and fundamental operations  A qualitative calculus of arity n (with n > 1) is based on a finite set B = {B1 , .
+.
+.
+, Bk } of k relations of arity n defined on a domain D. These relations are called basic relations.
+Generally, k is a small integer and the set D is an infinite set, such as the set N of the natural numbers, the set Q of the rational numbers, the set of real numbers, or, in the case of Allen's calculus, the set of all intervals on one of these sets.
+We will denote by U the set of n-tuples on D, that is, elements of Dn .
+Moreover, given an element x belonging to U and an integer i [?]
+{1, .
+.
+.
+, n}, xi will denote the element of D corresponding to the ith component of x.
+The basic relations of B are complete and jointly exclusive, in other words, the set B must be a partition of U = Dn , hence we have:  Property 1 Bi [?
+]Bj  = [?
+], [?]
+i, j [?]
+{1, .
+.
+.
+, k} such that i = j and U = i[?
+]{1,...,k} Bi .
+Given a set B of basic relations, we define the set A as the set of all unions of the basic relations.
+ Formally, the set A is defined by A = { B : B [?]
+B}.
+In the binary case, the various qualitative calculi considered in the literature consider a particular basic relation corresponding to the identity relation on D. We generalise this by assuming that a qualitative calculus of arity n satisfies the following property: Property 2 [?]
+i, j [?]
+{1, .
+.
+.
+, n} such that i = j, Dij [?]
+A with Dij = {x [?]
+U : xi = xj }.
+Note that the relations Dij are called diagonal elements in the context of cylindric algebras [8].
+Given a non empty set E [?]
+{1, .
+.
+.
+, n} x {1, .
+.
+.
+, n} such that for all (i, j)[?]
+E we have i = j, DE will denote the relation {Dij : (i, j) [?]
+E}.
+We note that from Property 1 and Property 2 we can deduce that DE [?]
+A.
+Hence, the relation of identity on U, denoted by Idn , which corresponds to D{(i,i+1):1<=i<=n-1} , belongs to A.
+In the sequel we will see how to use the elements of A to define particular constraint networks called qualitative constraint networks.
+Several fundamental operations on A are necessary for reasoning with these constraint networks, in particular, the operation of permutation, the operation of rotation and the operation of qualitative composition also simply (and wrongly) called composition or weak composition [9, 11].
+In the context of qualitative calculi, the operations of permutation and rotation have been introduced by Isli and Cohn [5] for a formalism using ternary relations on cyclic orderings.
+These operations are unary operations which associate to each element of A a relation belonging to U.
+They can be formally defined in the following way: Definition 1 Let R [?]
+A.
+The permutation and the rotation of R, denoted by R and R respectively, are defined as follows: * R = {(x1 , .
+.
+.
+, xn-2 , xn , xn-1 ) (x1 , .
+.
+.
+, xn ) [?]
+R} (Permutation),  * R = {(x2 , .
+.
+.
+, xn , x1 ) : (x1 , .
+.
+.
+, xn ) [?]
+R} (Rotation).
+Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  :  In the binary case, these operations coincide and correspond to the operation of converse.
+To our knowledge, all binary qualitative calculi satisfy the property that the converse relation of any basic relation is a basic relation.
+A similar property is required in the general case: Property 3 For each relation Bi [?]
+B we have  B i [?]
+B and Bi [?]
+B.
+These operations satisfy the following properties: Proposition 1 Let R [?]
+A.
+ * R =  {B  : B [?]
+B and B [?]
+R} and R = {B  : B [?]
+B and B [?]
+R}.
+For binary relations, the operation of composition is a binary operation which associates to two relations R1 and R2 the relation *(R1 , R2 ) = {(x1 , x2 ) : [?
+]u [?]
+D with (x1 , u) [?]
+R1 and (u, x2 ) [?]
+R2 }.
+For several qualitative calculi of arity n = 2 the composition of two relations R1 , R2 [?]
+A is not necessarily a relation of A (consider for example the interval algebra on the intervals defined on the integers).
+A weaker notion of composition is used.
+This operation, denoted in the sequel by  , and called qualitative composition, is by definition the smallest relation (w.r.t.
+inclusion) of A containing all the elements of the  bona fide composition :  (R1 , R2 ) = {R [?]
+A : *(R1 , R2 ) [?]
+R}.
+For an arbitrary arity n, composition and qualitative composition can be defined in the following way: Definition 2 Let R1 , .
+.
+.
+, Rn [?]
+A.
+* *( R1 , .
+.
+.
+, Rn ) = {( x1 , .
+.
+.
+, xn ) : [?
+]u [?]
+..., xn-1 , u) [?]
+D, ( x1 , (x1 , .
+.
+.
+, xn-2 , u, xn ) [?]
+R1 , R2 , .
+.
+.
+, (u, x2 , .
+.
+.
+, xn ) [?]
+Rn },  {R [?]
+A : *  (R1 , .
+.
+.
+, Rn ) = *(R1 , .
+.
+.
+, Rn ) [?]
+R}.
+Note that we use the usual definition of the polyadic composition for the operation *.
+Both operations are characterized by their restrictions to the basic relations of B.
+Indeed, we have the following properties: Proposition 2 Let R1 , .
+.
+.
+, Rn [?]
+A.
+* *(R1 , .
+.
+.
+, Rn ) = [?
+]{*(A1 , .
+.
+.
+, An ) : A1 [?]
+B, .
+.
+.
+, An [?]
+B and A1 [?]
+R1 , .
+.
+.
+, An [?]
+Rn };  *  (R1 , .
+.
+.
+, Rn ) = [?
+]{ (A1 , .
+.
+.
+, An ) : A1 [?]
+B, .
+.
+.
+, An [?]
+B and A1 [?]
+R1 , .
+.
+.
+, An [?]
+Rn }.
+Another way to define the qualitative composition is given by the following proposition: , Rn [?]
+A.
+Proposition 3 Let R1 , .
+.
+.
+ = {A [?]
+B :  (R1 , .
+.
+.
+, Rn ) [?]
+D, [?
+]A1 , .
+.
+.
+, An [?]
+[?
+]x1 , .
+.
+.
+, xn , u B with (x1 , .
+.
+.
+, xn ) [?]
+A, (x1 , .
+.
+.
+, xn-1 , u) [?]
+[?]
+A1 , (x1 , .
+.
+.
+, xn-2 , u, xn ) A2 , .
+.
+.
+, (u, x2 , .
+.
+.
+, xn ) [?]
+An , A1 [?]
+R1 , .
+.
+.
+, An [?]
+Rn }.
+Hence, tables giving the qualitative composition, the rotation and the permutation of basic relations can be used for computing efficiently these operations for arbitrary relations of A.
+Finally, we have the following properties, which generalize the usual relationship of composition with respect to converse in the binary case: Proposition 4 Let R1 , .
+.
+.
+, Rn [?]
+A and OP [?]
+{*,  }.
+* OP([?
+], R2 , .
+.
+.
+, Rn ) = [?]
+; * OP(R1 , .
+.
+.
+, Rn )  ); OP(Rn , R1 , R2 , .
+.
+.
+, Rn-1  =  * OP(R1 , .
+.
+.
+, Rn ) OP(R2 , R1 , , R3 .
+.
+.
+, , Rn ).
+=  2.2  An example of a qualitative calculus of arity 3: the Cyclic Point Algebra  This subsection is devoted to a qualitative calculus of arity 3 known as the Cyclic Point Algebra [5, 12].
+The entities considered by this calculus are the points on an oriented circle C. We will call these points cyclic points.
+Each cyclic point can be characterised by a rational number belonging to the interval [0, 360[.
+This number corresponds to the angle between the horizontal line going through the centre of C. Hence, for this calculus, D is the set of the rational numbers {q [?]
+Q : 0 <= q < 360}.
+In the sequel we assimilate a cyclic point to the rational number representing it.
+Given two cyclic points x, y [?]
+D, [[x, y]] will denote the set of values of D corresponding to the cyclic points met between x and y when travelling on the circle counter-clockwise.
+The basic relations  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  '$ ys + sx s z&% Babc (x,y,z)  '$ ys + sz s x&% Bacb (x,y,z)  '$ zs + x sy  x'$ s + y sz  '$ ys + z sx  &% Bbaa (x,y,z)  &% Baba (x,y,z)  '$ + x sy z &% Baaa (x,y,z)  &% Baab (x,y,z)  Figure 1.
+The 6 basic relations of the Cyclic Point Algebra.
+R1 R2 R3  (R1 , R2 , R3 )  Baaa Baaa Baaa {Baaa }  Baaa Baab Baab {Baab }  Baab Baba Bbaa {Baaa }  Baab Babc Bacb {Baab }  Baab Bbaa Baba {Baab }  Baab Bacb Babc {Baab }  Baba Baab Babc {Babc }  Babc Babc Bacb {Babc }  Table 1.
+The qualitative composition of the Cyclic Point Algebra a a a  Baaa Baaa Baaa  Baab Baba Baba  Baba Baab Bbaa  Bbaa Bbaa Baab  Babc Bacb Babc  Bacb Babc Bacb  Table 2.
+The permutation and the permutation operation of the Cyclic Point Algebra of the Cyclic Point Algebra is the set of the 6 relations {Babc , Bacb , Baab , Bbaa , Baba , Baaa } defined in the following way: Babc = {(x, y, z) [?]
+D3 : x = y, x = z, y = z and y [?]
+[[x, z]]}, Bacb = {(x, y, z) [?]
+D3 : x = y, x = z, y = z and z [?]
+[[x, y]]}, Baab = {(x, x, y) [?]
+D3 : x = y}, Bbaa = {(y, x, x) [?]
+D3 : x = y}, Baba = {(x, y, x) [?]
+D3 : x = y}, Baaa = {(x, x, x) [?]
+D3 }.
+These 6 relations are shown in Figure 1.
+Based on theses basic relations, we get a set A containing 64 relations.
+Note that for these basic relations the operation of composition and the operation of qualitative composition are the same operations.
+Table 1 gives the qualitative composition of a subset of the basic relations.
+Using Proposition 2, we can compute other qualitative compositions which are not given in this table.
+For example,  (Baab , Bacb , Babc ) =  (Baab , Babc , Bacb ) = {Baab }.
+Actually, the table provides a way of  computing any composition of basic relations, since all qualitative compositions which cannot be deduced from it in that way yield the empty relation.
+This is the case for example of the qualitative composition of Baaa with Babc , which is the empty relation.
+3 Qualitative Constraint Networks 3.1  Basic notions  Typically, qualitative constraint networks (QCNs in short) are used to express information on a spatial or temporal situation.
+Each constraint of a constraint network represents a set of acceptable qualitative configurations between some temporal or spatial entities and is defined by a set of basic relations.
+Formally, a QCN is defined in the following way:  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  Definition 3 A QCN is a pair N = (V, C) where:  * C(v2 , .
+.
+.
+, vn , v1 ) = C(v1 , .
+.
+.
+, vn ) ,  fi * V is a finite set of l variables {v0fi , .
+.
+.
+, vl-1 } (where l is a positive integer);  * C(v1 , .
+.
+.
+, vn-2 , vn , vn-1 ) C(v1 , .
+.
+.
+, vn ) ,  * C is a map which to each tuple (v0 , .
+.
+.
+, vn-1 ) of V n associates a subset C(v0 , .
+.
+.
+, vn-1 ) of the set of basic relations: C(v0 , .
+.
+.
+, vn-1 ) [?]
+B.
+C(v0 , .
+.
+.
+, vn-1 ) are the set of those basic relations allowed between the variables v0 ,.
+.
+.
+,vn-1 .
+Hence, C(v0 , .
+.
+.
+, vn-1 ) represents the relation of A corresponding to the union of the basic relations belonging to it.
+* C(v1 , .
+.
+.
+, vi , .
+.
+.
+, vj , .
+.
+.
+, vn ) [?]
+Dij , [?]
+i, j [?]
+{1, .
+.
+.
+, n} such that i = j and vi = vj .
+We use the following definitions in the sequel: Definition 4 Let N = (V, C) be a QCN with V = fi }.
+{v0fi , .
+.
+.
+, vl-1 * A partial instantiation of N on V fi [?]
+V is a map a of V fi on D. Such a partial instantiation is consistent if and only if (a(v0 ), .
+.
+.
+, a(vn-1 )) [?]
+C(v0 , .
+.
+.
+, vn-1 ), for all v0 , .
+.
+.
+, vn-1 [?]
+V fi .
+* A solution of N is a consistent partial instantiation on V .
+N is consistent if and only if it has a solution.
+* An atomic QCN is a QCN whose every constraint is defined by just one basic relation of B.
+* A scenario on a set of variables V fi is an atomic QCN whose variables are the set V fi .
+A consistent scenario of N is a scenario that admits a solution of N as a solution.
+* A QCN N fi = (V fi , C fi ) is equivalent to N if and only if V = V fi and both networks N and N fi have the same solutions.
+* A sub-QCN of a QCN N = (V, C) is a QCN N fi = (V, C fi ) where: C fi (v0 , .
+.
+.
+, vn-1 ) [?]
+C(v0 , .
+.
+.
+, vn-1 ) for all v0 , .
+.
+.
+, vn-1 [?]
+V .
+Moreover we introduce the definition of normalized QCNs which intuitively correspond to QCNs containing compatible constraints w.r.t.
+the fundamental operations of rotation and permutation.
+Definition 5 Let N be a QCN.
+Then N is normalized iff:  Given any QCN, it is easy to transform it into an equivalent QCN which is normalized.
+Hence we will assume that all QCNs considered in the sequel are normalized.
+Given a QCN N , the problems usually considered are the following: determining whether N is consistent, finding a solution, or all solutions, of N , and computing the smallest QCN equivalent to N .
+These problems are generally NP-complete problems.
+In order to solve them, various methods based on local constraint propagation algorithms have been defined, in particular the method which is based on the algorithms of path consistency [6, 7] which we will refer to as the  -closure method.
+3.2  The  -closure method  This subsection is devoted to the topic of  closed QCNs.
+These QCNs are defined in the following way: Definition 6 Let N = (V, C) be a QCN.
+Then N is  -closed iff [?]
+(C(v1 , .
+.
+.
+, vn-1 , vn+1 ), C(v1 , .
+.
+.
+, vn ) C(v1 , .
+.
+.
+, vn-2 , vn+1 , vn ), .
+.
+.
+, C(v1 , vn+1 , v3 , .
+.
+.
+, vn ), C(vn+1 , v2 , .
+.
+.
+, vn )), [?
+]v1 , .
+.
+.
+, vn , vn+1 [?]
+V .
+For qualitative calculus of arity two this property is sometimes called the path-consistency property or the 3-consistency property, wrongly since qualitative composition is in general weaker than composition (see [13] for a discussion to this subject).
+In the binary case, the usual local constraint propagation algorithms PC1 and PC2 [6, 7] have been adapted to the qualitative case for computing a sub-QCN which is  -closed and equivalent to a given QCN.
+As an extension of PC - 1 to the n-ary case we define the algorithm PC1n (see Algorithm 1).
+In brief, this algorithm iterates an operation (line 7-8) which suppresses non possible basic relations from the constraints using weak  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  =  Algorithm 1 PC1n Compute the closure of a QCN N = (V, C) 1: Do 2: N fi := N 3: For each vn+1 [?]
+V Do 4: For each v1 [?]
+V Do 5: ... 6: For each vn [?]
+V Do 7: C(v1 , .
+.
+.
+, vn ) := C(v1 , .
+.
+.
+, vn )[?]
+8:  (C(v1 , .
+.
+.
+, vn-1 , vn+1 ), C(v1 , .
+.
+.
+, vn-2 , 9: vn+1 , vn ), .
+.
+.
+, C(vn+1 , v2 , .
+.
+.
+, vn )) 10: Until (N == N fi ) 11: return N composition and intersection.
+This operation is repeated until a fixpoint is reached.
+It can be easily checked that the QCN output by PC1n is  closed and equivalent to the initial QCN used as input.
+The time complexity of Algorithm PC1n is O(|V |(n+1) ) where |V | is the number of variables of the QCN and n the arity of the calculus.
+We can prove the following properties: Proposition 5 Applying the algorithm PC1n to a normalized QCN N yields a QCN which is normalized,  -closed, and equivalent to N .
+In the binary case, a  -closed QCN is not always 3consistent but it is (0, 3)-consistent, which means, respectively, that we cannot always extend a partial solution on two variables to three variables, but that we know that all sub-QCNs on three variables are consistent.
+This last property can be extended to the n-ary case: Proposition 6 Let N = (V, C) be a QCN.
+If N is  -closed then it is (0, n)-consistent.
+Note that in the same manner, we can extend PC2 to the n-ary case and prove similar results.
+3.3  Associating a binary qualitative calculus to a qualitative calculus of arity n  Consider a qualitative calculus of arity n. There is actually a standard procedure for associating a binary calculus to it.
+Moreover, if a QCN is defined on the n-ary calculus, it can be represented by QCN in the associated binary calculus.
+We now proceed to sketch this procedure.
+Consider a qualitative calculus with a set of basic relations B = {B1 , .
+.
+.
+, Bk } of arity n defined on D. We  associate to it a qualitative formalism with a set of basic relations B fi = {Bfi1 , .
+.
+.
+, Bfik } of arity 2 defined on a domain Dfi in the following way: * Dfi is the set Dn = U.
+Hence, each relation of B fi is a subset of U fi = Dfi x Dfi = Dn x Dn = U x U.
+[?]
+B, with * For each relation Bi 1 <= i <= k, a basic relation Bfii is inBfii is defined by the troduced in B fi .
+: relation {((x1 , .
+.
+.
+, xn ), (x1 , .
+.
+.
+, xn )) (x1 , .
+.
+.
+, xn ) [?]
+Bi }.
+Note that the set of relations BPfi = {Bfi1 , .
+.
+.
+, Bfik } forms a partition of the relation of identity of Dfi which we will denote by Dfi12 .
+* For all i, j [?]
+{1, .
+.
+.
+, n} we define the relation Eij by: Eij = {((x1 , .
+.
+.
+, xn ), (xfi1 , .
+.
+.
+, xfin )) [?]
+U fi : xi = xfij } \ Dfi12 .
+E0 = {Eij : i, j [?]
+{1, .
+.
+.
+, n}}.
+Em with m > 0 is inductively defined by Em = {R1 [?]
+R2 , R1 \ (R1 [?]
+R2 ), R2 \ (R1 [?]
+R2 ) : R1 , R2 [?]
+Em-1 }.
+ Let mfi the smallest integer such that Em =   Em +1 .
+BEfi = {R [?]
+Em such that R =  [?]
+and Rfi = [?]
+[?]
+E m with Rfi [?]
+R}.
+The fi set of relations of BE are added to the set B fi .
+* Let F be the binary relation on Dfi defined by F = U fi \ (Eij [?]
+BPfi ).
+We add F to B fi .
+Hence the final set of basic relations is the set B fi = BPfi [?]
+BEfi [?]
+{F}.
+The reader can check that B fi satisfies properties 1, 2 and 3 and hence defines a qualitative calculus of arity 2.
+Now, consider a QCN N = (V, C) defined on B.
+Let us define an equivalent QCN N fi = (V fi , C fi ) on B fi : * To define V fi , for each n-tuples of n variables (v1 , .
+.
+.
+, vn ) of V we introduce a varifi in B fi .
+able v{v 1 ,...,vn } fi belong* Given a variable v fi = v{v 1 ,...,vn } fi fi fi fi ing to V we define C (v , v ) by the relation {Bfii : Bi [?]
+C(v1 , .
+.
+.
+, vn )}.
+fi * Given two distinct variables vifi = v{v i i 1 ,...,vn } fi fi and vj = v{vj ,...,vj } belonging to V fi , 1  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  n  C fi (vifi , vjfi ) is the relation E defined in the following way: let g the set of pairs of integer  defined by {(k, l) [?]
+N x N : vki = vlj }.
+E is precisely the set of basic relations of B fi (more  of BEfi ) defined as the relation (k,l)[?
+]g Ekl .
+The reader can check that N is a consistent QCN iff N fi is a consistent QCN.
+This construction is inspired by the technique called dual encoding [10] used in the domain of discrete CSPs to convert nary constraints into binary constraints.
+4 The Qualitative Algebra Toolkit (QAT) Clearly, all existing qualitative calculi share the same structure, but, to our knowledge, implementations and software tools have only been developed for individual calculi.
+The QAT (Qualitative Algebra Toolkit) has been conceived as a remedy to this situation.
+Specifically, the QAT is a JAVA constraint programming library developed at CRIL-CNRS at the University of Artois.
+It aims to provide open and generic tools for defining and manipulating qualitative algebras and qualitative networks based on these algebras.
+The core of QAT contains three main packages.
+In the sequel of this section we are going to present each of those packages.
+The Algebra package is devoted to the algebraic aspects of the qualitative calculi.
+While programs proposed in the literature for using qualitative formalisms are ad hoc implementations for a specific algebra and for specific solving methods, the QAT allows the user to define arbitrary qualitative algebras (including non-binary algebras) using a simple XML file.
+This XML file, which respects a specific DTD, contains the definitions of the different elements forming the algebraic structure of the qualitative calculus: the set of basic relations, the diagonal elements, the table of rotation, the table of permutation and the table of qualitative composition.
+We defined this XML file for many qualitative calculi of the literature: the interval algebra [1], the point algebra [14], the cyclic point algebra [15], the cyclic interval algebra [16], the rectangle algebra [17], the INDU algebra [4], the multidimensional algebra [18], the RCC-5 algebra [2], the RCC-8 algebra [2], the cardinal direction algebra [3]).
+Tools allowing to define a qualitative algebra as the Cartesian Product of other qualitative algebras are also available.
+The QCN package contains tools for defining  and manipulating qualitative constraint networks on any qualitative algebra.
+As for the algebraic structure, a specific DTD allows the use of XML files for specifying QCNs.
+The XML file lists the variables and relations defining the qualitative constraints.
+Functionalities are provided for accessing and modifying the variables of a QCN, its constraints and the basic relations they contain.
+Part of the QCN package is devoted to the generation of random instances of QCNs.
+A large amount of the research about qualitative calculi consists in the elaboration of new algorithms to solve QCNs.
+The efficiency of these algorithms must be validated by experimentations on instances of QCNs.
+Unfortunately, in the general case there does not exist instances provided by real world problems.
+Hence, the generation of random instances is a necessary task [19].
+The QCN package of the QAT provides generic models allowing to generate random instances of QCNs for any qualitative calculus.
+The Solver package contains numerous methods to solve the main problems of interest when dealing with qualitative constraint networks, namely the consistency problem, the problem of finding one or all solutions, and the minimal network problem.
+All these methods are generic and can be applied to QCNs based on arbitrary qualitative calculi.
+They make use of the algebraic aspect of the calculus without considering the semantics of the basic relations.
+In other words, they make abstraction of the definitions of the basic relations and only uniquely manipulate the symbols corresponding to these relations.
+Nevertheless, by using the object-oriented concept, it is very easy to particularize a solving method to a specific qualitative algebra or a particular kind of relations.
+We implemented most of the usual solving methods, such as the standard generate and test methods, search methods based on backtrack and forward checking, and constraint local propagation methods.
+The user can configure these different methods by choosing among a range of heuristics.
+These heuristics are related to the choice of the variables or the constraints to be scanned, of the basic relations in a constraint during a search.
+The order in which the constraints are selected and the order in which the basic relations of the selected constraint are examined can greatly affect the performance of a backtracking algorithm [19].
+The idea behind  Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  vi  vj  vijk  vijk  {Baab, Babc}  vk    {Baab , Babc }   vlim  E12  Figure 2.
+Converting a ternary constraint Cijk of the cyclic point algebra into a binary fi fi and vlim for distinct constraint (left).
+Expressing a structural constraint between vijk integers i, j, k, l, m (right).
+constraint ordering heuristics is to first instantiate the more restrictive constraints first.
+The idea behind value ordering basic relations is to order the basic relations of the constraints so that the value that most likely leads to a solution is the first one to be selected.
+The QAT allows the user to implement new heuristics based on existing heuristics.
+As for local constraint propagation methods, whereas in discrete CSPs arc consistency is widely used [20], path consistency is the most efficient and most frequently used kind of local consistency in the domain of the qualitative constraints.
+More exactly, the methods used are based on local constraint propagation based on qualitative composition, in the manner of the PC1n algorithm described in the previous section.
+In addition to PC1n , we have extended and implemented algorithms based on PC2 [21].
+5 Conclusions We propose and study a general formal definition of qualitative calculi based on basic relations of an arbitrary arity.
+This unifying definition allows us to capture the algebraic structure of all qualitative calculi in the literature.
+The main elements of the algebraic structure are diagonal elements, and the operations of permutation, rotation and qualitative composition.
+We give a transformation allowing to build a qualitative calculus based on binary basic relations from a qualitative calculus based on arbitrary basic relations.
+The expressive powers of both calculi are simi-  lar.
+Moreover we generalize the constraint propagation method P C1 to the general case, i.e.
+for relations of any arity.
+In a second part we describe the QAT 1 (Qualitative Algebra Toolkit), a JAVA constraint programming library allowing to handle constraint networks defined on arbitrary nary qualitative calculi.
+This toolkit provides algorithms for solving the consistency problem and related problems, as well as most of the heuristics used in the domain.
+QAT is implemented using the object oriented technology.
+Hence, it is an open platform, and its functionalities are easily extendable.
+New heuristics (resp.
+methods) can be defined and tested.
+Among the tools it provides are classes allowing to generate and to use benchmarks of qualitative networks.
+Hence new heuristics or new solving algorithms can be conveniently evaluated.
+References [1] Allen, J.: An interval-based representation of temporal knowledge.
+In: Proc.
+of the Seventh International Joint Conference on Artificial Intelligence (IJCAI'81) (1981) 221-226.
+[2] Randell, D.A., Cui, Z., Cohn, A.G.: A spatial logic based on regions and connection.
+In: Proc.
+of the 3rd Int.
+Conf.
+on Principles of Knowledge Representation and Reasoning (KR'92).
+(1992) 165-176.
+1 The  documentation and the source of the QAT library can be found at http://www.cril.univ-artois.fr/~saade/QAT.
+Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE  [3] Ligozat, G.: Reasoning about cardinal directions.
+Journal of Visual Languages and Computing 1 (1998) 23-44.
+[4] Pujari, A.K., Kumari, G.V., Sattar, A.: INDU: An interval and duration network.
+In: Australian Joint Conference on Artificial Intelligence (1999) 291-303.
+[5] Isli, A., Cohn, A.G.: A new approach to cyclic ordering of 2D orientations using ternary relation algebras.
+Artificial Intelligence 122 (2000) 137-187.
+[6] Montanari, U.: Networks of constraints: Fundamental properties and application to picture processing.
+Information Sciences 7 (1974) 95-132.
+[7] Mackworth, A.K., Freuder, E.C.
+: The Complexity of Some Polynomial Network Consistency Algorithms for Constraint Satisfaction Problem.
+Artificial Intelligence 25 (1985) 65-74.
+[8] Hirsch, R. and Hodkinson, I.: Relation Algebras by Games.
+Volume 147.
+NorthHolland, Studies in Logic and the Foundations of Mathematics (2002).
+[9] Balbiani, P., Condotta, J.F., Ligozat, G.: On the consistency problem for the INDU calculus.
+In: Proceedings of TIME'2003 (2003) 203-211.
+[10] Bacchus, F., van Beek P.: On the conversion between non-binary and binary constraint satisfaction problems.
+In: Proceedings of the 15th National Conference on Artificial Intelligence (AAAI'98) (1998) 311- 318.
+[11] Ligozat, G., Renz, J.: What is a qualitative calculus?
+a general framework.
+In: Proceedings of the Pacific Rim International Conference on Artificial Intelligence (PRICAI) (2004).
+[12] Balbiani, P., Condotta, J.F., Ligozat, G.: Reasoning about cyclic space: Axiomatic and computational aspects.
+In: Proceedings of Spatial Cognition 2003, LNCS 2685 (2003) 348-371.
+[13] Renz, J., Ligozat, G.: Weak composition for qualitative spatial and temporal reasoning.
+In: Proceedings of the Eleventh International Conference on Principles and Practice of Constraint Programming (CP'05) (2005).
+[14] Vilain, M., Kautz, H.: Constraint Propagation Algorithms for Temporal Reasoning.
+In: Proc.
+of the Fifth Nat.
+Conf.
+on Art.
+Int.
+(AAAI'86) (1986) 377-382.
+[15] Balbiani, P., Ligozat, G., Condotta, J.F.
+: Reasoning about cyclic space: axiomatic and computational aspects.
+In: Proceedings of Spatial Cognition 2003 (2003).
+[16] Balbiani, P., , Osmani, A.: A model for reasoning about topologic relations between cyclic intervals.
+In: Proceedings of the Seventh International Conference on Principles of Knowledge Representation and Reasoning (KR'00) (2000).
+[17] Balbiani, P., Condotta, J.F., Farinas del Cerro, L.: A new tractable subclass of the rectangle algebra.
+In Dean, T., ed.
+: Proceedings of the Sixteenth International Joint Conference on Artificial Intelligence (IJCAI'99).
+(1999) 442-447.
+[18] Balbiani, P., Condotta, J.F., Farinas del Cerro, L.: Spatial reasoning about points in a multidimensional setting.
+In: Proceedings of the workshop on temporal and spatial reasoning (IJCAI'99).
+(1999) 105-113.
+[19] van Beek, P., Manchak, D.W.: The design and experimental analysis of algorithms for temporal reasoning.
+Journal of Artificial Intelligence Research 4 (1996) 1-18.
+[20] Apt, K.R.
+: Principles of Constraint Programming.
+Cambridge University Press (2003).
+[21] Bessiere, C.: A Simple Way to Improve Path Consistency Processing in Interval Algebra Networks.
+In: Proceedings of the Thirteenth National Conference on Artificial Intelligence (AAAI'96), Volume 1, (1996) 375-380.
+Proceedings of the Thirteenth International Symposium on Temporal Representation and Reasoning (TIME'06) 1530-1311/06 $20.00 (c) 2006  IEEE

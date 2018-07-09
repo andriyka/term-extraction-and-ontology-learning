@@ -1,0 +1,563 @@
+2010 17th International Symposium on Temporal Representation and Reasoning  CTL-Like Fragments of a Temporal Logic of Robustness John C. Mc Cabe-Dansted School of Computer Science & Software Engineering The University of Western Australia Perth, Australia Email: john@csse.uwa.edu.au  The tableau for a bundled variant of RoCTL* presented in [5] is also non-elementary.
+We therefore study CTLlike restrictions, termed Pair-RoCTL (RoCTLP ) and StateRoCTL (RoCTLS ) which may be both useful in expressing systems and more efficient to decide than RoCTL* .
+CTL [6] is a fragment of the logic CTL* where every path operator is paired with a temporal operators, the complexity of satisfiability is known to be EXPTIME-complete [7] and has a number of decision procedures (e.g.
+[7], [8], [9]).
+RoCTLP can express any statement that can be expressed in CTL, and can additionally use a robustly or obligatory operator (or their duals) in place of the all paths or some paths operators.
+RoCTLS requires the robustly/prone operators to be in the scope of a CTL path operator or obligatory operator and RoCTLS formulae are therefore state formulae.
+We provide a linear translation of CTL* into RoCTLP .
+This shows that the complexity of satisfiability of RoCTLP is at least as hard as CTL* (double EXPTIME-complete [10], [11]).
+However, we can provide a linear translation from RoCTLS into CTL showing that the complexity of satisfiability for RoCTLS is EXPTIME-complete (and modelchecking is P-complete [12]).
+Further, via this translation using implemented theorem provers for CTL, for example [13], [9] we obtain tools for deciding RoCTLS formulae.
+This paper is structured as follows.
+In Section II we present the syntax and semantics of RoCTL* and the logics CTL* and CTL.
+In Section III we define RoCTLP and show that there is an efficient satisfiability-preserving translation from CTL* into RoCTLP .
+In Section IV we define RoCTLS and provide a translation from RoCTLS into CTL.
+In Section V we provide an example of a problem in RoCTLS and, via the translation into CTL, apply a CTL prover to this problem.
+We provide concluding remarks and mention related work in Section VI.
+Abstract--The logic RoCTL* is an extension of the branching time temporal logic CTL* to represent robustness of systems to transient failures such as loss of data packets.
+New operators are introduced dealing with obligation (where no failures occur) and robustness (where at most one additional failure occurs).
+The only known decision procedures for the temporal logic of robustness RoCTL* are non-elementary.
+Here we propose two CTL-like restrictions of RoCTL*, Pair-RoCTL and State-RoCTL.
+We investigate whether it is possible to translate these fragments into CTL showing whilst this is not in general possible for Pair-RoCTL it is for State-RoCTL.
+We obtain a satisfiability preserving translation for StateRoCTL into CTL showing that the complexity of satisfiability of State-RoCTL is EXPTIME-complete.
+We also show that these fragments of RoCTL* are useful in specifying systems.
+I. I NTRODUCTION *  The RoCTL logic [1] is an extension of the branchingtime temporal logic CTL* [2].
+It was introduced to represent issues relating to robustness and reliability in systems.
+It does this by explicitly representing success and failure relations in the underlying model structures and using these to define an obligatory operator and a robustly operator.
+The obligatory operator specifies how the systems should behave by quantifying over paths in which no failures occur.
+The robustly operator specifies that something must be true on the current path and on all paths that deviate from the current path that have at most one more failure than the current path.
+This notation allows phrases such as "even with n additional failures" to be built up by chaining n simple unary operators together.
+One of the strengths of RoCTL* is its ability to express contrary-to-duty [3] obligations, which can be difficult for some other Deontic logics.
+Unfortunately the only known decision procedures for RoCTL* are non-elementary to decide.
+We can reduce RoCTL* to QCTL* [1], which is non-elementary to decide.
+We can also translate RoCTL* into CTL* [4], but it is known that no truth preserving translation into CTL* or treeautomata can be elementary in the length of the formula [4], closing down what was the most promising avenue for finding an elementary decision procedure for RoCTL*.
+II.
+RO CTL* AND CTL* Here we introduce the logics RoCTL* and CTL* and provide their syntax and semantics.
+A. RoCTL*  This Project is supported by the Australian Government's International Science Linkages program and the University of Western Australia's Convocation Postgraduate Research Travel Award  1530-1311/10 $26.00 (c) 2010 IEEE DOI 10.1109/TIME.2010.7  Clare Dixon Department of Computer Science University of Liverpool Liverpool, UK Email: cldixon@liverpool.ac.uk  First we introduce the syntax and semantics of RoCTL* .
+This follows the presentation in [1].
+The underlying models 11  A CTL* structure, M , is a 3-tuple (S, R, L) such that S is a set of states; R is a serial ([?]x[?
+]y: xRy) binary relation on S; L is a valuation (a map from S to the powerset of propositional variables).
+A fullpath is an infinite sequence of states s = hw0 , w1 , w2 , .
+.
+.i such that for all i > 0 (wi , wi+1 ) [?]
+R. Let s>i be the fullpath wi , wi+1 , .
+.
+., let si be wi and s6i be w0 , .
+.
+.
+wi .
+of RoCTL* have two types of relations between states, success and failure relations.
+The failure transition generally represents some undesired and hopefully unlikely event which we wish to handle gracefully.
+For example, when modelling network protocols, a failure transition may represent a packet sent being lost or corrupted.
+In this case we may wish to prove that a single or small number of such failures do not cause the failure of an application using this data.
+For a more detailed example of modelling failures in RoCTL*, see the examples in Section V and [12].
+RoCTL* extends CTL* by adding the following path operators: Oph (obligatory): a deontic operator, denoting that ph holds on every failure-free path; Pph (permissible): a deontic operator, denoting that ph holds on some failure free path; Nph (robust): denoting that ph holds on the current path and on any path that differs from this path by a single deviating event; 4ph (prone): denoting that ph holds on the current path or on a path that differs from this path by a single deviating event; to the CTL* path operators: Aph (all paths): denoting that ph holds on every path; and Eph (some path): denoting that ph holds on some path.
+To better understand the meaning of N (and 4) consider a branching tree of possible future states joined by failure transitions and success transitions.
+Given a path s, a path p which differs from s by a single deviating event means that p follows s initially to some state si .
+At si a transition which may be a failure or a success transition is taken to some state s0i (possibly not on s) i.e.
+the path deviates or diverges here from s. After this point all the transitions on p must be success transitions.
+Since there is only one failure in p not in s there is at most one more failure in p than s and so N can be read as "even if an additional failure occurs".
+We can combine O and N to quantify over paths with a fixed number of errors.
+For example, the statement ONNph, indicates that all paths with a total of two or less failure transitions satisfy ph.
+to the CTL* path operators: Aph (all paths): denoting that ph holds on every path; and Eph (some path): denoting that ph holds on some path.
+Formulae are constructed from a set PROP = {p, q, r, .
+.
+.}
+of primitive propositions.
+As well as the path operators described above, the language of RoCTL* contains true and false and the standard propositional connectives !
+(not), [?]
+(or), [?]
+(and) and = (implies).
+For the temporal dimension we take the usual [14] set of future-time temporal connectives g (next),  (sometime or eventually), (always), U until and W unless or weak until.
+In the following some of these operators will be introduced as abbreviations.
+The set of well-formed formulae of RoCTL* , WFFR , is defined as follows: * false and any element of PROP is in WFF R ; * if ph and ps are in WFF and H [?]
+{A, O, N} then the following are in WFFR : !ph; ph [?]
+ps; Hph; gph; ph U ps.
+Definition 1.
+We introduce a special proposition v to indicate that the last transition was a failure1 .
+A fullpath is failure-free if and only if for all i >= 1 we have v [?]
+/ L(wi ).
+Let ap(w) be the set of fullpaths in M starting at state w and sp(w) be the set of all failure-free fullpaths in M starting with w. Definition 2.
+For two fullpaths s and p, p is an i-deviation from s if and only if s6i = p6i and p>i+1 [?]
+sp(pi+1 ).
+p is a deviation from s if there exists a non-negative integer i such that, p is an i-deviation from s. For a fullpath s, we let dp(s) be the set of fullpaths which are deviations from s. We call a CTL* structure a RoCTL* structure iff sp(w) is non-empty for all w [?]
+S. The semantics of RoCTL* formulae are defined on a fullpath s = hw0 , w1 , .
+.
+.i in a RoCTL* structure M as follows.
+Recall si = wi so s0 = w0 .
+M, s |= gph iff M, s>1 |= ph M, s |= ph U ps  iff  M, s |= Aph M, s |= Oph M, s |= Nph  iff iff iff  [?
+]i [?]
+N s.t.
+M, s>i |= ps and [?
+]j [?]
+N s.t.
+j < i, M, s>j |= ph [?
+]p [?]
+ap(s0 ) M, p |= ph [?
+]p [?]
+sp(s0 ) M, p |= ph [?
+]p [?]
+dp(s) M, p |= ph and M, s |= ph  The definitions for propositions, and Boolean operators are as we would expect from classical logic.
+The semantics of other operators can be derived via equivalent formulae where Eph [?]
+!A!ph, Pph [?]
+!O!ph, 4ph [?]
+!N!ph, ph [?]
+true U ph, ph [?]
+!
+!ph, ph W ps [?]
+ph U ps [?]
+ph.
+B. CTL* and CTL Well formed formulae of CTL* [2] are constructed from the same elements as RoCTL* but without the operators O, P, N and 4.
+The set of well-formed formulae of CTL* , WFFC , is defined as follows: * false and any element of PROP is in WFF C ; * if ph and ps are in WFF C then the following are in WFF C : !ph; ph [?]
+ps; Aph gph; ph U ps.
+CTL* formulae are evaluated over CTL* structures and do not have the O or N operator, otherwise the semantics 1 The original definition of RoCTL* had two accessibility relations, a success and a failure relation.
+Here we find the definition of [15], which defines RoCTL* structures as special CTL* structures, more convenient.
+These definitions are known to be equivalent [12].
+12  of CTL* are the same as the semantics for RoCTL* defined above.
+State formulae are defined as follows:* false and any element of PROP are state formulae; * If ph and ps are state formulae and th is any wellformed CTL* formula then the following are also state formulae: !ph; ph [?]
+ps; Ath; Eth; CTL [6] is the fragment of CTL* such that every path operator is paired with a temporal operators.
+* false and any element of PROP is in WFF CT L ; * if ph and ps are in WFF CT L then the following are in WFFCT L : !ph; ph [?]
+ps; Aph U ps; Eph U ps; E gph where the other pairs of operators can be defined through standard equivalences, see for example [6].
+will use to define a translation function t such that t (ph) is satisfiable iff ph is satisfiable.
+The formula kf ensures that the f variable remains false once it becomes false, that f is only true if the last transition was a failure transition and that the subset of the states S that satisfy f true is serial.
+kf = A (!f = A g!f )[?]
+A O g!f [?]
+A (f = E gf ).
+The formula ty (ph), defined below, is used to encode the state-formulae of ph into variables.
+It ensures that each variable of the form yAps is only true at those states that satisfy Aps.
+Likewise each variable of the form yEps is only true at those states that satisfy Eps.
+V ty (ph) = A ((yAps [?]
+(4 f )) = t1 (ps)) [?]
+Aps<=ph V (yEps = E gprev (t1 (ps))) .
+Eps<=ph A  C. Terminology and Notation We say that a RoCTL* (CTL* ) formula ph is satisfiable if and only if for some RoCTL* (CTL* ) structure M and some path s, M, s |= ph.
+Given two formulae ph and ps if ph is a subformula of ps we denote this as ph [?]
+sub(ps).
+The length of any formula ph, denoted |ph| is the number of occurrences of symbols other than "(" and ")" in ph.
+If ph is a formula, let ph[ps/p] be ph with every occurrence of ps replaced with p. A formula in Negated Normal Form contains no implications and has negations occurring only in front of propositions.
+We now define the function prev from formulae to formulae with the intention that gprev (ps) == ps on all paths through our structure and all relevant formulae ps.
+prev (ps) = ps[p/p0 ]  for all p [?]
+sub(ps)  The translation above replaces each occurrence of p with p0 , relying on p0 being true exactly when p was true at the last state.
+We define the function tX below from formulae to formulae for the purpose of ensuring that this holds for each variable of the form p0 that occurs in some formula ps.
+V gp0 ) [?]
+tX (ps) = 0 [?
+]sub(ps) (p = A pV (!p = A g!p0 ) .
+0 p [?
+]sub(ps)  III.
+PAIR -RO CTL  We can now define tp , which is used to add three different types of proposition, and ensures that they are true only at the desired states.
+The formulae of RoCTLP are limited syntactically so that every path operator is paired with a temporal operator.
+The set of well-formed formulae of RoCTLP , WFFP R , is defined as follows: * false and any element of PROP is in WFF P R ; * if ph and ps are in WFF P R and H [?]
+{A, O, N} then the following are in WFFP R : !ph; ph [?]
+ps; H gph; H(ph U ps); H(ph W ps).
+Next we provide a translation from CTL* into RoCTLP .
+This shows that the complexity of satisfiability of RoCTLP is at least as hard as CTL* i.e.
+that it is harder than CTL to decide.
+We will create a new proposition f such that gf = gv and the subset of paths where f is true form a CTL* model; as f is not a special variable it can appear in RoCTLP formulae.
+Note that when we are evaluating over entirely failing paths there are no deviations as every path has an infinite number of failures, and every deviation has a failure-free suffix.
+Then 4ph [?]
+ph.
+This means that: 1) we can ensure that we are being evaluated over a fully failing path (one that satisfies f ) by use of 4 f ; 2) we can represent any temporal operator (e.g F ) in RoCTLP by prefixing it with 4 (e.g.
+F ph [?]
+4F ph).
+Let ph be a CTL* formula in negation normal form.
+We will now define kf , ty , prev, tX , t1 , and tp which we  = kf [?]
+ty (ph) [?]
+tX (ty (ph)) .
+tp (ph)  We now define the t1 translation such that t1 (ph) is satisfiable on the class of RoCTL* structures that satisfy tp (ph) iff ph is satisfiable on the class of all CTL-structures.
+t1 (Aps) t1 (Eps) t1 ( gps) t1 (ps * ph) t1 (p) t1 (!p)  = yAps [?]
+4 f = yEps [?]
+4 f = (4 gt1 (ps)) = 4[t1 (ps) * t1 (ph)], * [?]
+U , W = (p [?]
+4 f ) = (!p [?]
+4 f )  Finally we define t (ph) itself as follows: t (ph)  = *  t1 (ph) [?]
+tp (ph) .
+Translating a CTL Model into a RoCTLP Model: Given a model M = (S, R, L) for CTL* formula, we construct a RoCTL* model structure M R = S R , RR , LR from M as follows: R * We add a new "success" state s so that S = S [?]
+{s}.
+R * The accessibility relation R is the least relation that satisfies R [?]
+RR and hw, si [?]
+RR for all w [?]
+S R .
+13  The valuation LR satisfies the following: - For every proposition p in the original formula ph and w [?]
+S we have p [?]
+LR (w) iff p [?]
+L (w).
+- The failure proposition f and violation proposition v is true at every state except the success state.
+Formally, f [?]
+LR (w) iff w 6= s and v [?]
+LR (w) iff w 6= s. - For every proposition of the form yps in t1 (ph) and every state w [?]
+S, yps [?]
+LR (w) iff the formulae ps holds at the state w. We will now define a function h to add the p0 propositions into the model.
+s from p has a failure-free suffix.
+That is there exists i such that s>=i is failure-free.
+As M, w0 |= A O g!f , it is the case that M, s>=i |= O g!f , and as s>=i is failurefree, M, s>=i+1 |= !f and so M, s 6|= f .
+Hence, by contradiction, M, p |= f. As every deviation s has a failure-free suffix, M, s 6|= ((!)
+p [?]
+4 f ) and by recursion M, s 6|= t1 (ps) for any ps.
+It follows that if M, p |= 4t1 (ps) then M, p |= t1 (ps).
+*  Lemma 3.
+Let M R , s |= t1 (ps) for some path s through M R then s 6= si for any i > 0.
+Proof: For any fullpath p such that M R , p 6|= 4 f we see that for ps of the form Ath, Eth, p or !p it is the case that M R , p 6|= t1 (ps).
+If there exists an integer i such that si = s we see that M R , sj 6|= f for any j [?]
+N, and from Lemma 2 we have M R , sj 6|= 4 f .
+By induction, we see that M R , s 6|= t1 (ps), for any formulae ps.
+ Lemma 4.
+For any CTL* formula ph, h M R , p |= t (ph) iff M, p |= ph.
+Definition 3.
+We define a function h from RoCTL* structures * to RoCTL* structures such that for any RoCTL  structure h h h M = (S, R, L) we have h (M ) = S , R , L where: 1) S h = R, so every state in h (M ) is of the form (w, v) where w and v are in S (i.e.
+states of M ).
+Being in state (w, v) means roughly "we are currently at state v but were at state w previously".
+2) For any pair of states (w, v) and (x, y) in S h we have (w, v) Rh (x, y) iff x = v and (x, y) [?]
+R. 3) For all p [?]
+PROP, it is the case that p [?]
+Lh (hw, vi) == p [?]
+L (v) and p0 [?]
+h L (hw, vi) == p [?]
+L (w).
+We will use h?, wi to represent hv, wi for some arbitrary v, when we do not care about truth values of the p0 variables at this state.
+For convenience we extend the definition of h such that h (s) = h?, s0 i , hs0 , s1 i , hs1 , s2 i .
+.
+., and h (M, s) = h (M ) , h (s).
+Proof: (==) It is easy to see that for every path s through M we have M R , s |= 4 f and so for every p [?]
+PROP, it is the case that if M, s |= (!)
+p then M R , s |= ((!)
+p [?]
+4 f ).
+Thus for all formulae ps that consist of a single (possibly negated) proposition it is the R case that if M, s |=  ps then M , s |= t1 (ps) and by R Lemma 1, h M  , s |= t1 (ps).
+Assume that if M, s |= ps then h M R , s |= t1 (ps) for all ps of length less than n. Now consider the case where |ps| = n + 1.
+We provide the cases for U and E. The other cases are similar.
+ps = aU b For all s it is the case that if M, s |= a then M R , s |= t1 (a) and if M, s |= b then M R , s |= t1 (b).
+If M, s |= aU b then there exists i [?]
+N such that M, s>=i |= b and for all j [?]
+N such that j < i, M, s>=j |= a.
+Thus M R , s>=i |= t1 (b) and for all j [?]
+N such that j < i, M R , s>=j |= t1 (a).
+Thus M R , s |= t1 (a) U t1 (b), so M R , s |= 4 (t1 (a) U t1 (b)) = t1 (ps).
+ps = Ea From the construction of M R , M, s |= Ea iff M R , s |= yEa .
+As s is a path through M , it does not contain the success state and so M R , s |= f and so if M, s |= Ea then M R , s |= yEa [?]
+4 f = t1 (ps).
+So by induction that M R , s |= t1 (ph) and by Lemma 1,  R h M , s |= t1 (ph).
+Note that cases for Aa and Ea are trivial.
+However, further conditions relating to the newly introduced propositions yAa and yEa are required in the definition of ty (ph).
+Now yEps occurs exactly on those s0 where M, s |= Eps.
+Thus M R , s |= Et1 (ps) and h M R , s |= Et1 (ps), thus by Lemma 1, h M R , s |= E gprev (t1 (ps)).
+Likewise yAps occurs exactly on those s0 where M, s |= Aps, that is, for every path s 0 through M such that s00 = s0 it is the case that M, s 0 |= ps and  Lemma 1.
+For all RoCTL* structures M , fullpaths s through M and RoCTL* formulae ph (not including propositions of the form p0 ) we have M, s |= ph  == ==  h (M, s) |= ph h (M, s) |= gprev (ph) .
+Proof: From the definition of the function h. Note that it is possible to add the p0 variables without defining the function h if the model is an infinite tree.
+Here we provide the function h to allow finite models.
+Next we show that the translation preserves satisfiability.
+Without loss of generality we can assume that each structure has a state w0 such that every other state is reachable from that state, so for example M, w0 |= A p means that p is true at all states in M .
+Lemma 2.
+For any RoCTL* structure M that satisfies M, w0 |= A O g(!f ), it is the case that if M, p |= 4 f then M, p |= f and if M, p |= 4t1 (ps) then M, p |= t1 (ps) for all paths p through M and formulae ps.
+Proof: As M, p |= 4 f either M, p |= f or there exists a deviation s from p that satisfies f .
+Any deviation  14  so M R , s 0 |= t1 (ps) and M R , s 0 |= (yAph [?]
+(4 f )) = t1 (ps).
+If the path s is not through M , it contains the success state s, and so s 6|= 4 f and so again M R , s |= (yAph [?]
+(4 f )) = t1 (ps).
+R It is now easy to show  that the way M is constructed  R ensures that h M , s |= tp (ph), and since h M R , s |=  t1 (ph), it follows that h M R , s |= t (ph).
+(==) If ps = (!)
+p then t1 (ps) = ((!)
+p [?]
+4 f ).
+Clearly if M R , s |= ((!)
+p [?]
+4 f ) then M R , s |= (!)
+p and M, s |= (!)
+p = ps.
+Assume that for all paths s through M and ps with |ps| <= n, it is the case that if M R , s |= t1 (ps) then M, s |= ps.
+Now consider the case where |ps| = n + 1.
+We provide the cases for U and E. The others are similar.
+ps = aU b For all s it is the case that if M R , s |= t1 (a) then M, s |= a and if M R , s |= t1 (b) then M, s |= b.
+Let M R , s |= t1 (aU b) = 4[t1 (a)U t1 (b)] then from Lemma 2 it follows that M R , s |= t1 (a)U t1 (b) and so there exists i [?]
+N such that M, s>=i |= b and for all j < i M, s>=j |= a.
+Thus M R , s>=i |= t1 (a) and for all j < i M R , s>=j |= t1 (b).
+Thus M, s |= aU b. ps = Ea By definition, M, s |= Ea iff M R , s |= yEa = t1 (ps).
+Clearly if M R , s |= yEa [?]
+4 f then M R , s |= yEa and so M, s |= Ea.
+By Lemma 1, if h(M R , s) |= t1 (ps) then M R , s |= t1 (ps) and by induction if M R , s |= t1 (ps) then M, s |= ps for all ps so if h(M R , s) |= t1 (ps) then M, s |= ps.
+Given any CTL* structure M we can construct the RoCTL* structure M R , and so from Lemma 4 it is clear that t (ph) is satisfiable if ph is satisfiable.
+We have not yet shown that for any RoCTL* structure we can construct an equivalent CTL* structure; we will do so in Lemma 5 below and so it is clear that ph is satisfiable, then t (ph) is satisfiable.
+By combining these we get Theorem 1.
+Assume that for all paths s through M and ps with |ps| <= n for some integer n, it is the case that if M, s |= t1 (ps) then M, s |= ps.
+Now consider the case where |ps| = n + 1.
+Where ps is of the form (!)
+p, a W b, aU b or ga we see that M, s |= t1 (ps) = M, s |= ps using the same arguments made in Lemma 4.
+Now assume that ps is of the form Ath, and that M, s |= t1 (ps) = yAth [?]
+4 f .
+From ty we know that A ((yAth [?
+](4 f )) = t1 (th)).
+Consider a path p through M C such that p0 = s0 , i.e.
+p [?]
+ap(s0 ).
+We know that M C , p0 |= f as f is true at every state in M C , so likewise M, p |= f and M, p |= 4 f .
+From t1 (ph) we know that M, p |= yAth and from ty we know that A ((yAth [?]
+(4 f )) = t1 (th)), hence M, p |= t1 (th).
+Since |th| 6 n it follows that M C , p |= th, for all p [?]
+ap(s0 ).
+Thus M C , s |= Ath.
+Assume that ps is of the form Eth and M, s |= t1 (ps) = yEth [?]
+4 f .
+As M, s |= yEth , from ty we know that M, s |= E gprev(t1 (th)).
+As M, s |= tX (ty (ph)), we see that M, s |= E(t1 (th)).
+Finally, since |th| 6 n we know that M, s |= Eth.
+Theorem 1. t (ph) is satisfiable in RoCTLP iff ph is satisfiable in CTL* .
+IV.
+S TATE -RO CTL The formulae of RoCTLS are state formulae because all temporal operators and robustly or prone operators must be in the scope of either a CTL path quantifier or obligatory or permissible operator.
+To define the set of well-formed formulae of RoCTLS , WFFSR , we define both state and path formulae as follows: * false and any element of PROP is in the set of state formulae; * if a and b are state formulae and th is a path formula then the following are state formulae !a; a[?
+]b; P ga; E ga; Oth; Pth; Ath; Eth; * if a and b are state formulae and th is a path formula then the following are path formulae Nth; 4th; a U b.
+The set of well-formed formulae of RoCTLS , WFFSR , is defined as the set of state formulae.
+Note that as well as the usual abbreviations, in RoCTLS we treat N ga and 4 ga as abbreviations as follows N ga [?]
+A ga and 4 ga [?]
+E ga. Further we treat H1 .
+.
+.
+H2 ga as an abbreviation for H2 ga when a is a state formula, ".
+.
+."
+is a sequence of operators in {4, N} and H1 , H2 [?]
+{A, E, O, P}.
+In this section (as above) we use a and b to denote state formulae, th to denote path formulae and ph and ps to denote either.
+We will now define a translation from RoCTLS to CTL.
+To understand how the translation to CTL works, consider the formula 4(a U b).
+If M, s |= 4(a U b) then either M, s |= a U b or there exists an i-deviation from s, say p, such that M, p>i+1 |= a U b.
+Since p is an i-deviation p>i+1 is failure-free and so pi+1 |= P(a U b), thus the  Definition 4.
+Given a model M for an RoCTLP formula t (ph) we construct a model M C for the CTL* formula ph as follows: remove all states where f is false.
+Optionally, also remove yps , p0 and f .
+Lemma 5.
+For any RoCTL* structure M , if M, w0 |= t (ph) then M C , w0 |= ph where M C is the translation of M from the Definition 4; i.e.
+M C is M with the states that do not satisfy f removed.
+Proof: This lemma is very similar to the (=) direction of the previous lemma.
+As M |= t (ph), clearly M |= tp (ph).
+Since M |= tp (ph) we see that M, w0 |= A O g(!f ) from Lemma 2 and again it is the case that if M, p |= 4 f then M, p |= f and if M, p |= 4t1 (ps) then M, p |= t1 (ps) for all CTL* formulae ps and fullpaths p through M .
+15  state formula E gP(a U b) holds at si .
+Thus along the path s the state-formula a holds until E gP(a U b) holds together with a.
+The translation will remove 4 operators by replacing 4(a U b) with a U (b [?]
+(a [?]
+E gP(a U b))).
+The N operator is the dual of the 4, so it will be handled similarly.
+We now define a translation function t from RoCTLS state and path formulae to CTL state and path formulae respectively.
+For any variable p we let t (p) = p. For any RoCTLS state formulae a and b define t as follows: t (E ga) = E gt (a) t (P ga) = E g(t (a) [?]
+!v) t (!a) t (a [?]
+b) t (a U b) t (N(a U b)) t (4(a U b))  = = = = =  and since ph is the simplest counter example M, s 6|= (a [?]
+A gO(a U b)) U b.
+As we have chosen the simplest counter example there exists some k such that M, sk |= b and there must exist an integer i such that for all j 6 i < k we have M, sj 6|= b, and M, si 6|= (a [?]
+A gO(a U b)).
+Assume that M, si 6|= a, then we see that M, s |6 = a U b and so M, s 6|= N(a U b).
+By contradiction M, si |= a and hence M, si 6|= A gO(a U b).
+!t (a) t (a) [?]
+t (b) t (a) U t (b) t (a [?]
+A gO(a U b)) U t (b) t (a) U t (b [?]
+(a [?]
+E gP(a U b))).
+The sequence of operators A gO quantifies over exactly those fullpaths that are failure-free after the first step.
+Thus there exists an i-deviation p from s such that M, p>i 6|= ga U b and equivalently M, p>i+1 6|= a U b.
+Recall that M, sj 6|= b for all j 6 i; since b is a state-formula and s6i = p6i it follows that M, pj 6|= b.
+Combining this with the fact that M, p>i+1 6|= a U b we find that M, p 6|= a U b.
+Since p is a deviation from s we find that M, s 6|= N(a U b), which contradicts our original assumption.
+(==) Assume that M, s 6|= N(a U b) and M, s |= t (N(a U b)).
+Since M, s 6|= N(a U b) either M, s 6|= a U b or there exists a deviation p from s such that M, p 6|= a U b.
+If M, s 6|= a U b then clearly M, s 6|= (a [?]
+A gO(a U b)) U b, by contradiction there must exist an i-deviation p from s such that M, p 6|= a U b.
+Since M, s |= (a [?]
+A gO(a U b)) U b we see that there exists n such that M, sn |= b and for all m < n it is the case that M, sm |= (a [?]
+A gO(a U b)).
+For any RoCTLS path-formula th : t (Ath) t (Eth)  = At (th) = Et (th).
+Next considering the operators O and P we will first consider the case where a U b is nested directly inside the O or P operators: t (O(a U b)) t (P(a U b))  = t (b) [?]
+(t (a)[?]
+A gA(t (a) U (t (b) [?]
+v))) = t (b) [?]
+(t (a)[?]
+E gE((t (a) [?]
+!v) U (t (b) [?]
+!v)).
+We handle the case where N or 4 occur inside O or P by specifying that for all path-formulae th not of the form a U b: t (Oth) = t (Ot (th)) t (Pth) = t (Pt (th))  Assume that n 6 i.
+Since M, sm |= a for all m < n and M, sn |= b, we can see that as p6i = s6i it must also be the case that M, p |= (a U b).
+However, recall that we chose the path p such that M, p 6|= a U b.
+By contradiction we know that n > i.
+Since n > i we know that for all j 6 i it is the case that M, sj |= a and sj = pj .
+From this and the fact that M, p 6|= a U b it follows that M, p>i+1 6|= a U b.
+Since p>i+1 is failure-free we see that M, pi+1 6|= O(a U b) and  and similarly for N and 4: t (Nth) t (4th)  = t (Nt (th)) = t (4t (th)).
+Definition 5.
+We define a partial ordering < on RoCTL* formulae such that ph < ps if ph has less N (or 4) operators than ps, and ph < ps if ph and ps have the same number of N or 4 operators and |ph| < |ps|.
+Otherwise ph [?]
+ps and ps [?]
+ph.
+M, pi 6|= A gO(a U b).
+Since pi = si we also have M, si 6|= A gO(a U b).
+However, recall that  Lemma 6.
+For all ph in the domain of t we have ph [?]
+t (ph).
+Proof: Assume that ph is the simplest counter example in the sense that ph 6[?]
+t (ph) and ps [?]
+t (ps) for all ps < ph.
+Let M be some arbitrary RoCTL* structure M and s be an arbitrary path through M .
+Assume that ph is of the form N(a U b).
+(==) Assume that M, s |= N(a U b) and M, s 6|= t (N(a U b)).
+Thus  M, sm |= (a [?]
+A gO(a U b)), for all m < n. By contradiction we see that the smallest counter-example ph cannot be of the form N(a U b).
+The proof for the case where ph is of the form 4(a U b) is similar.
+Let ph be of the form 4(a U b) then recall that t (4(a U b)) = t (a) U t (b [?]
+(a [?]
+E gP(a U b))).
+M, s 6|= t (a [?]
+A gO(a U b)) U t (b)  16  A (!sX = !E grY ): If X does not send a message now, Y will not receive a message at the next step.
+A (fX = A fX ): If X commits to an attack, X cannot withdraw.
+A (fX = !sX ): If X has committed to an attack, it is too late to send messages.
+A (!fX W rX ): X cannot commit to an attack until X has received plans (from Y ) A(!rX W sY ): X cannot receive a message until Y sends one.
+Similar constraints to the above also apply to Y .
+Below we add a constraint requiring X to be the general planning the attack.
+A (!sY W rY ): General Y will not send a message until Y has received a message.
+No protocol satisfies the original coordination problem, since an unbounded number of messages can be lost.
+Here we only attempt to ensure correct behaviour if one or fewer messages are lost.
+A (sX U rX ): General X will send plans until a response is received.
+A (rX = fX ): Once general X receives a response, X will commit to an attack.
+A (!rY W (rY [?]
+(sY [?]
+A gsY [?]
+A gA gfY ))): Once general Y receives plans, Y will send two messages to X and then commit to an attack.
+Let the conjunction of the formulae in the specification above be ph.
+We want to show that both generals attack at the same time (i.e.
+a coordinated attack) will occur if no more than one message is lost, i.e.
+ON(fX [?]
+fY ).
+We can show that ph is satisfiable and that ph = ON(fX [?]
+fY ) is valid.
+We see that the above example is in RoCTLS by using the following abbreviations where ph is a state formula.
+If M, s |= 4(a U b) and M, s 6|= t (4(a U b)), then M, s 6|= a U (b [?]
+(a [?]
+E gP(a U b))), and clearly M, s 6|= a U b.
+Thus there exists an i-deviation p from s such that M, p |= a U b, for some i [?]
+N. Since M, s 6|= a U b we see that M, sj 6|= b for any j 6 i.
+Thus M, p>i+1 |= a U b, and since p>i+1 is failure-free we know that M, pi+1 |= P(a U b).
+Thus M, si |= E gP(a U b).
+Since M, p |= a U b and b is not satisfied before p deviates from s we know that for each j 6 i we have M, sj |= a.
+Hence M, s |= (a U a [?]
+E gP(a U b)) and so M, s |= t (4(a U b)).
+There are many other possible forms for ph, but we see that the translations for all of these are trivial.
+For example, consider the case where ph = Aps.
+Recall that t (Aps) = At (ps), and since ps < ph it is obvious that M, s |= At (ps)  == [?
+]p [?]
+ap(s0 )(M, p |= ps) == M, s |= Aps.
+Likewise M, s |= t (ph) == M, s |= ph for the other forms of ph.
+By contradiction the lemma holds.
+We have shown that t is a truth-preserving translation from RoCTLS to CTL.
+To produce a satisfaction preserving translation we can add the cause A E g!v, which ensures the translated formulae are only satisfied by RoCTL* structures.
+Strictly speaking the translation into CTL isn't linear.
+For example, consider t (4(a U b)) = t (a) U t (b [?]
+(a [?]
+E gP(a U b))).
+See that a and b occur several times on the RHS.
+However, since a and b are state formulae, it is well known that we can replace a and b with new propositions pa and pb and a clause requiring that A  (pa == t (a) [?]
+pb == t (b)).
+Theorem 2.
+There exists a satisfiability preserving linear translation t from RoCTLS formulae into CTL formulae.
+A ph O gph A gph Aph1 W ph2  Theorem 3.
+Like CTL [EH82], the satisfiability decision problem for RoCTLS is EXPTIME-complete.
+V. E XAMPLES  [?]
+[?]
+[?]
+[?]
+!E(true U !ph) !P g!ph !E g!ph !
+(E(!ph2 ) U (!ph1 [?]
+!ph2 ))  Whilst there is insufficient space here to present the translation of the above into CTL we have performed this translation and used a CTL theorem prover CTL-RP [9] to show that t (ph) is satisfiable and that t (ph = ON(fX [?]
+fY )) is valid.
+This required 0.7 seconds and 1.7 seconds of CPU time respectively.
+A number of examples using RoCTL* to specify problems are provided in [1].
+We reformulate one of these, the wellknown coordinated attack problem in RoCTLS .
+In the coordinated attack problem we have two generals X and Y .
+General X wants to organize an attack with Y .
+A protocol will be presented such that a coordinated attack will occur if no more than one message is lost.
+In the following let si denote that General i sends a message; ri denote that General i receives a message; and fi denote that General i commits to an attack.
+A (sX = O grY ): If X sends a message, Y should receive it at the next step.
+A (sX = O grY ): If X sends a message, Y should receive it at the next step.
+VI.
+R ELATED W ORK AND C ONCLUSIONS RoCTL* is a useful logic for reasoning about robustness and obligation.
+As well as other approaches to deontic logics and robustness using temporal logics, for example [16], [17], related work includes proof methods for CTL [18], [7], [19], [8], [9], implemented provers for CTL, CTL-RP [9] and the Tableau Workbench [13] and calculi for bundled CTL* [20] and CTL* [21].
+An earlier study of Pair-RoCTL is at [22].
+17  However, whilst RoCTL* is useful in representing systems it is complex to decide; all known decision procedures for RoCTL* have non-elementary complexity and there is no elementary translation into tree-automata so we do not expect any elementary decision procedure to be found [15].
+We investigated two fragments of RoCTL* , namely PairRoCTL and State-RoCTL aiming to identify sublogics that are simpler than full RoCTL* to decide.
+We show that we can translate CTL* into Pair-RoCTL so that Pair-RoCTL is at least as hard as CTL* to decide.
+However, we provide a linear satisfiability preserving translation from State-RoCTL into CTL.
+As State-RoCTL has CTL as a sublogic this shows that the complexity of satisfiability of State-RoCTL is EXPTIME-complete.
+It is possible to use a similar translation to demonstrate that the model checking problem for State-RoCTL also has the same order of complexity as that of CTL [12].
+We provide an example of a problem that can be specified in State-RoCTL and apply a CTL prover to the resulting formulae.
+[9] L. Zhang, U. Hustadt, and C. Dixon, "A Refined Resolution Calculus for CTL," in Automated Deduction--CADE-22, ser.
+LNAI.
+Springer, 2009, pp.
+245-260.
+[10] M. Vardi and L. Stockmeyer, "Improved upper and lower bounds for modal logics of programs," in 17th ACM Symp.
+on Theory of Computing, Proceedings.
+ACM, 1985, pp.
+240-251.
+[11] E. Emerson and C. Jutla, "Complexity of Tree Automata and Modal Logics of Programs," SIAM Journal of Computing, vol.
+29, no.
+1, pp.
+132-158, 2000.
+[12] J. C. Mc Cabe-Dansted, "A temporal logic of robustness," Ph.D. dissertation, The University of Western Australia, 2010, in preparation, draft available at http://dansted.co.cc/papers/ Thesis RoCTL.pdf.
+[13] P. Abate and R.Gore, "The Tableaux Workbench," in Automated Reasoning with Analytic Tableaux and Related Methods, ser.
+LNCS, vol.
+2796.
+Springer, 2003, pp.
+230-236.
+[14] D. Gabbay, A. Pnueli, S. Shelah, and J. Stavi, "The Temporal Analysis of Fairness," in Proceedings of the Seventh ACM Symposium on the Principles of Programming Languages, Las Vegas, Nevada, January 1980, pp.
+163-173.
+R EFERENCES [1] T. French, J. Mc Cabe-Dansted, and M. Reynolds, "Temporal Logic of Robustness," in Proceedings of the 6th International Symposium of the Frontiers of Combining Systems, ser.
+Lecture Notes in Artificial Intelligence, B. Konev and F. Wolter, Eds., vol.
+4720.
+Springer, 2007, pp.
+193-205.
+[15] J. C. McCabe-Dansted, T. French, M. Reynolds, and S. Pinchinat, "On the expressivity of RoCTL*," in TIME, C. Lutz and J.-F. Raskin, Eds.
+IEEE Computer Society, 2009, pp.
+37-44.
+[2] E. A. Emerson and J. Y. Halpern, ""Sometimes" and "Not Never" Revisited: On Branching Versus Linear Time," in Proceedings of the 10th ACM Symposium on Principles of Programming Languages, 1983, pp.
+127-140.
+[16] H. Hansson and B. Jonsson, "A Logic for Reasoning about Time and Reliability," Formal Aspects of Computing, vol.
+6, no.
+5, pp.
+512-535, 1994.
+[3] J. Forrester, "Gentle murder, or the adverbial samaritan," The Journal of Philosophy, vol.
+81, no.
+4, pp.
+193-7, April 1984.
+[17] J. Broersen, F. Dignum, V. Dignum, and J.-J.Ch.Meyer, "Designing a Deontic Logic of Deadlines," in DEON, ser.
+LNCS, A. Lomuscio and D. Nute, Eds., vol.
+3065.
+Springer, 2004, pp.
+43-56.
+[4] J. C. Mc Cabe-Dansted, T. French, M. Reynolds, and S. Pinchinat, "On the expressivity of RoCTL*," in TIME, C. Lutz and J.-F. Raskin, Eds.
+IEEE Computer Society, 2009, pp.
+37-44.
+[18] E. A. Emerson and J. Srinivasan, "Branching Time Temporal Logic," LNCS, vol.
+354, pp.
+123-172, 1988.
+[19] A. Bolotov, "Clausal Resolution for Branching-Time Temporal Logic," Ph.D. dissertation, Dept.
+of Computing and Mathematics, Manchester Metropolitan University, 2000.
+[5] J. C. Mc Cabe-Dansted, "A tableau for RoBCTL*," in JELIA, ser.
+Lecture Notes in Computer Science, S. Holldobler, C. Lutz, and H. Wansing, Eds., vol.
+5293.
+Springer, 2008, pp.
+298-310.
+[20] M. Reynolds, "A Tableau for Bundled CTL*," J Logic Computation, vol.
+17, no.
+1, pp.
+117-132, 2007.
+[6] E. A. Emerson and E. M. Clarke, "Using Branching Time Temporal Logic to Synthesize Synchronization Skeletons," Science of Computer Programming, vol.
+2, no.
+3, pp.
+241- 266, 1982.
+[21] ----, "A tableau for CTL*," in FM 2009: Formal Methods, vol.
+5850.
+Springer, 2009, pp.
+403-418.
+[22] C. Dixon and J. Mc Cabe-Dansted, "Resolution for a temporal logic of robustness (extended version)," University of Liverpool, Department of Computer Science, Tech.
+Rep. ULCS-08-002, 2008, www.csc.liv.ac.uk/research/techreports/.
+[7] E. A. Emerson and J. Y. Halpern, "Decision Procedures and Expressiveness in the Temporal Logic of Branching Time," Journal of Computer and System Sciences, vol.
+30, no.
+1, pp.
+1-24, Feb. 1985.
+[23] C. Lutz and J.-F. Raskin, Eds., TIME 2009, 16th International Symposium on Temporal Representation and Reasoning, Bressanone-Brixen, Italy, 23-25 July 2009, Proceedings.
+IEEE Computer Society, 2009.
+[8] P. Abate, R. Gore, and F. Widmann, "One-Pass Tableaux for Computation Tree Logic," in Logic for Programming, Artificial Intelligence, and Reasoning, ser.
+LNCS, vol.
+4790.
+Springer, 2007, pp.
+32-46.
+18

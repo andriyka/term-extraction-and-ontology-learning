@@ -1,0 +1,311 @@
+2011 Eighteenth International Symposium on Temporal Representation and Reasoning  On Tool Support for Duration Calculus on the basis of Presburger Arithmetic Michael R. Hansen and Aske W. Brekling Department of Informatics and Mathematical Modelling Technical University of Denmark Lyngby, Denmark Email: mrh@imm.dtu.dk and aske@brekling.dk  can compare the interval length with a constant.
+A neighbourhood logic, in the sense of [31] and based on Restricted DC [33], is shown decidable in [2].
+In these decidable logics only very limited quantitative aspects can be expressed and no tool supporting DC has, as far as we know, reached a point where it is used on a regular basis due to the very high complexities of the decision problems (non-elementary in many cases) and to the limited expressiveness concerning timing properties.
+In recent work by FraEnzle and Hansen [12], [13], an approximation-based model-checking problem K |= D, where K is a dZnite automaton and D belongs to an expressive subset of discrete-time DC, is reduced to checking formulas of Presburger arithmetic, i.e.
+dZrst-order logic of integers, where addition is the only operation.
+The atomic formulas in this approach can be arbitrary constraints   on linear sums of durations, e.g 3 P a 7 (Q a" R) + 5 AZR aL 11, and such atomic constraints can be freely combined using the connectives of propositional DC.
+The validity and modelchecking problems for this subset is actually undecidable using standard semantics.
+However, by use of a so-called multiset semantics, the model-checking problem can be reduced to checking Presburger formulas.
+The multiset semantics is based on a kind of Parikh image of the runs of an automaton, where the visiting frequencies of states are recorded, and it gives an approximation in the sense that runs corresponding to the same multiset cannot be distinguished.
+A similar idea has been used to over-approximate reachability in Petri nets, e.g.
+[7], [8].
+The basic idea of the so-called marking algorithm for generating Presburger formulas is the following: For every pair of states i and j of the automaton K and for every subformula D of D two Presburger formulas markT (i, j, D) and markF (i, j, D) are generated, where markT (i, j, D) describes multisets for runs from i to j in K for which D is true and markF (i, j, D) describe multisets for which D is false.
+Unfortunately, the generated formulas may be exponential in the chop-depth of the DC formula.
+Even worse, Fischer and Rabin [9] have established a double exponential lower bound on the time required by any nondeterministic decision procedure for checking the truth of a Presburger formulas, and Oppen [22] has established a triple exponential upper bound for the worst-case running time of  AbstractaInterval Logics are often very expressive logics for which decision and model-checking algorithms are hard or even impossible to achieve, and this also applies for Duration Calculus, which adds the notion of accumulated duration to the Interval Temporal Logic introduced by Moszkowski et al.
+In this ongoing work, we report on our experiences with implementing the model-checking algorithm in [12], which reduces model checking to checking formulas of Presburger arithmetic.
+The model-checking algorithm generates Presburger formulas that may have sizes being exponential in the chop depth of the Duration Calculus formulas, so it is not clear whether this is a feasible approach.
+The decision procedure is partitioned into a frontend with reductions including acheapa, equation-based quantidZer eliminations, and a general quantidZer-elimination procedure, where we have experimented with an implementation based on Cooperas algorithm and with the SMT solver Z3.
+The formula reductions are facilitated using a new aguarded normal forma.
+Applying the frontend before a general quantidZer elimination procedure gave signidZcant improvements for most of the experiments.
+Keywords-Interval temporal logic; Duration calculus; model checking; Presburger arithmetic;  I. I NTRODUCTION A variety of quantitative aspects about real-time systems are naturally expressed as properties of time intervals, and indeed many interval logics have an adequate expressiveness.
+In this paper we will focus on tool support for Duration Calculus (abbreviated DC), [32], [34], which is an extension of the Interval Temporal Logic introduced by Moszkowski [21].
+In DC one can express quantitative properties at a high level of abstraction, through the notion of accumulated durations of states.
+Unfortunately, fragments of Duration Calculus are undecidable unless the notion of duration, the use of negation and chop (the only modality of DC), or the models considered are severely constrained, e.g.
+[3], [10], [11], [16], [20], [23], [28]a[30], [33], [35] and, indeed, undecidability is typically the case when interesting quantitative properties are expressible in interval logics.
+In [14] the decidability of Propositional Neighbourhood Logic (PNL) is established, which is a fragment of the logic introduced by Halpern and Shoham [15], but quantitative aspects are not expressible in PNL.
+In recent work [4], the decidability of metric PNL is shown, which have just a right neighbourhood modality, together with atomic formulas that 1530-1311/11 $26.00 AS 2011 IEEE DOI 10.1109/TIME.2011.26  115  Cooperas algorithm.
+So the feasibility of this model-checking approach for DC is far from obvious.
+In this ongoing work, we report on experiences with implementing the model-checking algorithm as well as a tool for Presburger arithmetic.
+A dZrst prototype [17], [18] validated the approach and showed that the approximations were good enough for some small examples.
+But the marking algorithm was the bottleneck, as it ran out of memory for rather small problems.
+To cope with this space problem, a new marking algorithm was implemented which just produces the necessary formulas.
+Furthermore, the formulas are simplidZed during the marking phase.
+The simplidZcations are performed on the basis of a new guarded normal form, which also supports acheapa equation-based quantidZer eliminations.
+As backend for checking formulas of Presburger arithmetic we have used the SMT-solver Z3 [1], [6] and an implementation which integrates simplidZcations using the guarded normal form with Cooperas algorithm [5] and some reductions inspired by the Omega test [25] and the work by Reddy and Loveland [26].
+In the next section we give an introduction to DC and the model-checking approach in [12].
+In Section 3 we give a short introduction to Presburger arithmetic, and present the guarded normal form and some of the simplidZcations, including some quantidZer-elimination techniques, which is used for reducing the sizes of the generated formulas.
+Experiments are presented and discussed in Section 4, and the last section contains a summary.
+in the last state of the trace and, therefore, the interpretation is one shorter than the trace.
+ The duration of p for the above trace/interpretation is p = 4.
+The length of the trace is given by the duration of the state expression 1, also abbreviated as .
+The length of the above interpretation is 8.
+A formula D  D is true for a trace iff it can be split into a left and a right trace s.t.
+Dholds of the  left part and D of  AZp = 2 holds for t r the right part.
+For example, p = 2   since p = 2 holds for A B A B A and AZp = 2 holds for A B C D D. (Notice that no time is spent in the last state of the trace.)
+In [12], [13], an undecidable model-checking problem K |= D is addressed for discrete-time DC.
+A dZnite run (or trace) t r = s1 s2 AV AV AV sn , where si is a state in K induces an interpretation for the DC formulas by assuming that one time unit is spend in each si and throughout that time unit, the state variables associated with si are all 1.
+Hence, one can easily dedZne the concept that a DC formula D holds for a trace t r, written t r |= D, as exemplidZed above.
+We say that K is a model for D, written K |= D, if tr |= D, for every trace t r originating in some initial state of K. This model-checking problem is addressed through approximations described by a so-called counting semantics, where approximations are based on two ideas: aV Treat all traces between two states i and j uniformly.
+aV Consider visiting frequencies of states of K using a multiset m. For a state j, m(j) a N describes the number of times state j is visited in the considered  traces.
+Observe that the value of a term like Si can be calculated using the multiset by adding visiting frequencies of states whose labelling make Si hold.
+For a given Kripke structure K, states i and j, multiset m, and formula D, the counting semantics is a function: K[[D]] i j m a 2B with the following properties: aV K[[D]] i j m = {true, false} iff there is no mconsistent trace from i to j, aV K[[D]] i j m = {true} implies that D holds for every m-consistent trace from i to j, aV K[[D]] i j m = {false} implies that D is false for every m-consistent trace from i to j, and aV K[[D]] i j m = a otherwise.
+An m-consistent trace t r satisdZes that s occurs m(s) times in t r, for every state s of K. Further details can be found in [12].
+Notice that the case K[[D]] i j m = a is a adonat knowa situation, which can happen either when some traces from i to j satisfy D while other traces from i to j falsify D, or when the multiset semantics is too coarse grained to detect that all traces from i to j satisfy D or to detect that all traces from i to j falsify D. We shall return to that later.
+The main idea of the model-checking algorithm is to consider multisets symbolically: a multiset is represented by a vector m = m[s1 ], .
+.
+.
+, m[sn ], of variables m[si ], for  II.
+M ODEL CHECKING FOR D URATION C ALCULUS We start with an informal introduction to DC and the model-checking algorithm of [12], where formulas D of DC are generated by the grammar: S ::= D ::=  0 | 1 | P | AZS | S1 a" S2 ,  fi | ILni=1 ci Si fi k | AZD | D aSS D | D  D ,  where P ranges over states variables, k, ci are integers and fi a {<, a$?, =, aL, >}.
+S is called a state expression.
+We shall interpret formulas over dZnite traces generated by a Kripke structure, i.e.
+a dZnite automaton, like the one in Fig.
+1, where states are labelled by sets of state variables.
+For example, the following trace from A to D: A  B  Figure 1.  p  C  p  D  Example automaton from [12]  t r = A B A B A B C D D generates a interpretation of the state variable p: AZp p AZp p AZp p p AZp as p holds in the state B and C and p does not hold in A and B.
+We shall assume that the automaton spends no time  116  every state si .
+The model-checking is a bottom-up marking algorithm following the structure of the DC-formula, and it generates for every subformula D, and states i, j a K two Presburger formulas, denoted markT (i, j, D)(m) and markF (i, j, D)(m), having m as free variables.
+These two formulas have the properties: m |= markT (i, j, D)(m) m |= markF (i, j, D)(m)  minus 1 is needed because no time is spend the last time the end state is visited.
+The model-checking problem (from vertex A to D) is translated to am.
+(C(A, D)(m) a (2)) which asserts that every consistent trace from A to D must satisfy the linear constraint (2).
+Since this formula is indeed true, we know that every trace from A to D satisdZes (1).
+The full marking algorithm (except the dedZnition of the C-predicates) is given in Fig.
+2.
+Most cases have simple explanations, e.g.
+a multiset m is a counter example for D aSS D if m is a counter example for D or a counter example for D, which explains the false marking for conjunction.
+Concerning D1  D2 , a multiset m is a counter example if for every vertex k and every consistent split m1 , m2 of m wrt.
+k, either m1 is a counter example for D1 or m2 is a counter example for D2 (or both are counter examples).
+This is actually a precise characterization of the traces falsifying D1  D2 , provided that markF (i, k, D1 )(m) and markF (k, j, D2 )(m) provide precise characterizations for the traces falsifying D1 and D2 , respectively.
+It is in the true marking for D1  D2 the approximations of the multiset semantics become visible, by requiring that there is a distinct state k which works as chop point.
+Since we are considering universal path properties, this chop point must work for all for possible splits of the multiset.
+This is expressed using a universal quantidZer in the marking.
+We shall in Section IV see an example where one vertex does not sufdZce as chop point, despite that every trace satisdZes a given formula D1  D2 .
+Since the model-checking problem we start up with is undecidable, the approximations must show up somewhere and here it is when chop occurs in positive polarity.
+a K[[D]] i j m = {true} a K[[D]] i j m = {false}  The formulas markT (i, j, D)(m) and markF (i, j, D)(m) are called the true and false markings, respectively, and they are based on a Presburger formula C(i, j)(m) characterizing the multisets for the traces bringing the automaton from state i to state j.
+We introduce the general idea in terms of the example in Fig.
+1, where we would like to check whether every run from A to D satisdZes the formula:  <4a p<3 (1) We introduce the following multiset variables: m = mA , mB , mC , mD and the consistent traces from A to vertex D is described by C(A, D)(m) = aeAB , eBA , eBC , eCD , eDD : = mA = 1 + eBA  eAB  eAB eBC  = =  mB mC  = =  eBA + eBC eCD  eCD + eDD  = mD  =  eDD + 1  The idea is to introduce a variable for every edge (e.g.
+eAB describes the frequency of visits to the edge from A to B), and add equations expressing that the sum of all indZow to a state is equal to the visiting frequency of that state which is equal to the outdZow of that state.
+The start state has an extra indZow of 1 and the end state has an extra outdZow of 1 to ensure a adZowa from the start to the end.
+There are extra conditions for certain loops to ensure that if a loop has a positive visiting frequency, then some edge entering that loop has a positive visiting frequency as well; but such conditions are not needed in this example.
+The construction of the consistency formulas C(i, j)(m), see [12], we currently are using is based on the assumption that every loop in K has a unique entry point, and in this case the construction of C(i, j)(m) is simple and its size is proportional to the size of K. If the unique entry-point assumption does not hold, then one can use the linear-time construction given in [27] for achieving a Presburger formula for the Parikh image of a regular language.
+This construction will, however, introduce extra quantidZers.
+The DC formula (1) is translated to  III.
+P RESBURGER ARITHMETIC Presburger arithmetic is the dZrst-order theory of natural numbers (or integers) with addition, which was proved to be decidable by M. Presburger in 1927.
+There are several decision algorithms for PA, and one is Cooperas algorithm [5].
+This algorithm is a quantidZer elimination algorithm, which repeatedly removes quantidZers inside-out by replacing an innermost quantidZed formula by an equivalent quantidZerfree formula.
+When the original formula has no free variables, its truth value can be computed in a straightforward manner when all quantidZers have been eliminated.
+When an existential quantidZer ax.D(x), where D(x) is quantidZer free, is eliminated, D(x) is dZrst normalized to a negation normal form formula D  (x) where < is the only comparison operator occurring in D  (x) and x has the same coefdZcient, say I', in all constraints.
+Let D(x ) be D  [x /I'x] aSS I'|x , where D[t/ay] is the formula obtained from D by replacing every occurrence of ay with t. We have ax.D(x) aa ax.D  (I'x) aa ax .D(x ).
+The existential quantidZer can  (2) (ILia{A,B,C,D} mi ) a 1 < 4 a mB + mC < 3  by replacing P with the sum of the multiset variables for the states where P hold, and by replacing length with the sum of all multiset variables minus 1.
+The adjustment with  117  markT (i, j, fi)(m) markF (i, j, fi)   markT (i, j, ILiaIS ci Si < k)(m)  markF (i, j, ILiaIS ci Si < k)(m)  = C(i, j)(m) = false = C(i, j)(m) aSS = C(i, j)(m) aSS     iaIS ci iaIS ci   vaV,v|=Si vaV,v|=Si  m[v] < k m[v] aL k  markT (i, j, AZD)(m)  = markF (i, j, D)(m)  markF (i, j, AZD)(m)  = markT (i, jD)(m)  markT (i, j, D1 aSS D2 )(m) markF (i, j, D1 aSS D2 )(m)  = markT (i, j, D1 )(m) aSS markT (i, j, D2 )(m) = markF (i, j, D1 )(m) a" markF (i, j, D2 )(m)  and  a  a am1 , m2 : Izikj (m, m1 , m2 ) a a markT (i, j, D1  D2 )(m) = kaV a aSS a  am1 , m2 : Izikj (m, m1 , m2 ) a (markT (i, k, D1 )(m1 ) aSS markT (k, j, D2 )(m2 ))   C(i, j)(m)aSS  markF (i, j, D1  D2 )(m) = kaV am1 , m2 : Izikj (m, m1 , m2 ) a (markF (i, k, D1 )(m1 ) a" markF (k, j, D2 )(m2 )) fi  where Izikj (m, m1 , m2 ) = m = m1 + m2 aSS C(i, k)(m1 ) aSS C(k, j)(m2 ) expresses that m1 and m2 is a consistent split of m for state k for traces from i to j in the Kripke structure.
+Figure 2.
+Marking algorithm (slightly rephrased from [12]) for a given Kripke structure K  now be replaced by a bounded disjunction as follows:  ax .D(x ) a  A.
+Guarded normal form Inspecting the marking algorithm in Fig.
+2, one can see that the size of the generated formula is exponential in the chop depth.
+It is therefore important that formulas are simplidZed as much as possible.
+We are aiming at a normal form where we can collect conjunctions of literals in order to reduce the size of formulas by performing simplidZcations including acheapa equation-based quantidZer eliminations.
+We name this guarded normal form, and we consider it dZrst in a propositional setting, with constants fi (true) and aL (false), variables p, q, r, conjunction P aSS Q, disjunctions P a" Q and negation AZP .
+Let L denote a literal, i.e.
+a proposition of the form p or AZp.
+An implication guard is a proposition of the form:   Li a Pj  fiI'  a"  i=1 D[fi/x < t, aL/t < x] fiI' fi  i=1 t<x in D(x ) D[t + i/x ]  (3)  where I'  is the least common multiple of the divisors d in divisibility constraints d|t(x).
+Here D[fi/x < t, aL/t < x] is the formula obtained from D by substituting every occurrence of a constraint x < t in D with true and every occurrence of a constraint t < x in D with false.
+Cooperas algorithm has the advantage that it just uses a non-expansive negation normal form, but it is a major challenge to control the growth of the constants I' and I'  when eliminating nested quantidZers using this algorithm.
+i  The Omega test [25] is another quantidZer-elimination method which is inspired by Fourier-Motzkinas methods for the reals.
+For a conjunction of upper- and lower-bound constraints, U and L, respectively, it considers all possible combinations of bx < t1 a L and ax > t2 a U when eliminating x.
+This method is based on normalizing formulas to disjunctive normal form, and, for example, in the case of quantidZer alternations this may be undesirable.
+Furthermore, Presburger arithmetic is incorporated in Z3 [1], [6], which has shown to be a powerful tool for checking Presburger formulas generated by our algorithm.
+Also automata-based decision methods for Presburger arithmetic are available, see for example [19].
+j  and a conjunction guard is a proposition of the form:   Li aSS Pj i  j  A guarded formula is a formula constructed from literals, fi, and aL by the use of guarded implications and conjunctions.
+A conjunction of literals is called a guard.
+In the Presburger setting, the literals are (possibly negated) equations, comparisons and divisibility constraints.
+It is easy to express conjunction and disjunction by guarded formulas using trivial guards.
+Furthermore, nega-  118  an equation nx = t in a guard can be used to eliminate x elsewhere in the formula: fi  nx = t aSS i Li a j Pj  fi (11) aa nx = t aSS i Li [t/nx] a j Pj [t/nx]   nx = t aSS i Li aSS j Pj   (12) aa nx = t aSS i Li [t/nx] aSS j Pj [t/nx]  tions propagate through guarded formulas:  Li aSS P aSS Q P aSSQ aa iaa Li a P a" Q P a"Q aa  fi iaa  AZ( i Li a j Pj ) aa L AZPj i aSS   i fij AZ( i Li aSS j Pj ) aa i Li a j AZPj A guarded formula F isfiin normal form if every im plication guard i Li a j Pj in F satisdZes that each Pj is a  conjunction guard, and every conjunction guard  L aSS i i j Qj in F satisdZes that each Qj is an implication guard.
+Every propositional formula has a guarded normal form, which can be obtained by using the equivalences:  fi  fi (4) i Li a j Pj a" L aa AZL aSS i Li a j Pj     (5) i Li aSS j Pj aSS L aa L aSS i Li aSS j Pj   fi fi  Ql ) a" j Pj i Li a ( k Lk a   l fi fi (6) aa L aSS L k k i i a l Ql a" j Pj      Ql ) aSS j Pj i Li aSS ( k Lk aSS   l    (7) aa k Lk aSS i Li aSS l Ql aSS j Pj  C. Simple quantidZer eliminations  Notice that applications of these equivalences (from left to right) have the effect of collecting literals in guards and reducing the nesting of guarded formulas.
+The following example shows two applications of (14) and simple reductions of divisibility constraints:  Such substitutions depend on the least common multiple of n and the coefdZcients of x in the formula, e.g.
+aa  3x + 5y > 2z[y + 2z/2x] 6x + 10y > 4z[y + 2z/2x]  aa  3y + 6z + 10y > 4z aa 13y > z  Equations in guards are particular useful in connection with quantidZer elimination due to the equivalences:   ax.
+(nx = t aSS Li a Pj ) aa fi (13) i  j    ax.
+(nx = t aSS i Li aSS j Pj )   aa n|t aSS i Li [t/nx] aSS j Pj [t/nx]  B.
+Reductions  aa  az.ax.2x = y + z aSS 4x + 3y a z = 1 az.5y + z = 1 aSS 2|y + z  Reductions are natural to perform when literals are collected in guards by use of (4 a 7).
+We check for inconsistencies and for simplidZcations in the guards.
+An example of an inconsistency check is the Omega methodas check for real shadows, which is one part of the Fourier-Moszkin elimination for the dZrst-order theory of reals.
+The right-hand side of the following implication is called the real shadow.
+If this shadow is false, then no real number x satisdZes t1 a$?
+axaSSbx a$?
+t2 and hence there can be no integer solution:  aa  2| a 4y + 1 aa 2|1 aa false  t1 a$?
+ax aSS bx a$?
+t2  =a  bt1 a$?
+at2  IV.
+I MPLEMENTATION AND E XPERIMENTS We have implemented the model-checking algorithm in Fig.
+2 on the basis of the guarded normal form with many simplidZcations including the equation-based quantidZer eliminations shown in the previous section.
+The table with markings generated with this algorithm was signidZcantly smaller than that of [18] partly due to these simplidZcations, and partly due to a more careful analysis of the Kripke structure, which led to signidZcant simplidZcations on the consistency predicates C(i, j) on the basis of a reachability analysis.
+In addition, we have implemented Cooperas algorithm to be used after the equation-based quantidZer eliminations.
+For small examples, this worked well; but for larger examples with many nested quantidZcations the fi expansions due to the the disjunctions t<x D[t + i/x ] became the bottleneck.
+These disjunction must be treated in a more symbolic manner (like the way we treated bounded fiI' disjunctions of the form i=1 F (i)) in order to be useful.
+In the below experiments we have therefore, with good results, used Z3 as backend.
+The experiments were conducted on a Windows Server 2008 with Intel Xeon E5620 Processors and 8GB of RAM.
+We have so far just veridZed a few, rather small examples.
+Each example has been tested using (1) the Z3-solver  (8)  Using this implication for all pairs of constraints matching the left-hand side will generate a collection of new literals and may expand the guard signidZcantly.
+In our implementation we just apply the rule when t1 and t2 are integers and the truth value of the shadow can be computed directly.
+The following equivalences used from left to right show just two of the reductions which have shown to be useful in our examples in order to keep the expansive parts of the decision process manageable.
+t > a aSS t > b aa t > max{a, b} t a 1 < a aSS a < t + 1 aa a = t  (14)  (9) (10)  An advantage of collecting literals in guards is that consistency can be checked and propagated.
+For example,  119  Example 3-seq 4-seq 5-seq 6-seq Dia-1 Dia-2  NoGNF (KB) /w Z3simp 808/ 3.026 1.952/7.084 3.865/14.010 6.739/25.058 10/ 26 10/ 26  EqQe (KB) /w Z3simp 616/1.454 1.585/3.665 3.206/ 7.427 5.650/ 13.141 3/6 3/6  MarkingTime /w Z3simp 0,6 /3,9 s 3,6 /12,9 s 4,6 /21,6 s 8,5 /44,2 s  EqQe 4,2 12,8 33,5 72,9  s s s s  Z3Sat-NoGNF /Z3simp 2,9 /1,8 s 12,9 /3,6 s 40,1 /6,3 s 122,5 /11,2 s 104ms 74ms  Z3Sat-EqQe /Z3simp 1,5 /1,8 s 4,6/2,9 s 75,2/4,6 a 47ms 37ms  Commands used for Z3as simplidZcations of formulas and SAT-solving z3.exe /nw /smt2 ARITH_EXPAND_EQS=true STRONG_CONTEXT_SIMPLIFIER=true filename.smt z3.exe /smt2 ELIM_QUANTIFIERS=true MODEL=true filename.smt Figure 3.
+Data from experiments  Bi  Ai  exclusively on a raw marking from the algorithm in Fig.
+2 without the use of guarded normal form and equation-based quantidZer eliminations, and (2) several combinations of guarded normal form, equation-based quantidZer elimination and a decision procedure based on Cooperas algorithm.
+The purpose of this is to compare results and to get a condZdence in the correctness of the programs.
+The results of the experiments are shown in Fig.
+3.
+There are many ways in which Z3 can be applied.
+We used Z3 with an input formula in the SMT-lib format.
+The commands shown in Fig.
+3 were used to activate Z3as simplidZcation of formulas and the SATsolving command.
+This use of Z3 seems to give us the best results; but we certainly cannot exclude that there are better ways to use Z3.
+p  Ci  p  Di   (1) ( < 4 =a p < 3)  Properties: (2) ( < 5 =a p < 3) where D is dedZned by AZ(true  (AZD)  true).
+Figure 4.
+Extended automaton from [12]  normalized formulas gives an improvement; however, for sequences with 5 and 6 repetitions normalized formulas were a disadvantage for Z3, and for 6 repetitions Z3 did not complete within an hour.
+We have so far no explanation why quantidZer eliminations and simplidZcations prior to using Z3 did not help in these two cases.
+We have not met other examples where this phenomenon occurred.
+The experiments for the formula (1) were based on the SAT-problem C(A1 , DN )(m) aSS AZmarkF (A1 , DN , (1))(m) which is not satisdZable, i.e.
+the model-checking problem holds.
+For the formula Fig.
+4(2), the corresponding Presburger formula is satisdZable and Z3 gives satisfying assignments slightly faster than for the corresponding unsat case.
+Example 1 This example is based on an iterative version of the simple automaton Mi shown in Fig.
+4, with the veridZcation of the two properties shown.
+Property (1) holds for every run in the automaton, while property (2) does not hold as the run Bi Ai Bi Ci Di gives a counter example.
+By sequential composition of Mi , for i = 0, .
+.
+.
+, n, we use this example to test the current limit of the approach.
+By an N-sequence, we understand N automata M1 , M2 , .
+.
+.
+, MN , where there is an edge from Di to Ai+1 , for 1 a$?
+i < N and there are edges from Di to Aj , for 1 a$?
+j a$?
+i a$?
+N .
+This composition implies that from any state every other state is reachable.
+Therefore, for every pair (i, j) of states the consistency predicate C(i, j) must be computed.
+These consistency predicates are used in connection with the two chops occurring the dedZnition of the -modality.
+The experiments were conducted up to a 6-sequence and the results are shown in Fig.
+3.
+The dZrst two columns show the sizes (in KB) of the generated formulas in the SMTlib format.
+The use of guarded normal form and equalitybased quantidZer elimination gives a signidZcant reduction on the formulas sizes, which also applies for a succeeding Z3 simplidZcation.
+For sequences with up to 4 repetitions, using  Example 2 The counting semantics of chop is based on the ability to dZnd, for a given multiset m, a state that works as a choppoint for all possible splits of m, cf.
+Fig.
+2.
+This gives an approximation in the sense that K[[D]] i j m may be a even though every trace from i to j satisdZes D. This is illustrated with the formula (1) and the automaton in Fig.
+5.
+Every trace from A to D satisdZes the formula since it either ends with P or Q being true, but this is not captured by the multiset semantics.
+The problem is that B works as chop-point for the formula true   P  for just the multisets which has visiting frequencies 1 and 0 for B  120  are propagated and we use (14) whenever it is possible.
+Other equations and constraints should be propagated as well.
+Experiments with a more aggressive guard propagation approach has shown promising reductions in a propositional setting.
+B P A  D  V. S UMMARY  Q  It appear as a kind of amission impossiblea to base a model-checking algorithm for Duration Calculus on checking formulas of Presburger Arithmetic, particularly, when the formulas to be checked may have size that is exponential in the chop depth of the original DC formula.
+To investigate the feasibility of this approach we have implemented the model-checking algorithm.
+A dZrst prototype implementation in a Masteras Thesis project [17], [18], validated the approach; but in this implementation the marking algorithm was the bottleneck, as it ran out of memory for rather small problems.
+To cope with that problem, a guarded normal for formulas that supports acheapa equation-based quantidZer eliminations and propagation of simplidZcations was developed and a new marking algorithm was implemented, which produce a much smaller marking table.
+So far we have just experimented with rather small examples but the results obtained gave hope for eventually achieving an efdZcient veridZcation framework for several reasons: (a) results were achieved fast for some of the bigger examples we tried, (b) the guarded normal form can be much more aggressively used for formula simplidZcations using a guard propagation (which we have tried out in a pure propositional setting with good results), (c) there are a huge number of obvious optimizations to this prototype implementation, and (d) a fragment of the model checking problem reduces to linear SAT, see [12], and exploiting this will give a huge improvement to using Presburger arithmetic.
+In this ongoing work we are still in a phase where seemingly simple optimizations and new reductions often have signidZcant effect, and that experiments with the implementation give many ideas for further improvements.
+Z3 has shown to be a powerful backend.
+C  (1) (true   P  ) a" (true   Q) a   a P a Q = a1 Properties:   a a P a Q=0 a  (2) true  a a"   a" P a Q=1 Figure 5.
+Automaton showing limitations  and C, respectively, since visits to C must be prevented for  P  to hold after the chop.
+A similar consideration applies for the formula true   Q and the chop point C. For example, the multiset m, where the visiting frequencies to A, B, C and D are 1, 1, 2 and 1, respectively, is a case where K[[D]] A D m = a.
+The formula Fig.
+5(2) also has chop in positive polarity; but the multiset approximation is dZne grained enough and the model checking will report that every trace from A to D satisdZes (2).
+In traces from A to D the difference of the visiting frequencies to B and C is at most 1.
+It is easy to see that state B works as chop point when the visiting frequency of B is at least that of C, and C works as chop point when the visiting frequency of C is at least that of B.
+The veridZcation times are small and so are the sizes of the generated formulas for this example; but they are shown in Fig.
+3 as they illustrate the tendencies we have seen in most examples we have tried.
+Discussion We have used a unique representation for the atomic formulas, which cancel out the least common divisor of the coefdZcients of the linear expressions.
+This often caused simplidZcations which were propagated by the guarded normal form.
+We are still at an initial stage of development and whenever we include new reductions in our approach, they have big impact on the size of the formulas, of the time it takes to eliminate quantidZers and of conducting satisdZability check.
+We are currently investigating different ways to incorporate more elements of the Omega test and fi a more alazya treatment of the bounded disjunctions t<x D[t + i/x ] into the guarded normal form reductions.
+Furthermore, we can exploit the guarded normal form much better than we are currently doing by apropagating guardsa more aggressively to subformulas.
+Until now only value assignments  ACKNOWLEDGMENT This research has partially been funded by the SYSMODEL project (ARTEMIS JU 100035) and by the IDEA4CPS project granted by the Danish Research Foundation for Basic Research.
+The authors would like to thank the reviewers for their comments, corrections and suggestions, which caused signidZcant improvements in the dZnal version.
+Furthermore, we are grateful for discussions and comments from Phan Anh Dung, Mikkel Koefoed Jakobsen, Marko KaEaEramees and Jan Madsen.
+R EFERENCES [1] N. BjA,rner, aLinear QuantidZer Elimination as an Abstract Decision Procedure,a IJCAR 2010, LNAI 6173, Springer 2010, pp.
+316-330.
+121  [19] F. Klaedtke, aOn the Automata Size for Presburger Arithmetic,a ACM Transactions on Computational Logic 9(2) pp.
+11:1a11:34, 2008.
+[2] T. Bolander, J.U.
+Hansen, and M.R.
+Hansen, aDecidability of a hybrid duration calculus,a ENTCS, 174(6):113a133, 2007.
+[3] A. Bouajjani, Y. Lakhnech, and R. Robbana, aFrom duration calculus to linear hybrid automata,a In CAVa95, LNCS 939, Springer 1995, pp.
+196a210.
+[20] R. Meyer, J. Faber, J. Hoenicke, and A. Rybalchenko, aModel checking Duration Calculus: a practical approach,a Formal Aspects of Computing 20(4-5), 2008, pp.
+481a505.
+[4] D. Bresolin, V. Goranko, A. Montanari, and G. Sciavicco, aRight propositional neighborhood logic over natural numbers with integer constraints for interval lengths,a In SEFM 2009, pp.
+240-249, 2009.
+[21] B. Moszkowski, aA temporal logic for multi-level reasoning about hardware,a IEEE Computer 18(2):10a19, 1985.
+2pn  [22] D.C. Oppen, aA 22 Upper Bound on the Complexity of Presburger Arithmetic,a Jour.
+Comput.
+Syst.
+Sci.
+16(3): 323a 332, 1978.
+[5] D.C. Cooper, aTheorem Proving in Arithmetic without Multiplication,a Machine Intelligence, 1972, pp.
+91-100.
+[6] L. de Moura and N. BjA,rner, aZ3: An EfdZcient SMT Solver,a In TACAS 2008, LNCS 4963, Springer 2008, pp.
+337a340.
+[23] P.K.
+Pandya, aSpecifying and deciding quantidZed discretetime duration calculus formulae using DCVALID,a In RTTOOLSa2001.
+Aalborg, August 2001.
+[7] J. Esparza, aPetri nets, commutative context-free grammars, and basic parallel processes,a Fundamenta Informaticae 30: 23a41, 1997.
+[24] P.K.
+Pandya, aModel Checking CTL*[DC],a In TACAS 2001, LNCS 2031, Springer 2001, pp.
+559a573.
+[25] W. Pugh, aA practical algorithm for exact array dependence analysis,a ACM Commun.
+35(8), 1992, pp.
+102-114.
+[8] J. Esparza and S. Meltzer, aVeridZcation of Safety Properties using Integer Programming: Beyond the State Equation,a Formal Methods in System Design 16: 159a189, 2000.
+[26] C.R.
+Reddy and D.W. Loveland, aPresburger Arithmetic with Bounded QuantidZer Alternation,a ACM Symp.
+on Theory of Computing, pages 320-325, ACM 1978.
+[9] M.J. Fischer and M.O.
+Rabin, aSuper-Exponential Complexity of Presburger Arithmetic,a Proc.
+of the SIAM-AMS Symposium in Applied Mathematics Vol.
+7: 27-41, 1974.
+[27] H. Seidl, T. Schwentick, A. Muscholl, and P. Habermehl, aCounting for Free in Trees,a ICALP 2004, LNCS 3142, 2004, pp.
+1136-1149.
+[10] M. FraEnzle, aModel-checking dense-time duration calculus,a Formal Aspects of Computing 16(2):121a139, 2004.
+[28] B. Sharma, P.K.
+Pandya, and S. Chakraborty, aBounded Validity Checking of Interval Duration Logic,a TACAS 2005, LNCS 3440, Springer 2005, pp.
+302a316.
+[11] M. FraEnzle and M.R.
+Hansen, aDeciding an interval logic with accumulated durations,a TACAS 2007, LNCS 4424, Springer 2007, pp.
+201a215.
+[29] Pham Hong Thai and Dang Van Hung, aVerifying Linear Duration Constraints of Timed Automata,a ICTACa2004, LNCS 3407, Springer 2005, pp.
+295a309.
+[12] M. FraEnzle and M.R.
+Hansen, aEfdZcient model checking for duration calculus,a International Journal of Software and Informatics Vol.3, no.2-3, pp.
+171-196, 2009.
+[30] Miaomiao Zhang, Dang Van Hung, and Zhiming Liu, aVeridZcation of Linear Duration Invariants by Model Checking CTL Properties,a ICTACa2008, LNCS 5160, Springer 2008, pp.
+395a409.
+[13] M. FraEnzle and M.R.
+Hansen, aEfdZcient model checking for duration calculus based on branching-time approximations,a In SEFM 2008, pp.
+63a72, IEEE 2008.
+[31] Zhou Chaochen and M.R.
+Hansen, aAn adequate dZrst order logic of intervals,a In Compositionality: The SignidZcant Difference, LNCS 1536.
+Springer 1996, pp.
+584a608.
+[14] V. Goranko, A. Montanari, and G. Sciavicco, aPropositional interval neighborhood temporal logics,a Journal of Universal Computer Science 9(9):1137-1167, 2003.
+[32] Zhou Chaochen and M.R.
+Hansen, Duration Calculus a A Formal Approach to Real-Time Systems, Monographs in Theoretical Computer Science.
+Springer-Verlag, 2004.
+[15] J. Halpern and Y. Shoham, aA propositional modal logic of time intervals,a Journal of the ACM 38(4):935-962, 1991.
+[33] Zhou Chaochen, M.R.
+Hansen, and P. Sestoft, aDecidability and undecidability results for duration calculus,a STACS 93, LNCS 665, Springer 1993, pp.
+58a68.
+[16] M.R.
+Hansen, aModel-checking discrete duration calculus,a Formal Aspects of Computing 6(6A):826a845, 1994.
+[17] W.P.
+Heise, M. FraEnzle, and M.R.
+Hansen, aA prototype model checker for Duration Calculus (Extended Abstract),a NWPTa09, DTU Informatics, Technical University of Denmark, 2009, pp.
+26a29.
+[34] Zhou Chaochen, C.A.R.
+Hoare, and A.P.
+Ravn, aA calculus of durations,a Information Processing Letters 40(5):269a276, 1991.
+[18] W.P.
+Heise, An efdZcient model checker for Duration Calculus.
+Masteras Thesis, DTU Informatics, Technical University of Denmark, 2010.
+[35] Zhou Chaochen, Zhang Jingzhong, Yang Lu, and Li Xiaoshan.
+aLinear duration invariants,a In FTRTFTa94, LNCS 863, Springer 1994, pp.
+86a109.
+122

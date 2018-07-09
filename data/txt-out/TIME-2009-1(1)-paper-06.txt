@@ -1,0 +1,479 @@
+On First-Order Query Rewriting for Incomplete Database Histories Alexandre Decan?
+and Jef Wijsen UniversiteE de Mons-Hainaut, Mons, Belgium  Abstract.
+Multiwords are defined as words in which single symbols can be replaced by nonempty sets of symbols.
+Such a set of symbols captures uncertainty about the exact symbol.
+Words are obtained from multiwords by selection a single symbol from every set.
+A pattern is certain in a multiword W if it occurs in every word that can be obtained from W .
+For a given pattern, we are interested in finding a logic formula that recognizes the multiwords in which that pattern is certain.
+This problem can be seen as a special case of consistent query answering (CQA).
+We show how our results can be applied in CQA on database histories under primary key constraints.
+1  Motivation  An incomplete database DB is a set of possible databases.
+Under the certain answer semantics, a Boolean query q evaluates to true on such an incomplete database DB if q evaluates to true on every possible database in DB; otherwise q evaluates to false.
+A database that violates primary key constraints naturally gives rise to an incomplete database: every possible database is obtained by selecting a maximal number of tuples from each relation without ever selecting two distinct tuples that agree on their primary key.
+In this setting, possible databases are called repairs, as they are obtained by arepairinga constraint violations [1].
+Recently, progress has been made in computing certain answers to conjunctive queries under primary key constraints [2, 4, 9].
+This article makes a first step in extending these works to database histories.
+Assume a discrete, linear time scale.
+The following database history shows the WorksFor relation at four successive time points t0 , t1 , t2 , t3 .
+The primary key Name is violated at times t1 and t2 .
+t0 Name Company Ed IBM ?
+t1 Name Company Ed MS Ed IBM  t2 Name Company Ed MS Ed IBM  t3 Name Company Ed MS  Corresponding author.
+Authoras address: UniversiteE de Mons-Hainaut, Institut daInformatique, Avenue du Champ de Mars 6, B-7000 Mons, Belgium; Email: alexandre.decan@umh.ac.be.
+2  To make this history consistent, we have to delete one of the two tuples at t 1 , and one of the two tuples at t2 .
+Thus, there are four repairs for this database history; one such repair is shown next.
+t0 Name Company Ed IBM  t1 Name Company Ed IBM  t2 Name Company Ed IBM  t3 Name Company Ed MS  The query aDid MS recruit an IBM employee?a can be expressed as the existential closure of the following formula in first-order temporal logic (FOTL): 1 q0 = WorksFor(x, IBM) aSS #WorksFor(x, MS) The primary key arguments are underlined.
+It can be easily checked that q0 evaluates to true on each of the four repairs.
+We are interested in the following problem: find a FOTL query q00 such that for every (possibly inconsistent) database history HIS, q00 evaluates to true on HIS if and only if q0 evaluates to true on every repair of HIS.
+Such a query q00 , if it exists, is called a consistent FOTL-rewriting of q0 .
+The interest of consistent FOTL-rewritings should be clear: they provide certain answers on inconsistent databases, without the need for computing repairs.
+It can be verified that the following query q00 is a consistent FOTL-rewriting of q0 : q00 = DIBM aSS (D{IBM,MS} until DMS ) where: DIBM = ay(WorksFor(x, y) aSS ay 0 (WorksFor(x, y 0 ) a y 0 = IBM)) DMS = ay(WorksFor(x, y) aSS ay 0 (WorksFor(x, y 0 ) a y 0 = MS)) D{IBM,MS} = ay(WorksFor(x, y) aSS ay 0 (WorksFor(x, y 0 ) a y 0 = IBM a" y 0 = MS)) Intuitively, it is certain that some employee x moved directly from IBM to MS if in the (possibly inconsistent) database history, there is one state where x worked certainly for IBM, some later state where x certainly worked for MS, and between these two states, x was employed by either IBM or MS. Clearly, on databases that satisfy the primary key Name, q0 is equivalent to the following query qAZ0 : q0 aA qAZ0 = DIBM aSS #DMS The queries DIBM , D{IBM,MS} , and DMS can be obtained by following the rewriting scheme proposed in [2] or [9].
+In this article, the focus is on the rewriting from qAZ0 into q00 .
+To capture this rewriting, we look at each employeeas history as a sequence; for example, Edas history corresponds to the following sequence: WEd = hDIBM , D{IBM,MS} , D{IBM,MS} , DMS i , 1  Since we deal only with Boolean queries, each variable is understood to be existentially quantified.
+3  expressing that DIBM holds at time t0 , D{IBM,MS} at times t1 and t2 , and DMS at t3 .
+Any sequence w obtained from WEd by replacing each occurrence of D{IBM,MS} by either D{IBM} or D{MS} then corresponds to a repair.
+All these repair sequences w satisfy qAZ0 if and only if WEd satisfies q00 .
+We thus come to the following abstraction.
+Assume a finite alphabet IL.
+A multiword is a word over the powerset alphabet 2IL \ {a}.
+Every multiword W gives rise to a set of possible words obtained from W by selecting one representative from each set.
+For example, the multiword W0 = h{a}, {a, b}, {a, b}, {b}i gives rise to four possible words: aaab, aabb, abab, and abbb.
+A subword w is certain in a multiword if it occurs in every possible word.
+For example, ab is certain in W0 , but aa is not.
+Subwords can contain variables, which are placeholders for symbols of IL.
+For example, axx is certain in W0 if either aaa or abb is certain in W0 .
+Given a subword w (possibly containing variables), let CERTAIN(w) denote the set of multiwords in which w is certain.
+We are interested in the following problem: given a subword w, is CERTAIN(w) FO-definable?
+The article is organized as follows.
+Section 2 recalls some fundamental results about FO over words.
+Section 3 formalizes the problem we are interested in.
+Section 4 gives a straightforward algorithm for deciding CERTAIN(w) if w contains no variables.
+The algorithm is interesting because it immediately leads to the result that CERTAIN(w) is regular, as shown in Section 5.
+That section also provides sufficient conditions for FO-definability of CERTAIN(w).
+Section 6 deals with subwords that contain variables.
+Finally, Section 7 concludes the article.
+2  Recall  We are not aware of existing work on words with uncertain symbols.
+On the other hand, some fundamental results on standard words will be used in this article: a Over words, linear temporal logic has the same expressive power as FO [3, 5].
+a A regular language is FO-definable if and only if it is aperiodic [7, 8].
+Recall that a regular language L is aperiodic if there exists an integer k aL 0 such that for all words p, u, q, p AV uk AV q a L if and only if p AV uk+1 AV q a L.  3  Problem Statement  We assume a finite alphabet IL = {a, b, c, .
+.
+.}
+of symbols.
+Definition 1.
+A word of length n aL 0 is a sequence a1 a2 .
+.
+.
+an of symbols.
+The length of a word w is denoted by |w|.
+The empty word has length 0 and is denoted by .
+The concatenation of words v and w is denoted by v AV w. The concatenation operator naturally extends to sets S, T of words: S AV T = {v AV w | v a S, w a T }.
+A word v is a subword of w, denoted w  v, if there exist (possibly empty) words p and q such that w = p AV v AV q.
+4  Multiwords capture the notion of inconsistency and are defined next.
+Definition 2.
+A multiword (over IL) is a sequence W = hA1 , .
+.
+.
+, An i where for each i a {1, .
+.
+.
+, n}, Ai a IL and Ai 6= a.
+Thus, a multiword can be conceived as a word (in the sense of Def.
+1) relative to the alphabet 2IL \ {a}.
+For the multiword W = hA1 , .
+.
+.
+, An i, we define: words(W ) = {a1 a2 .
+.
+.
+an | ai a {1, .
+.
+.
+, n} : ai a Ai } .
+If v is a word, then we define: W certain v if and only if for every w a words(W ), w  v. We write MIL for the set of all multiwords (over IL).
+For example, the following multiword W0 contains two uncertain positions with values {a, b} and {c, d}.
+Curly braces are omitted at positions that are certain; for example, {a} is written as a. W0 = ha, b, d, a, b, c, a, {a, b}, b, d, a, b, {c, d}, a, b, c, a, bi  (1)  We have words(W0 ) = { abdabcaabdabcabcab abdabcaabdabdabcab abdabcabbdabcabcab abdabcabbdabdabcab } .
+The underlined positions show that abdabcab is a subword of each word in words(W0 ).
+Hence, W0 certain abdabcab.
+For a word w, we are interested in (the complexity of) the following language: CERTAIN(w) := {W a MIL | W certain w} .
+In particular, we want to answer the question: Given w, is CERTAIN(w) FO-definable?
+That is, is there a FO formula Dw such that CERTAIN(w) = {W a MIL | W |= Dw } , where the logic formalism is FO over words [6, p. 124]?
+For example, for the alphabet IL = {a, b}, multiwords can be regarded as words with symbols taken in the alphabet {{a}, {b}, {a, b}}.
+This gives rise to three predicate symbols P{a} , P{b} , and P{a,b} .
+For instance, the multiword W = h{a}, {a, b}, {a, b}, {b}i of length 4 is represented by the first-order structure ({1, 2, 3, 4}, <, P{a} , P{b} , P{a,b} ) where < is the natural order and each PA contains the positions in W at which A occurs: P{a} = {1}, P{b} = {4}, P{a,b} = {2, 3}.
+5  The following formula defines all the multiwords that contain a subsequence among h{a}, {b}i, h{a}, {a, b}, {b}i, h{a}, {a, b}, {a, b}, {b}i,.
+.
+.
+axay(x < y aSS P{a} (x) aSS P{b} (y) aSS az((x < z aSS z < y) a P{a,b} (z))) It can be verified that this formula defines the language CERTAIN(ab).
+Recall that there exists an equivalent formula in linear time logic (LTL), since over words, LTL and FO have the same expressive power.
+4  Deciding CERTAIN(w)  Given w, we give a procedure for deciding membership of CERTAIN(w).
+The procedure uses a construction defined in the statement of Lemma 2 and its correctness is shown in Theorem 1.
+The decision procedure is interesting because it can be used to show that CERTAIN(w) is regular (see Section 5).
+Definition 3.
+Let w be a word.
+For all (possibly empty) words p and q, if w = p AV q, then p is a prefix of w, and q a suffix.
+If u is a word, then uaw denotes the maximal suffix of u that is a prefix of w. For a set S of words, we define S aw = {uaw | u a S}.
+Example 1. abcdacde = cd and abac = .
+Clearly, w aw = w. Lemma 1.
+If uaw = q, then (u AV a)  aw  = (q AV a)  aw  .
+Proof.
+Assume uaw = q.
+We can assume a (possibly empty) word u0 such that: a u = u0 AV q, a q is a prefix of w, and a Maximality: for every suffix s 6=  of u0 , s AV q is not a prefix of w. aw  aw  aw  We need to show (u0 AV q AV a) = (q AV a) .
+Obviously, (q AV a) is a suffix of aw aw aw (u0 AV q AV a) .
+Assume |(u0 AV q AV a) | > |(q AV a) |.
+Then, there exists a suffix s 6=  of u0 such that s AV q AV a is a prefix of w, contradicting the above Maximality aw aw condition.
+We conclude by contradiction (u0 AV q AV a) = (q AV a) .
+The construction for deciding membership of CERTAIN(w) is described in the statement of Lemma 2.
+For a given multiword W = hA1 , .
+.
+.
+, An i, we construct a sequence hS0 , .
+.
+.
+, Sn i such that S0 = {} and for each subsequent Si , u a Si aw if and only if u 6= w and u = (p AV a) for some p a Sia1 and a a Ai .
+By Theorem 1, W a CERTAIN(w) if and only if the last element Sn is the empty set.
+The construction is illustrated next for the multiword W0 = ha, b, d, a, b, c, a, {a, b}, b, d, a, b, {c, d}, a, b, c, a, bi  6  shown earlier (see equation (1) on page 4) and the word w = abdabcab.
+A1 = {a} A2 = {b} A3 = {d} A4 = {a} A5 = {b} A6 = {c} A7 = {a} A8 = {a, b} A9 = {b} A10 = {d} A11 = {a} A12 = {b} A13 = {c, d} A14 = {a} A15 = {b} A16 = {c} A17 = {a} A18 = {b}  S0 = {} S1 = {a} S2 = {ab} S3 = {abd} S4 = {abda} S5 = {abdab} S6 = {abdabc} S7 = {abdabca} S8 = {a} S9 = {ab} S10 = {abd} S11 = {abda} S12 = {abdab} S13 = {abdabc, abd} S14 = {abdabca, abda} S15 = {abdab} S16 = {abdabc} S17 = {abdabca} S18 = {}  Lemma 2.
+Let W = hA1 , .
+.
+.
+, An i be a multiword.
+Let w be a nonempty word.
+Let hS0 , S1 , .
+.
+.
+, Sn i be a sequence such that S0 = {} and for every i a {1, .
+.
+.
+, n}, aw Si = (Sia1 AV Ai ) \ {w}.
+Let m a {1, 2, .
+.
+.
+, n}.
+For every word u a words(hA1 , .
+.
+.
+, Am i), either uaw a Sm or u  w. Proof.
+Proof by induction on m. Basis m = 1.
+Let u = b a words(hA1 i) such that b 1 w (i.e.
+w 6= b).
+Then, S1 aw contains ( AV b) = baw .
+Step.
+Assume w.l.o.g.
+Sm = {p1 , .
+.
+.
+, pk } and Am+1 = {a1 , .
+.
+.
+, al }.
+Then, Sm+1 = {(p1 AV a1 )  aw  , .
+.
+.
+, (pi AV aj )  aw  , .
+.
+.
+, (pk AV al )  aw  } \ {w} .
+Let u a words(hA1 , .
+.
+.
+, Am+1 i).
+We can assume v a words(hA1 , .
+.
+.
+, Am i) and j a {1, .
+.
+.
+, l} such that u = v AV aj .
+Two cases can occur: a v  w. Obviously, u  w. a v 1 w. By the induction hypothesis, v aw a Sm .
+We can assume w.l.o.g.
+aw i a {1, .
+.
+.
+, k} such that pi = v aw .
+By Lemma 1, uaw = (v AV aj ) = aw aw (pi AV aj ) .
+If (pi AV aj ) = w, then u  w; otherwise Sm+1 contains uaw .
+This concludes the proof.
+Lemma 3.
+Let W = hA1 , .
+.
+.
+, An i, w, and hS0 , S1 , .
+.
+.
+, Sn i be as in Lemma 2.
+Let i a {1, .
+.
+.
+, n}.
+For every p a Si , there exists u a words(hA1 , .
+.
+.
+, Ai i) such that u 1 w and uaw = p.  7  Proof.
+Proof by induction on i.
+Basis i = 1.
+Easy.
+Step.
+Assume p a Si+1 .
+We can assume q a Si and a a Ai+1 such that p = q AV a.
+By the induction hypothesis, there exists u a words(hA1 , .
+.
+.
+, Ai i) such that u 1 w and uaw = q.
+Then, u AV a a words(hA1 , .
+.
+.
+, Ai+1 i).
+It suffices to show aw that u AV a 1 w and that (u AV a) = p. a Assume u AV a  w. Then necessarily, w = q AV a.
+But then p = w, a contradiction.
+We conclude by contradiction that u AV a 1 w. aw aw a By Lemma 1, (u AV a) = (q AV a) = paw .
+Since p is a prefix of w, aw p = p. This concludes the proof.
+Theorem 1.
+Let W = hA1 , .
+.
+.
+, An i, w, and hS0 , S1 , .
+.
+.
+, Sn i be as in Lemma 2.
+Then, W a CERTAIN(w) if and only if Sn = {}.
+Proof.
+If part.
+Assume Sn = {}.
+Lemma 2 implies that W a CERTAIN(w).
+Only-if part.
+Assume Sn 6= {}.
+Lemma 3 implies that W 6a CERTAIN(w).
+As a small optimization, it is not hard to verify that Theorem 1 remains valid if every Si that contains  is replaced by {}.
+Formally, define:  {} if  a Si ; bSi c = Si otherwise.
+Then, the sequence hS0 , .
+.
+.
+, Sn i defined by S0 = {} and for each i a {1, .
+.
+.
+, n}, aw Si = b(Sia1 AV Ai ) \ {w}c satisfies: W a CERTAIN(w) if and only if Sn = {}.
+5  FO-definability  Assume a nonempty word w over alphabet IL.
+We show that CERTAIN(w) is regular and, under certain conditions, aperiodic.
+Theorem 1 suggests the following construction of a deterministic finite automaton that accepts CERTAIN(w).
+Let P 0 be the set of prefixes of w, and let P = P 0 \{, w}.
+We define DFAIL (w) as the following deterministic finite automaton (Q, aS, S0 , F, I'): 1.
+The finite set Q of states is 2P aS {{}}.
+Note that {} is the only state containing .
+2.
+The alphabet aS is the apowerset alphabeta 2IL \ {a}.
+3.
+The start state is S0 = {} and F = {a} is the set of accepting states.
+4.
+The transition function I' : Q A aS a Q is defined by: I'(S, A) = b(S AV A)  aw  \ {w}c .
+For example, Fig.
+1 shows DFAIL (abb) for the alphabet IL = {a, b}.
+Theorem 1 and the construction of DFAIL (AV) immediately lead to the following result.
+8  {a, b}  {a, ab} {b}  {b}  {a}  {a}  {a, b} {b}  >{}  {a}  {a}  {a}  {b} {ab}  {b}  a  {a} {a, b}  {a, b}  {a, b}  Fig.
+1.
+DFAIL (abb) with IL = {a, b}.
+Theorem 2.
+Let w be a nonempty word and W = hA1 , .
+.
+.
+, An i a multiword (both relative to the alphabet IL).
+Then, W a CERTAIN(w) if and only if DFAIL (w) accepts W .
+Hence, CERTAIN(w) is regular.
+A regular language is FO-definable if and only if it is aperiodic [7, 8].
+Since our driving motivation is consistent FO-rewriting, we are interested in aperiodicity results for CERTAIN(w).
+The following theorem shows that CERTAIN(w) is aperiodic if the first (or the last) symbol of w occurs only once in w. Our proof technique explicitly relies on the condition that the first (or the last) symbol of w is unique.
+This uniqueness condition is not necessary for FO-definability, however; for example, CERTAIN(aa) is FO-definable.
+We conjecture that CERTAIN(w) is aperiodic for any word w. Theorem 3.
+1.
+If the last symbol of w occurs only once in w, then CERTAIN(w) is aperiodic.
+2.
+If the first symbol of w occurs only once in w, then CERTAIN(w) is aperiodic.
+Proof.
+We prove the first item; the proof of the second item is symmetrical.
+Let w = w0 AV a where a does not occur in w 0 .
+Let k = |w|.
+It suffices to show that for all multiwords P, U, Q: P AV U k+1 AV Q a CERTAIN(w) if and only if P AV U k+2 AV Q a CERTAIN(w).
+That is, for all multiwords P, U, Q: P AV U k+1 AV Q 1certain w aa P AV U k+2 AV Q 1certain w .
+Let U = hA1 , .
+.
+.
+, An i.
+The proof is obvious if n = 0.
+Next assume n > 0.
+9  a Assume P AV U k+1 AV Q 1certain w. We can assume the existence of p a words(P ), u1 , .
+.
+.
+, uk+1 a words(U ), and q a words(Q) such that the word m = p AV u1 AV u2 AV .
+.
+.
+AV uk+1 AV q satisfies m 1 w. Two cases can occur: 1.
+The symbol a does not occur in u2 AV .
+.
+.
+AV uk+1 .
+Let m0 be the word obtained from m by aduplicatinga the subword u2 as follows: t1  s1  }| { z }| { z m0 = p AV u1 AV u2 AV u2 AV .
+.
+.
+AV uk+1 AVq {z } | t2  Assume m0  w. Since m 1 w, any subword w of m0 must astart ina s1 and aend ina t1 .
+Since |w| = k, w must actually end in t2 .
+But then a must occur in u2 AV .
+.
+.
+AV uk+1 , a contradiction.
+We conclude by contradiction that m0 1 w. Since m0 a words(P AV U k+2 AV Q), P AV U k+2 AV Q 1certain w. 2. a occurs in u2 AV .
+.
+.
+AV uk+1 .
+Then, we can assume a word v with |v AV a| = |U | and words o and r such that: m=pAVoAVvAVaAVrAVq Let m0 be the word obtained from m by aduplicatinga the subword v AV a as follows: t3  s3  z }| { z }| { m = p AV o AV v AV aAVv AV a AV r AV q 0  Assume m0  w. Since m 1 w, any subword w of m0 must start in s3 and end in t3 .
+But then w contains two occurrences of a, a contradiction.
+We conclude by contradiction that m0 1 w. It is easy to verify that m0 a words(P AV U k+2 AV Q).
+It follows P AV U k+2 AV Q 1certain w. a Assume P AVU k+2 AVQ 1certain w. We can assume p a words(P ), u1 , .
+.
+.
+, uk+2 a words(U ), and q a words(Q) such that the word m = p AV u1 AV .
+.
+.
+AV uk+1 AV uk+2 AV q satisfies m 1 w. Let m0 be the word obtained from m by aomittinga the subword u1 as follows: t4  s4  }| { z}|{ z m0 = p AV u2 AV .
+.
+.
+AV uk AVuk+1 AV uk+2 AV q | {z } t5  Clearly, m0 a words(P AV U k+1 AV Q).
+Two cases can occur: 1. m0 1 w. Then, P AV U k+1 AV Q 1certain w.  10  2. m0  w. Since m 1 w, any subword w of m0 must start in s4 and end in t4 .
+Since |w| = k, w must actually end in t5 .
+Then a must occur in u2 AV .
+.
+.
+AV uk .
+We can assume a word v with |v| = |U | and words o and r such that: m = p AV u1 AV o AV a AV v AV r AV q Let m00 be the word obtained from m by aomittinga the subword v as follows: s6  t6  z }| { z}|{ m00 = p AV u1 AV o AV a AV r AV q  Assume m00  w. Since m 1 w, the subword w of m00 must start in s6 and end in t6 .
+But then w contains two occurrences of a, a contradiction.
+We conclude by contradiction that m00 1 w. It is easy to verify that m00 a words(P AV U k+1 AV Q).
+Consequently, P AV U k+1 AV Q 1certain w. This concludes the proof.
+Since aperiodic regular languages are expressible in FO [7, 8], we have the following result.
+Corollary 1.
+If the symbol a does not occur in w, then CERTAIN(a AV w) and CERTAIN(w AV a) are FO-definable.
+6  Words With Variables  We define v-words as words in which variables can replace symbols.
+These variables are placeholders for symbols.
+For example, the v-word xax represents any word of length 3 in which the first and the last symbol are equal, and the second symbol is a.
+We assume a countable set vars = {x, y, z, x1 , y1 , z1 , .
+.
+.}
+of variables disjoint from the alphabet IL.
+Definition 4.
+A v-word is a sequence s1 s2 .
+.
+.
+sn where for each i a {1, .
+.
+.
+, n}, si a IL aS vars.
+The notions of length and concatenation (see Def.
+1) naturally extend to v-words.
+The relation  is extended as follows.
+A valuation is a total function I, : vars aS IL a IL that is the identity on IL.
+For the v-word v = s1 s2 .
+.
+.
+sn , we define I,(v) = I,(s1 ) AV I,(s2 ) AV .
+.
+.
+AV I,(sn ).
+Note that if v contains no variables (i.e.
+v is a word), then I,(v) = v. If w is a word and v a v-word, then we define: w  v if and only if for some valuation I,, I,(v) is a subword of w. The relation certain directly carries over to v-words: if W is a multiword and v a v-word, then W certain v if and only if for every w a words(W ), w  v. The problem statement in Section 3 carries over to v-words.
+For example, CERTAIN(xx) contains some multiword W if each w a words(W ) contains two successive occurrences of the same symbol.
+Assume a binary alphabet IL =  11  {a, b}.
+Clearly, CERTAIN(aa) aS CERTAIN(bb) a CERTAIN(xx), and the inclusion is strict: for W1 = ha, {a, b}, bi, we have W1 6a CERTAIN(aa) aS CERTAIN(bb) and W1 a CERTAIN(xx).
+Theorem 4 shows that CERTAIN(xx) is not FO-definable.
+Theorem 4.
+Let IL be a finite alphabet with |IL| aL 2.
+Then, 1.
+CERTAIN(xx) is in P; 2.
+CERTAIN(xx) is not FO-definable.
+Proof.
+For the first item, let W = hA1 , .
+.
+.
+, An i.
+We construct, in polynomial time, a sequence hB1 , .
+.
+.
+, Bn i where B1 = A1 and for each k a {2, .
+.
+.
+, n}, dLa {} if Bka1 = {} dL, Bk = Ak \ Bka1 if |Bka1 | = 1 dLl Ak otherwise It is easy to show, by induction on increasing j, that for each j a {1, .
+.
+.
+, n}, Bj = {a a Aj | hA1 , .
+.
+.
+, Aja1 , {a}i 1certain xx} .
+Then, W a CERTAIN(xx) if and only if Bn = {}.
+For the second item, for every i aL 0, let i times  }| { z Wi = h{a}, {a, b}, .
+.
+.
+, {a, b}, {b}i .
+It is easy to verify that Wi a CERTAIN(xx) if and only if i is odd.
+The latter condition is not FO-definable.
+7  Conclusion  Every multiword defines a set of possible words.
+A subword w is acertaina in a multiword W if it occurs in every possible word of W .
+Given w, a significant question is whether CERTAIN(w), i.e.
+the set of multiwords in which w is certain, is FO-definable.
+We showed the following results: 1.
+CERTAIN(w) is regular if w is variable-free.
+2.
+CERTAIN(w) is FO-definable if w is variable-free and the first or the last symbol of w occurs only once in w. 3.
+CERTAIN(xx) is not FO-definable.
+These results are useful in consistent first-order rewriting under primary keys in historical databases.
+For example, our results imply that the following FOTL query q1 (aDid some employee remain in the same company for two successive time points?a) has no consistent first-order rewriting: q1 = axay(WorksFor(x, y) aSS #WorksFor(x, y)) .
+12  On the other hand, the following FOTL query q2 (aDid MS recruit an IBM employee who had worked for IBM for more than k time instants? )
+has a consistent first-order rewriting: q2 = ax(WorksFor(x, IBM) aSS#1 WorksFor(x, IBM) aSS... aSS#k WorksFor(x, IBM) aSS #k+1 WorksFor(x, MS)) , i times  z }| { where # D = ## .
+.
+.
+# D. Moreover, there exists an effective procedure for constructing a consistent first-order rewriting of q2 .
+This follows from Theorem 3 and the fact that the translation from an aperiodic regular language into FO is effective.
+So far, we have not studied algorithmic simplifications that may apply in our framework.
+The results presented in this article are preliminary.
+In particular, we are currently addressing the following tasks: i  1.
+Show the conjecture that CERTAIN(w) is FO-definable if w is variable-free.
+2.
+Show the conjecture that CERTAIN(w) is regular for any v-word w. 3.
+Find a syntactic characterization of the v-words w for which CERTAIN(w) is FO-definable.
+References 1.
+M. Arenas, L. E. Bertossi, and J. Chomicki.
+Consistent query answers in inconsistent databases.
+In PODS, pages 68a79.
+ACM Press, 1999.
+2.
+A. Fuxman and R. J. Miller.
+First-order query rewriting for inconsistent databases.
+J. Comput.
+Syst.
+Sci., 73(4):610a635, 2007.
+3.
+D. M. Gabbay, A. Pnueli, S. Shelah, and J. Stavi.
+On the temporal basis of fairness.
+In POPL, pages 163a173, 1980.
+4.
+L. Grieco, D. Lembo, R. Rosati, and M. Ruzzi.
+Consistent query answering under key and exclusion dependencies: algorithms and experiments.
+In O. Herzog, H.J.
+Schek, N. Fuhr, A. Chowdhury, and W. Teiken, editors, CIKM, pages 792a799.
+ACM, 2005.
+5.
+J.
+A. W. Kamp.
+Tense Logic and The Theory of Linear Order.
+PhD thesis, University of California, Los Angeles, 1968.
+6.
+L. Libkin.
+Elements of Finite Model Theory.
+Springer, 2004.
+7.
+R. McNaughton and S. Papert.
+Counter-free Automata.
+MIT Press, Cambridge, MA, 1971.
+8.
+M. P. SchuEtzenberger.
+On finite monoids having only trivial subgroups.
+Information and Control, 8(2):190a194, 1965.
+9.
+J. Wijsen.
+On the consistent rewriting of conjunctive queries under primary key constraints.
+In M. Arenas and M. I. Schwartzbach, editors, DBPL, volume 4797 of Lecture Notes in Computer Science, pages 112a126.
+Springer, 2007.

@@ -1,0 +1,1815 @@
+Analysis of Timed Recursive State Machines Massimo Benerecetti UniversitaE degli studi di Napoli Federico II Napoli, Italy bene@na.infn.it  Stefano Minopoli UniversitaE degli studi di Napoli Federico II Napoli, Italy minopoli@na.infn.it  AbstractaThe paper proposes a temporal extension of Recursive State Machines (RSMs), called Timed RSMs (TRSMs).
+A TRSM is an indexed collection of Timed Automata allowed to invoke other Timed Automata (procedural calls).
+The classes of TRSMs are related to an extension of Pushdown Timed Automata, called EPTAs, where an additional stack, coupled with the standard control stack, is used to store temporal valuations of clocks.
+A number of subclasses of TRSMs and EPTAs are considered and compared through bisimulation of their timed LTSs.
+It is shown that EPTAs and TRSMs can be used to recognize classes of timed languages exhibiting contextfree properties not only in the untimed acontrola part, but also in the associated temporal dimension.
+The reachability problem for both TRSMs and EPTAs is investigated, showing that the problem is undecidable in the general case, but decidable for meaningful subclasses.
+The complexity is stated for a TRSMs subclass.
+Keywords-Recursive State Machines; Timed Automata; Real Time Systems; Context Free Languages.
+I. I NTRODUCTION The formalism of Recursive State Machines (RSMs) has been introduced in [1] to model control flow in typical sequential imperative programming languages with recursive procedure calls.
+A RSM is an indexed collection of finite state machines (components).
+Components enhance the power of ordinary state machines by allowing vertices which correspond to invocations of other components in a potentially recursive manner.
+As shown in [1], RSMs are closely related to Pushdown Systems (PDSs).
+While PDSs have been widely studied in the literature within the field of program verification, RSMs seem to be more appropriate for visual modeling.
+In the context of statetransition formalisms, Timed Automata (TA) [2] are the reference framework to model real time systems.
+In this paper we consider a real time extension of RSMs (Timed RSMs or TRSMs), which allows to model real time recursive systems.
+Roughly speaking, a TRSM is an indexed collection of Timed Automata, with the additional ability of allowing states corresponding to invocations of other timed components.
+All the timed components refer to a 1 Partially supported by Italian MIUR Project aIntegrating automated reasoning in model checking: towards push-button formal verification of large-scale and infinite-state systems.a  Adriano Peron UniversitaE degli studi di Napoli Federico II Napoli, Italy peron@na.infn.it  common set of clocks used to constrain the behavior.
+Within a timed component, the only explicit update of clocks is the standard operation of clock reset.
+In addition, clock updates occur when transitions, corresponding to invocations of other components or returns from components, are performed.
+In particular, at invocation time one can choose the subset of clocks to reset, and at return time one can choose to restore a subset of clocks to the values they had at invocation time.
+The idea of extending formalisms which implicitly allow to model recursive systems (e.g., PDSs) with real time features has already been proposed in the literature (e.g., [7], [4]).
+For instance, [4] proposes the formalism of Pushdown Timed Automata (PTA), which are Timed Automata augmented with a pushdown control stack.
+However, besides that fact that TRSMs, similarly to RSMs, are more appropriate than PTAs for visual modeling, it seems that PTAs are not expressive enough to account for storing and restoring clock values.
+Indeed, the control stack of PTAs allows to trace the history of component invocation but cannot be exploited to record the history of clock values stored at invocation time and which are needed at the matching returns for restoration.
+For instance, the store/restore of clock values in correspondence of invocations and returns allows to model in a very natural way a notion of time local to a component.
+In other words, TRSMs can manage an evolution of time within a component, abstracting away the elapse of time within the invoked components.
+Since the number of recursive invocation can be unbounded, it seems that this notion of local time cannot be modeled by PTAs without an unbounded number of clocks.
+In the paper we also lift to the timed setting the correspondence between RSMs and PDSs, as stated in [1].
+Since PTAs are not expressive enough to account for TRSMs, we propose Extended PTAs, which augment PTAs with an additional stack.
+The additional stack is used to save/restore clock valuations.
+The two stacks are independent, in the sense that the control stack is used to save control symbols and the valuation stack is used only for storing clock valuations.
+As a consequence, ETPAs, besides the standard clock reset operations, also allows for store and restore operations on clock valuations.
+We shall prove that TRSMs are equivalent (via weak timed bisimulation) to a syntactic restriction of EPTAs (i.e.
+: EPTA 2).
+It is  interesting to notice that EPTAs seem to be also a suitable framework to study timed languages exhibiting contextfree properties both in the untimed acontrola part and in the associated timestamps.
+For instance, we shall provide an example of a context-free timed language with mirror distribution of symbols and of temporal delays between consecutive symbols.
+The main technical contributions of the paper are decidability and complexity results for the reachability problem in TRSMs and EPTAs.
+In particular, we show that the problem is undecidable for the general classes of TRSMs and EPTAs.
+However, decidability can be recovered by forcing to restore all the clock values at return time.
+The class of TRSMs satisfying this restriction is called TRSM 1.
+The equivalent class of EPTAs, which can be characterized with suitable syntactical restrictions, is denoted by EPTA 1.
+The complexity of reachability is given for the subclass TRSM 0 of TRSM 1, which further forces to reset all the clock values at invocation time.
+For this class, the reachability problem is shown to be PSPACE-complete, as in classical TA.
+The paper also provides a comprehensive picture of the expressive hierarchy and equivalence among TRSMs and EPTAs.
+The structure of the paper is as follows.
+Section 1 defines syntax and the semantics of TRSMs.
+Section 2 introduces syntax and semantics of EPTAs.
+Section 3 establishes the correspondence between subclasses of TRSMs and EPTAs.
+Section 4 is devoted to the decidability and complexity analysis of the reachability problem for TRSMs and EPTAs.
+II.
+T IMED R ECURSIVE S TATE M ACHINES In this section we define syntax and semantics of TRSMs.
+A TRSM is an indexed collection of Timed Automata, with the additional ability of distinguishing ordinary states (nodes) and states corresponding to invocation of other timed components (boxes).
+We preliminary recall some standard notions of Timed Automata.
+A dense clock is a variable over a dense domain DaL0 (as usual non negative reals RaL0 or rationals QaL0 ).
+A clock valuation is a function v : X a DaL0 .
+For a set of clocks X, the set of clock constraints C(X) is defined by the following grammar: D:=x az c | x a y az c | D aSS D | D a" D where x, y a X, c a QaL0 and az a {<, a$?, =, 6=, aL, >}.
+Following [2], we write v a D when the clock valuation v satisfies the clock constraint D a C(X).
+The notion of constraint satisfaction by a clock valuation is defined in the standard way (e.g., see [2]).
+For t a DaL0 , v+t denotes the valuation v0 such that v 0 (x)=v(x) + t, for all x a X (clock progress).
+Given r a X, v ar denotes the valuation resulting  from the reset of the clocks in r, namely: ( 0 if i a r (v ar )(i) = v(i) otherwise.
+Moreover, given the valuations v, v and a set r a X, v a(r,v) denotes the valuation resulting from the update of the clocks in r, according to v, namely: ( v(i) if i a r (v a(r,v) )(i) = v(i) otherwise.
+We can now define Timed Recursive State Machines (TRSMs).
+A TRSM is an indexed collection of components which share a set of clocks X.
+The set of states of each component is partitioned into a set of nodes and a set of boxes.
+Boxes correspond to invocation and are associated with an index of a component.
+There are four kinds of transitions: (i) internal transitions connecting nodes of the same component; (ii) call transitions which lead to a box and an entry node of the called component; (iii) return transitions which lead from a box and an exit node of the callee to a node of the caller; (iv) return-and-call transitions which combines a return and a call transitions.
+Transitions are decorated with clock constraints as in TA.
+Internal transitions can only reset clocks as in TA.
+Call transitions can reset a subset of clocks at invocation time.
+Return transitions can update a subset of clocks by restoring the values they had at invocation time, and reset a possibily different subset of clocks.
+Definition 1: For an alphabet IL, a TRSM is a tuple hA1 , .
+.
+., An , Xi where, for all 1 a$?
+i a$?
+n, Ai is a component S and X is a finite set of clocks.
+A component Ai is hNi Bi , Yi , Eni , Exi , I'i i, where: aV Ni and Bi are the disjoint sets of nodes and boxes, respectively; aV Yi : Bi a {1,. .
+.
+, n} assigns to every box the index of a component; aV Eni a Ni , Exi a Ni are the sets of entry and exit nodes, respectively; aV I'i a (Ni aS Retnsi ) A IL aS {D } A C(X) A 2X A 2X A (Ni aS Callsi ) is the transition relation, where Callsi ={(b,en): b a Bi , en a EnYi (b) }, Retnsi ={(b,ex): b a Bi , ex a ExYi (b) }.
+For each transition hu1 ,D,D,r1 ,r2 ,u2 i a I'i : a u1 (resp.
+: u2 ) are the source (resp.
+: target) of the transition; a D a ILaS{D } is an input symbol or the silent action; a D a C(X) is a constraint over the clocks in X; a r1 (resp.
+: r2 ) is the subset of clocks to reset (resp.
+: restore).
+S We use the followingSabbreviations: N = S S i Ni , Calls = Si Callsi , Retns = i Retnsi , En = i Eni and Ex = i Exi .
+In order to avoid confusion with the empty stack symbol, we use the symbol D to represent the internal silent  action (usually called -transition).
+We assume that only return and return-and-call transitions can have a non empty set r2 of restored clocks.
+A global state of a TRSM T =hA1 , .
+.
+., An , Xi is a tuple gs=hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi, where b1 , .
+.
+., bs are boxes, u is a node and v1 , .
+.
+., vs , v are clock valuations.
+Intuitively, b1 , .
+.
+., bs represent the history of the invoked components, v1 , .
+.
+., vs are the corresponding valuations stored at invocation time, u is the current node, and v is the current clock valuation.
+A global state gs=hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi such that bi a Bji , for 1 a$?
+i a$?
+r and u a Nj is well-formed if Yji (bi )=ji+1 for 1 a$?
+i < r and Yjs (bs )=j.
+The set of well-defined global states is denoted by GS.
+The semantics of a TRSM over the alphabet IL is given by the timed Labelled Transition System (timed LTS) hGS, aL0 GS0 , ILD , ai, where: D GS0 a GS is the set of states of the form h, u, v0 i, with u a En1 and v0 (x)=0, for all x a X; S S D aL0 aV ILD is the set IL {D } {D (t)|t a DaL0 }, where IL and DaL0 are disjoint; D aL0 A GS is the transition relation.
+For aV a a GS A ILD gs=hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi, with u a Nj and bs a Bm , hgs,D,gs0 i a a whenever one of the following holds: 1) progress transition: D = D (t) and gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i, with v0 = v + t and t a DaL0 ; 2) reset transition: if hu,D,D,r1 ,a,u0 i a I'j , with u0 a Nj , and v a D, then gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i, with v0 = v ar1 ; 3) call transition: if hu,D,D,r1 ,a,(b0 ,en)i a I'j , with b0 a Bj , and v a D, then gs0 = hb1 , .
+.
+., bs , b0 , en, v1 , .
+.
+., vs , v, v0 i, with v0 = v ar1 ; 4) return transition: if h(bs , u),D,D,r1 ,r2 ,u0 i a I'm , with u0 a Nm , u a Exj , and v a D, then gs0 = hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , v0 i, with v0 = v a(r2 ,vs )ar1 ; 5) return-and-call transition: if h(bs , u),D,D,r1 ,r2 ,(b0 , en)i a I'm , with b0 a Bm , u a Exj and v a D, then gs0 = hb1 , .
+.
+., bsa1 , b0 , en, v1 , .
+.
+., vsa1 , vs0 , v0 i, with vs0 = v a(r2 ,vs ) and v0 = vs0 ar1 .
+A progress transition occurs when the control remains in the same vertex and there is only a clock progress.
+A reset transition occurs when there is an internal transition inside a component, which can possibly reset a subset of clocks.
+A call transition occurs when a box is entered and a component is invoked.
+In this case the current clock valuation is stored and a subset of clocks are possibly reset.
+A return transition occurs when the control returns to the invoking component.
+In this case, the valuation at invocation time may be restored for that subset of clocks aV  specified in the restore set decorating the transition, the constraint must be satisfied by the current clock valuation and, finally, some clocks may be reset.
+A return-and-call transition combines the effect of return and call in a single step.
+Notice that the above timed LTS, besides symbols in IL, also has symbols representing the elapse of time, and satisfies the usual properties of temporal determinism, time additivity and 0-delay as defined in [3].
+A run ItT of T is a (possibly infinite) path in the LTS aL0 D hGS, GS0 , ILDD , ai for T having the form ItT =gs0 a0 Di Di D1 gs1 a gs2 .
+.
+.
+gsi a .
+.
+.
+, where gsi a gsi+1 a a, for all i aL 0.
+It is an initial path, if gs0 a S0 .
+By IT we denote the set of all paths of T .
+For any two gsi , gsj a GS, gsj is reachable from gsi , written gsi aa gsj , if there is a run Dja1 Di+1 D ItT =gsi ai gsi+1 a gsi+2 .
+.
+.
+gsja1 a gsj .
+Notice that an RSM can be seen as a TRSM with an empty set of clocks, and where the only clock constraint is T rue.
+From the semantic point of view, the clock valuations occurring in a global state are meaningless, and progress transitions are omitted in the LTS.
+Example 1: In Fig.
+1 we show a TRSM whose behavior is triggered by a timed sequence of symbols having the form (a,t1 ).
+.
+.
+(a, tn )(b,tn+1 ) .
+.
+.
+(b,t2n ), such that a2nai+1 +ai a$?
+k, with k a fixed constant value, and, taking t0 = 0, ai = ti atia1 .
+Notice that the untimed part of the sequence above describes a context-free language (i.e., L={an bn : n aL 1}).
+The TRSM consists of a single component, which may be invoked recursively.
+The local behavior inside a component consists of a transition triggered by a symbol a followed by a symbol b.
+The transition triggered by b may be delayed by a recursive invocation.
+The component uses the clocks x and y: the first is reset at invocation time while the second is reset when the symbol b occurs.
+Both clocks are restored at return.
+The enforced requirement is, therefore, that the local behavior is performed within time k, abstracting away the time possibly spent by the recursive computation.
+It is meaningful to observe that even though a PTA can model invocations and returns by using its control stack, it could not guarantee the temporal requirement above, since, in order to check a2nai+1 + ai a$?
+k, it would require an unbounded number of clocks, one for each recursive call.
+We introduce now two subclasses of TRSMs obtained by suitably constraining the ability of resetting and restoring clocks associated with transitions.
+These subclasses will be compared in Sections 3 and 4 with respect to expressive A a, T rue, {x}, a b1 : A  D , y = 0, a, X  a, T rue, a, a b, x a$?
+k, {y}, a  Figure 1.
+An example of TRSM  b, x a$?
+k, {y}, a  power and decidability properties.
+TRSM 1: the class of TRSMs, where return and returnand-call transitions are of the form h(b, ex), D, D, r1 , X, u2 i, with u2 a N aS Calls (the whole set of clocks is restored at every return); TRSM 0: the class of TRSM 1, where call and returnand-call transitions are of the form hu1 , D, D, X, a, (b, en)i and h(b0 ,ex), D, D, X, X, (b, en)i, respectively (the whole set of clocks is reset at every call).
+Unlike the general TRSMs class, where subsets of clock values can be restored, in the TRSM 1 and TRSM 0 subclasses the entire set of clocks are restored at return time from the invoked component.
+Therefore, the clock valuations at return time are the same clock valuations at invocation time.
+This allows to model in a very natural way a notion of time local to a component, abstracting away the elapse of time within an invoked component.
+In the TRSM 0 class this abstraction is even stronger, because all clocks are reset at invocation time.
+Notice that, despite the fact that TRSM 1 and TRSM 0 abstract away the time spent into the invoked components, it does not seems possible to model them with PTAs.
+Indeed, since the number of recursive invocation can be unbounded, an unbounded number of clocks would be necessary.
+Notice that the TRSM of Example 1 belongs to the class TRSM 0.
+III.
+E XTENDED P USHDOWN T IMED AUTOMATA In this section we introduce syntax and semantics of Extended Pushdown Timed Automata (EPTAs).
+An EPTA is a Pushdown Automaton enriched with a set of clocks and with an additional stack used to store/restore clock valuations.
+1 Definition 2: An EPTA P over IL aS {D } is a tuple hQ, q0 , X, I, T i, where: aV Q is a finite set of states and q0 a Q is the initial state; aV X is a finite set of clocks and I is a finite stack alphabet; S S 2 aV T a Q A IL aS {D } A I aS {} A ({} I I )A C(X) A 2X A Op A Q is the transition relation, with Op={Reset, Store, Restore}.
+Intuitively, for each transition of the form hq1 , D, Il1 , Il2 , D, r, op, q2 i a T , q1 (resp.
+: q2 ) is the source (resp.
+: the target) state; D is the input symbol; Il1 is the symbol on top of the control stack ( denotes the empty stack); Il2 is the string (of length at most 2) which replaces the symbol on top of the control stack; D a C(X) is a clock constraint; op is the operation requested on the set r of clocks.
+If op a {Reset, Store}, then r indicates the set of clocks to reset.
+In addition, if op = Store, the current clock valuation is stored 1 Actually an EPTA is a PTA (see [4]) for a syntactical definition where the control stack is coupled with a second stack for the clock valuations.
+on top of the valuation stack.
+If op = Restore, r indicates the set of clocks to restore, using the clock valuation on top of the valuation stack.
+A configuration of an EPTA P is a tuple hq,v,w,di, where q a Q is the current control state, v is the current clock valuation, w a Ia is the content of the control stack, and d a (X a DaL0 )a is the content of the valuations stack.
+The set of all configurations is denoted by GC.
+The semantics of EPTAs is given by a timed LTS hGC, aL0 GC0 , ILDD , ai, where: aV aV  GC0 is {hq0 ,v0 ,,i}, with v0 (x)= 0, for every x a X; aL0 a a GC A ILDD A GC is the transition relation.
+For gc = hq,v,w,vs AV di, hgc,D,gc0 i a a whenever one of the following holds: 1) progress transition: D = D (t) and gc0 = hq,v0 ,w,vs AV di, with v0 = v + t and t a DaL0 ; 2) reset transition: if hq, D, a, Il, D, r, Reset, q 0 i a T , with v a D and w = a AV w00 , then gc0 = hq 0 ,v0 ,Ilw00 ,vs AV di with v0 = v ar ; 3) store transition: if hq, D, a, Il, D, r, Store, q 0 i a T , with v a D and w = a AV w00 , then gc0 = hq 0 ,v0 ,Ilw00 ,v AV vs AV di with v0 = v ar ; 4) restore transition: if hq, D, a, Il, D, r, Restore, q 0 i a T , with v a D, w = a AV w00 , then gc0 = hq 0 ,v0 ,Ilw00 ,di, with v0 = v ar,vs .
+When a progress transition occurs, there is only a clock progress; the control remains in the same state and the two stacks are left unchanged.
+A reset transition pops a symbol from the control stack, pushes a string of symbols on the control stack, and resets a set of clocks, while the valuation stack is left unchanged.
+A store transition behaves as a reset transition, except that, in addition, it pushes the current clock valuation on the valuation stack.
+A restore transition pops a control symbol from the stack, pushes a string on the control stack, and pops a valuation from the valuation stack, restoring a subset of the clock values according to the popped clock valuation.
+The notions of (initial) run and reachability among pairs of states can be defined exactly as in the case of TRSMs.
+IP denotes the set of runs and gc aaP gc0 denotes a pair of reachable states.
+Example 2: In Fig.
+2 we show an EPTA whose behavior is triggered by a timed sequence of symbols having the form: (a,t1 ).
+.
+.
+(a, tn )(b,tn+1 ).
+.
+.
+(b,t2n ) such that a2nai =ai , with ai = ti+1 a ti .
+Notice that the untimed part of the sequence above describes a context-free language (i.e.
+L={an bn : n aL 1}).
+As for the timed part, the sequence is required to satisfy a mirror distribution of the delays between consecutive symbols.
+Notice that, the timed language above exhibits a context-free property both in the untimed part and in the temporal sequence of timestamps.
+This shows the main difference with respect to PTAs ([4]) where there is no mean to check context free properties on times.
+As in the case of TRSMs, we introduce three subclasses of EPTAs by suitably constraining the operations associated with transitions.
+These subclasses will be naturally related with the subclasses of the TRSMs defined in the previous section.
+The restrictions tightly couple the type of operations performed on the control stack and on the valuation stack.
+EPTA 2 is the subclass of EPTAs where: aV reset transitions have the form hq1 , D, a1 , a2 , D, r, Reset, q2 i, with a1 a I aS {}, a2 a I (only a swap on the top of the control stack is allowed); aV store transitions have the form hq1 , D, a, Il, D, r, Store, q2 i with a a I aS {} and Il a I2 (only a swap followed by a push is allowed on the control stack); aV restore transitions have the form hq1 , D, a, , D, r, Restore, q2 i, with a a I (only a pop operation is allowed on the control stack); EPTA 1 is the subclass of EPTA 2 where: aV restore transitions have the form hq1 , D, a, , D, X, Restore, q2 i, with a a I (the whole set of clocks is restored); EPTA 0 is the subclass of EPTA 1 where: aV store transitions have the form hq1 , D, a, Il, D, X, Store, q2 i, with a a I aS {}, Il a I2 (the whole set of clocks is reset); Notice that the EPTA of the Example 2 belongs to the class EPTA 2.
+IV.
+R ELATIONSHIP BETWEEN TRSM S AND EPTA S In this section we investigate the relationship between TRSMs and EPTAs and their subclasses.
+In order to show such a correspondence, we shall use the standard notion of (timed) weak bisimulation between timed LTS.
+The general picture is reported in Table I.
+For the definition of weak bisimilarity for timed LTSs we follows the approach in [3].
+Notice that bisimulation for Timed LTS is a nontrivial generalization of the untimed case, and requires some additional technicalities.
+Formally an LTS L=hS,S0 ,IL, ai simulates a transition system L0 =hS 0 ,S00 ,IL, a0 i if there exists a simulation relation asa S A S 0 defined as follows:  q0  a, , , T rue, {x}, Reset  b, , , T rue, {y}, Reset  q1  q2  a, , , T rue, {x}, Store  D , , , (x = y) aSS (z = 0), {y}, Reset q4  Figure 2.  b, , , T rue, {z}, Reset  D , , , z = 0, {x}, Restore  An example of EPTA  q3  initialization: for all s0 a S0 , there is a s00 a S00 , with s0 as s00 ; D 0 aV propagation: for all D a IL, if s1 as s1 and s1 a s2 , D then there exists s02 a S 0 such that s01 a s02 and s2 as s02 .
+If the relation asa1 , defined as x asa1 y a y as x, is also a simulation relation, then as is a called a bisimulation relation.
+Two LTSs L and L0 are strongly bisimilar, written L aAs L0 , if there is a bisimulation relation between L and L0 .
+In order to introduce a notion of weak bisimulation we suitably transform a timed transition system by abstracting sequences of D -transitions.
+For a timed LTS L, a delay Dn D D sn , such execution is a run of the form s0 a1 s1 a2 s2 .
+.
+.
+a that, for every 1 a$?
+i a$?
+n, either Di = D or Di = D (ti ), for some ti a DaL0 .
+The abstract transition system associated aL0 to L is Labs = hS, S0 , ILDD \ {D }, ai, where: a D a 00 a 0 00 aV s a s if a a IL and there exists s a S, s a s a s0 ; D (t) 0 D1 aV s a s if there exists a delay execution s = s0 a s1 P D2 Dn a s2 .
+.
+.
+a sn = s0 such that t = {ti | Di = D (ti )}.
+D a The relation a denotes the reflexive and transitive D closure of a.
+The transition system Labs abstracts all the D (0) D a silent actions of L. The relation a thus corresponds to a .
+a Notice also that the relation a only abstracts silent actions that can be done before a.
+Of course, if L is the timed LTS of a TRSM or of a EPTA without silent actions, then L and Labs are identical.
+Two LTS L and L0 are weakly bisimilar, written L aAw L0 , if there exists a bisimulation relation between Labs and L0abs .
+The following theorem shows the tight corresponding between TRSMs and EPTAs and their subclasses.
+Theorem 1: For any TRSM (resp.
+: TRSM 1, TRSM 0) T , there exists a weakly similar EPTA 2 (resp.
+: EPTA 1, EPTA 0) P and vice versa.
+Proof: We first show the bisimulation relation between TRSM and EPTA 2.
+Given a TRSM T =hA1 , .
+.
+., An , Xi over an alphabet IL, we first S give the construction of an EPTA 2 P over the alphabet IL {D } that is weakly bisimilar to a T .
+(The idea of the construction is similar to the one presented in [1] to encode RSMs into pushdown systems).
+S In the following we assume that Ai has the form hNi Bi , Yi , Eni , Exi , I'i i. P=hQ, q0 , X aS {x0 }, I, T i, is defined as follows: (k) aV Q={q0 } aS {q(i,u) | 1 a$?
+i a$?
+nex , 1 a$?
+k a$?
+kmax and u a N aS Calls}, where nex is the greatest number of aV  Table I E XPRESSIVENESS RELATIONS AMONG TRSM S AND EPTA S .
+EPTA 0 aAw TRSM 0  a a  EPTA 1 aAw TRSM 1  a a  EPTA 2 aAw TRSM  a  EPTA  aV  aV  exit nodes of all component machines and kmax is the greatest number of return transitions exiting from every ex a Ex; S I={(j,u) | 1 a$?
+j a$?
+n, u a Nj Bj }.
+A pair (j,u) gives the index of a component and the current box or node in the component; T is defined as follows: a for every pair (j,exi )a I with exi a Exj , hq0 , D , (j,exi ), (j,exi ), T rue, {x0 }, Reset, q0 i a T ; a for every reset transition of the form hu, D, D, r1 , a, u0 i a I'j , where u a / Retns and u0 a / Calls, there is a transition hq0 , D, (j,u), (j,u0 ), D, r1 , Reset, q0 i a T ; a for every call transition hu, D, D, r1 , a, (b, en)i a I'j where u a / Retns, b a Bj , Yj (b)=j 0 and en a Enj 0 , there is a transition hq0 , D, (j,u), (j 0 ,en)AV(j,b), D, r1 , Store, q0 i a T ; a if h(b,exi ), Dk , Dk , r1k , r2k , ui a I'j is the kth return transition from the exit node exi , with u a Nj , Yj (b)=j 0 , then there are the following transitions: 1) hq0 , Dk , (j 0 ,exi ),, Dk aSS(x0 = 0), r2k , Restore, (k) q(i,u) i a T ; (k)  2) hq(i,u) , D , (j,b), (j,u), x0 = 0, r1k , Reset, q0 i a T; a if h(b,exi ), Dk , Dk , r1k , r2k , (b0 ,en)i a I'j is the k-th return-and-call transition from the exit node exi , with Yj (b)=j 0 and Yj (b0 )=j 00 , then there are the following transitions: 1) hq0 , Dk , (j 0 ,exi ),, Dk aSS(x0 = 0), r2k , Restore, (k) q(i,(b0 ,en)) i a T ; (k)  2) hq(i,(b0 ,en)) , D , (j,b),(j 00 ,en)AV(j,b0 ), x0 = 0, r1k , Store, q0 i a T .
+The weak bisimulation relation as between LT and LP is defined as follows.
+For gs a GS and gc a GC, gs as gc if and only if one of the following holds: 1) gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i and gc = hq0 , vs+1 , (j, u)(js , bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, where vk (x) = vk (x) for all x a X and 1 a$?
+k a$?
+s + 1; 2) gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i and gc = (n) hq(i,u) , vs+1 , (js+1 , bs+1 ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, with vk (x) = vk (x), for all x a X and 1 a$?
+k a$?
+s, and vs+1 (x) = vs+1 (x) for all x a X \ r1n , where r1n is the set of clocks reset by the n-th return transition from (bs+1 , exi ) to u and vs+1 (x0 ) = 0; 3) gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with u a En and vs+1 = vs ar1 n , where r1n is the set of clocks reset by the n-th return-and-call transition from (n) (bs0 , exi ) to (bs , u) and gc = hq(i,(bs ,u)) , vs , (js0 , bs0 ).
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i, with vk (x) = vk (x), for all x a X and 1 a$?
+k a$?
+s. We show now that as is a bisimulation.
+Let us consider the initialization requirement.
+An initial state of T has the form gs0 =hen, , v0 i, with en a En1 .
+The initial state of P has the form gc0 =hq0 , v0 , (1,en), i.
+By definition of as, it is immediate to show that gs0 as gc0 and gc0 asa1 gs0 .
+Let us consider now the propagation requirement.
+Let us assume that gs as gc.
+There are the following cases: aV Let gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i be a global state and gc = hq0 , vs+1 , (j, u)(js , bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, where vk (x) = vk (x) for all x a X and 1 a$?
+k a$?
+s + 1, be a configuration.
+By definition, gs as gs.
+Now we show all the possible transitions in Labs (T ) having gs as source: t a (progress transition): gs a gs0 , for some t a aL0 0 D , where gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 +ti.
+Then there exists in Labs (P) the progress t transition gc a gc0 , where gc0 = hq0 , vs+1 + t, (j,u)(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 ; D a (reset transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i, hu, D, D, r, a, u0 i a I'j and vs+1 a D. Then there exists in Labs (P) D the transition gc a gc0 , where gc0 = hq0 , vs+1 ar , (j,u0 )(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i and hq0 , D, (j,u), (j,u0 ), D, r, Reset, q 0 i a T .
+By definition, gs0 as gc0 ; D a (call transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs , bs+1 , en, v1 , .
+.
+., vs+1 , vs+1 ar1 i, hu, D, D, r1 , a,(bs+1 , en)i a I'j and vs+1 a D. Then there exists D in Labs (P) the transition gc a gc0 , where gc0 = hq0 , vs+1 ar1 , (j 0 , en)(js+1 ,bs+1 ) .
+.
+.
+(j1 ,b1 ), vs+1 .
+.
+.
+v1 i and hq0 , D, (j,u), (j 0 ,en)AV(js+1 ,bs+1 ), D, r1 , Store, q0 i a T .
+By definition, gs0 as gc0 ; Dn a (return transition): gs a gs0 , where gs0 = hb1 , 0 .
+.
+., bsa1 , u , v1 , .
+.
+., vsa1 , (vs+1 a(r2n ,vs ) ) ar1n i, h(bs , u), Dn , Dn , r1n , r2n , u0 i a I'j is the k a th return transition from u (u=exi ) to u0 and vs+1 a D. Then there exists in Labs (P) the transition Dn (n) gc a gc0 , where gc0 = hq(i,u0 ) , vs+1 a(r2n ,vs ) , (js ,bs ).
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i and hq0 , Dn , (j,exi ), (n) , Dn aSS (x0 = 0), r2n , Restore, q(i,u0 ) i in T .
+By 0 0 definition, gs as gc ; D a (return-and-call transition): gs a gs0 , where 0 gs = hb1 , .
+.
+., bsa1 , bs+1 , en, v1 , .
+.
+., vs , vs+1 a(r2n ,vs ) ,vs+1 a(r2n ,vs ) ar1n i, h(bs , u), Dn , Dn , r1n , r2n , (bs+1 ,en)i a I'j is the n a th return-and-call transition from (bs , u) (u = exi ) to (bs+1 , en) and vs+1 a D. Then there exists in Dn Labs (P) the transition gc a gc0 , where gc0 = (n) hq(i,(bs+1 ,en) , vs+1 a(r2n ,vs ) , (js ,bs ).
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i and hq0 , Dn , (j,exi ),, Dn aSS (x0 = 0), (n) r2n , Res!tore, q(i,(bs+1 ,en) i in T .
+By definition, gs0 as gc0 .
+D  Now we show all the possible transitions in Labs (P) having gc as source: t  a (progress transition): gc a gc0 , for some t a DaL0 , where gc0 = hq0 , vs+1 + t, (j,u)(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+Then there exists in Labs (T ) the t progress transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 + ti.
+By definition, gc0 asa1 gs0 ; D a (reset transition): gc a gc0 , where gc0 = hq0 , vs+1 ar , (j,u0 )(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, hq0 , D, (j,u),(j,u0 ),D,r,Reset,q 0 i a T and vs+1 a D. Then D there exists Labs (T ) the transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i and hu, D, D, r, a, u0 i a I'j .
+By definition, gc0 asa1 gs0 ; D a (store transition): gc a gc0 , where gc0 = hq0 , vs+1 ar1 , (j 0 , en) (js+1 ,bs+1 ) .
+.
+.
+(j1 ,b1 ), vs+1 .
+.
+.
+v1 i, hq0 , D, (j,u), (j 0 ,en)AV(js+1 ,bs+1 ), D, r1 , Store, q0 i a T and vs+1 a D. Then there D exists in Labs (T ) the transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs , bs+1 , en, v1 , .
+.
+., vs+1 , vs+1 ar1 i and hu, D, D, r1 , a,(bs+1 , en)i a I'j .
+By definition, gc0 asa1 gs0 ; Dn (n) a (restore transition): gc a gc0 , where gc0 = hq(i,u0 ) , vs+1 a(r2n ,vs ) , (js ,bs ) .
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i, hq0 , Dn , (j,exi ),, Dn aSS (x0 = 0), r2n , Restore, (n) q(i,u0 ) i in T and vs+1 a D. Then there exists in Dn Labs (T ) the transition gs a gs0 , where gs0 = hb1 , 0 .
+.
+., bsa1 , u , v1 , .
+.
+., vsa1 , (vs+1 a(r2n ,vs ) ) ar1n i and h(bs , u), Dn , Dn , r1n , r2n , u0 i a I'j is the k a th return transition from u (u=exi ) to u0 .
+By definition, gc0 asa1 gs0 ; D [t] a (progress with D ): gc a gc0 (possible only when u=exi a Exj ), abstracting the D transition hq0 , D , (j,exi ), (j,exi ), T rue, {x0 }, Reset, q0 i a T and the clock progress of t a DaL0 units of time.
+The resulting configuration is gc0 = hq0 ,vs+1 a{x0 } +t,(j,exi ).
+.
+.
+(j1 ,b1 ),vsa1 .
+.
+.
+v1 i.
+Then there exists t in Labs (T ) the transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 +ti.
+By definition, gc0 asa1 gs0 ; Dn a (restore with D ): gc a gc0 (possible only when u=exi a Exj ), abstracting the following transitions: a hq0 , D , (j,exi ), (j,exi ), T rue, {x0 }, Reset, q0 i a T ; a hq0 , Dn , (j,exi ),, Dn aSS x0 = 0, r2n , Restore, (n) q(i,u0 i in T .
+n The resulting configuration is gc0 = hq(i,u 0), vs+1 a{x0 } a(r2n ,vs ) , (js ,bs ) .
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i, with vs a Dn aSS x0 = 0 and u0 a N aS Calls.
+Then there exists in Labs (T )  aV  n gs0 , where gs0 = hb1 , .
+.
+., the transition gs a bsa1 , u0 , v1 , .
+.
+., vsa1 , vs+1 a(r2n ,vs ) ar1n i and h(bs , exi ), Dn , Dn , r1n , r2n , u0 i a I'j is the k a th return (or return-and-call) transition from u (u=exi ) to u0 .
+By definition, gc0 asa1 gs0 .
+Let gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i be a global (n) state and gc = hq(i,u) , vs+1 , (js+1 , bs+1 ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, with vk (x) = vk (x), for all x a X and 1 a$?
+k a$?
+s, and vs+1 (x) = vs+1 (x) for all x a X \ r1n , where r1n is the set of clocks reset by the n-th return transition from (bs+1 , exi ) to u and vs+1 (x0 ) = 0.
+By definition, gs as gs.
+Now we show all the possible transitions in Labs (T ) having gs as source: t a (progress transition): gs a gs0 , for some t a DaL0 , where gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 + ti.
+D [t]  Then there exists in Labs (P) the transition gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u), x0 = 0, r1n , Reset, q0 i and 2) the progress transition in q0 of an amount of t units of time.
+The resulting configuration is gc0 = hq0 , (vs+1 ar1n ) + t, (j,u)AV (js ,bs ) .
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 ; D a (reset transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i, hu, D, D, r, a, u0 i in I'j and vs a D. Then there exists in Labs (P) D the transition gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u),x0 = 0, r1n , Reset, q0 i; 2) hq0 , D, (j,u),(j,u0 ),D,r,Reset,q 0 i The resulting configuration is gc0 = hq0 , (vs+1 ar1n ) ar , (j,u0 )AV(js ,bs ) .
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 ; D a (call transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs+1 , en, v1 , .
+.
+., vs+1 , vs+1 ar1n i and hu, D, D, r, a, (bs+1 , en)i a I'j and vs a D. Then there D exists in P the transition gc a gc0 , abstracting the following transitions: (n) a hq(i,u) , D , (js ,bs ), (j,u), x0 = 0, r1n , Reset, q0 i a T ; a hq0 , D, (j,u),(j 0 , en) AV (js+1 , bs+1 ), D, r, Store, q0 i in T .
+The resulting configuration is gc0 = hq0 , vs+1 a{x0 }aSr , (j 0 , en) AV (js+1 , bs+1 ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+D a (return transition): gs ak gs0 , where gs0 = hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , vs+1 a(r2k ,vs ) ar1k i, h(bs , u), Dk , Dk , r1k , r2k , u0 i in I'j and vs+1 a Dk .
+Then there exists in Labs (P) the transition gc D a gc0 , abstracting the following transitions:  (n)  a hq0 , D, (j,u),(j 0 , en) AV (js+1 , bs+1 ), D, r, Store, q0 i in T .
+The resulting configuration is gc0 = hq0 , vs+1 a{x0 }aSr ,(j 0 , en) AV (js+1 , bs+1 ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i, with vs+1 a{x0 } a D. Then there exists in D P the transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs+1 , en, v1 , .
+.
+., vs+1 , vs+1 ar1n i and hu, D, D, r, a, (bs+1 , en)i a I'j .
+By definition, gc0 asa1 gs0 ; D a (restore transition with D ): gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u), x0 = 0, r1n , Reset, q0 i; 2) hq0 , D , (j,u), (j,u), T rue, {x0 }, Reset, q0 i; 3) hq0 , Dk , (j,u), , Dk aSS (x0 = 0), r2k , Restore, (k) q(i,u0 ) i  1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u), x0 = 0, r1n , Reset, q0 i; 2) hq0 , D , (j,u), (j,u), T rue, {x0 }, Reset, q0 i; 3) hq0 , Dk , (j,u), , Dk aSS (x0 = 0), r2k , Restore, (k) q(i,u0 ) i (k)  The resulting configuration is gc0 = hq(i,u0 ) , vs+1 ar1n aS{x0 }aSr1n , (js ,bs ) .
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+D a (return-and-call transition): gs ak gs0 , where gs0 = hb1 , .
+.
+., bsa1 , bs0 , en, v1 , .
+.
+., vsa1 , vs+1 , vs+1 a(r2k ,vs ) ar1k i, h(bs , u), Dk , Dk , r1k , r2k , (bs0 , en)i in I'j and vs+1 a Dk .
+Then there exists D in Labs (P) the transition gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js , bs ), (j,u), x0 = 0, r1n , Reset, q0 i; 2) hq0 , D, (j, u), (j 0 , u0 ) AV (js0 , bs0 ), D, r, Store, q0 i The resulting configuration is gc0 = hq0 , vs+1 ar1n aSr1k , (js0 , bs0 ) AV (js , bs ) .
+.
+.
+(j1 , b1 ), vs+1 .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+Now we show all the possible transitions in Labs (P) having gc as source: D [t]  a (progress transition with D ): gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u), x0 = 0, r1n , Reset, q0 i and 2) the progress transition in q0 of an amount of t units of time.
+The resulting configuration is gc0 = hq0 , (vs+1 ar1n ) + t, (j, u) AV (js , bs ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+Then there exists t in Labs (T ) the transition gs a gs0 , for some t aL0 0 a D , where gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 + ti.
+By definition, gc0 asa1 gs0 ; D a (reset transition with D ): gc a gc0 , abstracting the following transitions: (n) 1) hq(i,u) , D , (js+1 ,bs+1 ), (j,u),x0 = 0, r1n , Reset, q0 i; 2) hq0 , D, (j,u),(j,u0 ),D,r,Reset,q 0 i The resulting configuration is gc0 = hq0 , (vs+1 ar1n ) ar , (j, u0 ) AV (js , bs ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i, with vs+1 ar1n a D. By definition, gs0 as gc0 .
+Then there exists in Labs (T ) the transition gs D a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i, hu, D, D, r, a, u0 i in I'j .
+By definition, gc0 asa1 gs0 ; D a (store transition with D ): gc a gc0 , abstracting the following transitions: (n) a hq(i,u) , D , (js ,bs ), (j,u), x0 = 0, r1n , Reset, q0 i a T ;  (k)  aV  The resulting configuration is gc0 = hq(i,u0 ) , vs+1 ar1n aS{x0 } a(r2k ,vs ) , (js , bs ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i, with vs+1 ar1n aS{x0 } a Dk .
+Then D there exists in Labs (P) the transition gs ak gs0 , 0 0 where gs = hb1 , .
+.
+., bsa1 , u , v1 , .
+.
+., vsa1 , vs+1 a(r2k ,vs ) ar1k i, h(bs , u), Dk , Dk , r1k , r2k , u0 i in I'j and vs+1 a Dk .
+By definition, gc0 asa1 gs0 ; Let gs = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with u a En and vs+1 = vs ar1 n , where r1n is the set of clocks reset by the n-th return-and-call transition from (bs0 , exi ) to (n) (bs , u), a global state and gc = hq(i,(bs ,u)) , vs , (js0 , bs0 ).
+.
+.
+(j1 ,b1 ), vsa1 .
+.
+.
+v1 i, with vk (x) = vk (x), for all x a X and 1 a$?
+k a$?
+s. By definition, gs as gc.
+Now we show all the possible transitions in Labs (T ) having gs as source: t a (progress transition): gs a gs0 , for some t a DaL0 , where gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 + ti.
+D [t]  Then there exists in Labs (P) the transition gc a gc0 , abstracting the following transitions: (n) 1) hq(i,(bs ,u) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i and 2) the progress transition in q0 of an amount of t units of time.
+The resulting configuration is gc0 = hq0 , vs ar1n +t, (j,u)(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 ; D a (reset transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i, hu, D, D, r, a, u0 i in I'j and vs+1 a D. Then there exists in Labs (P) D the transition gc a gc0 , abstracting the following transitions: (n) 1) hq(i,(bs ,u)) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i; 2) hq0 , D, (j,u),(j,u0 ),D,r,Reset,q 0 i The resulting configuration is gc0 = hq0 , vs+1 ar1n ar , (j,u0 )(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By  definition, gs0 as gc0 ; D a (call transition): gs a gs0 , where gs0 = hb1 , .
+.
+., bs+1 , en, v1 , .
+.
+., vs , vs+1 , vs+1 ar i, hu, D, D, r, a, (bs+1 , en)i a I'j and vs+1 a D. Then there D exists in P the transition gc a gc0 , abstracting the following transitions: (n) a hq(i,(bs ,u)) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i a T ; a hq0 , D, (j,u),(j 0 , en) AV (js+1 , bs+1 ), D, r, Store, q0 i in T .
+The resulting configuration is gc0 = hq0 , vs ar1n ar , (j 0 , en) AV (js+1 , bs+1 ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+Now we show all the possible transitions in Labs (P) having gc as source: D [t]  a (progress transition): gc a gc0 , abstracting the following transitions: (n) 1) hq(i,(bs ,u) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i and 2) the progress transition in q0 of an amount of t units of time.
+The resulting configuration is gc0 = hq0 , vs ar1n +t, (j,u)(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i.
+By definition, gs0 as gc0 .
+Then there exists in Labs (T ) the trant sition gc a gc0 , where gs0 = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 + ti.
+By definition, gc0 asa1 gs0 ; D a (reset transition): gc a gc0 , abstracting the following transitions: (n) 1) hq(i,(bs ,u)) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i; 2) hq0 , D, (j,u),(j,u0 ),D,r,Reset,q 0 i The resulting configuration is gc0 = hq0 , vs+1 ar1n ar , (j,u0 )(js ,bs ).
+.
+.
+(j1 ,b1 ), vs .
+.
+.
+v1 i, with vs+1 a D. Then there exists in Labs (T ) the D transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vs+1 ar i, hu, D, D, r, a, u0 i in I'j and vs+1 a D. By definition, gc0 asa1 gs0 ; D a (call transition): gc a gc0 , abstracting the following transitions: (n) a hq(i,(bs ,u)) , D , (js0 , bs0 ), (j, u) AV (js , bs ), x0 = 0, r1n , Store, q0 i a T ; a hq0 , D, (j,u),(j 0 , en) AV (js+1 , bs+1 ), D, r, Store, q0 i in T .
+The resulting configuration is gc0 = hq0 , vs ar1n ar , (j 0 , en) AV (js+1 , bs+1 ) .
+.
+.
+(j1 , b1 ), vs .
+.
+.
+v1 i, with vs ar1n a D. Then there exists in D Labs (T ) the transition gs a gs0 , where gs0 = hb1 , .
+.
+., bs+1 , en, v1 , .
+.
+., vs , vs+1 , vs+1 ar i, hu, D, D, r, a, (bs+1 , en)i a I'j and vs+1 a D. By definition, gc0 asa1 gs0 .
+Given the EPTA 2 P = hQ, q0 , X, I, T i over the alphabet IL, we define the TRSM T = hA1 , Xi over the  alphabet IL aS {D } (with D a / IL.
+For every pair (q,a) with q a Q and a a I, the component A1 has an entries node en(q,a) and an exit node ex(q,a) .
+There is a box ba for each stack symbol a a I, and all boxes are mapped to A1 (i.e.
+Y1 (ba )= 1, for all ai a I).
+The transitions in I'1 are the following: aV for every reset transition of the form hq1 , D, a1 , a2 , D, r, Reset, q2 i a T , there are the transitions hen(q1 ,a1 ) , D, D, r, a, en(q2 ,a2 ) i a I'1 , and hex(q1 ,a1 ) , D, D, r, a, ex(q2 ,a2 ) i a I'1 ; aV for every store transition of the form hq1 , D, a, a1 a2 , D, r, Store, q2 i a T , there are the transitions hen(q1 ,a) , D, D, r, a, (ba2 ,en(q2 ,a1 ) )i a I'1 and hex(q1 ,a) , D, D, r, a, (ba2 ,en(q2 ,a1 ) )i a I'1 ; aV if hq1 , D, a, , D, r, Restore, q2 i a T , then there are the following transitions: 1) hen(q1 ,a) , D , T rue, a, a, ex(q1 ,a) i a I'1 ; 2) h(ba0 , ex(q1 ,a) ), D, D, a, r, en(q2 ,a0 ) i a I'1 , for every box ba0 and each box exit (ba0 ,exq1 ); The weak bisimulation relation as between LP and LT is defined as follows.
+For gc a GC and gs a GS, gc as gs if and only if: 1) gc = hq, vs , as AV asa1 .
+.
+.
+a1 , vsa1 .
+.
+.
+v1 i and gs = hba1 , .
+.
+., basa1 , u, v1 , .
+.
+., vsa1 , vs i, with u a {en(q,as ) , ex(q,as ) }.
+We show now that as is a bisimulation.
+Let us consider the initialization requirement.
+The initial state of P has the form gc0 =hq0 , v0 , a, i.
+An initial state of T has the form gs0 =hen(q,a) , , v0 i, with en(q,a) a En1 .
+By definition of as, it is immediate to show that gc0 as gs0 and gs0 asa1 gc0 .
+Let us consider now the propagation requirement.
+Let us assume that gc as gs, there are the following cases: aV Let gc = hq, vs , as AV asa1 .
+.
+.
+a1 , vsa1 .
+.
+.
+v1 i a configuration and gs = hba1 , .
+.
+., basa1 , u, v1 , .
+.
+., vsa1 , vs i, with u a {en(q,as ) , ex(q,as ) } a global state.
+By definition, gc as gs.
+Now we show all the possible transitions in Labs (P) having gc as source: t a (progress transition): gc a gc0 , where gc0 = hq, vs + t, as AV asa1 .
+.
+.
+a1 , vsa1 .
+.
+.
+v1 i and t a DaL0 .
+Then there exists in Labs (T ) the transition t gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , u, v1 , .
+.
+., vsa1 , vs + ti.
+By definition, gc0 as gs0 ; D a (reset transition): gc a gc0 , where gc0 = hq 0 , 0 vs ar , a AV asa1 .
+.
+.
+a1 ,vsa1 .
+.
+.
+v1 i, hq, D, as , a0 , D, r, Reset, q 0 i in T and vs a D. Then there D exists in Labs (T ) the transition gs a gs0 , where 0 0 gs = hba1 , .
+.
+., basa1 , u ,v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r, a, u0 i in T and u0 a {en(q0 ,a0 ) , ex(q0 ,a0 ) }.
+By definition, gc0 as gs0 ; D a (store transition): gc a gc0 , where gc0 = hq 0 , 0 00 vs ar , a a asa1 .
+.
+.
+a1 ,vs .
+.
+.
+v1 i, hq, D, as , a0 a00 , D, r, Store, q 0 i in T and vs a D. Then there  D  exists in Labs (T ) the transition gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , ba00 , u0 , v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r, a, (ba0 ,u0 )i in T and u0 a {en(q0 ,a0 ) , ex(q0 ,a0 ) }.
+By definition, gc0 as gs0 ; D a (restore transition): gc a gc0 , where gc0 = hq 0 , vs a(r,vsa1 , asa1 .
+.
+.
+a1 , vsa2 .
+.
+.
+v1 i, hq, D, as , , D, r, Restore, q 0 i in T and vs a D. If u=en(q,as ) then there exists in Labs (T ) the D transition gs a gs0 in Labs (T ) that abstracting the following transitions: a the reset transition hu, D , T rue, a, a, ex(q,as ) i in I'1 ; a the return transition h(basa1 , ex(q,as ) ), D, D, a, r, en(q0 ,asa1 ) i a I'1 .
+If u=ex(q,as ) then there exists in Labs (T ) the D transition gs a gs0 in Labs (T ), corresponding to the return transition h(basa1 , ex(q,as ) ), D, D, a, r, en(q0 ,asa1 ) i a I'1 .
+The resulting global state is gs0 = hba1 , .
+.
+., basa2 , u,v1 , .
+.
+., vsa2 , vs a(r,vsa1 i.
+By definition, gc0 as gs0 ; Now we show all the possible transitions in Labs (T ) having gs as source.
+t  a (progress transition): gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , u, v1 , .
+.
+., vsa1 , vs + ti and t a DaL0 .
+Then there exists in Labs (P) the transit tion gc a gc0 , where gc0 = hq, vs + t, as AV asa1 .
+.
+.
+a1 ,vsa1 .
+.
+.
+v1 i.
+By definition, gs0 asa1 gc0 ; D [t] a (progress transition with D ): (u a En).
+gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , u0 , v1 , .
+.
+., vsa1 , vs + ti, u0 a Ex and t a DaL0 .
+Then there exists t in Labs (P) the transition gc a gc0 , where gc0 = hq, vs + t, as AV asa1 .
+.
+.
+a1 ,vsa1 .
+.
+.
+v1 i.
+By definition, gs0 asa1 gc0 ; D a (reset transition): gs a gs0 , where gs0 = hba1 , .
+.
+., 0 basa1 , u ,v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r, a, u0 i in T , vs a D and u0 a En aS Ex.
+Then there D exists in Labs (P) the transition gc a gc0 , where 0 0 0 gc = hq , vs ar , a AV asa1 .
+.
+.
+a1 ,vsa1 .
+.
+.
+v1 i, hq, D, as , a0 , D, r, Reset, q 0 i in T and vs a D. By definition, gs0 asa1 gs0 ; D [t] a (reset transition with D ): (u a En).
+gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , u0 ,v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r, a, u0 i in T , vs ar a D and u0 a Ex.
+Then there exists in Labs (P) the D transition gc a gc0 , where gc0 = hq 0 , vs ar , 0 a AV asa1 .
+.
+.
+a1 ,vsa1 .
+.
+.
+v1 i, hq, D, as , a0 , D, r, Reset, q 0 i in T and vs a D. By definition, gs0 asa1 gc0 ; D a (call transition): gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , ba00 , u0 , v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r,  a, (ba0 ,u0 )i in T , vs a D and u0 a En aS Ex.
+Then D there exists in Labs (P) the transition gc a gc0 , where gc0 = hq 0 , vs ar , a0 a00 asa1 .
+.
+.
+a1 ,vs .
+.
+.
+v1 i, hq, D, as , a0 a00 , D, r, Store, q 0 i in T and vs a D. By definition, gs0 asa1 gc0 ; D a (call transition with D ): (u a En).
+gs a gs0 , where gs0 = hba1 , .
+.
+., basa1 , ba00 , u0 , v1 , .
+.
+., vsa1 , vs ar i, hu, D, D, r, a, (ba0 ,u0 )i in T and vs a D. Then D there exists in Labs (P) the transition gc a gc0 , where gc0 = hq 0 , vs ar , a0 a00 asa1 .
+.
+.
+a1 ,vs .
+.
+.
+v1 i, hq, D, as , a0 a00 , D, r, Store, q 0 i in T and vs a D. By definition, gs0 asa1 gc0 ; D a (return transition): (u a Ex).
+gs a gs0 , where gs0 = hba1 , .
+.
+., basa2 , u,v1 , .
+.
+., vsa2 , vs a(r,vsa1 i and vs a D. Then there exists in Labs (P) D the transition gc a gc0 , where gc0 = hq 0 , vs a(r,vsa1 , asa1 .
+.
+.
+a1 ,vsa2 .
+.
+.
+v1 i, hq, D, as , , D, r, Restore, q 0 i in T and vs a D. By definition, gs0 asa1 gc0 ; D a (return transition with D ): (u a En).
+gs a gs0 , 0 where gs = hba1 , .
+.
+., basa2 , u,v1 , .
+.
+., vsa2 , vs a(r,vsa1 i and vs a D. Then there exists in D Labs (P) the transition gc a gc0 , where gc0 = hq 0 , vs a(r,vsa1 , asa1 .
+.
+.
+a1 ,vsa2 .
+.
+.
+v1 i, hq, D, as , , D, r, Restore, q 0 i in T and vs a D. By definition, gs0 asa1 gc0 .
+We now show the bisimulation relation between TRSM 1 and EPTA 1.
+Let us consider a TRSM T in the class of TRSM 1, it is easy to see that the EPTA P simulating T as defined in the construction of Theorem 1, is actually an EPTA 1.
+Conversely, let us consider an EPTA P in the class of EPTA 1, it is easy to see that the TRSM T simulating P as defined in the construction of Theorem 1, is actually a TRSM 1.
+Analogues arguments can be used to prove the correspondence between EPTA 0 and TRSM 0.
+V. T HE REACHABILITY PROBLEM : DECIDABILITY AND COMPLEXITY RESULTS  In this section we study the problem of reachability for TRSMs and EPTAs.
+In particular, we prove that the problem is undecidable for the general class of TRSMs and EPTAs, but that is decidable for TRSM 1 and EPTA 1.
+We state also the complexity of the problem for the class of TRSM 0 (and EPTA 0).
+Given a global state gs = hb1 , .
+.
+.
+, bs , u, v1 , .
+.
+.
+, vs , vi of a TRSM T , we call the tuple hb1 , .
+.
+.
+, bs , ui an untimed global state of T .
+The reachability problem for an untimed global state hb1 , .
+.
+.
+, bs , ui is to determine whether, for some clock valuations v1 , .
+.
+., vs , v, the global state hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi is reachable from an initial configuration  state.
+A similar notion of reachability can be given for EPTAs.
+The undecidability for TRSMs is stated by showing the undecidability of the reachability problem for the class EPTA 2.
+In fact, it is possible to show (see the complete work) that EPTA 2s allow to simulate increment and decrement of clocks.
+For instance, Fig.
+3 shows an EPTA 2 which decrements the clock z, leaving the clock y unchanged (z and y can be viewed as the two counters).
+The path leading from (p, q0a ) to (p, q3a ), is used to store the value of x into x00 , while y maintains the original value.
+In the next step, these values are stored in the valuation stack, and after an amount of time equal to x00 a 1 is elapsed, the original value of y is restored.
+In this way, it is possible to define an EPTA 2 which simulates a two counter machine (clocks with increment and decrement can be used as counters).
+This allows to reduce the halting problem of two counter Minsky machine, which is known to be undecidable [5], to the reachability problem for an EPTA 2.
+Theorem 2: The reachability problem for EPTA 2 is undecidable.
+Proof: We recall that a two counter machine is a finite set of labeled instructions over two counters c1 and c2 .
+There are two type of instructions: aV increment of x a {c1 , c2 }, of the form p : x := x + 1; goto q; aV decrement of x a {c1 , c2 }, of the form p : if x > 0 then x:=x - 1; goto q1 else goto q2 The machine starts at an instruction labeled p0 with c1 =c2 =0 and stops at a special instruction labeled HALT .
+The halting problem for a two counter machine consists in deciding whether the machine reaches the instruction HALT .
+The idea is that the two counters can be simulated by two clocks, and the instructions of increment and decrement can be simulated by sequences of transitions of an EPTA 2 which exploit the ability of storing and restoring clock valuations on the valuation stack.
+The states of the automaton are the labels of the instruction augmented with additional D , , , x0 = 0, a, Store (p,q0a )  D , , , T rue, X \ {x00 }, Restore (p,q1a )  (p,q2a )  D , , , (x00 a z = 0) aSS (x0 = 0), {z}, Reset 0 (p,q5a ) D , , , T rue, X \ {z}, Restore (p,q4a ) D , , , x = 0, a, Store (p,q3a )  control states, used to simulated increments and decrements.
+We denote by C(+) (resp.
+: C(a) ) the set of the labels associated to increment (resp.
+: decrement) instructions.
+Given a machine with two counters x and y, the simulating EPTA 2 is hQ, (p0 , s), X, I, T i, where S aV Q=C(+) A{q0+ , q1+ , q2+ } C(a) A{qia : 0 a$?
+i a$?
+6} S {Halt}; aV s=q0+ if p0 a C(+) and s=q0a if p0 a C(a) ; 0 00 aV X={x, y, x , x } and I={Il}; aV for every p a C(+) associated with the increment of the counter z a {x, y}, T has the transitions: 1) h(p, q0+ ), D , , Il, x0 = 0, a, Store, (p, q1+ )i; 2) h(p, q1+ ), D , , Il, x0 = 1, X \ {z}, Restore, (p, q2+ )i; 3) let q be the target label of the goto instruction, then a) if q a C(+) , then h(p, q2+ ), D , , , x0 = 0, {x00 }, Reset, (q, q0+ )i; b) if q a C(a) , then h(p, q2+ ), D , , , x0 = 0, {x00 }, Reset, (q, q0a )i; c) if q=Halt, then h(p, q2+ ), D , , , x0 = 0, {x00 }, Reset, Halti; aV for every p a C(a) associated with the decrement of the counter z a {x, y} (see also Figure 3), T has the transitions: 1) h(p, q0a ), D , , Il, x0 = 0 aSS z aL 1, a, Store, (p, q1a )i; 2) h(p, q1a ), D , Il, , T rue, X \ {x00 }, Restore, (p, q2a )i; 3) h(p, q2a ), D , , , x00 a z = 0 aSS x0 = 0, {z}, Reset, (p, q3a )i; 4) h(p, q3a ), D , , Il, x0 = 0, a, Store, (p, q4a )i; 5) h(p, q4a ), D , Il, , T rue, X \ {z}, Restore, (p, q5a )i; 6) h(p, q5a ), D , , , x00 a z=1aSS x0 = 0, {x0 ,x00 }, Reset, (p, q6a )i; 7) let q be the target label pointed by the goto instruction (it depends on the chosen branch), then a) if q a C(+) , then h(p, q6a ), D , , , x0 = 0, {x00 }, Reset, (q, q0+ )i and h(p, q0a ), D , , , x0 = 0 aSS z < 1, {x00 }, Reset, (q, q0+ )i; b) if q a C(a) , then h(p, q6a ), D , , , x0 = 0, {x00 }, Reset, (q, q0a )i and h(p, q0a ), D , , , x0 = 0 aSS z < 1, {x00 }, Reset, (q, q0a )i; c) if q=Halt, then h(p, q6a ), D , , , x0 = 0, {x0 , x00 }, Reset, Halti and h(p, q0a ), D , , , x0 = 0 aSS z < 1, {x0 , x00 }, Reset, Halti.
+D , , , (z a x00 = 1) aSS (x0 = 0), {x0 , x00 }, Reset  (p,q6a )  Figure 3.
+EPTA for the decrement of the clock z  As consequence of Theorem 1 we have the following corollary.
+Corollary 1: The reachability problem for TRSMs is undecidable.
+We shall now prove that the reachability problem for TRSM 1 is decidable.
+The proof combines two techniques: the former is the standard regionalization technique, used to prove reachability in Timed Automata [2], while the latter is derived from the algorithm, based on a fix point construction, proposed in [1] to solve the reachability problem for RSMs.
+Let us first recall the notion of clock region and region automaton of a Timed Automaton.
+Following the standard construction [6], we assume that constants occurring in the clock constraints of the automaton are integers.
+For any t a DaL0 , hti denotes the fractional part of t, and btc denotes the integral part of t (i.e.
+t=btc+hti).
+For each clock x a X, let cx be the largest integer constant c such that x is compared with c in some clock constraint appearing in a transition.
+The equivalence relation az =, (region equivalence), is defined over the set of clock valuations for X.
+For two clock valuations v1 and v2 , we write v1 az = v2 iff the following conditions hold: 1) for all clocks x a X, either bv1 (x)c and bv2 (x)c are the same, or both v1 (x) and v2 (x) exceed cx ; 2) for all clocks x, y with v1 (x) a$?
+cx and v1 (y) a$?
+cy , hv1 (x)i a$?
+hv1 (y)i iff hv2 (x)i a$?
+hv2 (y)i; 3) for all clocks x a X with v1 (x) a$?
+cx , hv1 (x)i = 0 iff hv2 (x)i = 0.
+A clock region is an equivalence class of clock valuations induced by az =.
+QIf k is the number of the clocks, there are at most k!
+AV 4k AV xaX (cx + 1) regions (see [6]).
+We denote by Reg the set of all regions with respect to the set of clocks X and an indexed family {cx }xaX .
+A clock region reg 0 is a time successor of a clock region reg if and only if, for all clock valuations v a reg, there exists a t a DaL0 such that v+t a reg 0 .
+Let D a C(X) be a clock constraint, we write reg a D if and only if v a D, for all v a reg.
+Note that for a clock constraint D of a TA, if vaz = v0 , then v a D iff v0 a D. Let r a X a set of clocks, reg ar = {v ar |v a reg} denotes the region resulting from reg by resetting the clocks in r. It is well known that the reachability problem of a Timed Automaton can be reduced to the reachability problem over its region automaton, namely the automaton whose states are obtained by coupling control states and regions, and transitions are obtained by suitably coupling the transition relation of the timed automaton and the successor relation defined on regions.
+Given a TRSM T =hA S1 , .
+.
+., An , Xi belonging to TRSM 1, with Ai = hNi Bi , Yi , Eni , Exi , I'i i, in order to compute reachability in T we build a region RSM R for T , over the alphabet IL, whose components are the region automata obtained from the components of the original TRSM.
+More formally, R = hA01 , .
+.
+., A0n i, where: S A0i = h(Ni A Reg) Bi , Yi ,Eni A Reg, Exi A Reg,I'i0 i, with 1 a$?
+i a$?
+n and Reg is the finite set of regions for the set of clocks X  and the indexed family {cx }xaX , where cx is the maximal constant c which is compared with clock x in some clock constraint D decorating a transition of T .
+R is computed as the fix point of an iterative process, which builds a chain of region RSMs R(0) , .
+.
+., R(k) .
+The idea is that, for the sake of reachability, given a run of a TRSM 1, it is possible to abstract away all the sub-runs bounded by matching pairs of call and return transitions.
+This abstraction can be performed by augmenting the region RSM R with summary transitions, which can be used, during the reachability analysis, to skip the invocation of and the return from the component, provided that the exit node of the component is actually reachable from the corresponding entry node.
+The process described below iteratively computes these summary transitions.
+(0) (0) The initial RSM is R0 = hA0 1 , .
+.
+., A0 n i, where S (0) (0) A0 i =h(Ni A Reg) Bi ,Reg,Yi ,En0i , Ex0i , I'i i, with 1 a$?
+(0) i a$?
+n. The transitions in I'i are: 1) h(u1 ,reg1 ),D,(u1 ,reg2 )i, if reg2 is a time successor of reg1 ; 2) h(u1 ,reg1 ),D,(u2 ,reg2 )i, if hu1 , D, D, r1 , a, u2 i a I'i , reg1 a D and reg2 = reg1 ar1 ; 3) h(u1 ,reg1 ),D,(b, (u2 ,reg2 )i, if hu1 , D, D, r1 , a, (b, u2 )i a I'i , reg1 a D and reg2 = reg1 ar1 ; (0)  Notice that I'i does not contain return transitions.
+At (k+1) the (k + 1)-th iteration (k aL 0), we compute I'i , by adding appropiate summary transitions.
+Suppose that there is a call transition in the i-th component from a node u1 to a box b invoking the j-th component into the entry node en, and there is a return transition from the exit node ex of the j-th component to a node u2 of the i-th component.
+In order to add a summary transition from (u1 , reg1 ) to (u2 , reg2 ), we need to know whether (ex, reg 00 ) is locally reachable (i.e.
+without exploiting call or return transitions) from (en, reg 0 ) in the j-th component of R(k) , where reg 0 is the region resulting from reg1 after resetting the clocks according the call transition, reg2 is the region resulting from reg1 after resetting the clocks according the return transition in the TRSM and reg 00 satisfy the constraint in the return transition.
+(k+1) (k) Formally, the relation transition I'i is I'i augumented with the following transitions.
+For each entry node (b,(en,reg 0 )), where j=Yi (b), and for each exit node (k) (k) (ex,reg 00 ) a A0 j , reachable from (en, reg 0 ) in A0 j , if (k) there is a transition h(u1 , reg1 ), D1 , (b, (en, reg 0 ))i in I'i (k+1) we add to I'i the transitions: aV  h(u1 , reg1 ), D1 , (u2 , reg1 ar )i, whenever h(b, ex), D2 , D, r, X, u2 i a I'i and reg 00 a D.  The iterative construction terminates when it is not possible to add new transitions.
+Termination of the procedure is ensured since the number of the states of R and the number of the transitions in each I'i is finite.
+The region RSM R, resulting from the construction, can be proved equivalent, from the reachability viewpoint, to the original TRMS (see the complete work).
+Since the reachability problem for RMSs is decidable [1], this establishes decidability of reachability for the class TRSM 1.
+Theorem 3: The reachability problem for the class TRSM 1 is decidable.
+Proof: Given a TRSM 1 T =hA1 , .
+.
+., An , Xi, the region RSM R for T , over the alphabet IL, is R=hA01 , .
+.
+S ., A0n i, where 0 for all (1 a$?
+i a$?
+n), Ai is a tuple h(Ni A Reg) Bi , Yi ,En0i , Ex0i , I'i0 i and: aV Reg is the finite set of all regions with respect to the set of the clocks X of T and the indexed family {cx }xaX , where cx is the maximal values c such that the clock x a X is compared with c in some clock constraint appearing in a guard D of all I'i ; 0 aV Eni = Eni A Reg, is the set of initial states; 0 aV Exi = Eni A Reg, is the set of final states; The desired RSM R is built as the limit of a (finite) (0) sequence of RSM R(i) (i aL 0), where R(0) =hA0 1 , .
+.
+., 0 (0) 0 (0) A n i and, for all (1 a$?
+i a$?
+n), A i is the tuple S (0) h(Ni A Reg) Bi ,Reg,Yi ,En0i , Ex0i , I'i i.
+The transitions (0) in I'i are of the form: 1) h(u1 ,reg1 ),D,(u1 ,reg2 )i, where reg2 is a time successor of reg1 ; 2) h(u1 ,reg1 ),D,(u2 ,reg2 )i, where hu1 , D, D, r1 , a, u2 i a I'i and reg2 is such that for all clock valuation v a reg1 with v a D and v ar1 a reg2 ; 3) h(u1 ,reg1 ),D,(b, (u2 ,reg2 )i, where hu1 , D, D, r1 , a, (b, u2 )i a I'i and reg2 is such that for all clock valuation v a reg1 with v a D and v ar1 a reg2 ; (k+1) (k+1) Given R(k) , with k aL 0, R(k+1) =hA0 1 ,.
+.
+., A0 n i, 0 (k+1) where for all 1 a$?
+i a$?
+n, A i is the tuple h(Ni A S (k+1) Reg) Bi ,Yi ,Eni , Exi , I'i i.
+The relation transition (k+1) (k) I'i is I'i augumented with the following transitions.
+For each enter node (b,(en,reg)), where j=Yi (b), and for (k) each exit node (ex,reg 0 ) a A0 j , reachable from (en, reg) (k) in A0 j , if there is a transition h(u0 , reg 00 ), D, (b, (en, reg))i (k) (k+1) in I'i we add to I'i the transitions: 0 00 aV h(u , reg ), D, (u, reg2 )i for all the transitions h(b, ex), D1 , D, r1 , X, ui a I'i , where reg2 is such that for all clock valuation v a reg 00 , with v a D, v ar1 a reg2 ; The iterative construction terminates when it is not possible to add new transitions, and we obtain the relations I'i0 (termination is ensured since the number of the states and the number of the transitions in I'i is finite, for all i).
+For proving the Theorem 3 we preliminary state the following property: Let hb1 , .
+.
+., bs , ui be an untimed global state of T , the global state hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi is reachable from an initial global state, for some clock evaluations v1 , .
+.
+.,  vs , v, iff the global state hb1 , .
+.
+., bs , (u, reg)i of R is reachable from an initial global state of R, for some reg and v a reg.
+Lemma 1: For all b1 , .
+.
+., bs , b01 , .
+.
+., b0k a B, for all clock evaluations v1 , .
+.
+., vs , v10 , .
+.
+., vk0 , with 0 a$?
+s a$?
+k, for all reg, reg 0 a Reg and for all u, u0 a Ni , such that hb1 , .
+.
+., bs , u,v1 , .
+.
+., vs , vi, hb1 , .
+.
+., bs , (u, reg)i, hb01 , .
+.
+., b0k , u, v10 , .
+.
+., vk0 , vi and hb01 , .
+.
+., b0k , (u0 , reg 0 )i are well-defined global states: if hb1 , .
+.
+., bs , u,v1 , .
+.
+., vs , vi aaT hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i, then hb01 , .
+.
+., b0k , u, v10 , .
+.
+., vk0 , vi aaT !hb01 , .
+.
+., b0k , u0 , v10 , .
+.
+., vk0 , v0 i; if hb1 , .
+.
+., bs , (u, reg)i aaR hb1 , .
+.
+., bs , (u0 , reg 0 )i, then hb01 , .
+.
+., b0k , (u, reg)i aaR hb01 , .
+.
+., b0k , (u0 , reg 0 )i.
+Proof: We starting proving the Lemma for the TRSM T .
+The prove is by induction on the length k of the run ItT = hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi aaT hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i.
+(Base case, k = 0).
+Immediate.
+(Inductive step, k aL 0).
+Let us suppose that the property holds for the run of lenght k. Let hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , (k+1) vi aT hb1 , .
+.
+., bs , uk+1 , v1 , .
+.
+., vs , vk+1 i be a run of lenght k + 1.
+The (k + 1) a th transition can have one of the following forms: aV  aV  aV  (progress transition): hb1 , .
+.
+., bs , uk , v1 , .
+.
+., vs , vk i aT hb1 , .
+.
+., bs , uk+1 , v1 , .
+.
+., vs , vk+1 i, where uk+1 = uk , vk+1 = vk + t and t a DaL0 .
+By inductive hypothesis, we have that hb01 , .
+.
+., b0k , u, v10 , .
+.
+., vk0 , (k) vi aT hb01 , .
+.
+., b0k , uk , v10 , .
+.
+., vk0 , vk i and there is the progress transition hb01 , .
+.
+., b0k , uk , v10 , .
+.
+., vk0 , vk i aT hb01 , .
+.
+., b0k , uk , v10 , .
+.
+., vk0 , vk + ti; (reset transition): hb1 , .
+.
+., bs , uk , v1 , .
+.
+., vs , vk i aT hb1 , .
+.
+., bs , uk+1 , v1 , .
+.
+., vs , vk+1 i, where huk ,D,D,r1 ,a,uk+1 i a I'i , vk a D, vk+1 = vk ar1 .
+By inductive hypothesis, we have that hb01 , .
+.
+., b0k , u, (k) v10 , .
+.
+., vk0 , vi aT hb01 , .
+.
+., b0k , uk , v10 , .
+.
+., vk0 , vk i and, has an the effect of the reset transition, we have that hb01 , .
+.
+., b0k , uk , v10 , .
+.
+., vk0 , vk i aT hb01 , .
+.
+., b0k , uk+1 , v10 , .
+.
+., vk0 , vk+1 i; (return transition): hb1 , .
+.
+., bs+1 , uk , v1 , .
+.
+., vs+1 , vk i aT hb1 , .
+.
+., bs , uk+1 , v1 , .
+.
+., vs , vk+1 i, where h(bs+1 , uk ), D, D, r1 , X, uk+1 i a I'i , vs+1 a D, vk+1 = vs+1 ar1 .
+In the run there is the matching call transition hb1 , .
+.
+., bs , uk0 , v1 , .
+.
+., vs , vs+1 i aT hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs+1 , vs+1 ar10 i, where huk0 , D 0 , D0 , r10 , a, (bs+1 , en0 )i a I'i and vs+1 a D0 .
+By inductive hypothesis, there is the run hb01 , .
+.
+.!
+, b0k , (k0 ) u, v10 , .
+.
+., vk0 , vi aT hb01 , .
+.
+., b0k , uk0 , v10 , .
+.
+., vk0 , vs+1 i (k 0 < k).
+Has an effect of the call transition, we have that hb01 , .
+.
+., b0k , uk0 , v10 , .
+.
+., vk0 , vs+1 i aT hb01 , .
+.
+., b0k , bs+1 , en0 , v10 , .
+.
+., vk0 , vs+1 , vs+1 ar10 i.
+By induction hypothesis there is the run hb01 , .
+.
+., b0k , bs+1 , en0 , v10 , .
+.
+., vk0 , vs+1 , vs+1 ar10 i aaT hb01 , .
+.
+., b0k ,  bs+1 , uk , v10 , .
+.
+., vk0 , vs+1 , vk i, and as a consequence of the return transition, we have hb01 , .
+.
+., b0k , bs+1 , uk , v10 , .
+.
+., vk0 , vs+1 , vk i aT hb01 , .
+.
+., b0k , uk+1 , v10 , .
+.
+., vk0 , vk+1 i.
+Now we prove the Lemma for the RSM R. The prove is by induction on the length k of the run ItR = hb1 , .
+.
+., bs , (u, reg)i aaR hb1 , .
+.
+., bs , (u0 , reg 0 )i.
+(Base case, k = 0).
+Immediate.
+(Inductive step, k aL 0).
+Suppose that the property holds for the run of lenght k. Let us suppose hb1 , .
+.
+., bs , (uk , regk )i aaR hb1 , .
+.
+., bs , (uk+1 , regk+1 )i be a run of lenght k + 1.
+The (k + 1) a th transition can have one of the following forms: aV hb1 , .
+.
+., bs , (uk , regk )i aR hb1 , .
+.
+., bs , (uk+1 , regk+1 )i, where uk+1 = uk .
+By inductive (k) hypothesis, we have that hb01 , .
+.
+., b0k , (u, reg)i aR 0 0 hb1 , .
+.
+., bk , (uk , regk )i and there is the transition hb01 , .
+.
+., b0k , (uk , regk )i aR hb01 , .
+.
+., b0k , (uk , regk+1 )i; aV hb1 , .
+.
+., bs , (uk , regk )i aR hb1 , .
+.
+., bs , (uk+1 , regk+1 i, where huk ,D,D,r1 ,a,uk+1 i a I'i .
+By inductive hypothesis, we have that hb01 , .
+.
+., b0k , (k) (u, reg)i aR hb01 , .
+.
+., b0k , (uk , regk )i and has an effect of the reset transition we have that hb01 , .
+.
+., b0k , (uk , regk )i aR hb01 , .
+.
+., b0k , (uk+1 , regk+1 )i.
+D  D  D  Definition 3: Let ItT =gs0 a0 T gs1 a1 T .
+.
+.
+a0 T gsi be a run of the TRSM T .
+The nesting depth of ItT is defined as the maximum s such that gsj = hbj1 , .
+.
+., bjs , u, vj1 , .
+.
+., vjs , vj i for some 0 a$?
+j a$?
+i. Lemma 2: Let u, u0 a Nj , then h(u, reg)i aaA0 j h(u0 , reg 0 )i iff for all v a reg there is v0 a reg 0 and hu, vi aaT hu0 , v0 i.
+Proof: (a).
+Let ItT = hu1 , v1 i aaT hun , vn i be a run of T , with u1 , un a Nj , v1 a reg1 and vn a regn .
+The proof is by induction on nesting depth k of ItT .
+(Base case, k = 0).
+In this case, every transition hui , vi i aT hui+1 , vi+1 i in ItT , with 1 a$?
+i a$?
+n and ui , ui+1 a Nj , can be only either a progress or a reset transition: aV (progress transition): ui+1 = ui , vi+1 = vi + t, with t a DaL0 .
+By construction of R, there is the transition h(ui , regi )i aA0j h(ui , regi+1 )i, where h(ui , regi ), D, (0) I'j  aV  (ui , regi+1 )i a a I'j0 , vi a regi and vi+1 a regi+1 ; (reset transition): vi+1 = vi ar1 , where hui , Di , Di , ri , a, ui+1 i a I'j and vi a Di .
+By construction of R, there is the transition h(ui , regi )i aA0j h(ui+1 , regi+1 )i, (0)  where h(ui , regi ), Di , (ui+1 , regi+1 )i a I'j a I'j0 , vi a regi , vi+1 a regi+1 and regi a Di .
+(Inductive step, k > 0).
+Let us suppose that the nesting depth of the run hu1 , v1 i aaT hun , vn i is k + 1.
+The run  can have two kind of sub-runs.
+The first one of the form hui , vi i aaT hui0 , vi0 i, with nesting depth s a$?
+k and i < i0 a$?
+n. All sub-runs of this form have, by inductive hypothesis, the corresponding sub-runs h(ui , regi )i aaA0 h(ui0 , regi0 )i, with j vi a regi and vi0 a regi0 .
+The second one of the form hui , vi i aaT hui0 , vi0 i with nesting depth k + 1 and i < i0 a$?
+n. Any such run, can be split in the following way: hui , vi i aT hb, en, vi , v0 i aaT hb, ex, vi , v00 i aT hui0 , vi0 i.
+Therefore: 0 aV since hui , vi i aT hb, en, vi , v i is in L(T ), then the call transition hui , D1 , D1 , r1 , a, (b, en)i is in I'j , with Yj (b) = i, en a Eni , vi a D1 , v0 = vi ar1 .
+By construction of I'j0 , we have that h(ui , regi ), D1 , (b, (en, reg 0 ))i a I'j0 , with vi a regi and v0 a reg 0 ; 00 aV since hb, ex, vi , v i aT hui0 , vi0 i is in L(T ), then the return transition h(b, ex), D2 , D2 , r2 , X, ui0 i is in I'j , with v00 a D2 and vi0 = vi ar2 and v00 a D2 .
+0 a 00 aV from hb, en, vi , v i aT hb, ex, vi , v i.
+By Lemma 00 0 a 1, we can write hen, v i aT hex, v i.
+By inductive hypothesis, we have h(en, reg 0 )i aaA0 h(ex, reg 00 )i, i with v00 a reg 00 .
+Since ex is reachable from en (locally in the component machine A0i ) and there are a call and a return transitions as above (in T ), by construction of R there is a summary transition h(ui , regi ), D1 , (ui0 , regi0 )i a I'j0 and the we can write h(ui , regi )i aA0j h(ui0 , regi0 )i.
+(a).
+The proof is by induction on the index k of the transition (k) relations I'j .
+(0) (Base case, k = 0).
+Immediate, by construction, since I'j 0 a I'j .
+(Inductive step, k > 0).
+Let us suppose, by inductive hypothesis, that the property holds for the run that have all the (k) transitions in I'j .
+Let ItA0j =h(u1 , reg1 )i aaA0 h(un , regn )i j  (k+1)  be a run where at least one transition belongs to I'j \ (k) I'j .
+For all the transitions of the form h(ui , regi )i aA0j h(ui+1 , regi+1 )i a ItA0j , with h(ui , regi ), D, (ui+1 , regi+1 i (k)  a I'j , by inductive hypothesis we can write hui , vi i aaT hui+1 , vi+1 i, with vi a regi and vi+1 a regi+1 .
+For all the transitions of the form h(ui , regi )i aA0j h(ui+1 , regi+1 )i a ItA0j , with h(ui , regi ), D, (ui+1 , regi+1 i (k+1)  a I'j aV  aV  (k)  (k+1)  \ I'j , by construction of I'j we have that: there is in T a call transition hui , D1 , D1 , r1 , a, (b, en)i a I'j , with Yj (b) = i, en a Eni and regi a Di .
+Taking a clock valuation vi a regi , we have hui , vi i aT hb, en, vi , vi ar1 i; there is a sub-run h(en, regi ar1 )i aa (k) h(ex, reg 0 )i Ai  and then there is the sub-run h(en, regi ar1 )i aaA0 i h(ex, reg 0 )i.
+By inductive hypothesis, we can write hen, vi ar1 aaT hex, v0 i, with v0 a reg 0 .
+By Lemma 1, we have that hb, en, vi , vi ar1 i aaT hb, ex, vi , v0 i;  aV  there is in T the matching-return transition h(b, ex), D2 , D2 , r2 , X, ui+1 i a I'j , with ex a Exj and reg 0 a D2 (then v0 a D2 ).
+Then, we can write hb, ex, vi , v0 i aT hui+1 , vi ar2 i.
+Combining the facts above, we have that hu1 , v1 i aaT hun , vn i.
+Now, we show that, for an untimed global state hb1 , .
+.
+., bs , ui of T , the global state hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi is reachable from an initial global state, for some clock evaluations v1 , .
+.
+., vs , v, iff the global state hb1 , .
+.
+., bs , (u, reg)i of R is reachable from an initial global state of R, for some region reg with v a reg.
+Proof: (a).
+By induction on the lenght k of the run.
+(Base case, k = 0).
+Immediate.
+(Inductive step, k > 0).
+Let ItT = hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with u a Nj , be a run of lenght k + 1.
+The (k + 1) a th transition can have one of the following forms: aV  aV  aV  (progress transition): hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with vs+1 = v0 + t for some t a DaL0 .
+By construction of R, there is h(u, reg), D, (u, regs+1 )i a I'j0 , with v0 a reg and vs+1 a regs+1 (regs+1 is a time successor of reg).
+By inductive hypothesis, we can write h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, reg)i.
+By the effect of the transition above, we have hb1 , .
+.
+., bs , (u, reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i.
+Therefore, we can conclude h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, regs+1 )i; (reset transition): hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, ui a I'i , v0 a D, vs+1 = v0 ar and u0 a Nj .
+By construction of R, there is the transition h(u0 , reg), D, (u, regs+1 )i a I'j0 , with v0 a reg and vs+1 a regs+1 (regs+1 = reg ar ).
+By inductive hypothesis, we can write h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u0 , reg)i.
+By the effect of the transition above, we have hb1 , .
+.
+., bs , (u0 , reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i.
+Therefore, we can conclude h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, regs+1 )i; (call transition): hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , vs i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, (bs , u)i a I'i , Yi (bs ) = j, vs a D, vs+1 = vs ar and u0 a Ni .
+By construction, there is in R a call transition h(u0 , reg), D, (bs , (u, regs+1 ))i, with vs a reg and vs+1 a regs+1 (regs+1 = reg ar ).
+By inductive hypothesis, we can write h(en, reg0 )i aaR hb1 , .
+.
+., bsa1 , (u0 , reg)i.
+By the effect of the transition above, we have hb1 , .
+.
+., bs , (u0 , reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i.
+Therefore, we can conclude h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, regs+1 )i;  (return transition): if the (k + 1) a th transition is a return transition, then we can split the run ItT in the following way 1) a sub-run of lenght k 0 a$?
+k in the form hen, v0 i aaT hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i, with u0 a Nj .
+By inductive hypothesis, we have h(en, reg0 ) aaR hb1 , .
+.
+., bs , (u0 reg 0 )i, with v0 a reg0 and v0 a reg 0 ; 2) hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v0 , v00 i, where hu0 , D1 , D1 , r1 , a, (bs+1 , en0 )i a I'j is a call transition, Yj (bs+1 ) = i, en0 a Eni , v0 a D1 and v00 = v0 ar1 .
+By construction of R, there is the transition h(u0 , reg 0 ), D1 , (bs+1 , (en0 , reg 00 )i, with v0 a reg 0 , v00 a reg 00 (reg 00 = reg 0 ar1 ) and (since for a clock constraint D belongs to a transition in T , if v az = v0 , then v a D iff v0 a D) reg 0 a D1 ; 3) hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v0 , v00 i aaT hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v0 , v000 i, with ex0 a Exi .
+By Lemma 1, we have that hen0 , v00 i aaT hex0 , v000 i.
+By Lemma 2, h(en0 , reg 00 )i aaA0 i h(ex0 , reg 000 )i, with v000 a reg 000 , namely the exit node (ex0 , reg 000 ) is reachable from the enter node (en0 , reg 00 ) in the component A0i ; 4) hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v0 , v000 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, where h(bs+1 , ex0 ), D2 , D2 , r2 , X, ui a I'j is a return transition, v000 a D2 (then reg 000 a D2 ), vs+1 = v0 ar2 and vs+1 a regs+1 .
+By construction of R, as a consequence of the three points above, there exists a summary transition h(u0 , reg 0 ), D1 , (u, regs+1 )i a I'j0 .
+Combining this transition with the inductive hypothesis as above, we can conclude h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, regs+1 )i (a).
+The prove is by induction on the lenght k of the run.
+(Base case, k = 0).
+Immediate.
+(Inductive step, k aL 0).
+Let ItR = h(en, reg0 )i aaR hb1 , .
+.
+., bs , (u, regs+1 )i be a run of lenght k + 1, with u a Ni .
+The (k + 1) a th transition can have one of the following forms: aV hb1 , .
+.
+., bs , (u, reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i, where h(u, reg), D, (u, reg)i a I'i0 and regs+1 is a time successor of reg.
+By construction of R, there exists in L(T ) (LTS of T ) a progress transition hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with vs+1 = v0 + t, t a Da$?0 , v0 a reg and vs+1 a regs+1 .
+Combining the facts above with the inductive hypothesis, we can conclude hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 )i; 0 aV hb1 , .
+.
+., bs , (u , reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i, 0 where h(u , reg), D, (u, regs+1 )i a I'i0 .
+By construction of R, there exists in L(T ) a reset transition hb1 , .
+.
+., aV  aV  aV  bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, ui a I'i , v0 a D, vs+1 = v0 ar , v0 a reg and vs+1 a regs+1 and regs+1 = reg ar .
+Combining the previous facts with the inductive hypothesis, we can conclude hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 )i; hb1 , .
+.
+., bsa1 , (u0 , reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i, where h(u0 , reg), D, (bs , (u, regs+1 ))i is a call transition in I'i0 .
+By construction of R, there exists in L(T ) a call transition hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , vs i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, (bs , u)i a I'i , vs a D, vs+1 = vs ar , vs a reg, vs+1 a regs+1 , and regs+1 = reg ar .
+Combining the previous fact with the inductive hypothesis, we can conclude hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 )i; (summary transition): if the (k+1)ath transition is the summary transition hb1 , .
+.
+., bs , (u0 , reg)i aR hb1 , .
+.
+., bs , (u, regs+1 )i then the summary transition h(u0 , reg), D1 , (u, regs+1 )i is in I'i0 .
+By inductive hypothesis, we have hen, v0 i aaT hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vi, with v a reg.
+By constraction of R, there exists a call transition hu0 , D1 , D1 , r1 , a, (bs+1 , en0 )i a I'i , with Yi (bs+1 ) = j and, therefore, the call transition h(u0 , reg), D1 , (bs+1 , (en0 , reg 0 ))i a I'i0 , with reg 0 = reg ar1 and reg a D1 .
+In addition, since v a reg, v a D1 and, therefore, the call transition hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , vi aaT hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v, v0 i, with v0 = v ar1 , is in L(T ).
+Again, by constraction of R, there exists the return transition h(bs+1 , ex0 ), D2 , D2 , r2 , X, ui a I'i , and h(en0 , reg 0 )i aaA0 h(ex0 , reg 000 )i, with reg 000 a D2 .
+By j Lemma 2, we have hen0 , v0 i aaT hex0 , v000 i, with v0 a reg 0 and v000 a reg 000 .
+Since v000 a reg 000 and reg 000 a D2 , then v000 a D2 .
+By Lemma 1, we have hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v, v0 i aaT hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v, v000 i.
+Since v000 a D2 , then the following transition hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v, v000 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, where vs+1 = v ar2 is in L(T ).
+We can finally conclude hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 )i.
+This end the proof.
+As a consequence of Theorem 1, that estabilish an effective equivalence of TRSM and EPTA 2, and of Theorems 2 and 3, we can state the following expressiveness results.
+Corollary 2: TRSM 1 (resp.
+EPTA 1) is a proper subclass of TRSM (resp.
+EPTA 2).
+We conclude the section by considering the complexity of the reachability problem, by showing that the problem is PSPACE-complete for the subclass TRSM 0.
+Notice that, the construction above shows that the reachability problem for TRSM 1 can be solved using exponential space, since  the size of the region RSM R is exponential in the size of the TRSM T .
+At the moment we have no results concerning a strict lower bound for TRSM 1.
+The idea underlying the construction for reachability in a TRSM 0 T , is similar to the construction given above for TRSM 1.
+In this case, however, we do not need to build the region graph for T , as we can add summary transitions directly to T .
+Indeed, any call transition in a TRSM 0 resets all the clocks when entering the invoked component.
+Hence, the only relevant local reachability problem from an enter to an exit node in the invoked component is the one which assumes the clock valuation set to zero at the entry node.
+This is the main difference with respect to TRSM 1, where different clock valuations for the entry node have to be considered, thus forcing to explicitly take into account regions in the definition of a summary transition.
+Since the number of summary transitions for TRSM 0 is clearly polynomial in the number of transitions of T , and local reachability in a component boils down to reachability in a Timed Automaton, which is known to be a PSPACE-complete problem [2], we can construct, using only polynomial space, a TRSM 0 T 0 equivalent to T from the reachability viewpoint (see the complete work).
+This is done, again, using a fix point construction, which builds a chain of TRSM 0 T (0) , .
+.
+., T (m) , with T (0) = T , and the transition (k+1) (k) relation I'i (k aL 0) is I'i augmented with summary transitions as follows.
+For every box b a Bi , with Yi (b) = j, for every entry node en a Enj and for every return transition tex = h(b, ex), D2 , D2 , r2 , X, u2 i a I'i , we first build the component machine (k) Aj atex =hNj aS Bj aS {u0 }, Yj , Enj , {u0 }, I'j0 i, where: aV  (k)  I'j0 = I'j  aS {hex, D2 , D2 , a, a, u0 i}, and u0 a / Nj .
+Notice that, for any clock valuation v, hen, v0 i aa (k)  Aj atex  hu0 , vi if and only if hen, v0 i aaAj hex, vi and v a D2 .
+(k)  Therefore, local reachability of u0 in Aj atex ensures both (k) that ex is locally reachable in Aj and that tex is enabled at the exit node, since the constraint D2 , occurring in tex , is satisfied by the reached clock valuation.
+(k) Then, if u0 is locally reachable from en in Aj atex , then for all call transition hu1 , D1 , D1 , X, a, (b, en)i a I'i , the (k+1) summary transition hu1 , D1 , D1 , r2 , a, u2 i is added to I'i .
+Once computed T 0 , the reachability problem for an untimed global state hb1 , .
+.
+., bs , ui in T can be solved by checking reachability of hb1 , .
+.
+., bs , ui in T 0 , according to the following procedure.
+Let Ai0 , Ai1 , .
+.
+., Ais be the sequence of the invoked components, with i0 = 1 and Yija1 (bj ) = ij .
+We start by guessing a sequence of entry nodes en0 , .
+.
+., ens , with enj a Enij .
+For each j aL 0, we then check whether (bj+1 , enj+1 ) is locally reachable from enj in the component Aij , where, for the sake of local reachability, call transitions are treated as reset transitions.
+Finally, we check whether u is locally  reachable from ens in the component Ais .
+If all the checks are fulfilled, then reachability is ensured.
+Notice that each local reachability check is a reachability analysis in a Timed Automaton, which can be done using polynomial space.
+Hence, we can conclude the following theorem: Theorem 4: The reachability problem for TRSM 0 is PSPACE-complete.
+Proof: Let us consider a TRSM 0 T S = hA1 , .
+.
+., An , Xi where, for all 1 a$?
+i a$?
+n, Ai = hNi Bi , Yi , Eni , Exi , I'i i.
+We define an algorithm which enriched the transition relation by adding summary transition.
+We that prove that, if T 0 is the output of the below reported algorithm, then T 0 and T are equivalent for reachability viewpoint.
+The algorithm for augmentid T with summary transitions is the following: REPEAT summarized = FALSE FOR ALL Ai FOR ALL b a Bi j = Yi (b) FOR ALL en a Enj FOR ALL tex = h(b, ex), D2 , D2 , r2 , X, u2 i a I'i I'j0 = I'j aS {hex, D2 , D2 , a, a, u2 i} Aj atex = hNj aS Bj aS {u0 }, Yj , Enj , {u0 }, I'j0 i, 0 (u a / Nj ) IF treach(Aj atex , en, u0 ) summarized = TRUE FOR ALL ten = hu1 , D1 , D1 , X, a, (b, en)i a I'i I'i = I'i aS {hu1 , D1 , D1 , r2 , a, u2 i} UNTIL AZ summarized In the algorithm, the function treach is the standard procedure for the reachability problem for a Timed Automata: for instance, if exists a clock valuation v such that the configuration hu0 , vi is reachable from the initial configuration hen, v0 i in the Timed Automaton Aj atex , then the output of treach(Aj atex , en, u0 ) is T RU E; else the output is F ALSE.
+Let T a TRSM 0 and T 0 the TRSM 0 output of the algorithm.
+In order to prove that T 0 is equivalent to T for reachability, we need to show the following lemma.
+Lemma 3: hu, vi aaT hu0 , v0 i, with u, u0 a Nj , iff hu, vi aaA0 hu0 ,v0 i. j Proof: (a).
+The proof is by induction on nesting depth k of the run ItT = hu1 , v1 i aaT hun , vn i.
+(Base case, k = 0).
+In this case, every transition hui , vi i aT hui+1 , vi+1 i in ItT , with 1 a$?
+i a$?
+n, can be only either a progress or a reset transition: aV  (progress transition): we have that ui+1 = ui a Nj , vi+1 = vi + t, with t a DaL0 .
+By construction of A0j , there is a progress transition hui , vi )i aA0j hui ,vi+1 )i;  (reset transition): we have that vi+1 = vi ar1 , with hui , D1 , D1 , r1 , a, ui+1 i a I'j and vi a D1 .
+By construction of A0j , there is a reset transition hui ,vi i aA0j hui+1 , vi+1 i.
+(Inductive step, k > 0).
+Let us suppose that the nesting depth of the run hu1 , v1 i aaT hun , vn i is k + 1.
+The run can have two kinds of sub-runs.
+The first one has the form hui , vi i aaT hui0 , vi0 i, with nesting depth s a$?
+k and 1 a$?
+i < i0 a$?
+n. All sub-runs of this form have, by inductive hypothesis, the corresponding sub-runs hui , vi i aaA0 hui0 , j vi0 i.
+The last one has the form hui , vi i aaT hui0 , vi0 i with nesting depth k + 1 and 1 a$?
+i < i0 a$?
+n. It is possible to split all sub-runs of this form in such a way that: aV a call transition hui , vi i aT hb, en, vi , vi ar1 i, with hui , D1 , D1 , r1 , a, (b, en)i a I'j , Yj (b) = i, en a Eni and vi a D1 .
+By construction of I'j0 , hui , D1 , D1 , r1 , a, (b, en)i a I'j0 ; a aV a sub-run having the form hb, en, vi , vi ar1 i aT hb, 00 ex, vi , v i, with ex a Exi .
+By Lemma 1, we can write hen, vi ar1 i aaT hex, v00 i, with nesting depth s = k. By inductive hypothesis there is a corresponding subrun hen, vi ar1 i aaA0 hex, v00 i, with all transitions in aV  (k)  i  I'i ; 00 aV a return transition tex = hb, ex, vi , v i aT hui0 , vi0 i, with h(b, ex), D2 , D2 , r2 , X, ui+1 i a I'j , vi0 = vi ar2 and v00 a D2 .
+As a consequence of the facts above, by construction (k) of Ai atex = hNj aS Bj aS {u0 }, Yj , Enj , {u0 }, I'i0 i, since ex is reachable from en and v00 a D2 , we have that u0 is reachable from en (since the valuation v00 in ex satisfies the constraint D of the return transition tex ) and then treach(Ai atex , en, u0 ) = T RU E. By construction of T 0 there is a summary transition hui , D1 , D1 , ui0 i a I'j0 and then we can write hui , vi i aA0j hui0 , vi0 i.
+Combining the facts above, we have that hu1 , v1 i aT 0 hun , vn i.
+(a).
+(k) The proof is by induction on the index k of I'j .
+(Base case, k = 0).
+If k = 0, there is no summary (0) transition in I'j , and the property holds immediately.
+(Inductive step, k > 0).
+Let hu1 , v1 i aaA0 hus , vs i be a j  0  (k+1)  run with at least one transition belonging to I'j The run ItA0j can be split as follows: aV  (k)  .
+for each sub-run hui , vi i aaA0 hui0 , vi0 i, with 1 a$?
+j  aV  0  \ I'j  0  (k)  i < i0 a$?
+s and all transitions in I'j , by inductive hypothesis we have that hui , vi i aaT hui0 , vi0 i; for each summary transition hui , D1 , D1 , r, a, ui+1 i 0 (k+1) a I'j , such that hui , vi i aA0j hui+1 , vi ar i, with 1 a$?
+i < s, we have that: a there is a call transition hui , D1 , D1 , X, a, (b, en)i a I'j , with Yj (b) = j 0 , such that vi a D1 ;  a there is a return transition tex = h(b, ex), D2 , D2 , r, X, ui+1 i a I'j ; a treach(Aj 0 atex , en, u0 ) is T RU E, namely hen, v0 i aaAj0 atex hex, vi aAj0 atex hu0 , vi, for some clock valuation v such that v a D2 .
+By construction of Aj 0 atex and by induction, we have that hen, v0 i aaT hui+1 , vi ar i.
+As a consequence of the facts above, we have that hu, vi aaT hu0 , v0 i.
+Now we can show that, for an untimed global state hb1 , .
+.
+., bs , ui of T , the global state hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vi is reachable, in T , from an initial global state, for some clock evaluations v1 , .
+.
+., vs , v, iff the global state hb1 , .
+.
+., bs , ui of T 0 is reachable from the initial global state of T 0 .
+Proof: (a).
+The proof is by induction on the lenght of the run ItT = hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with u a Ni .
+(Base case, k = 0).
+Immediate.
+(Inductive step, k aL 0).
+Let ItT be a run of lenght k + 1.
+The (k + 1) a th transition can have one of the following forms: aV  aV  aV  aV  (progress transition): hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with vs+1 = v0 + t, t a DaL0 .
+By construction we have that hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i.
+Combining the previous fact with the inductive hypothesis, we have hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (reset transition): hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, ui a I'i , u0 a Ni , v0 a D and vs+1 = v0 ar .
+By construction of T 0 , hu0 , D, D, r, a, ui a I'i0 .
+Combining this transition with the inductive hypothesis, we have hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (call transition): hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , vs i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, X, a, (bs , u)i a I'j , Yj (bs ) = i, u0 a Nj , vs a D and vs+1 = vs aX = v0 .
+By construction of T 0 , hu0 , D, D, X, a, (bs , u)i a I'j0 .
+Combining this transition with the inductive hypothesis, we have hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (return transition): if the (k + 1) a th transition is a return transition (tex0 ), then we can split the run ItT in the following way: 1) a sub-run of lenght k 0 a$?
+k in the form hen, v0 i aaT hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i, with u0 a Ni .
+By inductive hypothesis we can write hen, v0 i aaT 0 hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i; 2) a matching call transition hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , bs+1 , en0 , v1 , .
+.
+., vs ,  v0 , v00 i, where hu0 , D1 , D1 , X, a, (bs+1 , en0 )i a I'i , Yi (bs+1 ) = j, en0 aEnj , v0 a D1 and v00 = v0 aX = v0 ; 3) a sub-run hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v0 , v0 i aaT hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v0 , v000 i, with ex0 a Exj .
+By Lemma 1 we have that hen0 , v0 i aaT hex0 , v000 i and by Lemma 3 we have that hen0 , v0 i aaAj at 0 hex0 , v000 i; ex 4) a return transition hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs , v0 , v000 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, where tex0 = h(bs+1 , ex0 ), D2 , D2 , r2 , X, ui a I'i is a return transition, v000 a D2 and vs+1 = v0 ar2 .
+By construction of Aj atex0 , hex, D2 , D2 , a, a, u00 i a I'j0 , with u00 a / N .
+Since hen0 , v0 i aaAj at 0 ex 0 000 hex , v i (see the point above) and v000 a D2 , we can write hen0 , v0 i aAj at 0 hu00 , v000 i.
+But this ex implies that treach(Aj atex0 , en, u00 ) is T RU E. As consequence of the facts above, we have that there exists in T 0 a summary transition hu0 , D1 , D1 , r2 , a, ui, and then, we can write hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i.
+(a).
+The proof is by induction on the lenght of the run ItT 0 = hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with u a Ni .
+(Base case, k = 0).
+Immediate.
+(Inductive step, k aL 0).
+Let ItT 0 = hen, v0 i aaT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i be a run of lenght k + 1.
+The (k + 1) a th transition can have one of the following forms: aV  aV  aV  aV  (progress transition): hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with vs+1 = v0 + t, t a DaL0 .
+By construction we have that hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i.
+Combining the previous fact with the inductive hypothesis, we have hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (reset transition): hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, r, a, ui a I'i0 , u0 a Ni , v0 a D and vs+1 = v0 ar .
+By construction of T 0 , hu0 , D, D, r, a, ui a I'i .
+Combining this transition with the inductive hypothesis, we have hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (call transition): hb1 , .
+.
+., bsa1 , u0 , v1 , .
+.
+., vsa1 , vs i aT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, with hu0 , D, D, X, a, (bs , u)i a I'j0 , Yj (bs ) = i, u0 a Nj , vs a D and vs+1 = vs aX = v0 .
+By construction of T 0 , hu0 , D, D, X, a, (bs , u)i a I'j .
+Combining this transition with the inductive hypothesis, we have hen, v0 i aaT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i; (summary transition): if the (k + 1) a th transition is a summary transition hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT 0 hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs , vs+1 i, where hu0 , D1 , D1 , r2 , a, ui a I'i0 , u0 a Ni , v0 a D1 and vs+1 = v0 ar2 ,  then by construction of T 0 , we have that: 1) there is a call transition hu0 , D1 , D1 , X, a, (bs+1 , en0 )i a I'i0 , with Yi (bs+1 ) = j and en0 a Enj .
+Since v0 a D1 (see above), we have that hb1 , .
+.
+., bs , u0 , v1 , .
+.
+., vs , v0 i aT hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs , v0 , v0 i; 2) treach(Aj atex0 ) = T RU E, where Aj atex0 = hNj aS Bj aS {u00 }, Yj , Enj , {u00 }, I'j0 i and tex0 = h(bs+1 , ex0 ), D2 , D2 , r2 , a, ui a I'i .
+But treach(Aj atex0 ) = T RU E implies that ex0 is reachable from the configuration hen0 , v0 i with some clock valuation v, with v a D2 .
+Then, we can write hen0 , v0 i aaAj at 0 hex0 , vi.
+By ex Lemma 3, we can write hen0 , v0 i aaT hex0 , vi.
+By Lemma 1, we have that hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs v0 , v0 i aaT hb1 , .
+.
+., bs+1 , en0 , v1 , .
+.
+., vs v0 , vi; 3) since v a D2 , we can write hb1 , .
+.
+., bs+1 , ex0 , v1 , .
+.
+., vs v0 , vi aT hb1 , .
+.
+., bs , u, v1 , .
+.
+., vs vs+1 i, by the effect of the return transition tex0 , with vs+1 = v0 ar2 .
+As a consequence, by applying the inductive hypothesis, we can write hen, v0 i aaT hb1 , .
+.
+., bs , v1 , .
+.
+., vs , vs+1 i.
+Once computed T 0 , the reachability problem for an untimed global state hb1 , .
+.
+., bs , ui in T can be solved by checking reachability of hb1 , .
+.
+., bs , ui in T 0 , according to the following procedure.
+Let Ai0 , Ai1 , .
+.
+., Ais be the sequence of the invoked components, with i0 = 1 and Yija1 (bj ) = ij .
+We start by guessing a sequence of enter nodes en0 , .
+.
+., ens , with enj a Enij .
+For each j aL 0, we then check whether (bj+1 , enj+1 ) is locally reachable from enj in the component Aij , where, for the sake of local reachability, call transitions are treated as reset transitions.
+Finally, we check whether u is locally reachable from ens in the component Ais .
+If all the checks are fulfilled, then reachability is ensured.
+Notice that each local reachability check is a reachability analysis in a Timed Automaton, which can be done using polynomial space.
+VI.
+C ONCLUSION In this paper we have introduced TRSMs, a real time extension of RSMs, able to model real time recursive systems.
+We have shown that TRSMs allow to specify interesting context-free properties, both on the untimed and the timed dimensions.
+Though reachability of the general framework is undecidable, we have shown that the problem is still decidable for the meaningful classes TRSM 1 and TRSM 0, and that it is PSPACE-complete for the class TRSM 0, the same complexity of reachability in standard Timed Automata.
+A number of interesting issues are still to be investigated.
+In particular, tight complexity results for the reachability problem in TRSM 1 are yet to be established.
+The paper focuses on the relationship with the most related formalisms, namely PTAs and RSMs.
+On the other hand, a comparison with other related formalisms need to be settled.
+In particular, the undecidability proof for EPTAs shows that they are able to simulate clock updates (increment and decrement) similar to those provided by Updatable Timed Automata [3].
+Also the formalisms of Stopwatch Automata [8] requires a comparison.
+It seems that Stopwatch Automata can be simulated by the class EPTA 2, while the opposite seems not to hold.
+Another relevant issue concerns the study of the class of context-free timed languages accepted by EPTAs and by their subclasses.
+R EFERENCES [1] Alur R., Benedikt, M., Etessami, K., Godefroid, P. Reps, T. and Yannakakis, M.: Analysis of Recursive State Machines.
+In: 13th International Conference on Computer-aided Verification (CAVa01), pp.
+207a220.
+[2] Alur R., and Dill D. L.: A Theory of Timed Automata.
+In: Theoretical Computer Science, Volume 126, pages 183a235, 1994.
+[3] Bouyer P., Dufourd C., Fleury E. and Petit A.: Updatable timed automata, Theoretical Computer Science, vol.
+321, number 2a 3, pages 291a345, 2004.
+[4] Dang Z.: Pushdown timed automata: a binary reachability characterization and safety verification.
+In: Theoretical Computer Science, Volume 302 , Issue 1-3, pages 93a121, 2003.
+[5] Minsky M. L.: Computation: finite and infinite machines, Prentice-Hall Inc., Upper Saddle River, NJ, USA., 1967.
+[6] Alur R., Parthasathy M.: Decision Problems for Timed Automata: A Survey.
+In: Proceedings of the 4th International School on Formal Methods for the Design of Computer, Communication and Software System: Real Time (SFM-RT 2004), pp.
+1a24.
+[7] Bouajjani A., Echahed R., Robbana R.: On the Automatic Verification of Systems with Continuous Variables and Unbounded Discrete Data Structures.
+In: Proc.
+Hybrid System II, LNCS 999, 1995.
+[8] Cassez F. and Larsen K.: The Impressive Power of Stopwatches.
+In Proc.
+of CONCUR 2000: Concurrency Theory, pp.
+138a152, LNCS 1877, 2000.

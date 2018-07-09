@@ -1,0 +1,422 @@
+Resolution-Based Model Construction for PLTL Michel Ludwig and Ullrich Hustadt Department of Computer Science University of Liverpool, United Kingdom {Michel.Ludwig, U.Hustadt}@liverpool.ac.uk  AbstractaWith tableaux-based reasoning approaches or model checking techniques for propositional linear-time temporal logics, PLTL, it is easily possible to construct counter examples for formulae that are not valid.
+In contrast, only the information that a formula is satisfiable is usually available in resolution-based inference systems.
+In this paper we present a resolution-based approach for constructing models for satisfiable PLTL formulae.
+Our approach is based on using the standard model construction for sets of propositional clauses saturated under ordered resolution in the different time points of a temporal model.
+The temporal model construction procedure is also designed in such a way that it can be easily implemented in existing theorem provers for PLTL.
+Keywords-Propositional Linear-Time Temporal Logic; Resolution; Automated Model Construction  I. I NTRODUCTION Temporal Logics are a powerful notational framework for specifying computational systems and associated properties in the area of formal verification.
+The field of formal verification is concerned with verifying that a specified system behaves correctly in all situations.
+In particular, propositional temporal logics have been successfully applied to the verification of reactive or concurrent systems [1] and to verification via model-checking [2].
+In this paper we focus on temporal reasoning through clausal resolution-based methods.
+More specifically, we consider propositional linear-time temporal logic (PLTL) with finite past and infinite future.
+A clausal resolution calculus for this logic has been introduced in [3] and implemented, for example, in the theorem prover TSPASS [4].
+Another type of proof methods for PLTL are, for instance, tableauxbased approaches [5] and an implementation of a one-pass tableau calculus [6] exists in the Logics Workbench [7].
+In order to prove the validity of a formula D both proof methods operate on the negated formula AZD.
+In the case of tableaux reasoning one essentially tries to construct a model for the formula AZD.
+If no model can be found, then one can conclude that the formula AZD is unsatisfiable, which is equivalent to D being valid.
+For resolution-based proof methods on the other hand the proof goal consists in deriving a contradiction from the formula AZD, from which one can conclude again that D is valid.
+It is therefore easy to see that formal verification by using tableaux-based systems bears the advantage that in case of a failure to prove the validity of a specific property a counter  example demonstrating the erroneous behaviour has already been constructed.
+For clausal resolution-based reasoning a set of clauses on which every application of an inference rule will only derive redundant clauses, a so-called saturated set, will have typically been constructed in that case.
+If the empty clause is not contained in this saturated set, one can conclude that the formula AZD is satisfiable, which implies that D is not valid.
+Thus, only the knowledge that the specification does not satisfy the required property is generally available for clausal resolution-based verification.
+A way of constructing a model satisfying a saturated set (under ordered resolution) both for propositional and first-order logic has been devised in [8].
+The model construction algorithm involves ordering the clauses by using an extension of the ordering on propositional symbols that has been used in the saturation of the clause set.
+One positive (maximal) literal is then satisfied per clause, whenever necessary, starting from the smallest clause w.r.t.
+the considered ordering.
+A term model, or so-called Herbrand model, representing the satisfied literals will be constructed in this way.
+In this paper we present a method that allows to construct a model for a satisfiable PLTL formula.
+Our approach is based on analysing the saturated clause set that has been computed under ordered fine-grained resolution with selection, which is in fact a sound and complete calculus for monodic first-order temporal logic.
+A temporal model is then obtained by constructing models for sets of (nontemporal) propositional clauses at the different time points.
+The sets of clauses considered for the individual points in the time line will be constructed dynamically during the model construction process by taking those clauses into account that allow to express constraints among different time points.
+The whole model construction procedure is designed in such a way that it can be easily incorporated into existing resolution-based theorem provers for PLTL.
+The paper is organised as follows.
+In Section II we briefly define the variant of propositional temporal logic we are considering, whereas Section III recalls the calculus of ordered fine-grained resolution.
+We then describe the propositional model construction procedure in Section IV, and in Section V we introduce the resolution-based temporal model construction algorithm for PLTL and prove its correctness.
+In Section VI we consider practical aspects of the algorithm  and its complexity.
+We conclude with a brief overview of its implementation in the theorem prover TSPASS and present some experimental results in Section VII.
+II.
+P ROPOSITIONAL L INEAR T IME T EMPORAL L OGIC The language of Propositional Linear Time Temporal Logic, PLTL, is an extension of classical propositional logic by temporal operators for a discrete linear model of time (i.e.
+isomorphic to N).
+The signature of PLTL is composed of a countably infinite set of propositional symbols p, q, p0 , p1 , .
+.
+.
+, the propositional operators >, AZ, a", and the tempo(aalways in the futurea), aS (aeventually in ral operators the futurea),  (aat the next momenta), U (auntila) and W (aweak untila) (see e.g.
+[9]).
+We also use aL (false), aSS, and a as additional operators, defined using > (true), AZ, and a" in the usual way.
+The set of PLTL formulae is defined as follows: > is a PLTL formula; any propositional symbol P is an atomic PLTL formula or atom; if D and D are PLTL formulae, then so are AZD, D a" D, D, aSD, D, D U D, and D W D. As usual, a literal is either an atomic formula or its negation.
+A propositional clause is a set of literals.
+Formulae of this logic are interpreted over temporal structures M = (Dn )naN that associate with each element n of N, representing a moment in time, a propositional model (or valuation) Dn given by a set of propositional symbols.
+The definition of the truth relation Mn |= D is as follows: Mn |= > Mn |= p iff p a Dn Mn |= AZD iff not Mn |= D Mn |= D a" D iff Mn |= D or Mn |= D Mn |= D iff Mn+1 |= D Mn |= aSD iff there exists m aL n such that Mm |= D Mn |= D iff for all m aL n, Mm |= D Mn |= D U D iff there exists a m aL n such that Mm |= D and Mi |= D for every i, n a$?
+i < m Mn |= D W D iff Mn |= D U D or Mn |= D A temporal structure M = (Dn )naN is said to be a model for a formula D if and only if it holds that M0 |= D. A formula is satisfiable if and only there exists a model for D. A formula D is valid if and only if every temporal structure M = (Dn )naN is a model for D. We say that a set of formulae F entails a formula D, written F  D, if and only if every temporal structure M that is a model for every formula D a F is a model for D (analogously for sets of propositional clauses).
+Every PLTL formula can be transformed into an equisatisfiable normal form, called divided separated clausal normal form (DSCNF).
+Definition 1.
+A propositional temporal problem P in divided separated clausal normal form (DSCNF) is a quadruple hU, I, S, Ei, where (i) the universal part U and the initial part I are finite sets of propositional clauses;  (ii) the step part S is a finite set of clauses of the form p a q, where p is a propositional symbol and q is a propositional literal; and (iii) the eventuality part E is a finite set of formulae of the form aSl (an eventuality clause), where l is a propositional literal.
+We associate with each propositional temporal problem P = hU, I, S, Ei the PLTL formula I aSS U aSS S aSS E. When we talk about particular properties of a temporal problem (e.g., satisfiability, validity, logical consequences, etc.)
+we refer to properties of this associated formula.
+The transformation to DSCNF is based on a renaming and unwinding technique which substitutes non-atomic subformulae by new propositional symbols and their definitions, and replaces temporal operators by their fixed point definitions as described, for example, in [3].
+Theorem 1.
+Any formula in propositional linear-time temporal logic can be transformed into an equi-satisfiable propositional temporal problem in DSCNF with at most a linear increase in the size of the problem.
+Proof: Follows from [10], Theorem 3.4.
+The main purpose of the divided separated clausal normal form is to cleanly separate different temporal aspects of a PLTL formula from each other.
+One has to note that step clauses of the form C a D, where C is a conjunction of propositional symbols and D a disjunction of propositional literals, can be derived by the calculus introduced in Section III.
+In this paper we assume that propositional temporal problems in DSCNF contain at most one single eventuality.
+This is not a restrictive assumption as every propositional problem can be transformed in such a way that it contains at most one eventuality up to a linear increase in the size of the problem (see [11], Lemma 7).
+Let {p1 aVq1 , .
+.
+.
+, pn a Vnqn } be a set of step clauses n in P. Then ( i=1 pi ) a ( i=1 qi ) is called a merged step clause built from P. In what follows, A a B and Ai a Bi denote merged step clauses, and U denotes the (current) universal part of a propositional temporal problem P. In the next section we recall the propositional version of the ordered fine-grained resolution with selection calculus first presented in [12].
+As the clauses we are considering are actually sets of literals instead of multisets, we do not have to introduce factoring rules.
+III.
+O RDERED F INE -G RAINED R ESOLUTION WITH S ELECTION We assume that we are given an admissible ordering , that is, a strict partial ordering on propositional symbols that is well-founded and total, and a selection function S which maps any propositional clause C to a (possibly empty)  subset of its negative literals.
+The ordering  is extended to literals by AZA  A and (AZ)A  (AZ)B if and only if A  B.
+A literal L is called (strictly) maximal w.r.t.
+a clause C if and only if there is no literal L0 a C with L0  L (L0  L).
+A literal L is eligible in a clause L a" C if either it is selected in L a" C, or otherwise no literal is selected in C and L is maximal w.r.t.
+C. The admissible ordering  and the selection function S are used to restrict the applicability of the deduction rules of fine-grained resolution as follows.
+(i) Ordered resolution with selection between two universal clauses C1 a" A AZA a" C2 C1 a" C2 if A is eligible in (C1 a" A), and AZA is eligible in (AZA a" C2 ).
+The result is a universal clause.
+(ii) Ordered resolution with selection between an initial and a universal clause and between two initial clauses.
+These are defined in analogy to the two deduction rules above with the only difference that the result is an initial clause.
+(iii) Ordered fine-grained step resolution with selection.
+C1 a (D1 a" A) C2 a (D2 a" AZA) (C1 aSS C2 ) a (D1 a" D2 ) where C1 a (D1 a" A) and C2 a (D2 a" AZA) are step clauses, A is eligible in (D1 a" A), and AZA is eligible in (D2 a" AZA).
+C1 a (D1 a" A) D2 a" AZA C1 a (D1 a" D2 ) where C1 a (D1 a" A) is a step clause, D2 a" AZA is a universal clause, A is eligible in (D1 a" A), and AZA is eligible in (D2 a" AZA).
+D1 a" A C2 a (D2 a" AZA) C2 a (D1 a" D2 ) where D1 a"A is a universal clause, C2 a (D2 a"AZA) is a step clause, A is eligible in (D1 a" A), and AZA is eligible in (D2 a" AZA).
+(iv) Clause conversion.
+A step clause of the form C a aL is rewritten to the universal clause AZC.
+(v) Eventuality resolution rule w.r.t.
+U .
+A1 a B1  AV AV AV An a Bn Vn i=1 AZAi  aSl  (aSU res )  where Ai a Bi are merged step clauses such that for every i, 1 a$?
+i a$?
+n, the Wnloop side conditions U aSS Bi |= AZl and U aSS Bi |= j=1 Aj are valid.
+(In the case U |= AZl, the degenerate clause, > a >, can be considered as a premise of this rule, and the conclusion of the rule is then AZ>.)
+The set of full merged step clauses, satisfying the loop side Wn conditions, is called a loop in aSl and the formula j=1 Aj is called a loop formula.
+Rules i to iii, also called rules of fine-grained step resolution, are either identical or closely related to the deduction rules of ordered propositional resolution with selection.
+In contrast, rule v is much more complex, as it requires not just one or two premises, but an indeterminate (though finite) number of complex combinations of step clauses, which have to satisfy certain conditions.
+To find premises suitable for an application of the eventuality resolution rule we use a particular algorithm, called FG-BFS (for finegrained breadth-first search), which conducts a so-called loop search (see e.g.
+[10] for more details).
+The algorithm internally uses W the deduction rules i to iii and returns a loop n formula H = j=1 Aj , which allows to directly add AZH to the universal part of a temporal problem as the result of applying the eventuality resolution rule.
+Let ordered fine-grained resolution with selection be the calculus consisting of the rules i to iv above, together with the eventuality resolution rule v. We denote this calculus by IS, FG .
+The calculus can be extended by redundancy elimination rules, like for example, the deletion of subsumed clauses.
+Definition 2 (Derivation).
+A (linear) derivation D (in IS, FG ) from a temporal problem P in DSCNF is a sequence of tuples D = hU1 , I1 , S1 , Ei, hU2 , I2 , S2 , Ei, .
+.
+.
+such that each tuple hUi+1 , Ii+1 , Si+1 , Ei is obtained from hUi , Ii , Si , Ei by adding the conclusion of an application of one of the inference rules of IS, to premises from one of FG the sets Ui , Ii , Si to that set, with the other sets as well as E remaining unchanged1 .
+A derivation D such that the empty clause is an element of a Ui aS Ii is called a (IS, FG -)refutation of hU1 , I1 , S1 , Ei.
+A derivation D is fair if and only if for each clause C which can be derived from premises in S S S h iaL1 Ui , iaL1 Ii , iaL1 Si , Ei there exists an index j such that C occurs in hUj , Ij , Sj , Ei.
+Ordered fine-grained resolution with selection is sound and complete for propositional temporal problems as stated in the following theorem.
+Theorem 2 (see [12], Theorem 5).
+Let P be propositional temporal problem in DSCNF.
+Let  be an admissible ordering and S a selection function.
+Then P is unsatisfiable iff there exists a IS, FG -refutation of P. Moreover, P is unsatisfiable iff any fair IS, FG -derivation is a refutation of P. IV.
+P ROPOSITIONAL M ODEL C ONSTRUCTION In this section we briefly recall the model construction procedure for satisfiable sets of (non-temporal) propositional 1 In an application of the eventuality resolution rule, the set U in the definition of the rule refers to Ui .
+clauses as it was introduced in [8].
+This model construction procedure uses an admissible ordering on propositional symbols again, which is then extended on propositional clauses as its (multi)set extension.
+The model is constructed by considering which literals have to be satisfied in a given clause, starting from the smallest clause w.r.t.
+the clause ordering.
+Definition 3 (Propositional Model Construction).
+Let  be an admissible ordering and S be a selection function.
+Additionally, let N be a set of propositional clauses.
+For a propositional clause C a N we inductively define a propositional model I,S (C) and a set IlC as follows.
+Let C a S N be a propositional clause.
+Then, we define I,S (C) = CD IlD , and if the clause C (i) is of the form C 0 a" A, where A is the maximal literal in C, (ii) is false in I,S (C), and (iii) if no negative literal is selected in C, we define IlC = {A}; S otherwise we set IlC = a.
+Finally, we define I,S (N ) = CaN IlC .
+In line with the definition of the semantics for PLTL given in Section II propositional symbols not listed in a propositional model I,S (N ) will be set to afalsea2 in the model.
+It can be shown that for an arbitrary admissible ordering, an arbitrary selection function and for an arbitrary saturated set of propositional clauses (w.r.t.
+to the given ordering) which does not contain the empty clause, the propositional model construction indeed constructs a model.
+Theorem 3 (see [8], Theorem 3.16).
+Let  be an admissible ordering and S be a selection function.
+Moreover, let N be a set of propositional clauses that is saturated under inferences by the rules of ordered (propositional) resolution with selection and let N not contain the empty clause.
+Then it holds that I,S (N ) |= N .
+V. T EMPORAL M ODEL C ONSTRUCTION For a temporal problem P = hU, I, S, Ei the temporal model construction is based on using the regular propositional model construction for the different time points of a temporal model.
+For the initial time point 0 the regular propositional model construction will be performed over the set of universal clauses together with the set of initial clauses.
+For time points different from the initial point in time, the (merged) step clauses C a D whose left-hand sides C were fulfilled at the previous moment in time have to be considered in addition to the set of universal clauses.
+If the temporal problem P contains a single eventuality, i.e.
+E = {aSl}, special care has to be taken for allowing it to be satisfied infinitely often.
+We add the eventuality to the set 2 More  specifically, the terminology of adonat carea literals from SAT solvers does not apply here.
+of clauses used for the model construction in a specific time point if the newly-added eventuality unit clause does not lead to a contradiction.
+As a result, the constructed model will satisfy the eventuality in every time point in which the set of universal clauses and the right-hand sides of the step clauses whose left-hand sides were fulfilled at the previous time point do not imply the negated eventuality.
+Consequently, the only acriticala merged step clauses A a B are those with U aS {B}  AZl and U 6 AZA.
+In particular one has to avoid that the left-hand side of one of these acriticala merged step clauses is constantly fulfilled from any given time point onwards.
+One way of ensuring this requirement consists in varying the ordering on propositional symbols that is used to construct the models for the different time points, which is also the approach that is taken in this paper.
+For example, if we were to construct a temporal model as described above for the temporal problem P0 = h{p a" q}, a, {p a AZl}, {aSl}i, we have to ensure that the propositional symbol p is not satisfied at every time point as otherwise we would obtain the sequence of propositional models {p, l}, {p}, {p}, .
+.
+.
+.
+The constructed sequence would obviously not satisfy the formula aSl.
+In the next subsection we describe the model construction procedure in a formal way and give an example for the construction of a model, while we prove the correctness of the procedure in the subsequent subsection.
+A.
+Construction Principle Before we can introduce the model construction procedure, we still need to give a couple of auxiliary definitions.
+First of all, for a temporal problem P we associate with every set of merged step clauses C (and with the power set P(C)) a set OC of strict total orderings on Symbols(P).
+Definition 4.
+Let P be a propositional temporal problem in DSCNF and let C = {A1 a B1 , .
+.
+.
+, An a Bn } be a set of merged step built from the temporal problem P, Vmiclauses where Ai = j=1 aij for 1 a$?
+i a$?
+n and ai1 , .
+.
+.
+, aimi are propositional symbols for 1 a$?
+i a$?
+n. We define OC to be the smallest set of admissible orderings on Symbols(P) which contains for every tuple (i1 , .
+.
+.
+, in ) a {1, .
+.
+.
+, m1 } A .
+.
+.
+A {1, .
+.
+.
+, mn } exactly one ordering  a OC with Symbols(P) \ {a1i1 , .
+.
+.
+, anin }  a1i1 , .
+.
+.
+, anin .
+S For the power set P(C) of C we define that OP(C) = SaP(C) OS , where Oa = a.
+The next definition introduces the set RS (M) which contains the right-hand sides of step clauses whose left-hand sides are triggered by a propositional model M. Definition 5.
+Let P = hU, I, S, Ei be a propositional temporal problem such that E = a or E = {aSl}.
+Additionally, let S be a set of step clauses built from P and M be a  propositional model over Symbols(P).
+Then we define: RS (M) = { l1 a" .
+.
+.
+a" lm | (p1 aSS .
+.
+.
+aSS pm ) a  (l1 a" .
+.
+.
+a" lm ) a S and M |= p1 aSS .
+.
+.
+aSS pm } Next we define the set LE (N ), which adds to the set N the unit clause l if E = {aSl} and N 6 AZl.
+Definition 6.
+Let P = hU, I, S, Ei be a propositional temporal problem such that E = a or E = {aSl}.
+Furthermore, let N be a set of propositional clauses over Symbols(P).
+Then we define: N aS {l} if E = {aSl} and N 6 AZl LE (N ) = N otherwise Finally, for a set of propositional clauses N we denote by Res,S (N ) the set of all the clauses obtained by an application of the ordered resolution rule using the ordering  to premises in N and the selection function S. We S i also define that Resa (N ) = Res ,S ,S (N ), where iaN 0 Res,S (N ) = N .
+We can now give the definition of the temporal model construction procedure.
+Definition 7 (Temporal Model Construction).
+Let P = hU, I, S, Ei be a propositional temporal problem in DSCNF such that aL 6a U aS I, and E = a or E = {aSl}.
+Additionally, let S be a selection function, and if E = {aSl}, let C = {A1 a B1 , .
+.
+.
+, An a Bn } be the set of all the merged step clauses built from the temporal problem P such that for every i, 1 a$?
+i a$?
+n: (i) U aS {Bi }  AZl, and (ii) U 6 AZAi , and (iii) for every A a B with A ( Ai (and B ( Bi ) it holds that U aS {B} 6 AZl.
+The merged step clauses from the set C will also be called critical merged step clauses for the temporal problem P. We then define a sequence of propositional models H0 , H1 , .
+.
+.
+as follows: E H0 = I0 ,S (Resa 0 ,S (L (U aS I)))) and for i aL 1: E S Hi = Ii ,S (Resa i ,S (L (U aS R (Hia1 )))) where i (i a N) are admissible orderingsWon Symbols(P) n such that for every Hj , j aL 1 with Hj |= k=1 Ak , which occurs infinitely often, OP(C) a { t+1 | t aL j and Ht = HjW}.
+n Additionally, for every Hj , j aL 1 with Hj 6|= k=1 Ak we have j+1 = 0 .
+Let H = (H0 , H1 , .
+.
+. )
+denote the temporal model obtained in this way.
+First of all, one can observe that the process of ensuring that every ordering is used infinitely often corresponds to the notion of fairness, which is employed in the field of model checking [13].
+Then, as explained above, the sets of initial and universal clauses are considered for the model construction in the time  point 0.
+Additionally, the eventuality is added to the clause set used for model construction if its presence does not lead to a contradiction.
+The regular model construction is then performed through an initial ordering 0 on Symbols(P) after the model construction clause set has been saturated under regular ordered resolution with selection using the ordering 0 .
+This saturation process is necessary in order to ensure the correctness of the propositional model construction.
+For any time point other than the initial point of the time line, the universal clauses together with the righthand side of any step clause whose left-hand was satisfied at the previous time point are used for the propositional model construction.
+Again, the eventuality is added to the considered set if does not lead to a contradiction.
+It is now important to note that the ordering on propositional symbols under which the propositional resolution and model construction is performed has to be varied for the temporal model construction to succeed.
+The variation of the orderings on propositional symbols ensures that a propositional model is found for a time point which does not trigger the left-hand side of any critical step clause, For example, for the temporal problem P0 = h{p a" q}, a, {p a AZl}, {aSl}i again, we cannot use the ordering l  p  q at every time point as it would not lead to a correct temporal model.
+We have to use an ordering 0 with q 0 p at some time points instead.
+It is important to note that in general different choices of orderings can lead to different models, which can greatly vary in size.
+However, it is not possible to construct every model of a temporal problem P though the model construction method introduced in this paper.
+For example, the model {p}, {p}, .
+.
+.
+cannot be obtained for the temporal problem h{AZp a" AZq}, a, a, ai.
+We conclude this section by applying the temporal model construction procedure on a concrete example.
+We consider the temporal problem P00 = h{p a" q}, {p}, {p a q, q a p}, {aSAZp}i. Saturating the problem P00 under ordered fine-grained resolution (with an empty selection function) using the ordering p  q derives the universal clause AZp a" AZq (through loop search), the initial clause AZq, and the step clause q a AZq.
+The step clause q a p is a critical step clause for the set of universal clauses as {p a" q, AZp a" AZq, p}  AZAZp.
+For the initial time point we hence consider the set of propositional clauses {AZq, p, p a" q, AZp a" AZq} for the propositional model construction procedure.
+With the symbol ordering p  q, we obtain the model H0 = {p}.
+Then, as the step clause p a q has been triggered at the initial time point, we have to add the unit clause q to the considered clause set.
+As {q, p a" q, AZp a" AZq}  6 AZAZp, we add the unit clause AZp and obtain the set {q, p a" q, AZp, AZp a" AZq}, which is to be used for the propositional model construction.
+After saturation with the ordering p  q, the standard  propositional model construction yields the propositional model H1 = {q} in the time point 1.
+Finally, as the step clauses q a p, q a AZq have been triggered in time point 1, the unit clauses p and AZq have to be added to the clause set used for the propositional model construction.
+Additionally, as the set {AZq, p, p a" q, AZp, AZp a" AZq} is unsatisfiable, the set {AZq, p, p a" q, AZp a" AZq} has be to be considered for the propositional model construction, which results in the model H2 = {p} with the ordering p  q.
+As H0 = H2 the temporal model construction procedure will now construct models for the remaining time points analogously to ones shown above.
+B. Correctness In this section we prove the correctness of the construction procedure introduced in Definition 7, i.e.
+we show that the constructed sequence of propositional models is indeed a model for the considered temporal problem.
+We only state the required lemmata and theorems; the full proofs can be found in [14].
+First of all, we introduce three lemmata that will be required for the subsequent correctness theorem.
+Lemma 4.
+Let N be a set of propositional clauses over a set of propositional symbols P such that every clause contains at least one negative literal.
+Let  be an admissible ordering on the propositional symbols P and S be a selection function.
+Then it holds that I,S (N ) = a. Lemma 5.
+Let N be a satisfiable set of propositional clauses.
+Moreover, let a1 , .
+.
+.
+, an be propositional symbols and let  be an admissible ordering on propositional symbols such that Symbols(N)\{a1 , .
+.
+.
+, an }  a1 , .
+.
+.
+, an .
+Finally, let S be a selection function.
+Then it holds that: I,S (Resa ,S (N ))  a1 a" .
+.
+.
+a" an iff N  a1 a" .
+.
+.
+a" an Lemma 6.
+Let P be a propositional temporal problem and let N be a satisfiable set of propositional clauses which only uses propositional symbols from P. Additionally, let C = {A1 a B1 , .
+.
+.
+, An a Bn } be a set of merged step clause built from the temporal problem P, and let S be a selection function.
+Then it holds that: Wn Wn N  i=1 Ai iff a  a OC : I,S (Resa ,S (N )) |= i=1 Ai We can now state the correctness theorem for the model construction procedure.
+Theorem 7.
+Let P = hU, I, S, Ei be a propositional temporal problem with E = a or E = {aSl} which is saturated under ordered fine-grained resolution with selection and does not contain the empty clause.
+Additionally, let H be the corresponding sequence of propositional models obtained through temporal model construction.
+Then it holds that: H0 |= I aSS  UaSS  SaSS  E  VI.
+P RACTICAL C ONSIDERATIONS AND C OMPLEXITY The temporal model construction as described in the previous section constructs an infinite sequence of propositional models, as suggested by the definition of the semantics for PLTL given in Section II.
+However, for practical applications, a finite representation of a temporal structure, as given by an ultimately periodic model is more useful.
+Definition 8 (Ultimately Periodic Model).
+Let P = hU, I, S, Ei be a propositional temporal problem such that either E = a or E = {aSl}, and let H = (H0 , H1 , H2 , .
+.
+. )
+be the an infinite sequence of propositional models over Symbols(P).
+Furthermore, let I, J, L a N be indices such that I a$?
+L < J, HI = HJ and HL |= l if E = {aSl}, I = L otherwise.
+We then define a sequence of propositional models H0 = (H00 , H10 , .
+.
+. )
+as follows: (i) Hi0 = Hi for every 0 a$?
+i a$?
+J (ii) Hi0 = HI+(iaI) mod (JaI) for every i aL J + 1 It can be shown that if the sequence H is a model for P, then the sequence H0 is also a model for P [15].
+More concretely, in an implementation of the temporal model construction procedure one has to keep track of the ordering that has been used for the saturations used in the different time points.
+Whenever a previously considered set of clauses is encountered again, the symbol ordering used for the model construction in the considered time point has to be changed cyclically.
+Finally, the construction procedure can terminate whenever a previously encountered valuation has been computed again and the possibly present eventuality has been satisfied in between those two time points.
+Moreover, it easy to see that for a set C = {A1 a B1 , .
+.
+.
+, An a Bn } of critical merged step clauses for a temporal problem P the set OP(C) can be constructed from P(aSni=1 Symbols(Ai )), the power set of all the propositional symbols occurring in left-hand sides of critical step clauses.
+Every ordering  a OP(C) is characterised by the subset P a aSni=1 Symbols(Ai ) such that Symbols(P) \ P  p for every p a P. Thus, in an implementation it is sufficient to consider all the subsets of aSni=1 Symbols(Ai ) in order to construct the required orderings.
+Furthermore, it is also possible to eliminate redundant cycles in constructed temporal models.
+For example, if one has built a model for a temporal problem P with a single eventuality aSl and the constructed model contains a sequence of valuations Hi , Hi+1 , .
+.
+.
+, Hj such that Hi = Hj and Hk 6|= l for every i a$?
+k a$?
+j, then the sequence Hi , .
+.
+.
+, Hja1 can be removed from the final model as it does not contribute to satisfying the eventuality.
+It is important to note that the model construction procedure is completely deterministic, that is, neither the basic building blocks given by I,S and Resa ,S , nor the construction of the sequence of propositional models that form  Time LWB aModela 1 Cran 2 Cran 1 Cran 2 Cran  (n=5) (n=5) (n=12) (n=12)  0.06s 0.06s 1.5s 0.06s  TSPASS 0.03s 0.06s 0.04s 1.13s  TSPASS Model Construction 0.07s (0.01s) 0.63s (0.03s) 0.89s (0.57s) 53.14s (0.47s)  LWB aModela Length 7 2 39 2  TSPASS Model Properties Constructed Critical Merged Model Length Time Points Step Clauses 2 (1) 2 0 2 (1) 2 0 14 (7) 16 17 2 (1) 2 0  Table I M EDIAN R ESULTS ( PER CLASS ) FOR THE TSPASS AND LWB MODEL CONSTRUCTION PROCEDURES APPLIED ON THE BENCHMARK CLASSES  the ultimately periodic model involves any non-deterministic operation that in an implementation would force us to use a form of backtracking-search to find a model.
+On the other hand, just as standard tableaux-based model generation procedures for PLTL, there is no guarantee that we will produce a minimal, that is, shortest possible, ultimately periodic model for a temporal problem or PLTL formula.
+The computational complexity of the temporal model construction procedure is determined mainly by the time required to compute the saturation Resa ,S (N ) of a set N of clauses under ordered resolution, which is exponential in the size of N , the size of the Resa ,S (N ), which is also exponential in the size of N , and the maximal length of the sequence of propositional models in an ultimately periodic model H0 for a satisfiable temporal problem P = hU, I, S, Ei, which is again exponential in the size of P. Overall, we obtain the following result.
+Theorem 8.
+Let P = hU, I, S, Ei be a satisfiable propositional temporal problem with E = a or E = {aSl}.
+Then an ultimately periodic model H for P can be constructed by the temporal model construction procedure in time exponential in the size of P. Since for a given PLTL formula D an equi-satisfiable propositional problem P in DSCNF can be computed in polynomial time and space, this result also implies the we can construct an ultimately periodic model for D in time exponential in the size of D. It is important to remember that while the satisfiability problem of PLTL is PSPACE-complete, given that ultimately periodic models can be of exponential size in the worst case, we cannot hope for a model construction procedure of better complexity.
+VII.
+I MPLEMENTATION The temporal model construction has been implemented as an extension of the theorem prover TSPASS3 [4], which is a fair theorem prover for monodic first-order temporal logic based on ordered fine-grained resolution with selection.
+It is important to note that while the temporal problem is saturated by TSPASS, the critical merged step clauses for 3 http://www.csc.liv.ac.uk/Emichel/software/tspass/  the considered temporal problem are also computed as part of the overall loop search process.
+Consequently, no further computation is required to obtain these step clauses.
+We have compared the resolution-based model construction implemented in TSPASS 0.92-0.16 with the one-pass tableau calculus described in [6], which is implemented in the Logics Workbench (LWB) version 1.1 [7].
+We have applied both systems to all the satisfiable PLTL formulae in the benchmark classes introduced in [16].
+Two of the 1 1 (n = 12), (n = 5) and Cran benchmark classes, Cran where n is the number of propositional symbols over which the formulae are constructed, are designed in such a way that they can be theoretically solved easily by resolutionbased decision procedures, whereas the two other benchmark 2 2 (n = 12), are designed so that (n = 5) and Cran classes, Cran the satisfiable formulae in them can be theoretically solved more easily by tableaux-based systems.
+In particular, in [16] the implementation of the one-pass tableau calculus in the LWB was indeed performing best on these formulae.
+The experiments were run on a PC equipped with an Intel Core 2 E6400 CPU and 3 GB of main memory and an execution timeout of 5 minutes was imposed on each problem.
+For TSPASS an empty selection function was used.
+The scheduling of the orderings on propositional symbols was done w.r.t.
+an increasing subset size and in such a way that a maximal number of different orderings were tried out: whenever a set of propositional clauses was encountered for the first time the next possible ordering was used for the propositional model construction instead of starting again from the initial ordering w.r.t.
+the critical symbols.
+For the 1 Cran classes TSPASS was instructed to perform matching replacement resolution and formulae (D) aSS (D) were rewritten to (D aSS D) in order to reduce the number of required renamings.
+The median results for all the satisfiable formulae of each class are shown in Table I, with time values in the table being the average CPU time of three identical runs.
+We can observe that the number of generated clauses and the execution times increase for the model construction run of TSPASS, which is due to the transformation to single-eventuality problems and, as a result, an increased number of step clauses.
+Such a  transformation is not performed if no model construction is required.
+Additionally, one could observe that the time spent in the transformation to DSCNF is negligible.
+The numbers in brackets in the model construction time column indicate the amount of time actually spent on model construction w.r.t.
+the global execution time, and the numbers in brackets in the model length column represent the length of the periodic part.
+Finally, the median total number of constructed time points during the model construction in TSPASS is reproduced in the second last column, some of which are discarded during the elimination of redundant cycles.
+1 The class Cran (n=5) contains 2400 formulae in total of which 1217 formulae are satisfiable.
+On these satisfiable formulae, the model construction of TSPASS could solve all the problems, whereas the aModela function of the LWB did not finish on 26 problems within the given time limit.
+The 2 (n=5) contains 1400 formulae in total of which class Cran 955 are satisfiable.
+All the models constructed by TSPASS and the LWB for this class were at most of length 2.
+No timeouts were incurred either in the TSPASS or the LWB 1 (n=12), then, contains 4000 formulae in run.
+The class Cran total of which 2264 are satisfiable.
+The model construction of TSPASS did not finish on 30 satisfiable formulae in this class, whereas the aModela function of the LWB did not terminate within the given time limit on 284 of the satisfiable 2 (n=12) contains 1900 formulae.
+Finally, the class Cran formulae in total of which 1184 formulae are satisfiable.
+Again, no timeouts were incurred in either the TSPASS or LWB run, and all the models constructed by TSPASS and the LWB for this class were at most of length 2 As one might expect, the Logics Workbench can maintain 2 2 its execution time advantage on Cran (n = 5) and Cran (n = 12).
+On the other hand, the model construction of TSPASS 1 1 (n = 12), (n = 5) and Cran proves quite successful on Cran computing even a smaller median model length than the LWB.
+VIII.
+C ONCLUSION We have presented a procedure for constructing models for satisfiable PLTL formula.
+The procedure is based on computing saturations under ordered fine-grained resolution with selection while using the standard model construction for propositional clauses to construct models for the different time points.
+It is important to observe that the temporal model construction procedure is not based on performing a search with backtracking but the construction is guaranteed to succeed once the appropriate symbol orderings have been considered, and that it can always produce finite, ultimately periodic models.
+We have proved the correctness of the model construction algorithm, analysed some of its practical aspects, and briefly introduced our implementation of the algorithm.
+It is easily possible to extend the model construction method presented in this paper to CTL formulae, but an  extension to first-order temporal logic will require greater efforts.
+In future work we intend to address the problem of reducing the number of renamings necessary for the transformation to single-eventuality problems and also try to construct even shorter, ideally minimal, ultimately periodic models for PLTL formulae.
+R EFERENCES [1] A. Pnueli, aThe temporal logic of programs,a in Proc.
+FOCSa77.
+IEEE Computer Society, 1977, pp.
+46a57.
+[2] E. Clarke, O. Grumberg, and D. A. Peled, Model Checking.
+MIT Press, 1999.
+[3] M. Fisher, C. Dixon, and M. Peim, aClausal temporal resolution,a ACM Transactions on Computational Logic, vol.
+2, no.
+1, pp.
+12a56, 2001.
+[4] M. Ludwig and U. Hustadt, aImplementing a fair monodic temporal logic prover,a AI Communications, To appear.
+[5] P. Wolper, aTemporal logic can be more expressive,a Information and Control, vol.
+56, no.
+1/2, pp.
+72a99, 1983.
+[6] S. Schwendimann, aA new one-pass tableau calculus for PLTL,a in Proc.
+TABLEAUXa98, ser.
+LNCS, vol.
+1397.
+Springer, 1998, pp.
+277a292.
+[7] A. Heuerding, G. JaEger, S. Schwendimann, and S. Michael, aThe Logics Workbench LWB: A snapshot,a Euromath Bulletin, vol.
+2, no.
+1, pp.
+177a186, 1996.
+[8] L. Bachmair and H. Ganzinger, aResolution theorem proving,a in Handbook of Automated Reasoning.
+Elsevier, 2001, vol.
+1, ch.
+2, pp.
+19a99.
+[9] E. A. Emerson, aTemporal and modal logic,a in Handbook of Theoretical Computer Science.
+Elsevier, 1990, pp.
+995a 1072.
+[10] A. Degtyarev, M. Fisher, and B. Konev, aMonodic temporal resolution,a ACM Transactions On Computational Logic, vol.
+7, no.
+1, pp.
+108a150, 2006.
+[11] A. Degtyarev, M. Fisher, and B. Konev, aA simplified clausal resolution procedure for propositional linear-time temporal logic,a in Proc.
+TABLEAUXa2002, ser.
+LNCS, vol.
+2381.
+Springer, 2002, pp.
+85a99.
+[12] U. Hustadt, B. Konev, and R. A. Schmidt, aDeciding monodic fragments by temporal resolution,a in Proc.
+CADE-20, ser.
+LNAI, vol.
+3632.
+Springer, 2005, pp.
+204a218.
+[13] N. Francez, Fairness.
+New York, USA: Springer, 1986.
+[14] M. Ludwig and U. Hustadt, aResolution-based model construction for PLTL (Extended Version),a Dep.
+of Comp.
+Sci., Univ.
+of Liverpool, Tech.
+Rep. ULCS-09-008, 2009.
+[15] A. P. Sistla and E. M. Clarke, aThe complexity of propositional linear temporal logics,a J. ACM, vol.
+32, no.
+3, pp.
+733a749, 1985.
+[16] U. Hustadt and R. A. Schmidt, aScientific benchmarking with temporal logic decision procedures,a in Proc.
+KRa02.
+Morgan Kaufmann, 2002, pp.
+533a546.

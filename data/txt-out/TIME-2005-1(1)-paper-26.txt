@@ -1,0 +1,448 @@
+Deterministic CTL Query Solvinga Marko Samer Institute of Information Systems (DBAI) Vienna University of Technology, Austria samer@dbai.tuwien.ac.at  Abstract Temporal logic queries provide a natural framework to extend the realm of model checking from mere veridZcation of engineersa specidZcations to computing previously unknown temporal properties of a system.
+Formally, temporal logic queries are patterns of temporal logic specidZcations which contain placeholders for subformulas; a solution to a temporal logic query is an instantiation which renders the specidZcation true.
+In this paper, we investigate temporal logic queries that can be solved deterministically, i.e., solving such queries can be reduced in a deterministic manner to solving their subqueries at appropriate system states.
+We show that this kind of determinism is intimately related to the notion of intermediate collecting queries studied by the authors in previous work.
+We describe a large class of deterministically solvable CTL queries and devise a BDD-based symbolic algorithm for this class.
+1 Introduction and Overview Temporal logic query solving is an extension of model checking introduced in a seminal paper by Chan [2].
+A temporal logic query is a temporal logic formula containing one or more occurrences of a distinguished proposition a?a which is treated as a placeholder.
+Given a system model K and a query Il, a solution to Il in K is a formula D satisfying K |= Il[D].
+Thus, in contrast to a model checker which essentially a  This work was jointly funded by the European network CoLogNET (IST-2001-33123) and the EU Network of Excellence REWERSE (506779).
+The results presented in this paper have been developed as part of [7].
+Helmut Veith Institut fuEr Informatik (I7) Technische UniversitaEt MuEnchen, Germany veith@in.tum.de  returns a truth value and possibly a counterexample, the task of a query solver is to infer a set of formulas.
+Essentially, the query can be viewed as a aspecidZcation skeletona which describes the solution space.
+Query solving provides a versatile framework which facilitates diverse veridZcation tasks including legacy code analysis, counterexample understanding, and vacuity detection [2, 1, 5, 3, 4, 9].
+The current paper focuses on the notion of deterministic query solving.
+We say that a query can be solved deterministically if solving the query can be reduced in a deterministic manner to solving its subqueries at appropriate system states.
+Note that deterministic query solving is not possible for arbitrary queries.
+The Kripke structure K in Figure 1 illustrates deterministic query solving for the query Il = A(D U AG ?).
+This query Il has the following property: A formula D is a solution to Il in K if D is a solution to Ilas immediate subquery IlE = AG ?
+at a set S of states that is reachable from s0 by going only through states at which D holds.
+This follows immediately from the semantics of the until operator U.
+Examples of such sets are the set S1 = {s2 , s4 , s5 , s8 , s9 } and the set S2 = {s4 , s6 , s7 , s9 , s10 , s11 , s12 } in Figure 1.
+Thus, we know that S1 |= IlE[D] as well as S2 |= IlE[D] imply that D is a solution to Il in K. Conversely, if D is a solution to Il in K, we know that there exists some set S as above such that S |= IlE[D] but we do in general not know which one.
+Therefore, in a naive approach, to obtain all solutions to the query Il = A(D U AG ?)
+we would have to loop through all possibilities for S. For certain queries such as Il considered above, however, it is possible to determine a single set S which gives already all solutions.
+In this case we speak of deterministic query solving.
+In our example above,  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  s1 D  s4 AZD .
+.
+.
+D  s0 D  s2 D  s3 D  s5  s6 AZD .
+.
+.
+s10 AZD .
+.
+.
+s11 AZD .
+.
+.
+s7 AZD .
+.
+.
+D  s8  s12 AZD .
+.
+.
+s9 AZD .
+.
+.
+Figure 1.
+Example of solving A(D U AG ?)
+the set S2 is this set S. To see this, note that all other possibilities for S aare located to the left of S2 a in Figure 1.
+Moreover, the subquery IlE is looking for an invariant.
+Since everything that is an invariant to the left of S2 must remain an invariant at S2 , it sufdZces to compute the solutions at S2 .
+From this example we see that solving Il can be reduced to solving its subquery at a deterministically determined set of states.
+In this paper, we will investigate query solving algorithms which are based on such efdZcient deterministic reductions.
+Since deterministic reductions are not possible for all queries, the development of deterministic query solving algorithms dZrst requires a (quite complicated) analysis of those queries which have the required property.
+Our main results show that (i) deterministic query solving is closely related to the notion of intermediate collecting queries.
+Exploiting this relationship, we show (ii) how deterministic query solving gives rise to symbolic query solving algorithms.
+Our work achieves (iii) an extension of Chanas algorithm to a much wider class of queries.
+In order to explain the results of this paper in more detail, we dZrst need to review some of the previous research about temporal logic queries.
+In [2], Chan investigated CTL queries Il that are guaranteed to have an exact solution in every model, i.e., a solution Iz that implies all other solutions to Il.
+Chan presented a syntactic fragment of such queries and a symbolic BDD-based algorithm for solving them, albeit without proofs and with incorrect results.
+A systematic study by the authors aimed at an extension and correction of Chanas work by identifying exact queries, i.e., queries  that have an exact solution if there exists any solution but that are not guaranteed to have a solution in every model.
+This research resulted in (i) the dedZnition of an exact CTL query language which corrects the errors found in Chanas fragment [6, 8] and (ii) a syntactic characterization of exact LTL queries by a template grammar [7, 10].
+Chanas symbolic algorithm is still poorly understood and has not been systematically investigated so far.
+Given the errors found in Chanas query language, and the absence of proofs in Chanas posthumous paper, the correctness and principles of his algorithm have remained unclear.
+The current paper as a dZrst result reports on a significant extension of the previously known class of exact CTL queries (cf.
+Table 1).
+The main result in this paper, however, concerns CTL query solving algorithms.
+Based on our insights on exact CTL queries, we give an exact and novel exposition of symbolic query solving algorithms and argue why the class of exact queries is amenable to classical BDD-based symbolic dZxpoint algorithms.
+Since symbolic algorithms build up sets of states, they can only collect solutions, but not account for case distinctions.
+Consequently, reductions of solving queries to solving their subqueries can only be performed by symbolic algorithms when the set of states at which the subqueries have to be solved can be computed deterministically.
+This situation is intuitively accounted for in Chanas algorithm; his algorithm reduces the computation of solutions to a CTL query at a given set of states to the computation of solutions of a subquery at another set of states.
+This reduction is repeatedly applied until the placeholder is reached.
+Our results also have the following intuitively appealing logical interpretation: Since exact queries are characterized by distributivity (i.e., Il[D] aSS Il[D] a Il[D aSS D]) [7, 10], it is natural to expect that distributivity holds in cases where the placeholder is universally quantidZed and is violated otherwise.
+Consequently, our results give an intuitive high-level explanation which fragments of LTL and CTL are exact.
+This paper is organized as follows: In Section 2, we shortly summarize the formalisms used in the remainder of this paper.
+Afterwards, in Section 3, we formally introduce temporal logic queries and we present our syntactic fragment CTLQx of exact CTL queries.
+Then, we systematically investigate proper-  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  ties of queries in CTLQx in Section 4 consisting of two subsections.
+In Section 4.1, we show how nondeterminism in the sense of existential choices can be eliminated when solving queries in CTLQx .
+Based on these insights, we present our extension of Chanas symbolic algorithm and state its correctness in Section 4.2.
+Finally, we conclude in Section 5.
+2 Preliminaries We assume the reader is familiar with the basics of (symbolic) model checking, i.e., Kripke structures, the computation tree logic CTL based on the temporal operators X (anexta), F (afuturea), G (aglobala), and U (auntila), the least and greatest dZxpoint-operators Al and I", etc.
+Let K = (Q, Q0 , a, ) be a Kripke structure over the set A of atomic propositions, where Q is a set of states, Q0 a Q is the set of initial states, a a Q A Q is a total transition relation, and  : Q a a(A) is a total labeling function.
+A computation path or simply path D in K is an indZnite sequence of states D : N a Q such that (D(i), D(i + 1)) a a for all i a N. We write D n to denote the computation path satisfying D n (i) = D(n + i) for all i a N. As usual we write K, s |= D to denote that the CTL formula D is satisdZed at state s in K, and we write K |= D to denote K, s0 |= D, where s0 is the initial state of K. For simplicity, we also write K, D |= D to denote K, D(0) |= D and K, S |= D to denote K, s |= D for all s a S. We omit K if it is clear from the context.
+Following Chan [2], we use some additional temporal operators.
+In particular, we use the weak until operator D W D a (G D) a" (D U D).
+The other operators are variants of the strong until operator U and the weak until operator W: D UE D a D U (D aSS D) D UE D a D U (AZD aSS D)  D WE D a D W (D aSS D) D WE D a D W (AZD aSS D)  The additional operators will give rise to stronger temporal logic queries although they do not increase the expressive power of CTL.
+We call an n-ary temporal operator O monotonic in its k-th operand iff for all formulas I,1 , .
+.
+.
+, I,ka1 , I,k+1 , .
+.
+.
+, I,n it holds that D a D implies O(I,1 , .
+.
+.
+, I,ka1 , D, I,k+1 , .
+.
+.
+, I,n ) a O(I,1 , .
+.
+.
+, I,ka1 , D, I,k+1 , .
+.
+.
+, I,n ) for all formulas D and D.  3 Exact CTL Queries In this section, we survey some basic properties of temporal logic queries.
+DedZnition 1 (CTL query).
+A CTL query is a CTL formula where some subformulas are replaced by a special variable ?, called placeholder.
+We write Il[D] to denote the result of substituting all occurrences of the placeholder in Il by D. We denote the set of all CTL queries by CTLQ.
+DedZnition 2 (Solution).
+Let Il be a query, K be a Kripke structure, and D be a formula.
+If K |= Il[D], then we say that D is a solution to Il in K. We denote the set of all solutions to Il in K by sol(K, Il) = {D | K |= Il[D]}.
+A solution Iz to a query Il in a Kripke structure K is exact iff it holds that sol(K, Il) = {D | Iz a D}.
+We call a query Il monotonic iff D a D implies Il[D] a Il[D] for all formulas D and D. Note that it follows immediately from this dedZnition that Il (if monotonic) has a solution in K iff K |= Il[	] and every formula is a solution to Il in K iff K |= Il[aL].
+We are now able to give a formal dedZnition of exact queries.
+DedZnition 3 (Exact query).
+A query is exact iff it has an exact solution in every Kripke structure where the set of solutions is not empty.
+In analogy to Chanas E XP T IME-completeness proof for deciding validity of CTL queries [2] it can be shown by reduction from and to the validity of CTL formulas that deciding exactness of CTL queries is also E XP T IME-complete [7].
+The main implication of this result is the fact that no simple grammar can recognize all exact CTL queries.
+Therefore, we dedZne an extensive syntactic fragment CTLQx such that all queries in this fragment are exact.
+To this aim, consider the deterministic context-free template grammar in Table 1, where   is a special wildcard symbol representing any CTL formula.
+For example, the template A(  U Il) represents all CTL queries of the form A(D U Il), where D is a CTL formula.
+In the following, we write CTLQ1 for the language derived from non-terminal Q1, CTLQ2 for the language derived Q2, and so on.
+The language CTLQx is dedZned from 10 as i=1 CTLQi .
+Although the dedZnition of CTLQx seems to be messy when considering the grammar in  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  ' $ collecting (r = 0), and every intermediate collect$  ' ing query is also weak collecting (n = 0).
+There' Q6 Q  ?
+fore, we say a query is collecting iff it is at least k  $  QQ iP Q3 P  K A Q Q weak collecting.
+The following result can be shown 3 Q PP A QQ   k Q  PP  Q Q Q ?
+   Q    ?
+A 6  by inductive proofs on the structure and the number of s Q P s ?
+Q +  Q P q Q1  Q2  Q5 Q9  - Q8 queries in the sublanguages of CTLQx .
+      kQ Q  3   Q 3   6  ? 66 QQ   KA A +  s Q   Lemma 1 ([7]).
+Every query in CTLQ1 and CTLQ2   )   Q4  ?
+  % A  + is weak collecting.
+Every query in CTLQ3 , CTLQ4 ,  Q7    6 &  and CTLQ5 is intermediate collecting.
+Every query % & % in CTLQ6 and CTLQ7 is boundary collecting.
+Every Figure 2.
+CTLQ dependence diagram  Table 1, it becomes very symmetric when considering the dependencies of the non-terminals as shown in Figure 2.
+Note that the vertex corresponding to nonterminal Q10 was omitted for simplicity because it has only incoming edges (from Q2, Q5, and Q9) but no outgoing edges.
+By a series of nested inductive proofs, the following theorem can be shown.
+x  Theorem 1 ([7]).
+Every query in CTLQ is exact.
+The major complication in the proof arises from the fact that the dependencies between the sublanguages are circular.
+Therefore, we need to use the following auxiliary properties.
+DedZnition 4.
+Let Il be a CTL query.
+aV We say Il is strong collecting iff: If D |= Il[D] and D n |= Il[D] for some n a N, then D n |= Il[D aSS D].
+aV We say Il is boundary collecting iff: If D |= Il[D] and D n |= Il[D] for some n a N, then D n |= Il[D aSS D] or D |= Il[aL].
+aV We say Il is intermediate collecting iff: If D |= Il[D] and D n |= Il[D] for some n a N, then D n |= Il[D aSS D] or there exists r < n such that D r |= Il[aL].
+aV We say Il is weak collecting iff: If s |= Il[D] and s |= Il[D], then s |= Il[D aSS D].
+It follows immediately from DedZnition 4 that every strong collecting query is also boundary collecting, every boundary collecting query is also intermediate  query in CTLQ8 , CTLQ9 , and CTLQ10 is strong collecting.
+Now, recall that CTLQx consists of the above CTL query languages, i.e., all queries in CTLQx are at least weak collecting.
+Moreover, it can be easily shown that all queries Il in CTLQx are monotonic.
+Hence, by the following theorem, we obtain Theorem 1 above.
+Theorem 2 ([7, 10]).
+A query is exact iff it is monotonic and collecting.
+Remark 1.
+In contrast to the characterization of LTLQx [7, 10], we are unfortunately not able to prove the maximality of CTLQx in the sense that all simple queries, i.e., queries whose subformulas are atomic and occur only once in the query, not in CTLQx are not exact.
+Quite the contrary, CTLQx is not maximal in this sense and therefore not a characterization of exact CTL queries.
+For example, consider the simple query Il = AF(a aSS AF(b a" AG ?)).
+It can be easily veridZed that Il a / CTLQx although Il is collecting.
+Finally, let us remark that a proof of maximality by counterexample construction as in the case of LTLQx is much more difdZcult in the case of CTLQx since a counterexample to the collecting property for queries in CTLQx is in general a computation tree instead of a computation path as in the case of LTLQx .
+4 Solving Queries in CTLQx In this section, we show how to symbolically compute an exact solution to queries in CTLQx .
+The connection between computing an exact solution and the collecting properties introduced in the previous section is: The collecting properties enable us to eliminate non-determinism in the sense of existential choices.
+In order to locate the cause of non-determinism in this  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  Q1  ::=  ?
+AX Q3 A( Q3 UE  ) A(  UE Q2 ) A( Q3 WE  ) A(  WE Q4 ) AX Q1 A(  WE Q1 )  | | | | | | | ;    aSS Q3 AX Q4 A( Q4 UE  ) A(  UE Q3 ) A( Q4 WE  ) A(  WE Q5 ) A( Q1 UE  )  | | | | | | |    aSS Q4 AX Q6 A(  UE Q4 ) A(  UE Q4 ) A(  WE Q2 )   aSS Q1 A(  UE Q1 )  | | | | | | |    a" Q2 AX Q7 A(  UE Q5 ) A(  UE Q5 ) A(  WE Q3 )   a" Q1 A( Q1 WE  )  | | | | | | |  Q2  ::=    aSS Q5 A( Q5 WE  )   aSS Q2  | | |  AX Q5 A(  WE Q3 ) AX Q2  | | |  A( Q5 UE  ) A(  WE Q4 ) A( Q2 UE  )  | | |  A(  UE Q3 ) A(  WE Q5 ) A( Q2 WE  )  | | ;  Q3  ::=  AF Q6 A( Q5 U  )   a" Q3  | | |  A( Q1 U  ) A( Q6 U  ) AF Q3  | | |  A( Q2 U  ) A( Q7 U  ) A( Q3 U  )  | | |  A( Q4 U  ) A(  U Q6 ) A(  U Q3 )  | | ;  Q4  ::=    a" Q5 A( Q7 UE  ) A(  UE Q6 ) A( Q3 W  ) A( Q6 WE  ) A(  W Q6 )   a" Q4 A(  W Q4 )  | | | | | | | ;  AF Q5 A(  U Q5 ) A(  UE Q7 ) A( Q5 W  ) A( Q7 WE  ) A(  W Q7 ) AF Q4  | | | | | | |  AF Q7 A(  U Q7 ) A( Q1 W  ) A( Q6 W  ) A(  W Q3 ) A(  WE Q6 ) A(  U Q4 )  | | | | | | |  A( Q6 UE  ) A(  UE Q7 ) A( Q2 W  ) A( Q7 W  ) A(  W Q5 ) A(  WE Q7 ) A( Q4 W  )  | | | | | | |  Q5  ::=  A(  UE Q6 )  |  A(  WE Q6 )  |  A(  WE Q7 )  ;  Q6  ::=  A( Q8 U  )  |  A( Q9 U  )  |    a" Q6  ;  Q7  ::=    aSS Q6 A( Q9 W  )  | |    a" Q8   aSS Q7  | |    a" Q9   a" Q7  | ;  A( Q8 W  )  |  Q8  ::=  AF Q9 AG Q6 A(  UE Q9 ) AX Q8 A(  U Q8 ) A(  W Q8 )  | | | | | |  AG Q1 AG Q7 A(  W Q9 ) AF Q8 A(  UE Q8 ) A(  WE Q8 )  | | | | | ;  AG Q3 A(  U Q9 ) A(  WE Q9 ) AG Q8 A(  UE Q8 )  | | | | |  AG Q4 A(  UE Q9 )   aSS Q8 A( Q8 UE  ) A( Q8 WE  )  | | | | |  Q9  ::=  A(  WE Q8 ) A( Q9 WE  )  | |    aSS Q9 A(  WE Q9 )  | ;  AX Q9  |  A( Q9 UE  )  |  Q10  ::=  AG Q2   a" Q10 A( Q10 U  ) A(  UE Q10 ) A(  WE Q10 )  | | | | |  AG Q5 AX Q10 A( Q10 UE  ) A( Q10 W  ) A(  WE Q10 )  | | | | ;  AG Q9 AF Q10 A(  U Q10 ) A( Q10 WE  )  | | | |    aSS Q10 AG Q10 A(  UE Q10 ) A(  W Q10 )  | | | |  Table 1.
+CTLQx production rules  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  context more systematically, note that temporal operators can be divided into universal and existential ones.
+Let us consider some examples.
+Example 1.
+For every path D and formula D it holds that D |= G IlE[D] if and only if ai a N. D i |= IlE[D].
+Thus, solving a query G IlE can be reduced to solving its subquery IlE at universally quantidZed positions on a path.
+Hence, we classify the global operator G to be a universal operator.
+In contrast, consider path D in Figure 3.
+Obviously, it holds that D |= a U IlE[D] for every solution D to Il = a U IlE on D, but solving Il cannot be reduced to solving its subquery IlE at universally quantidZed positions on D. However, for every path D it holds that D |= I, U IlE[D] if and only if ai a {j a N | j a$?
+n}.
+D i |= IlE[D], where n a N is the least number such that D n |= I,.
+Thus, solving a query I, U IlE can be reduced to solving its subquery IlE at existentially quantidZed positions on a path.
+Hence, we classify the strong until operator U with respect to its second argument to be an existential operator.
+Note, however, that the strong until operator with respect to its dZrst argument is universal.
+To see this, let n a N be the least number such that D n |= I, for any path D and formula I,.
+Then, for every formula D, it holds that D |= IlE[D] U I, if and only if ai a {j a N | j < n}.
+D i |= IlE[D].
+The kind of non-determinism we consider in this section arises from existential choices when solving a query top-down by a reduction to solving its subqueries as demonstrated in Example 1.
+The formal starting point of our investigations is therefore: DedZnition 5 (Universal, Existential).
+Let O be an n-ary temporal operator that is monotonic in its kth operand.
+Then, we dedZne O to be universal with respect to its k-th operand iff for all paths D and formulas D1 , .
+.
+.
+, Dka1 , Dk+1 , .
+.
+.
+, Dn satisfying D |= O(D1 , .
+.
+.
+, Dka1 , 	, Dk+1 , .
+.
+.
+, Dn ) there exists a set I a N, called reduction set, such that D |= O(D1 , .
+.
+.
+, Dka1 , D, Dk+1 , .
+.
+.
+, Dn ) iff ai a I.
+D i |= D. We dedZne O to be existential with respect to its k-th operand iff O is not universal with respect to its k-th operand and for all paths D and formulas D1 , .
+.
+.
+, Dka1 , Dk+1 , .
+.
+.
+, Dn satisfying D |= O(D1 , .
+.
+.
+, Dka1 , aL, Dk+1 , .
+.
+.
+, Dn ) there exists a set I a N, called reduction set, such that D |= O(D1 , .
+.
+.
+, Dka1 , D, Dk+1 , .
+.
+.
+, Dn ) iff ai a  I.
+D i |= D. If O is an n-ary operator that is universal (resp.
+existential) with respect to its k-th operand and O(D1 , .
+.
+.
+, Dka1 , IlE, Dk+1 , .
+.
+.
+, Dn ) occurs in a query Il for any formulas D1 , .
+.
+.
+, Dka1 , Dk+1 , .
+.
+.
+, Dn , then we say that IlE is a universally (resp.
+existentially) occurring subquery of Il.
+Note that all temporal operators used in this paper are either universal or existential with respect to a selected operand.
+This fact is summarized in Table 2, where the placeholder indicates the corresponding operand.
+For example, consider the query Il = AG(a a" A(b U AX IlE)).
+Then, AX IlE is existentially occurring in Il, whereas IlE is universally occurring in Il.
+Remark 2.
+Note that the restrictions to paths on which O(D1 , .
+.
+.
+, Dka1 , 	, Dk+1 , .
+.
+.
+, Dn ) holds and O(D1 , .
+.
+.
+, Dka1 , aL, Dk+1 , .
+.
+.
+, Dn ) does not hold respectively in the above dedZnition are necessary in order to achieve our desired classidZcation.
+For example, the strong until operator U with respect to its dZrst argument would not be universal if we omitted the dZrst condition, since it would not be universal on paths that do not satisfy its second argument at any state.
+On the other hand, the weak until operator W with respect to its second argument would not be existential if we omitted the second condition, since it would not be existential on paths that satisfy its dZrst argument globally.
+The following dedZnition will enable us to easily describe an appropriate reduction set I according to DedZnition 5 for the existential operators in Table 2.
+DedZnition 6 (PredZx indices).
+A set I a N of natural numbers is a set of predZx indices iff for each n a I it holds that for all i < n, i a I.
+In particular, for any path D and formula D, we dedZne the set of predZx indices ID (D) = {n a N | ai < n. D i |= D}.
+Note that a set of predZx indices is either an initial segment of N (i.e., a set of the form {i a N | i a$?
+n} for some n a N) or N itself.
+For example, let D be the path shown in Figure 3.
+Then, ID (a) = {0, 1, 2}, ID (b) = {0}, and ID (a a" b) = N. The following lemma shows that for the strong until operator with respect to its second argument, the set of predZx indices is an appropriate reduction set according to Definition 5.
+It follows immediately from the dedZnition of the strong until operator.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  Universal X?
+G?
+?UD ?WD  ?
+UE D ?
+WE D  Existential D UE ?
+D WE ?
+F?
+DU?
+D UE ?
+DW?
+D WE ?
+Table 2.
+ClassidZcation of temporal operators    P q - a - b + a    Figure 3.
+PredZx index example  Lemma 2.
+For every path D and formula D it holds that D |= D U D iff ai a ID (D).
+D i |= D.  versal quantidZcation has a higher priority in DedZnition 5, we obtain our desired classidZcation.
+4.1 Eliminating Non-determinism The following fact enables us to build up on the auxiliary results of our exactness proof in the previous section.
+It can be easily veridZed by the grammar dedZning CTLQx in Table 1.
+Example 2.
+Consider path D shown in Figure 3 and query Il = a U IlE.
+Assume that we want to solve Il on D by reducing it to solving IlE on D. Since the strong until operator with respect to its second argument is an existential operator (cf.
+Table 2), i.e., IlE is an existentially occurring subquery, we know that there exists a reduction of the form D |= Il[D] iff ai a I.
+D i |= IlE[D] for some set I a N. By Lemma 2, we are allowed to choose I = ID (a) = {0, 1, 2}.
+Hence, we know that solving Il on D can be reduced to solving IlE at states with indices in I, i.e., we obtain all solutions to Il on D by computing the solutions to IlE on D 0 , D 1 , and D 2 .
+Intuitively, this means whenever in a CTLQx query we meet an operator which has an existential semantics (such as D U ?
+), then its context in the CTLQx grammar ensures that a deterministic reduction is possible.
+This follows immediately from the intermediate collecting property and allows an algorithmic interpretation in order to eliminate existential choices as described below.
+Note that all existential operators in Table 2 are variants of the strong until operator.
+Thus, as we will see in Section 4.2, it sufdZces to have an appropriate reduction set for the strong until operator U.  Lemma 3 ([7]).
+Let Il be an intermediate collecting query and D be a path.
+Suppose that D n |= Il[	] for some n a N. If D i |= Il[aL] for all i < n, then every solution to Il on D is a solution to Il on D n .
+Remark 3.
+Not surprisingly, there is a close relationship between the classidZcation into universal and existential temporal operators and the dZrst-order quantidZcation of the corresponding operands in the dedZnition of their semantics.
+However, there are also universal operators whose corresponding operand is existentially quantidZed, e.g., the disjoint strong until operator UE with respect to its second operand.
+But in these cases it is easy to see that the semantics of the operators can be equivalently rededZned by using the uniqueness quantidZer a!
+instead of the existential quantidZer.
+Consequently, since the reduction set in such cases is a singleton set, universal and existential quantidZcation over this set would be equivalent.
+However, since uni-  In other words, it sufdZces to perform several simple model checking calls to achieve a deterministic reduction for query solving, and thus we can alleviate the problem posed by the existential quantidZer.
+Since it takes one call to a symbolic model checker to verify Il[aL] for all states, the complexity of the model checking step is signidZcantly lower than it were for query solving.
+Based on this principle, we describe a symbolic algorithm which computes exact solutions for all queries in CTLQx .
+Chanas algorithm then can be obtained as a special case of our algorithm.
+Since solving an existentially occurring query has in general to be done at several states on a path, we need the following dedZnition.
+Proposition 1.
+All existentially occurring subqueries of queries in our fragment CTLQx are intermediate collecting.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  DedZnition 7.
+Let Il be a query, D be a path, and I a N. Then, we dedZne the set ofsolutions to Il at positions in I on D by solI (D, Il) = iaI {D | D i |= Il[D]}.
+For our purposes, the set I will be a set of predZx indices representing the existential choices of positions on D when solving an existentially occurring subquery Il.
+Thus, in order to obtain all solutions, Il has in general to be solved at all states with indices in I.
+Note that if there exists i a I such that D i |= Il[aL], then, if Il is monotonic, every formula is an element of solI (D, Il) and therefore the solutions at other states with indices in I do not affect solI (D, Il).
+This case is somehow exceptional since it can be simply checked by evaluating the formula Il[aL] at all states with indices in I, which can be performed by a single symbolic model checking call.
+Otherwise, if no such a predZx index exists, it follows immediately from the intermediate collecting property by repeated application of Lemma 3 that sol{i0 } (D, Il) a sol{i1 } (D, Il) a sol{i2 } (D, Il) a AV AV AV , where i0 < i1 < i2 < AV AV AV and D n |= Il[	] for all n a {i1 , i2 , i3 , .
+.
+.}
+a I.
+Hence, when solving an intermediate collecting query at several states on a path, it sufdZces to solve the query at states with indices as high as possible.
+In particular, if there exists a highest index n a I such that D n |= Il[	], it sufdZces to solve the query at this state.
+Example 3.
+Recall Example 2 and let us now consider the case where IlE is intermediate collecting.
+In this case we can determinize the reduction in such a way that I becomes a singleton set.
+In particular, if D i |= IlE[	] and D i |= IlE[aL] for all i a ID (a), it follows from the intermediate collecting property according to Lemma 3 that sol{0} (D, IlE) a sol{1} (D, IlE) a sol{2} (D, IlE).
+Thus, the solutions obtained by solving IlE on D 0 and D 1 are also solutions on D 2 .
+Hence, it sufdZces to solve IlE on D 2 , i.e., the state with highest index in ID (a).
+So we know that D |= Il[D] iff D 2 |= IlE[D] for all D. We are now going to state this insight formally which will enable us to extend the Chan algorithm and can be used in order to prove its correctness.
+Lemma 4 ([7]).
+Let Il be an intermediate collecting query, D be a path, and I a N. Suppose that there is a least index m a I and a highest index n a I such  that D m |= Il[	] and D n |= Il[	].
+If D i |= Il[aL] for all m a$?
+i < n, then sol{n} (D, Il) = solI (D, Il).
+Note that Lemma 4 does not cover all cases that may appear when solving a query.
+In particular, it says nothing about the case where the highest index n a I does not exist.
+This case occurs if I contains an indZnite number of indices i satisfying D i |= Il[	].
+Note that such indices must refer to states in a cycle, since only states in a cycle have an indZnite number of indices.
+For every path D, let us dedZne the set of cycle indices cycle(D) = {i a N | i aL k}, where k is the length of the path predZx of D before the dZrst cycle starts.
+Thus, we are able to state the following lemma.
+Lemma 5 ([7]).
+Let Il be an intermediate collecting query, D be a path, and I a N. Suppose that there is a least index m a I and an index n a cycle(D) aS I such that D m |= Il[	] and D n |= Il[	].
+If D i |= Il[aL] for all i aL m, then sol{n} (D, Il) = solI (D, Il).
+4.2 The Extended Chan Algorithm The Chan algorithm was introduced by William Chan [2] in order to solve queries in his syntactic fragment of valid CTL queries, i.e., CTL queries that are guaranteed to have an exact solution in every model.
+However, Chan neither proved the correctness of his algorithm nor did he describe its functionality.
+With our insights above, it is possible to prove the correctness of Chanas algorithm when applied to valid queries within our fragment CTLQx .
+Note that such queries can be simply obtained by restricting the grammar in Table 1 to those operators that guarantee validity.
+In the following, we are interested in a generalization of Chanas algorithm that is able to solve queries in the whole fragment CTLQx , i.e., queries that have an exact solution if there exists any solution.
+DedZnition 8 (Auxiliary sets).
+Following Chan, we introduce the following three macros (parameterized by D and Il) as abbreviations: RD = AlZ.
+((Q aS posta (Z)) aS D) CDIl  BDIl  = I"Z.
+(RDaSSAZIl[aL] aS posta (Z)) = (Q aS posta (RDaSSAZIl[aL] )) \ (D aS Il[aL])  The intuitive meaning of these three auxiliary sets is illustrated in Figure 4, where the initial set Q is assumed to consist of the four double-circled states.
+The  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  Algorithm 1 The extended Chan algorithm function FSol(Il, D, Q, cycle) begin if cycle then C = CDIl else C = a ; U1 = I"Z.
+((C \ Il[fi]) aS posta (Z)) ; Il \ Il[fi]) ; U2 = U1 aS (BD U3 = AlZ.
+(((U2 aS prea (Z)) aS RDaSSAZIl[aL] ) \ Il[fi]) ; Il aS C) aS Il[fi] ; ret ((prea (U3 ) aS RDaSSAZIl[aL] ) aS BD end function ESol(Il, Q) begin case Il of ?
+: return Q ; I, aSS IlE : return ESol(IlE, Q) ; I, a" IlE : return ESol(IlE, Q \ I,) ; AX IlE : return ESol(IlE, posta (Q)) ; AF IlE : return ESol(A(fi U IlE), Q) ; AG IlE : return ESol(A(IlE WE aL), Q) ; A(IlE U I,) : return ESol(A((I, a" IlE) WE I,), Q) ; A(IlE UE I,) : return ESol(A(IlE WE I,), Q) ; A(I, U IlE) : return ESol(IlE, FSol(IlE, I,, Q, true)) ; A(I, UE IlE) : return ESol(A(I, U (I, aSS IlE)), Q) ; A(I, UE IlE) : return ESol(A(I, WE IlE), Q) ; A(IlE W I,) : return ESol(A((I, a" IlE) WE I,), Q) ; A(IlE WE I,) : return ESol(IlE, Q aS posta (RAZI, )) ; A(I, W IlE) : return ESol(IlE, FSol(IlE, I,, Q, false)) ; A(I, WE IlE) : return ESol(A(I, W (I, aSS IlE)), Q) ; A(I, WE IlE) : return ESol(IlE, (Q aS posta (RI, )) \ I,) ; esac end  set RDaSSAZIl[aL] consists of those states that are reachable from states in Q by going only through states at which DaSSAZIl[aL] holds.
+In particular, R consists of all states that are reachable from states in Q.
+The set CDIl consists of all states within a cycle in RDaSSAZIl[aL] .
+Finally, the set BDIl consists of the boundary of RDaSSAZIl[aL] , i.e., the dZrst states on each path starting from Q that are not in RDaSSAZIl[aL] and at which Il[aL] does not hold.
+The following lemma states the meaning of these sets more formally.
+Lemma 6 ([7]).
+Let Il be a query, D be a formula, and Q be a set of states in a Kripke structure.
+Moreover, let I  a paths(Q) such that D a I  iff D i |= Il[aL] for all i a ID (D).
+Then, RD , CDIl , and BDIl are the sets of states on paths D a paths(Q) such that 1.
+D(n) a RD iff for all i a$?
+n it holds that D i |= D. 2.
+D(n) a CDIl iff D a I , ID (D) is indZnite, and n a cycle(D).
+3.
+D(n) a BDIl iff D a I , ID (D) is dZnite, and n = max(ID (D)).
+D AZIl[aL]  D Il[aL]  D AZIl[aL]  AZD AZIl[aL]  D AZIl[aL]  ...  D AZIl[aL]  D AZIl[aL]  Il BD  ...  AZD AZIl[aL]  ...  D AZIl[aL]  D AZIl[aL]  RDaSSAZIl[aL] D AZIl[aL]  D AZIl[aL]  CDIl  Figure 4.
+Auxiliary sets in Chanas algorithm  It is thus easy to see that the states in BD are those with the highest index on each path satisfying the conditions of Lemma 4, and the states in CD are those within a cycle on each path satisfying the conditions of Lemma 5.
+Hence, according to Lemma 4 and Lemma 5, solving a query in our fragment can be reduced to solving its existentially occurring valid subqueries at the set of states BD and CD without existential choices.
+Although this kind of determinization is not possible in general, it can be extended to the whole fragment CTLQx .
+However, when extending Chanas algorithm (see Algorithm 1) to the whole fragment CTLQx , the existence of a solution at each state is no longer guaranteed.
+Therefore, the required set of states satisfying the conditions of Lemma 4 and Lemma 5 such that solving a query can be reduced to solving its subqueries at this set, has to be computed in a more sophisticated way.
+In particular, we compute the set of states that correspond to highest indices resp.
+cycle indices in I.
+Afterwards, we traverse the corresponding paths backwards until a state on each path is found at which Il has a solution.
+These are then the states with highest indices among the states at which Il has a solution, i.e., it sufdZces to solve Il at this uniquely determined set of states.
+This idea of computing the states at which Il has a solution and that are furthest away is implemented by the function FSol in Algorithm 1.
+Intuitively, the sets U1 and U2 together consist of all states with highest indices but on which Il has no solution.
+The set U3 consists then of all states that can be reached by going backwards as long as Il does not have a solution.
+Thus, by making a further  Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE  step backwards, we obtain the desired set of states, i.e., the states with highest indices at which Il has a solution.
+In this way, it is possible to prove the correctness of the extended Chan algorithm.
+DedZnition 9 (Solution states).
+Let Il be a query and Q be a set of states in a Kripke structure.
+A set of states S is the unique set of solution states to Il at Q iff it holds that S |= D iff Q |= Il[D] for all formulas D. The following theorem states our main result.
+It can be proved by structural induction on Il.
+Theorem 3 ([7]).
+Let Il a CTLQx and Q be a set of states in a Kripke structure.
+Moreover, let ESol be the function dedZned in Algorithm 1.
+Suppose that Q |= Il[	], i.e., Il has a solution at each state in Q.
+Then, ESol(Il, Q) returns the unique set of solution states to Il at Q.
+In particular, the following corollary shows how to obtain a propositional exact solution by the extended Chan algorithm.
+Corollary 1 ([7]).
+Let Il a CTLQx and s0 be the initial state of a Kripke structure K. Moreover, let ESol be the function dedZned in Algorithm 1.
+Then, the characteristic function of the set returned by ESol(Il, {s0 }) is a propositional exact solution to Il in K.  5 Conclusion In this paper we have systematically investigated symbolic algorithms for query solving and have argued that symbolic algorithms work for queries which can be solved by a recursive deterministic descent.
+To conclude this paper, let us consider the question of exact queries and their relevance.
+It is evident that temporal logic queries will in many cases have multiple incomparable solutions; algorithms for computing multiple solutions as well as extensions to multiple placeholders have been the subject of important related work [1, 5, 3, 4].
+However, the only existing implementation TLQSolver [3] we are aware of is based on a multi-valued model checker.
+Since the multi-valued setting is essential to their approach, we believe that the results and methods in the current paper are orthogonal to the multi-valued approach.
+We speculate that the central role of determinism in the  Chan style approach in combination with the highly optimized environment of tools such as SMV will incur algorithmic advantages, leading to a trade-off in our case between lower expressibility and higher expected performance.
+A dZnal assertion on the practical performance of both approaches can of course only be achieved by systematic experiments.
+Therefore, natural future work includes the implementation and experimental evaluation of our algorithm.
+References [1] G. Bruns and P. Godefroid.
+Temporal logic query checking.
+In Proc.
+of the 16th Annual IEEE Symposium on Logic in Computer Science (LICS), pages 409a417.
+IEEE Computer Society, 2001.
+[2] W. Chan.
+Temporal-logic queries.
+In Proc.
+of the 12th International Conference on Computer Aided VeridZcation (CAV), volume 1855 of LNCS, pages 450a463.
+Springer-Verlag, 2000.
+[3] M. Chechik and A. GurdZnkel.
+TLQSolver: A temporal logic query checker.
+In Proc.
+of the 15th International Conference on Computer Aided VeridZcation (CAV), volume 2725 of LNCS, pages 210a214.
+Springer-Verlag, 2003.
+[4] A. GurdZnkel, M. Chechik, and B. Devereux.
+Temporal logic query checking: A tool for model exploration.
+IEEE Transactions on Software Engineering (TSE), 29(10):898a914, 2003.
+[5] A. GurdZnkel, B. Devereux, and M. Chechik.
+Model exploration with temporal logic query checking.
+In Proc.
+of the 10th ACM Symposium on Foundations of Software Engineering (FSE), pages 139a148.
+ACM, 2002.
+[6] M. Samer.
+Temporal logic queries in model checking.
+Masteras thesis, TU Vienna, May 2002.
+[7] M. Samer.
+Reasoning about SpecidZcations in Model Checking.
+PhD thesis, TU Vienna, Sept. 2004.
+[8] M. Samer and H. Veith.
+Validity of CTL queries revisited.
+In Proc.
+of the 12th Annual Conference of the European Association for Computer Science Logic (CSL), volume 2803 of LNCS, pages 470a483.
+Springer-Verlag, 2003.
+[9] M. Samer and H. Veith.
+Parameterized vacuity.
+In Proc.
+of the 5th International Conference on Formal Methods in Computer-Aided Design (FMCAD), volume 3312 of LNCS, pages 322a336.
+Springer-Verlag, 2004.
+[10] M. Samer and H. Veith.
+A syntactic characterization of distributive LTL queries.
+In Proc.
+of the 31st International Colloquium on Automata, Languages and Programming (ICALP), volume 3142 of LNCS, pages 1099a1110.
+Springer-Verlag, 2004.
+Proceedings of the 12th International Symposium on Temporal Representation and Reasoning (TIMEa05) 1530-1311/05 $20.00 AS 2005 IEEE

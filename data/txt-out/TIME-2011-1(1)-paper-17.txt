@@ -1,0 +1,764 @@
+2011 Eighteenth International Symposium on Temporal Representation and Reasoning  Temporal Functional Dependencies Based on Interval Relations Pietro Sala Department of Computer Science University of Verona Verona, Italy Email: pietro.sala@univr.it  Carlo Combi Department of Computer Science University of Verona Verona, Italy Email: carlo.combi@univr.it  Abstract--In the last years the representation and management of temporal information has become crucial for several computer applications.
+In the temporal database literature, every fact stored into a database may be equipped with two temporal dimensions: the valid time, that describes the time when the fact is true in the modeled reality, and the transaction time, that describes the time when the fact is current in the database and it can be retrieved.
+Temporal functional dependencies (TFDs) add (transaction) valid time to classical functional dependencies (FDs) in order to express database integrity constraints over the flow of time.
+Currently, proposals dealing with TFDs adopt a point-based approach, where tuples hold at specific time points.
+Moreover, TFDs may involve the use of different granularities (i.e., partitions of the time domain), to express integrity constraints as "for each month, the salary of an employee depends only on his role".
+At the best of our knowledge, there are no proposals dealing with interval-based temporal functional dependencies (ITFDs for short) where the associated valid time is represented by an interval.
+In this paper, we propose a set of ITFDs based on the Allen's interval relations, we analyze their expressive power with respect to other TFDs proposed in the literature and we propose an algorithm for verifying ITFDs in a database system.
+last 8 hours").
+Moreover, very often in our natural language descriptions two different time intervals are linked together by some relation ("during the flight from Venice to Lubeck I red a nice book").
+Moving back from the real world to the enchanted land of temporal databases, it appears reasonable to analyze in which context the interval representation of time may result useful, if not mandatory in some case, for representing constraints over the possible evolutions of our data.
+In this paper, we propose a family of TFDs based on the Allen's interval relations [7] called Interval TFDs (ITFDs for short) and analyze their expressiveness by means of a simple example extracted from the clinical domain.
+Moreover we show that verifying whether a temporal database satisfies a given ITFD can be done in O(n log n) (basically the cost of sorting the endpoints of the intervals involved).
+The paper is organized as follows.
+In Section II we give a short description of the literature on temporal functional dependencies.
+In Section III we introduce an example based on a real world scenario, the management of medical data in our case, that will be useful through the following sections, to give an idea of how TFDs and ITFDs work.
+In Section IV we introduce Interval Temporal Functional Dependencies and analyze their expressiveness.
+Section V describes a family of new algorithms for evaluating in an efficient way Interval Temporal Functional Dependencies over a temporal database.
+Finally, Section VI provides some concluding remarks and discusses further extensions of the current work.
+I. I NTRODUCTION Temporal functional dependencies (TFDs) add a temporal dimension to classical functional dependencies (FDs) to deal with temporal data [1]-[5] (as a matter of fact, two temporal dimensions have been considered only in [6], where standard FDs are evaluated at every database snapshot).
+As an example, while FDs model constraints like "employees with the same role get the same salary", TFDs can represent constraints like "for any given month, employees with the same role have the same salary, but their salary may change from one month to the next one" [1], [4] or "current salaries of employees uniquely depend on their current and previous roles" [2].
+To the best of our knowledge all the TFDs proposed in literature, including the ones cited above, rely on some point-based semantics or, like in the case of granularities, on some fixed point-based temporal grouping.
+On the other side, in a real world setting we are used to conceive time more like arbitrary intervals with a starting and an ending point in place of isolated time instants (e.g.
+"my flight from Venice to Lubeck will take off at 10 o'clock and it will 1530-1311/11 $26.00 (c) 2011 IEEE DOI 10.1109/TIME.2011.15  II.
+R ELATED WORK In this section we first introduce two contributions, one from the temporal database area and another from the AI area, dealing with some semantic issues when associating data to intervals; then, we provide a short overview of the main formalisms for TFDs proposed in the literature.
+A. Interval-based semantics In [8] Terenziani and Snodgrass analyze the inadequacy of point-based semantics concerning models of natural language.
+They propose a dichotomy between two types of fact.
+Facts are partitioned in two classes, the telic ones (from the Greek "telos" meaning goal) and the atelic ones 23  2010" is a granule of the granularity Month).
+A database schema R is extended to a temporal module schema which is a triple (R, G, ph), where G is a granularity and ph is a function, called time windowing function, that associates every tuple with the granules in G where the tuple is valid.
+Bettini, Jajodia, and Wang's TFDs allow one to specify conditions on tuples associated with granules of a given granularity and grouped according to a coarser granularity.
+A general formalism for TFDs on complex (temporal) objects has been proposed by Wijsen in [4].
+It is based on a data model that extends the relational model with the notion of object identity, which is preserved through updates, and with the ability of dealing with complex objects, that is, objects that may have other objects as components.
+The time domain is assumed to be (isomorphic to) N. A time relation is a subset of N [?]
+N. A time granularity can be defined as a special case of time relation, called chronology.
+For example, the granularity Month can be defined as the smallest set of pairs (i, j), where i and j belong to the same month and i <= j. Wijsen TFDs are written as c : X -a Y and can be intuitively explained as follows.
+Let t1 and t2 be two objects of class c at time points i and j, respectively, where (i, j) belongs to the time relation a.
+If t1 and t2 agree on X, then they must agree on Y as well.
+It is not difficult to show that the class of Wijsen's TFDs subsumes the class of Bettini et al.
+'s TFDs.
+More precisely, Bettini et al.
+'s TFDs are exactly all and only the TFDs on chronologies (the class TFD-C in Wijsen's terminology).
+In an earlier work, Wijsen introduces a special notation for some relevant subclasses of TFDs [3].
+In particular, he abbreviates X -next Y as XNY and for X -F orever Y as XGY .
+Wijsen's TFDs allow one to specify conditions on tuples grouped according to any given time relation.
+In [2] Vianu proposes a simple extension to the relational model in order to describe the evolution of a database over time.
+According to it, a temporal database is viewed as a sequence of instances (states) over time.
+A change in the state of the database is produced by the execution of an update, an insertion, or a deletion.
+A database sequence is a sequence of consecutive instances of the database, together with "update mappings" from one instance (the "old" one) to the next instance (the "new" one).
+Tuple are viewed as representations of domain objects.
+Properties of the evolution of objects over time are expressed by "dynamic" dependencies (DFDs), which are defined by means of "action relations" associated with updates.
+Intuitively, an action relation is generated by concatenating each tuple in the "old" instance with its updated version.
+(the Greek 'a' as a prefix indicates negation).
+Telic events are characterized by the fact that they reach a culmination (e.g., "John won the lottery") while atelic facts do not have an intrinsic culmination (e.g., "John is building an house").
+Moreover, in [8] Terenziani and Snodgrass propose an algebraic framework which deals with combinations of telic and atelic facts and they show how to add these concepts to a temporal query language (SQL/Temporal [9]).
+In [10] Shoham proposes a first order logic for dealing with the truth of propositions among intervals.
+In particular, the author observes that the truth of a proposition over an interval is related to its truth over other intervals.
+The author classifies propositions depending on the relations that have to be considered in order to determine their truth.
+A proposition type x is downward-hereditary (written | x) if whenever it holds over an interval it holds over all of its sub-intervals, possibly excluding the two endpoints: for instance, "John played less than fourty minutes" is downward-hereditary.
+Symmetrically a proposition type x is upward-hereditary (written | x) if whenever it holds over all the sub-intervals of a given interval, possibly excluding the two endpoints, it also holds over the given interval itself: for instance, "The airplane flies at 35000 feet" is upward-hereditary.
+A proposition type x is liquid (written fi x) if it is both downward-hereditary and upward-hereditary (e.g.
+the room is empty).
+A proposition type x is concatenable if whenever it holds over two consecutive intervals it holds also over their union, for instance the proposition "John travelled an even number of miles".
+A proposition type x is gestalt if whenever it never holds over two intervals one of which properly contains the other, for instance the proposition "Exactly six minutes passed" is gestalt.
+A proposition type x is solid if whenever it never holds over two properly overlapping intervals; for instance, the proposition "The plane executed the LANDING procedure (from start to finish)" is solid.
+As we will see in the following, some interesting properties that can be expressed using Shoham's proposition types cannot be captured by a point-based formalism.
+B.
+A quick tour in Temporal Functional Dependencies In this section we illustrate the most important (pointbased) temporal functional dependencies proposed in the literature.
+In [6], [11] Jensen et al.
+propose a bitemporal data model that allows one to associate both valid and transaction times with data.
+The basic atomic entity of Jensen's TFDs is the so called bitemporal chronon which is an ordered pair consisting of a valid time and of a transaction time.
+The schema of atemporal attributes is extended with a bitemporal chronon.
+Jensen et al.
+'s TFDs make it possible to express conditions that must be satisfied at any (bitemporal) time point taken in isolation.
+Bettini, Jajodia, and Wang's notion of TFD takes advantage of time granularity [12], [1].
+Examples of granularities are Day, Month, and WorkingDay; a granule is an element of a given granularity (e.g.
+"November  III.
+A MOTIVATING EXAMPLE In the following we propose a little example of expressivity of the TFDs described in section II and we show an interesting constraint that cannot be expressed through pointbased TFDs.
+24  # 1 2 3 4 5 6 7 8 9 10  Therapy antiviral analgesics cardiovascular antipyretics sedative anxiolytic antiviral cardiovascular analgesics antiviral  PatId 1 1 1 1 1 1 2 2 2 2  Phys Dorian Cox Turk Cox Turk Cox Kelso Quinlan Reid Reid  Drug acyclovir paracetamol atenolol paracetamol diazepam diazepam acyclovir atenolol paracetamol acyclovir  Qty 300 200 100 100 10 10 200 100 150 300  B 1 2 3 9 13 17 1 4 5 9  E 16 10 8 11 15 19 10 7 9 14  Dorian  PatId=1  Cox  Turk Cox  Turk  1  2  3  4  5  Cox  6  7  8  9 10 11 12 13 14 15 16 17 18 19  Quinlan  Reid  PatId=2  Reid Kelso  Figure 1.
+An instance s of the relation P atient, storing data about therapies.
+Most health care institutions collect a large quantity of clinical information about patients and physician's actions, such as therapies and surgeries, as well as about health care processes, such as, admissions, discharges, and exam requests.
+All these pieces of information are temporal in nature and the associated temporal dimension needs to be carefully considered, in order to be able to properly repre- sent clinical data and to reason on them.
+In this section, we briefly introduce a real-world example taken from clinical medicine, namely that of patient therapies.
+Suppose to have patients which undergo several and different therapies: each therapy can be supervised by a physician, and consists of the administration of some drug to the patient.
+Information about patients and therapies are stored in a relational schema P atient = (Therapy, PatId , Drug, Qty, Phys, B , E ), where Therapy identifies a medical treatment, PatId represents fa patient ID, Drug and Qty the drug prescribed and its quantity, respectively, and Phys the physician who made the prescription (and is responsible of the therapy).
+Finally, attributes B and E represent the starting and ending time points of the tuple validity interval, respectively: they represent the bounds of the interval specified by the physician for each therapy.
+An instance of relation Patient is provided in Figure 1.  want to change the quantity of that drug for the given patient.
+It is worth to notice that this kind of constraints cannot be expressed by the Bettini, Jajodia, and Wang's TFDs, since every granule cannot overlap another one.
+Finally, the requirement:"the new quantity for a drug depends only on the old quantity" may be captured by Vianu's DFDs.
+Let us suppose that our database has to respect the following constraint.
+Example 1.
+The policy of the hospital is the following: 1) every patient may receive several therapies at the same time from different physicians; 2) overlapping therapies for the same patient must be prescribed by the same physician (in other words, if a patient during a therapy needs another therapy which lasts after the end of the current therapy, then this therapy must be prescribed by the current physician).
+It is easy to see that in order to ensure this condition both the starting points and the ending points of every pair of tuples come into play.
+Thus, the point-based TFDs proposed in Section II-B cannot be used to specify the above requirement related to the hospital policy.
+IV.
+I NTERVAL - BASED F UNCTIONAL D EPENDENCIES In this section we propose a new type of temporal functional dependency based on Allen's interval relations.
+As an example, on this relation the requirement "at any time, the quantity of the prescribed drug depends on the type of drug and on the current therapy" can be expressed by Jensen's TFDs, while the requirement "every month, the physician who prescribes a given drug depends on the therapy " may be captured by Bettini, Jajodia, and Wang's TFDs.
+Moreover, it is possible to express by Wijsen's TFDs the requirement " for every patient, the quantity of a drug cannot change within 16 days": it means that we have to wait for 16 days without prescribing a drug to a patient, if we  A. Interval relations Given a linear order O = O, <	, an interval I over O is a pair I = [b, e] where b, e [?]
+O and b <= e. Given an interval I = [b, e] over O we identify with points(I) the set of points in O between b and e: points(I) = {p | p [?]
+O and b <= p <= e}.
+While the possible distinct relations between two points considering only the linear order are reduced to three (equality, successor, and predecessor), considering the order among the two endpoints of two intervals leads us to have  25  I6  value and w, t tuples of relation r. Moreover, assuming that the underlying domain for attributes A and B has a total order, comparison atomic formulas are either of the form t[A]thw[B] or of the form t[A]tha, with th [?]
+{<, <=, >, >=}.
+When we consider a temporal relation, it is important to denote the set of tuples valid "at" a specific time interval (i.e., the values of attributes B and E of the tuples match exactly with the endpoints of the interval, respectively).
+Given a time interval I = [b, e] on O, the snapshot at interval I of the temporal relation r, denoted with rI , is the relation containing all and only the tuples of r having valid interval I = [b, e].
+More formally, the snapshot at interval I of r is obtained as rI = {t | r(t) [?]
+t[B] = b [?]
+t[E] = e}.
+I1 finishes I0 (I1 F I0 ) I2 during I0 (I2 D I0 )  I5  I3 starts I0 (I3 S I0 ) I4 overlaps I0 (I4 O I0 )  I4  I5 meets I0 (I5 M I0 ) I6 before I0 (I6 B I0 ) I0  I0 equals I0 (I0 = I0 ) I0 finished by I1 (I0 F I1 ) I0 contains I2 (I0 D I2 )  I1  I0 started by I3 (I0 S I3 ) I2  I0 overlapped by I4 (I0 O I4 ) I0 met by I5 (I0 M I5 ) I0 after I6 (I0 B I6 )  Figure 2.
+I3  The thirteen Allen's relations between intervals.
+C. ITFDs Let us now consider the basic definition of Interval-based Temporal Functional Dependency (ITFD).
+In the following, we will consider only interval relations in the set A: indeed, in this case it is not meaningful to distinguish between a relation and its dual, as it will be clear from the following definition of interval-based temporal functional dependency.
+thirteen possible relations.
+These relations are depicted in Figure 2 according to the notation proposed by Allen in [7].
+It is worth to note that every relation has its dual which is obtained by switching the position of the two intervals.
+Consider, for example, two intervals I1 = [b1 , e1 ] and I2 = [b2 , e2 ]: we have that I1 D I2 ( I1 during I2 ), if and only if b2 < b1 < e1 < e2 ; by reverting the arguments, we have that I2 D I1 ( I2 contains I2 ), if and only if b2 < b1 < e1 < e2 , which is equivalent to I1 D I2 .
+More precisely, given two intervals I1 = [b1 , e1 ] and I2 = [b2 , e2 ] we say that: (1) (2) (3) (4) (5) (6)  I1 I1 I1 I1 I1 I1  Definition IV.1.
+Let X and Y be sets of atemporal attributes of a temporal relation schema R = R(U, B, E) and ~I [?]
+A an Allen's Interval relation.
+A database instance r of R satisfies an ITFD X -~I Y iff [?
+]b, b , e, e [?]
+O with b <= e , b <= e and [b, e] ~I [b , e ]  M I2 iff e1 = b2 ; S I2 iff b1 = b2 and e1 < e2 ; F I2 iff b1 > b2 and e1 = e2 ; O I2 iff b1 < b2 and b < e1 < e2 ; D I2 iff b2 < b1 and e1 < e2 ; B I2 iff e1 < b2 .
+and [?
+]s1 , s2 [?]
+{t | rB (t) [?]
+((t[B] = b [?]
+t[E] = e)[?]
+(t[B] = b [?]
+t[E] = e ))}  we have s1 [X] = s2 [X] = s1 [Y ] = s2 [Y ].
+In the following we will consider the (sub) set A = {M, S, F, O, D, B} of Allen's interval relations (without considering the dual ones and the equality relation).
+Basically ITFDs group tuples whose B and E attribute values satisfy the interval relation ~I .
+In the above definition all the possible tuples having as valid interval either [b, e] or [b , e ], where [b, e] ~I [b , e ] are considered together.
+If there exist two tuples where the B and E attribute values match exactly the points b, e, b , and e , respectively, and both tuples agree on the values of atemporal attributes X, then the ITFD imposes that both the tuples must agree on the values of atemporal attributes Y .
+Consider the medical relation schema P atient proposed in Section III and suppose that we want to express the constraint "prescriptions of a given therapy starting the same day must have the same physician": such a requirement is expressed by the ITFD Therapy -S Phys.
+For a more significant example of the expressivity of our ITFDs we can recall the scenario depicted in Section III which can be rephrased as "overlapping drug administrations for a given patient must have the same physician" (as specified in Example 1).
+This constraint can be expressed by the ITFD PatId -O Phys.
+A time-oriented graphical account of tuples of relation Patient is provided in lower part of Figure 1.
+B.
+The interval-based temporal relational data model In discussing our new functional dependencies based on intervals within a relational framework, we will use a simple temporal (relational) data model based on the concept of temporal relation.
+A temporal relation r is a relation on a temporal relation schema R defined on the attributes U [?
+]{B, E}, where U represents a set of atemporal attributes and B, E are the temporal attributes describing the valid interval of a tuple.
+We assume that the domain of both the attributes B and E is a totally ordered set O.
+Clearly a tuple t [?]
+r satisfies t[B] <= t[E].
+We use the notation att(R) to denote the set of attributes (both atemporal and temporal) of the relation schema R and att- (R) to denote the set of its atemporal attributes.
+We recall that equality (inequality) atomic formulas are expressions either of the form t[A] = w[B] (t[A] = w[B]) or of the form t[A] = a (t[A] = a), being A, B attribute names, a a constant  26  As we may notice, the relation satisfies the ITFD PatId -O P hys only for tuples related to the patient with PatId = 1: Dr. Cox added a therapy antipyretics, but the related valid interval is contained in the interval of therapy antiviral , prescribed by Dr. Dorian.
+Tuples related to therapies of patient with PatId = 2, instead, do not satisfy ITFD PatId -O Phys, as both the intervals of therapies prescribed by Dr. Reid overlap a therapy prescribed by another physician.
+It is easy to show that this kind of properties cannot be expressed through point-based TFDs.
+Basically this lack of expressiveness depends on the fact that point-based TFDs refer only to database snapshots which are either evaluated in isolation towards TFDs or grouped together according to some granularity or joined to the next snapshot to consider some kind of tuple evolution.
+In our example, intervals of prescriptions are considered in a holistic way and the considered temporal dependency is not checked against all the database snapshots, as it has to consider the specified interval relation.
+In our example Dorian starts a therapy on the patient with PatId = 1 and Cox starts therapy analgesics for the same patient during this therapy.
+After that, Cox adds another therapy (antipyretics).
+Suppose that this last therapy of Cox would last until time 14: then, either this tuple or the tuple related to therapy by Turk having valid time [13, 14] violate the ITFD.
+Suppose that the database must satisfy the ITFD PatId -O Phys, and that tuples are inserted according to the start of their valid time: in this case, the insertion of tuple #5 would be blocked.
+Another constraint that can be expressed using ITFDs is "intersecting therapies made by the same physician must have the same prescription".
+It is easy to see that the ITFD T herapy, P hys -{ S, F, O, D}Drug capture this property.
+Verify-B(b)  //b is lexicographically ordered on (B, E) verif ied - |b|; i - 1; while i < verif ied [?]
+j - search begin(b, bi [E]); [?]
+[?]
+[?]
+[?]
+if j < |b| + 1 [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+if bi [Y ] = bj [Y ] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then return false ; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+for k - j + 1 to verif ied [?]
+[?]
+ do [?]
+if bi [Y ] = bk [Y ] then [?]
+[?]
+[?]
+[?]
+do [?]
+[?]
+[?]
+then return false ; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+if verif ied >j [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then verif ied - j; [?]
+[?]
+[?]
+i-i+1 return true ; Figure 3.
+The algorithm verifying B-based ITFDs.
+Verify-M(b, )  //b is lexicographically ordered on (B, E) // is lexicographically ordered on (E, B) a - retrieve endpoints(b); for i - 1 to |a| [?]
+j - search begin(b, ai ); [?]
+[?]
+[?]
+[?]
+k - search end(, ai ); [?]
+[?]
+[?]
+[?]
+[?]
+if j < |b| + 1 [?]
+k < || + 1 [?]
+[?]
+[?]
+[?]
+ [?]
+[?]
+j -j+1: [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]while bj  [B] = bj [B] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+do [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ [?]
+[?]
+[?]
+[?
+]if bj [Y ] = bj [Y ] [?]
+do [?]
+[?]
+then return false [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]j  - j  + 1; [?]
+then [?]
+[?]
+[?]
+[?]
+[?]
+ [?]
+[?]
+[?]
+[?]
+[?]
+[?
+]k - k : [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+while k [E] = k [E] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ [?]
+[?]
+[?]
+[?]
+[?]
+[?
+]if k [Y ] = bj [Y ] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+do [?]
+then return false [?]
+[?]
+[?]
+[?]
+[?
+]k - k + 1; return true  V. E VALUATING ITFD S In this section we describe a set of algorithms, one for each Allen's interval relation, we designed for evaluating ITFDs.
+First, we recall the problem of evaluating ITFDs.
+Let X -~I Y , where X [?]
+Y [?]
+U and R [?]
+{M, S, F, O, D, B} be an ITFDs, moreover it is easy to show that if an ITFD X -~I Y holds over some temporal relation r of some schema R then the ITFD X -~I Y holds over r as well.
+Hence we can ignore the ITFDs based on the inverse relations and the X -= Y relation which is trivial to verify, it suffices to group tuples with the same values on the attributes B and E and verify that the FD X - Y holds on every group.
+Given a set of tuples T where for att(T ) = X [?]
+Y [?]
+{B, E}, we say that T satisfies f if and only if for each pair of tuples t, t [?]
+T , if we have t[X] = t [X] and [t[B], t[E]] R [t [B], t [E]], then t[Y ] = t [Y ].
+It is worth to notice that given an ITFD X -~i Y and a set of tuples T , we can create a partition T1 , ..., Tn of T where for each 1 <= i, j <= n and for each t [?]
+Ti and t [?]
+Tj , we have t[X] = t [X] if and only if  Figure 4.
+The algorithm verifying M -based ITFDs.
+i = j.
+This partition can be easily obtained: it is enough to give an arbitrary linear order on each attribute U [?]
+X and an arbitrary linear order on attributes of X, and then sort the tuples using this new lexicographic order using some wellknown O(n log n) sorting algorithm.
+After this preliminary step we have to verify f over every Ti ; the applied algorithm depends on the relation R. In the following we propose an algorithm for each relation R [?]
+{M, S, F, O, D, B}.
+We propose an ad hoc implementation because checking  27  the proposed ITFDs represents a slightly different (and more simple) problem with respect to that of constraint propagation over interval networks faced by Allen in ( [7]): as we will see, it is in a lower complexity class.
+In the following when we propose the algorithm for verifying if some ITFDs X -~I Y holds over some temporal relation r of some schema R we assume that the input tuples for such algorithm agree on the values for the attributes in X.
+If it is not the case we can partition the tuples in our relation r accordingly to the values of X and then we apply the algorithm on every partition.
+It is easy to see that the these partitions can be created starting from r using any wellknown sorting algorithm with O(n log n) complexity.
+This algorithm is used to sort the tuples of r lexicographically on X, after that we can build the partitions by simply split the ordered vector of tuples into blocks (this can be done in linear time).
+Summing up the complexity of this preliminary step does not exceed O(n log n) which is the complexity of the algorithms proposed.
+In the following we assume, that n is the number of tuples present in the input for every algorithm proposed.
+Verify-O(b, )  //b is lexicographically ordered on (B, E) // is lexicographically ordered on (E, B) main |a| - 1; a1 .low - 1; a1 .up - 1; a1 .status - f ree; a1 .max - b1 [E]; a1 .begin - b1 [B]; i - 2; j - 1; k - 1; while i <= |b| [?]
+if bi [B] = ak .begin [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]ak .up = i; [?]
+[?]
+[?]
+[?]
+ak .max = bi [E]; then [?]
+[?]
+[?]
+[?]
+[?
+]i - i + 1; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+>= j [E] [?]
+[?
+]if bi [B][?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+if !up clusters(b, , a, j) [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then return false [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then [?]
+[?]
+[?]
+[?]
+[?]
+k - |a|; [?]
+[?]
+[?]
+[?]
+do [?]
+[?]
+[?]
+[?]
+[?]
+j [?]
+[?]
+[?]
+- j + 1; [?]
+[?]
+[?]
+[?]
+[?]
+[?
+]|a| - |a| + 1; [?]
+[?]
+[?]
+[?]
+[?]
+else [?]
+[?]
+[?]
+[?]
+k - k + 1; ak .low - i; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]ak .up - i; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ak .status - f ree; else [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ak .max - bi [E]; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ak .begin - bi [B]; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+i - i + 1; return true ;  A.
+Evaluating {S, F, B, M }-based ITFDs We start with the relation S and F which are the most trivial ones to be evaluated; nevertheless, the proposed algorithm contains the basic ingredients useful to describe the following algorithms.
+For verifying X -S Y over a set of tuples T (att(T ) [?]
+X [?]
+Y [?]
+{B, E}) sharing the same values for the attribute set X it is sufficient to sort the tuples lexicographically on (B, E) using some well-known O(n log n) sorting algorithm.
+Let b the vector containing the tuples of T sorted lexicographically on (B, E) we refer to its i-th element as bi for every 1 <= i <= |b|.
+We return that X -B Y is verified over T if and only if for every 1 <= i < |b| the condition bi [B] = bi+1 [B] implies bi [Y ] = bi+1 [Y ] (this operation can be performed in linear time).
+In a symmetric way we can verify X -F Y by taking the lexicographic order of the tuples of T on (E, B) stored in a vector .
+We return that X -S Y is verified over T if and only if for every 1 <= i < || the condition i [E] = i+1 [E] implies i [Y ] = i+1 [Y ].
+Suppose that we have to verify X -B Y then we calculate the vector b and we launch the procedure in Figure 3.a.
+The procedure considers the intervals from the one belonging to the first position of b and verifies if for every interval which begins after the end of the current interval shares the same values for the attributes in Y .
+The function search begin takes a lexicographically ordered vector b of intervals and a point p and return the first position of b which contains an interval that begins after p, if such a position does not exist then search begin returns |b| + 1.
+It is easy to see that this is a simple search in a ordered vector then the complexity is O(log(n)).
+In order to avoid the repeated check of the same interval which will lead to a quadratic  Figure 5.
+The algorithm for verifying the interval relation O.  complexity, we introduce a variable verified , this variable keeps track of the interval which has already been checked.
+Since every position can be checked at most 2 times we have that the complexity of the procedure is O(n log(n)).
+Consider now the M (meets) operator and suppose to have calculated both the vectors b and , for every point p if there exists two tuples t, t [?]
+T with t[B] = t [E] = p then all the tuples t [?]
+T which satisfy t[B] = p or t[E] = p must share the same value for the attributes in Y .
+More precisely the procedure for checking an ITFD of the form X -M Y is represented in Figure 3.b.
+This procedure first calculates a vector a representing the set of all the endpoints of all intervals in b by means of the function retrieve endpoints.
+This function is designed in a way that the vector a does not contain repetitions, and thus the complexity of retrieve endpoints is O(n log(n)).
+The function search end is the analogous of the function search begin considering the vector .
+The procedure for every endpoint ai in a considers two blocks of consecutive tuples one consisting of the tuples t in b with t[B] = ai and the other consisting of the tuples t in  with t [E] = ai .
+If both these two blocks are not empty, the procedure verifies  28  and the tuples which remains in the structure.
+It is worth to notice that by construction if a tuple t is inserted after a tuple t in the queue then we have t [B] <= t[B] then the queue is lexicographically sorted on the attributes B and E. Let t be a tuple we must remove at the current step: for every tuple t with t[B] < t [B] which lies above t in the queue and it is not removed in the current step (which means t[E] < t [E]), we have to verify that t [Y ] = t[X].
+After the removal of all the tuples which end in the current point we can add the tuples which begin on the current point to the top of the queue.
+We give the intuition behind the proposed algorithm by means of the example depicted in Figure 7.
+Suppose that you want to verify the ITFD X -O Y on the set of tuples T = {A0 , A1 , B0 , B1 , C0 , C1 , C2 , D0 } (assume that for all T [?]
+T we have t[X] = t[Y ]).
+At step 1 both tuples A1 and A0 are inserted in the queue and at step 2 the tuples B0 and B1 are inserted on the top of the queue.
+At step 3 first we remove B0 , since all the intervals above B0 in the queue consist of the singleton B1 which shares the same starting point with B0 and then it is not yet checked for consistency.
+Step 3 terminates with the addition of the tuples C0 , C1 and C2 on the top of the queue.
+At step 4 tuples B1 and C0 are removed since B1 and C0 are removed in the same step they can differ on the values for the attributes Y .
+Since C0 shared the same beginning point with all the tuples above it on the queue, then it can differ from C1 and C2 on the values for the attributes Y .
+When we remove B1 , tuples C1 , C2 are still present in the queue and B1 [B] < C1 [B] = C2 [B] then we have to check B1 [Y ] = C1 [Y ] = C2 [Y ].
+At step 5 we insert D0 at the top of the queue.
+At step 6 the tuple C1 is removed, as we said before C2 is not checked for consistency because it shares the same beginning point with C2 then only D0 is checked for consistency and we verify C1 [Y ] = D0 [Y ].
+At step 7 the tuple D0 is removed without check anything since it is on the top of the queue.
+At step 8 the tuple A0 is removed and since the tuple C2 is not removed then it is checked for consistency with A0 (A0 [Y ] = C2 [Y ]).
+Summing up the results at the end of the procedure we have that the ITFD X -O Y is respected by T if and only if B1 [Y ] = C1 [Y ] = C2 [Y ] = D0 [Y ] = A0 [Y ] and it is worth to notice that that all these intervals do not pairwise overlap (consider B1 and D0 for instance).
+The procedure for verifying if the ITFDs X -O Y over a set of tuples which agree on the attributes X is given in Figure 5.
+In order to give an efficient procedure for verifying X -O Y we partition the vector b into clusters.
+A cluster is the maximal sequence of lexicographically ordered intervals which share the same beginning endpoint, it is straightforward to see, since b is ordered, that a cluster is a sequence of consecutive positions in b and thus can be represented as an interval on the positions of b.
+The correct management of clusters is guaranteed by the function U p Clusters of Figure 6.
+The procedure for checking ITFDs like X -D Y operates in a very symmetric way with respect to the procedure for  Up clusters(b, , a, n)  i - retrieve position(n ); i - retrieve cluster(a, i); if i < |a| [?]
+max - n [E]; [?]
+[?]
+[?]
+[?]
+[?]
+for j - i + 1 to |a| [?]
+[?]
+[?]
+[?]
+[?]
+do [?]
+[?]
+[?]
+[?]
+[?]
+[?][?
+]if aj .max > max [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then [?]
+[?]
+[?]
+[?][?]
+[?]
+[?]
+[?]
+[?][?]
+= f ree [?]
+[?]
+[?
+]if aj .status [?][?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+for h - aj .low to aj .up [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?][?]
+[?]
+[?]
+[?]
+[?]
+do [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then  [?]
+[?]
+[?]
+[?]
+[?][?]
+if bh [Y ] = n [Y ] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+then [?]
+[?]
+[?]
+then return false [?]
+[?]
+[?]
+[?][?]
+ [?]
+[?]
+[?]
+if aj .value = n [Y ] [?]
+[?]
+[?][?]
+[?]
+[?]
+[?]
+[?][?]
+else [?]
+[?]
+[?]
+[?]
+[?]
+then return false [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+max - max(max, aj .max); [?]
+[?]
+[?]
+if max > n [E] [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+ai+1 .max - max; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]ai+1 .status - checked; [?]
+[?]
+[?]
+[?]
+then [?]
+[?]
+ai+1 .value - n [Y ]; [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?
+]|a| - i + 1 : [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+else |a| - i : if ai .status = f ree then if ai .low < ai .up then ai .low - ai .low + 1; else if i < |a| then ai - ai+1 else |a| - i - 1; return true  Figure 6.
+5.
+The auxiliary function up cluster for the algorithm of Figure  if all the tuples of these two blocks share the same values for attributes in Y .
+For evaluating the complexity it suffices to consider that every tuple is checked by the procedure at most two times (one for its right endpoint and one for its left one) and the number of evaluations of the functions search begin and search end is bounded by the number of endpoints, then the total complexity is O(n log(n)).
+B.
+Evaluating {O, D}-based ITFDs Now we consider the more complicated cases of verifying ITFDs X -O Y and X -D Y .
+Informally our idea consists of exploring the space of intervals following the order of the endpoints associated to the tuples in T .
+We use a queue to keep track of the active intervals at every step.
+At every step we update the queue by removing the tuples which end at the current point and, then, by adding the tuples which begin in the current point in between this two operations we perform consistency check between the tuples removed  29  A1  considered as a case of interval-based temporal association rule.
+A0  R EFERENCES  B1  [1] C. Bettini, S. G. Jajodia, and S. X. Wang, Time Granularities in Databases, Data Mining and Temporal Reasoning.
+Secaucus, NJ, USA: Springer-Verlag New York, Inc., 2000.
+B0 C2 C1 C0  1  D0  2  3  4  5  6  A1  B1  C2  C2  D0  A0  B0  C1  C1  C2  1  A1  C0  A1  A0  B1  A0  2  A1  4  5  A0  [2] V. Vianu, "Dynamic functional dependencies and database aging," J. ACM, vol.
+34, no.
+1, pp.
+28-59, 1987.
+7  8  D0  C2  C2  C2  A0  C1  A0  8  A0  7  6  [3] J. Wijsen, "Design of temporal relational databases based on dynamic and temporal functional dependencies," in Temporal Databases, 1995, pp.
+61-76.
+9  [4] ----, "Temporal fds on complex objects," ACM Trans.
+Database Syst., vol.
+24, no.
+1, pp.
+127-176, 1999.
+[5] ----, "Temporal dependencies," in Encyclopedia of Database Systems, L. Liu and M. T. Ozsu, Eds.
+Springer US, 2009, pp.
+2960-2966.
+3  [6] C. S. Jensen, R. T. Snodgrass, and M. D. Soo, "Extending existing dependency theory to temporal databases," IEEE Trans.
+Knowl.
+Data Eng., vol.
+8, no.
+4, pp.
+563-582, 1996.
+Figure 7.
+An example of the execution of the algorithm for the O and the D ITFDs.
+[7] J. F. Allen, "Maintaining knowledge about temporal intervals," Commun.
+ACM, vol.
+26, no.
+11, pp.
+832-843, 1983.
+X -O Y : it suffices to rewrite the algorithm in Figure 5 in order to look downward in the queue instead of upward.
+We can conclude this section with the following theorem.
+[8] P. Terenziani and R. T. Snodgrass, "Reconciling point-based and interval-based semantics in temporal relational databases: A treatment of the telic/atelic distinction," IEEE Trans.
+Knowl.
+Data Eng., vol.
+16, no.
+5, pp.
+540-551, 2004.
+Theorem V.1.
+For every set of atemporal attributes X and Y of a temporal relation schema R = R(U, B, E) and for every Allen's Interval relation ~I [?]
+A verifying if an instance r of R satisfies an ITFD X -~I Y takes at most O(|r| log(|r|)) steps.
+[9] R. T. Snodgrass, Ed., The TSQL2 Temporal Query Language.
+Kluwer, 1995.
+[10] Y. Shoham, "Temporal logics in ai: Semantical and ontological considerations," Artif.
+Intell., vol.
+33, no.
+1, pp.
+89-104, 1987.
+This result follows from the proofs of correctness and completeness for the algorthms proposed in subsections V-A and V-B which can be found in [13].
+[11] C. S. Jensen and R. T. Snodgrass, "Temporally enhanced database design," in Advances in Object-Oriented Data Modeling, 2000, pp.
+163-193.
+VI.
+C ONCLUSIONS AND FUTURE WORK In this paper we proposed a set of interval-based temporal functional dependencies and discussed its expressiveness by means of an example taken from the clinical domain.
+Moreover, for each interval relation ~I we proposed an algorithm to verify, given an instance r of a temporal database, whether an ITFD based on ~I holds over r. We plan to implement the algorithm proposed and evaluate it over different real-worlds scenarios.
+A further step towards interval-based temporal functional dependencies will be devoted to extend the proposed ITFDs to deal with multiple temporal granularities and with interval-based tuple evolutions, similarly to the Vianu's (point-based) approach.
+As for the clinical domain, we plan to adapt and extend the proposed techniques to the data mining issue: indeed, in the clinical domain there is the need of mining temporal association rules among temporal data, often charachterized by intervals of validity.
+ITDBs may be  [12] X. S. Wang, C. Bettini, A. Brodsky, and S. Jajodia, "Logical design for temporal databases with multiple granularities," ACM Trans.
+Database Syst., vol.
+22, no.
+2, pp.
+115-170, 1997.
+[13] C. Combi and P. Sala, "Temporal functional dependencies based on interval relations," Department of Computer Science, University of Verona, Verona, Italy, Tech.
+Rep. RR 82/2011, 2011.
+30

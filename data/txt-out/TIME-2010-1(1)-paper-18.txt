@@ -1,0 +1,607 @@
+2010 17th International Symposium on Temporal Representation and Reasoning  A Concurrency-Preserving Translation from Time Petri Nets to Networks of Timed Automata Sandie Balaguer, Thomas Chatain, Stefan Haar LSV, ENS de Cachan/INRIA/CNRS Cachan, France {balaguer, chatain, haar}@lsv.ens-cachan.fr  transformations become less immediate, one uses tricks that unfortunately destroy concurrency.
+Therefore it is not surprising that the first works about formal comparisons of the expressiveness of these models do not consider preservation of concurrency.
+In [7], a structural transformation from TPN to NTA is defined.
+This transformation builds a timed automaton per transition of the TPN and preserves weak timed bisimilarity.
+In the other direction, [5] shows that there exist timed automata that are not weakly timed bisimilar to any TPN.
+In [6], the authors propose a translation from bounded timed-arc Petri nets (another variant of Petri nets extended with time) to NTA, based on the decomposition of the net in sequential components that communicate through handshake synchronizations (in the U PPAAL style).
+In [19], another timed extension of Petri nets with intervals on arcs is considered.
+For a matter of compositional properties (which is close to our problem), their Petri nets are translated to timed automata enriched with an ad-hoc mechanism of deadlines, which hides the communications between components that would be necessary to implement it.
+Here we focus on the preservation of concurrency.
+Since both TPNs and NTA were designed to model distributed systems, we consider that not only their sequential behavior as timed transition systems is relevant, but also their distributed behavior.
+For that reason, we take into account the distribution of actions over a set of processes, each process representing a component which has its own alphabet of actions.
+When an action belongs to several processes, it represents a synchronization, otherwise it is a local action.
+In the untimed context, Mazurkiewicz traces [10] are defined using an independence relation that arises naturally from this distribution of actions.
+However, in the presence of time such relation would have less nice properties because even actions that occur in two totally independent processes may be ordered by their occurrence time.
+These orders induced by causality and by the time stamping of events appear in [1], where timed MSCs (Message Sequence Charts) and MSCs with timing constraints are considered and in [2] where the authors consider distributed timed automata with independently evolving clocks.
+In [16], [18], an independence re-  Abstract--Real-time distributed systems may be modeled in different formalisms such as time Petri nets (TPN) and networks of timed automata (NTA).
+This paper focuses on translating a 1-bounded TPN into an NTA and considers an equivalence which takes the distribution of actions into account.
+This translation is extensible to bounded TPNs.
+We first use S-invariants to decompose the net into components that give the structure of the automata, then we add clocks to provide the timing information.
+Although we have to use an extended syntax in the timed automata, this is a novel approach since the other transformations and comparisons of these models did not consider the preservation of concurrency.
+Keywords-concurrency; timed traces; time Petri nets; networks of timed automata; concurrency-preserving translation  I. I NTRODUCTION Techniques that aim at improving reliability and safety of automated systems have dramatically improved during the last thirty years (synthesis, model-checking, test.
+.
+.
+).
+Studying a complex system generally requires the use of multiple techniques and tools.
+Consequently the system must be translated from one formalism to another.
+The difficulty is to show that the different representations are equivalent.
+This work proposes a translation between two popular formalisms that describe timed concurrent systems: 1-bounded time Petri nets (TPN) [17] and networks of timed automata (NTA) [3].
+These formalisms have different histories but they were both designed to model real-time, distributed systems.
+Moreover they both handle urgency, which is a key feature without which most real-time systems cannot be modeled correctly.
+Because these two formalisms are used by different verification tools, transformations have been proposed, and we remark the following.
+(i) The transformations mainly rely on natural structural equivalences between the basic elements of the formalisms.
+For instance, the location of an automaton corresponds to a place of a Petri net, a transition of a Petri net corresponds to a tuple of synchronized transitions of an NTA, and the timed interval associated to a transition of a Petri net becomes a pair guard-invariant in a timed automaton.
+(ii) Beyond these natural equivalences, limitations for more general models are not clear.
+Indeed, the natural transformations tend to preserve concurrency.
+But when the 1530-1311/10 $26.00 (c) 2010 IEEE DOI 10.1109/TIME.2010.12  77  e  If (q, e, q 0 ) [?]
+-, we also write q - q 0 .
+An initial path of a TTS is a possibly infinite sequence of t0 a0 tn an transitions r = q0 -- q00 -- .
+.
+.
+qn -- qn0 -- .
+.
+.
+.
+The timed word w = (a0 , d0 )(a1 , d1 ) .
+.
+.
+(an , dn ) .
+.
+.
+is said to be accepted Piby the TTS if there exists an initial path r such that di = j=0 tj for every 1 <= i <= k.  lation is defined among the actions of a timed automaton using a diamond property that takes time into account.
+This relation is used to define partial order reduction techniques that avoid the combinatorial explosion in the analysis of timed automata.
+Anyway the time constraints make this independence relation very restrictive.
+Therefore it cannot be seen as a general concurrency relation for timed systems.
+In this article, we propose to study the distribution of actions as a first step towards the understanding of what concurrency means in timed systems.
+For this purpose, we define a notion of timed traces as a partial order representation of executions of our models for real-time distributed systems.
+We will use them as an alternative to timed words, to represent the executions of either an NTA or a TPN where processes have been identified.
+Then we propose a structural transformation from 1bounded TPNs to NTA which preserves the distribution of actions.
+That is we require that if the TPN represents the product of several components (called processes), then each process should have its counterpart as one timed automaton in the resulting NTA.
+To this end, we first discuss how to identify processes in a TPN; then the structure of each process gives a natural transformation into an automaton, and we show how to equip this automaton with timed constraints so that the resulting NTA preserves the timed traces.
+We show that this transformation is possible in general only if we allow the automata to read the states of their neighbors, which we interpret as a dependency between the processes, that was hidden in the TPN.
+This paper is organized as follows.
+Section II presents centralized timed systems, and Sect.
+III presents distributed timed systems and introduces timed traces.
+In Sect.
+IV, we recall how to identify the processes in a Petri net.
+Lastly, in Sect.
+V, we propose a translation from a TPN to a timed bisimilar NTA with the same distribution of actions.
+A long version of this paper can be found in [4].
+Definition 3 (Timed Bisimulation).
+Let S1 = (Q1 , q10 , A, -1 ) and S2 = (Q2 , q20 , A, -2 ) be two TTS and [?]
+be a binary relation over Q1 x Q2 .
+We write q [?]
+q 0 for (q, q 0 ) [?]
+[?].
+[?]
+is a timed bisimulation relation between S1 and S2 if: 0 0 * q1 [?]
+q2 , a 0 * if q1 -1 q1 with a [?]
+A [?]
+R>=0 and q1 [?]
+q2 , then a a 0 [?
+]q2 -2 q2 such that q10 [?]
+q20 ; conversely if q2 -2 q20 a with a [?]
+A [?]
+R>=0 and q1 [?]
+q2 , then [?
+]q1 -1 q10 such that q10 [?]
+q20 .
+4 B.
+Timed automata The set B(C) of clock constraints over the set of clocks C is defined by the abstract syntax g ::= x ./ k | g [?]
+g, where x [?]
+C, k [?]
+N and ./ [?]
+{<, <=, =, >=, >}.
+Invariants are clock constraints of the form g ::= x <= k | x < k | g [?]g.
+Definition 4 (Timed automaton [3]).
+A timed automaton (TA) is a tuple A = (L, `0 , C, S, E, Inv) where L is a finite set of locations, `0 [?]
+L is the initial location, C is a finite set of clocks, S is a finite set of actions, E [?]
+L x B(C) x S x 2C x L is a set of edges, and Inv : L - B(C) assigns invariants to locations.
+4 g,a,r If (`, g, a, r, `0 ) [?]
+E, we also write ` -- `0 .
+For such an edge, ` is called the source location, g the guard, a the action, r the set of clocks to be reset and `0 the target location.
+Semantics: We denote by (`, v) a state of a TA, where ` [?]
+L is the current location and v : C - R>=0 is a clock valuation that maps each clock to its current value.
+The pair (`, v) is a legal state for the timed automaton only if the valuation v satisfies the invariant of location `, denoted by v |= Inv(`).
+The initial state is (`0 , v0 ), where v0 maps each clock to 0.
+For each set of clocks r [?]
+C, the valuation v[r] is defined by v[r](x) = 0 if x [?]
+r and v[r](x) = v(x) otherwise.
+For each d [?]
+R>=0 , the valuation v + d is defined by (v + d)(x) = v(x) + d for each x [?]
+C. Let A = (L, `0 , C, S, E, Inv) be a TA.
+We define the TTS generated by A as T (A) = (S, s0 , S, -), where: * S = {(`, v) [?]
+L x (C - R>=0 ) | v |= Inv(`)}, * s0 = (`0 , v0 ), * - [?]
+S x (S [?]
+R>=0 ) x S is defined by g,a,r a - Action step: (`, v) - (`0 , v 0 ) iff [?
+](` -- `0 ) [?]
+E, v |= g, v 0 = v[r] and v 0 |= Inv(`0 ), d - Time delay step: [?
+]d [?]
+R>=0 , (`, v) - (`, v + d) iff 0 0 [?
+]d [?]
+[0, d], v + d |= Inv(`).
+A run of a TA A is a path in T (A) starting in s0 where continuous and discrete transitions alternate.
+A timed word is accepted by A if it is accepted by T (A).
+II.
+C ENTRALIZED TIMED SYSTEMS Timed automata are a popular formalism for modeling centralized timed systems.
+Their runs can be described by timed words, and their semantics can be expressed as a timed transition system.
+A.
+Basics Definition 1 (Timed Words).
+A timed word w over a finite alphabet S is a finite or infinite sequence w = (a0 , d0 )(a1 , d1 ) .
+.
+.
+(an , dn ) .
+.
+.
+s.t.
+for each i >= 0, ai [?]
+S, di [?]
+R>=0 and di+1 >= di (the di 's are absolute dates).
+4 A timed language over S is a set of timed words over S. Definition 2 (Timed Transition System).
+A timed transition system (TTS) is a tuple S = (Q, q0 , A, -) where Q is a set of states, q0 [?]
+Q is the initial state, A is a finite set of actions disjoint from R>=0 , and - [?]
+Q x (A [?]
+R>=0 ) x Q is a set of edges.
+4  78  d - Time delay step: [?
+]d [?
+]VR>=0 , (~`, v) - (~`, v + d) iff 0 0 [?
+]d [?]
+[0, d], v + d |= i Invi (`i ).
+Local and extended syntaxes: We call local syntax the common syntax in which clocks are local i.e.
+can be read and reset by only one automaton.
+Thus, invariants are of the form g ::= x <= k | x < k | g [?]
+g, as defined in II-B.
+We define an extended syntax (that will be used in Sec.
+V) in which clocks can be read by any automaton, and invariants are of the form g ::= x <= k | x < k | g [?]
+g | ` | g [?]
+g. The two last constructors are not standard.
+In an invariant, "`" is true if ` is a current location, that is, invariants are evaluated according to the state of the system (current locations and valuation) and not only to the valuation.
+We denote by B(C, L) the set of such constraints over the set of clocks C and the set of locations L. Other operators that do not extend the expressiveness of gW can be used, such as the negation of a location: !`i [?]
+`[?
+]Li \{`i } `, the implication: ` = (x <= k) [?]
+!` [?]
+(x <= k), and W the minimum of a set of clocks: min i[?
+]I (xi ) <= k [?]
+i[?
+]I (xi <= k).
+This extended syntax does not change the expressiveness w.r.t.
+the sequential semantics.
+But we will show in Sect.
+V that, if we consider the distributed timed language (see subsection III-C), the extended syntax improves the expressiveness of the NTA.
+b, {x} x <= 4 `1 x>=3 a {x}  `3 x=4 c  `0  Figure 1.  c {y}  y=1 d `2 y <= 1  A network of timed automata.
+III.
+D ISTRIBUTED TIMED SYSTEMS Distributed timed systems are systems with several components (or processes) that may perform local actions or synchronize with each other.
+We focus on two models for such systems: networks of timed automata and one of the variants of Petri nets extended with time, called time Petri nets, introduced in [17].
+We first present the sequential semantics of these systems, as it is usually done.
+Then we define a partial order semantics which reflects the distribution of actions, as an alternative to timed words.
+A.
+Networks of timed automata A network of timed automata (NTA) is a parallel composition of n timed automata (A1 , .
+.
+.
+, An ), with Ai = 0 (L S i , `i , Ci , Si , Ei , Invi ) (see Fig.
+1).
+S We denote by C = C i i the set of clocks and S = i Si the set of action names.
+Clocks and action names may be shared.
+Sequential semantics: The set of synchronizations Sync is defined as the set of (e1 , .
+.
+.
+, en ) [?]
+(E1 [?]
+{*}) x * * * x (En [?]
+{*}) \ {(*, .
+.
+.
+, *)} such that the same label a is attached to all the edges ei 6= *, and for all i such that ei = *, a [?]
+/ Si .
+For any s = (e1 , .
+.
+.
+, en ) [?]
+Sync, Is = {i [?]
+[1..n] | ei 6= *} denotes the indices of the automata that are concerned by the synchronization.
+We denote by (~`, v) a state of an NTA, where ~` [?]
+L1 x * * * x Ln is the vector of current locations and v is a clock valuation.
+The semantics of the NTA (A1 , .
+.
+.
+, An ) can be described as the timed transition system (S, s0 , S, -) such that: * S = {(~ `, v) [?]
+(L1 x * * * x Ln ) x (C - R>=0 ) | v |= V Inv (`i )}, i i * s0 = (`~0 , v0 ) with [?
+]x [?]
+C, v0 (x) = 0, * - [?]
+S x (S [?]
+R>=0 ) x S is defined by a - Action step: (~`, v) - (`~0 , v 0 ) iff * [?
+]s = (e1 , .
+.
+.
+, en ) [?]
+Sync s.t.
+[?
+]i <= n, if a [?]
+/ Si , `0i = `i and ei = *, otherwise 0 ei = (`V i , gi , a, ri , `i ) S 0 * vV |= i[?
+]Is gi , v = v[ i[?
+]Is ri ], and v 0 |= 0 i Invi (`i )  B.
+Time Petri nets Definition 5 (Petri Net).
+A Petri net is a tuple (P, T, F, M0 ) where P and T are two disjoint sets, called set of places and set of transitions, F [?]
+(P x T ) [?]
+(T x P ) is the set of arcs connecting places and transitions such that [?
+]t [?]
+T, [?
+]p [?]
+P s.t.
+(p, t) [?]
+F , and M0 [?]
+P is the initial marking.
+4 Definition 6 (Time Petri Net [17]).
+A time Petri net (TPN) is a tuple (P, T, F, M0 , efd , lfd ) where (P, T, F, M0 ) is a Petri net and efd : T - R and lfd : T - R [?]
+{[?]}
+associate an earliest firing delay efd (t) and a latest firing delay lfd (t) with each transition t. 4 For x [?]
+P [?]
+T , we define the pre-set of x as * x = {y | (y, x) [?]
+F } and the post-set of x as x* = {y S | (x, y) [?]
+F }.
+Given S a set X [?]
+P [?]
+T , we define * X = x[?
+]X * x and X * = x[?
+]X x* .
+Sequential semantics: A marking M of a TPN is a subset of P (we consider 1-bounded TPNs).
+A state of a TPN is given by (M, n) where M is a marking and n : T - R>=0 is a valuation such that each value n(t) is the elapsed time since the last time transition t was enabled.
+n0 is the initial valuation with [?
+]t [?]
+T, n0 (t) = 0.
+A transition t is enabled in a marking M iff * t [?]
+M .
+For 1-bounded TPNs, if a transition t is enabled in a reachable state (M, n), then t* [?]
+(M \ * t) = [?].
+A transition t0 is newly enabled by the firing of t from marking M if it is not enabled by M \* t (intermediate marking) and it is enabled by M 0 = (M \* t) [?]
+t* (reached  79  p0 *  edges, Inv : L -VB(C) assigns invariants to markings s.t.
+Inv(M ) = * t[?
+]M (xt <= lfd (t)).
+A timed word is accepted by a TPN iff it is accepted by its marking TA.
+Figure 3 shows the marking TA of the TPN presented in Fig.
+2.
+We note that concurrency is not explicit in this automaton, although we can observe a diamond that shows the possible interleavings between actions a and c. This interpretation of a TPN as a TA gives naturally its sequential semantics.
+A sequential semantics is not adapted to describe distributed systems because the information about the distribution of actions is lost.
+We aim at identifying processes in such systems, and defining their semantics with new notions such as timed traces and distributed timed languages that reflect the distribution of actions.
+In an NTA, it is clear that a process is an automaton and we can also identify processes in a TPN (see Sect.
+IV).
+p2 *  *  [0, [?
+][ a  [1, 2] c  [0, 0] b p1  p3  [2, 2] d p4  Figure 2.
+A time Petri net.
+Places are represented by circles and transitions are represented by boxes.
+xa <= [?]
+[?]
+xc <= 2  p0 , p2  p0 , p3 xb >= 0 b, {xa , xc } xa >= 0 a {xb , xd }  xa >= 0 a {xd } p1 , p2  xa <= [?]
+xc >= 1, c  xc >= 1, c, {xb }  xd <= 2 [?]
+xc <= 2  p1 , p3  p4 , p2  Figure 3.
+Definition 7 (Timed Trace, Distributed Timed Language).
+A timed trace over the alphabet S, and the set of processes P = (p1 , .
+.
+.
+, pn ) is a tuple W = (E, 4, l, t, proc) where: * E is a set of events, * 4 [?]
+(E x E) is a partial order over E, * l : E - S is a labeling function, * t : E - R>=0 maps each event to a date and is such that, if e1 4 e2 , then t(e1 ) <= t(e2 ); P * proc : S - 2 maps each action to a subset of P, and such that for any i in [1..n], 4|pi = 4 [?]
+(Ei x Ei ) is a total order on Ei , where Ei = {e [?]
+E | l(e) [?]
+Si }, and Si = {s [?]
+S | pi [?]
+proc(s)} is the alphabet of pi .
+A distributed timed language is a set of timed traces.
+4 Figure 4 gives a representation of a timed trace.
+An event e [?]
+E is denoted by (l(e), t(e)) and events are ordered along one process from the top to the bottom of the line, but two events on different processes may not be ordered.
+For example, (a, 4) and (d, 1) are not ordered but (b, 4)4(d, 9) because (c, 8) takes them apart by transitivity.
+Given an accepted timed word w = (a1 , d1 ) .
+.
+.
+(an , dn ) .
+.
+.
+and the distribution of actions proc over the automata, we can build an accepted timed trace for an NTA: E = {e1 , .
+.
+.
+, en , .
+.
+.
+}, l and t are such that, [?
+]i, l(ei ) = ai and t(ei ) = di , and 4 is the transitive closure of the 0 relation 40 define  as ei 4 ej = i <= j [?]
+proc(l(ej )) [?]
+proc(l(ej )) 6= [?]
+.
+xd <= 2 [?]
+xb <= 0  xd >= 2 d  xc <= 2  C. Timed traces Once processes have been identified, we can describe the runs of distributed timed systems as timed traces, where each action is associated with the processes that have performed it.
+Actions may be local or shared (synchronizations).
+xd >= 2 d xc >= 1, c  p4 , p3  The semantics of the TPN of Fig.
+2 as a timed automaton.
+marking).
+Formally: |enabled (t0 , M, t) = (* t0 [?]
+M 0 ) [?]
+* 0   t 6[?]
+(M \* t)  For the firing delays of a transition, we use the strong semantics: t can fire if it is enabled and n(t) >= efd (t) and has to fire before n(t) overtakes lfd (t).
+With these rules, we are able to define the semantics of the TPN (P, T, F, M0 , efd , lfd ) as the TA (L, `0 , C, S, E, Inv), called marking TA and introduced in [11], such that: P * L [?]
+2 is the set of all reachable markings, * `0 = M0 is the initial marking, * C is a finite set of clocks s.t.
+each clock xt is associated to one transition t, * S = T is the finite set of actions,  0 0 * * * E = (M, g, t, r, M ) | M = (M \ t) [?]
+t , g [?]
+xt >= 	 efd (t), r = {xt0 | |enabled(t0 , M, t)} is the set of  IV.
+S- SUBNETS AS PROCESSES FOR P ETRI NETS Identifying processes in a TPN is not as immediate as in an NTA.
+But, in practice, when a system is modeled  80  p1 (a, 4)  p2  that the subnet is strongly connected.
+(d, 1)  Definition 9 (Incidence matrix).
+Let N be the net (P, T, F ).
+The incidence matrix N : (P x T ) - {-1, 0, 1} of N is defined by  /F  -1 if (p, t) [?]
+F and (t, p) [?]
+1 if (p, t) [?]
+/ F and (t, p) [?]
+F N(p, t) =  0 otherwise 4 The entry N(p, t) corresponds to the change of the marking of the place p caused by the occurrence of transition t. Hence, if t is fired from marking M , the new marking is M 0 = M + t, where t is the column vector of N associated to t.  (b, 4) (c, 8) (d, 9)  Figure 4.
+A timed trace representing an accepted run for the NTA of Fig.
+1.
+One possible associated timed word is (d, 1)(a, 4)(b, 4)(c, 8)(d, 9).
+as a TPN, the designer knows its physical structure and builds the TPN as a composition of components that model the subsystems.
+Anyway, if a TPN is given without its decomposition, these components can be identified.
+We first define S-subnets as the processes of a Petri net, and the decomposition of a Petri net in S-subnets.
+Then we show how we can find this decomposition.
+We borrow the main definitions from [9], where the authors give a method (introduced in [12]) to decompose a live and bounded freechoice net in such components and we adapt this method to decompose more general nets.
+Definition 10 (S-invariant [15]).
+An S-invariant of a net N is an integer-valued solution of the equation X * N = 0.
+4 Proposition 11.
+A Petri net (P, T, F ) is decomposable in S-subnets iff there exists a set of S-invariants {X1 , .
+.
+.
+Xn } such that, * * *  [?
+]i [?]
+[1..n], Xi : P -P{0, 1} (set of places),  (1) P [?
+]i [?]
+[1..n], [?
+]t [?]
+T, Xi (p) = 1 = Xi (p) , (2) p[?
+]* t p[?
+]t* P [?
+]p [?]
+P, Xi (p) >= 1 (the set covers the net).
+(3) i  Note that, if N is connected, every Xi is minimal (w.r.t.
+set inclusion).
+When the net is decomposable, there exists a set {I1 , .
+.
+.
+Ik } of minimal S-invariants that covers the net and such that for each 1 <= i <= k, if Ii is removed from the set, then the net is no longer covered (the set is minimal).
+This set gives a decomposition of the net in the S-subnets generated by the minimal S-invariants.
+Note that this decomposition is not unique and that a place may be shared by several S-subnets.
+The number of tokens in an S-subnet is constant.
+Thus, an S-subnet initially marked with one token represents an automaton where the active location is the marked place.
+Such subnet is called a process.
+If the S-subnet is initially marked with m tokens, then it corresponds to m processes with the same structure but not necessarily starting in the same place, and these processes do not synchronize with each others.
+To simplify, we only consider 1-bounded TPNs.
+A. Decomposition in S-subnets Since the notion of process involves only the structure and does not depend on any time property, in this section, we consider only the structure of a Petri net: a net is denoted by (P, T, F ) where P is the set of places, T is the set of transitions, and F [?]
+(P x T ) [?]
+(T x P ) is the set of arcs.
+A net (P, T, F ) is an S-net if [?
+]t [?]
+T , |* t| = |t* | = 1.
+An S-net is an automaton where locations are places and edges are transitions.
+We want to decompose a net N in S-nets that cover the net.
+To do so, we introduce the notion of S-subnet.
+A net (P 0 , T 0 , F 0 ) is a subnet of the net (P, T, F) if P 0 [?]
+P , T 0 [?]
+T and F 0 = F [?]
+(P 0 x T 0 ) [?]
+(T 0 x P 0 ) .
+We say that the subnet (P 0 , T 0 , F 0 ) of N is P-closed if * T 0 = * P 0 [?]
+P 0 .
+That is, any transition connected to a place which is in the subnet is also in the subnet.
+The subnet of N generated by a set of places P 0 is the P-closed subnet (P 0 , T 0 , F 0 ) of N .
+B.
+An example of decomposition  Definition 8 (S-subnet).
+An S-subnet of a net N is a Pclosed subnet N 0 = (P 0 , T 0 , F 0 ) of N such that N 0 is an S-net.
+4 The net N = (P, T, F ) is decomposable in S-subnets iff there exists a set of S-subnets {N1 , .
+.
+.
+, Nn } with Ni = S (Pi , Ti , Fi ), such that i Pi = P .
+In this S case, the set of S-subnets is called a cover of N (and i Ti = T because the S-subnets are P-closed).
+Note that the notion of S-subnet generalizes the notion of S-component presented in [9] because we do not impose  We want to decompose the net shown in Fig.
+5.
+To this purpose, we determine its S-invariants that satisfy conditions 1 and 2.
+If they cover the net (condition 3), then the net is decomposable.
+We obtain the following S-invariants: X1 = [1 1 0 0 0 0 0], X2 = [0 0 1 1 0 1 1], and X3 = [0 0 1 1 1 0 0].
+These S-invariants satisfy the three conditions of Prop.
+11, they are minimal and they form a minimal set.
+Therefore the net is decomposable in the three S-subnets generated by the sets of places {p1 , p2 }, {p3 , p4 , p6 , p7 }, and {p3 , p4 , p5 }, see Fig.
+5.
+81  p1 t1  p3 t2  p2  p1 t1  p3  t5  t2 t2 p2  Figure 5. tion.
+p4  t5  p6  p5  t4  t3  p7  p6  p0 * a  t3  p7  b  p3  p3 d  t5 p4  p5 p4  c  b  p1  t4 t2 p4  p2 *  Figure 6.  t3  A net which is decomposable in S-subnets, and its decomposi-  The processes of the TPN of Fig.
+2.  x1 <= [?]
+`0 x1 >= 0 a {x1 }  C. Algorithms and size of the decomposition Some algorithms for the computation of minimal Sinvariants can be found in [8] where they are called psemiflows.
+the decomposition is equal to PThe number of places in 2 |P | and is at most |P | because a place may be shared i i by several components and no more than |P | components areP needed to cover the net.
+And the number of transitions is i |Ti | and is at most |T | x |P | for the same reason.
+But these upper bounds are pessimistic since generally there are fewer components and few places and transitions are duplicated in all components.
+x2 <= 2 `2 x1 >= 0 b {x1 }  x1 <= 2[?
+]Inv(`1 , b) `1  x2 >= 0 b {x2 } Inv(`3 , b)  x2 >= 1 c {x2 } `3  x1 >= 2 d {x1 } `4  Figure 7.
+Inv(`1 , b) [?]
+!`3 [?]
+x1 <= 0 [?]
+x2 <= 0 Inv(`3 , b) [?]
+!`1 [?]
+x1 <= 0 [?]
+x2 <= 0 The resulting NTA.
+guard xi >= a, and if the transition is not shared, we add an invariant xi <= b on the source location.
+3) Then, we have to deal with the synchronizations (transitions with several input places).
+Such transitions have to fire if they are enabled and their latest firing delay is reached.
+On our example, see Fig.
+7, we can stay in ~` = (`1 , `3 ) as long as min(v(x1 ), v(x2 )) <= 0 (because min(v(x1 ), v(x2 )) is the elapsed time since b was enabled and lfd (b) = 0).
+Thus, we add Inv(`1 , b) [?]
+`3 = (x1 <= 0 [?]
+x2 <= 0) [?]
+!`3 [?]
+(x1 <= 0 [?]
+x2 <= 0) and Inv(`3 , b) [?]
+`1 = (x1 <= 0 [?]
+x2 <= 0) [?]
+!`1 [?]
+(x1 <= 0 [?]
+x2 <= 0) in the invariants of `1 and `3 (actually we only need to add this "global" invariant to the invariant of one of the source locations concerned by the synchronization).
+V. T RANSLATION FROM TIME P ETRI NET TO NETWORK OF TIMED AUTOMATA  A TPN can be translated in a TA which accepts the same timed words (see Fig.
+3).
+But we would like to translate it in an NTA which accepts the same timed traces.
+In this section, we propose a structural translation from a TPN to an NTA, based on the decomposition in processes.
+A.
+Procedure We first look at the untimed net to determine the processes and we check that each subnet is initially marked with one token.
+We get the subnets shown in Fig.
+6.
+This translation involves three more steps: 1) Each subnet is translated in an automaton preserving its structure (places become locations and transitions become edges).
+Each edge is labeled with the name of the corresponding transition.
+2) Time is added by providing each automaton with a clock xi .
+This clock is reset on each edge.
+The idea is that the value of xi gives the time elapsed in the current location.
+On each edge, if [a, b] is the firing interval of the corresponding transition, we add a  Formally, a TPN N = (P, T, F, M0 , efd , lfd ) with n processes can be translated in the NTA (A1 , .
+.
+.
+, An ) with [?
+]i [?]
+[1..n], Ai = (Pi , `0i , C, Si , Ei , Invi ) such that: * * * * *  82  Pi (places of the ith subnet) is the set of locations, `0i s.t.
+{`0i } = Pi [?]
+M0 is the initial location, C = {x1 , .
+.
+.
+, xn } is the set of clocks, Si = Ti (transitions of the ith subnet) is the set of actions, Ei [?]
+(Pi x B(C) x Ti x 2C x Pi ) such that Ei =  p1  (p, 	 g, t, r, p0 ) | p [?]
+* t [?]
+p0 [?]
+t* , g [?]
+xi >= efd (t), r = {xi } is the set of edges, Invi : Pi - B(C, P ) assigns invariants to locations V s.t.
+[?
+]p [?]
+Pi , Invi (p) [?]
+Inv(t), * V t[?
+]p where Inv(t) [?]
+( p0 ) = min(xk ) <= lfd (t) with   *  p0 [?
+]* t  p2  p1  p2  (a, 0) (d, 2)  (c, 1)  (c, 2) W0  W  k[?
+]It  It = {i [?]
+[1..n] | t [?]
+Ti } the set of indices of the subnets that contain t. Here, we use the extended syntax (see subsection III-A): automaton Ai can read the clocks of the other automata, but does not reset them and it can also read the current location of the other automata in its invariants.
+Invi (p) makes sure that we cannot overtake the latest firing delay of an enabled transition which is in the post-set of p.  p1 (a, 0) (d, 2)  p2 (c, 1)  W|p1 kW 0 |p2 Figure 8.
+Two accepted timed traces and one non accepted timed trace for the TPN of Fig.
+2.
+B.
+Size of the network of timed automata Once the decomposition is computed, we directly have the structure of the timed automata.
+Thus the NTA has at most |P |2 locations and |T | x |P | edges P (see Subsection IV-C).
+The number of edges is exactly t[?
+]T |It |.
+Then, the timing information is provided by as many clocks as processes, that is at most |P | clocks.
+There is one clock comparison on each edge, because the guards are of the form xi >= lfd (t).
+Moreover, each Inv(t) contains |It | clock comparisons (because the min ranges over |It | clocks).
+Inv(t) can be attached only to one of the input places of t because a state is legal as long as the valuation satisfies all the invariants of the current locations, thus, if t is enabled and one of its input places carries Inv(t), lfd (t) cannot be overtaken.
+Therefore, if we attach each P Inv(t) to only one of the input places of t, we have t[?
+]T |It | clock comparisons in the invariants.
+To conclude, the size of the timing information given by the clock comparisons is proportional to the number of edges.
+synchronization, for the TPN N of Fig.
+2.
+Any NTA S using the local syntax and accepting W and W 0 would also accept the timed trace built by composing the projection of W onto p1 and the projection of W 0 onto p2 (see Fig.
+8).
+But this timed trace is not accepted by N .
+VI.
+L OOSE ENDS AND FUTURE WORKS A. TPNs with good decompositional properties There are some simple cases when it is possible to translate a TPN in an NTA which uses the local syntax.
+For example, assume that for any transition t, there exists a place p in * t which is always the last place to be marked among * t. Then, we chose to add Inv(t) only in Invi (p) (this can be done, as explained in the  V third step of the translation).
+By construction, Inv(t) [?]
+( p0 [?
+]* t p0 ) = min(xk ) <= lfd (t) .
+k[?
+]It V In this case, ( p0 [?
+]* t p0 ) is always true in Invi (p) - because if p is marked, then all places in * t are marked - and min(v(xk )) = v(xi ) = n(t).
+Therefore, for any i in [1..n]  Proposition 12.
+The initial 1-bounded time Petri net, N and the network of timed automata S which results from the translation have the same distributed timed language (are timed bisimilar with the same distributions of actions).
+k[?
+]It  and for any place p in Pi , Invi (p) can be expressed with the local syntax.
+But these cases are restrictive, and it would be interesting to give a general characterization of these nets.
+C. Know thy neighbor!
+Our translation produces a network of timed automata which accepts the same distributed timed language (and which is timed bisimilar).
+But we use an extended syntax (see subsection III-A) in which each automaton can read the state (location and clock) of the other automata.
+We show that the use of this extended syntax is necessary.
+B.
+Reverse translation We can consider a reverse translation, from an NTA to a TPN.
+There exist translations, for example in [5] from a TA into a weak timed bisimilar TPN, but we want to preserve the distributed timed language, that is, when we translate an NTA into a TPN, we want to preserve the processes.
+This implies that we should be able to translate each automaton in a TPN which is an S-net with one token and then compose the obtained nets.
+A time S-net with one token is less expressive than a TA with one clock because it can be translated in a TA with one clock which accepts the same timed language.
+Thus, it  Proposition 13.
+Given a TPN N with its processes, in general, there does not exist any NTA S using the local syntax such that N and S have the same distributed timed language.
+For example, Fig.
+8 shows two timed traces W and W 0 representing the beginning of two possible runs, without  83  is less expressive than a TA with two clocks, according to [13].
+We can even strengthen this by proving that some TA with one clock cannot be translated in finite time S-net with one token.
+Therefore, only a very small class of TA can be translated.
+[3] R. Alur and D. L. Dill, "A theory of timed automata," Theoretical Computer Science, vol.
+126, no.
+2, pp.
+183-235, 1994.
+[4] S. Balaguer, T. Chatain, and S. Haar, "A concurrencypreserving translation from time Petri nets to networks of timed automata," INRIA Saclay - Ile-de-France, Tech.
+Rep., 2010.
+C. Usability in practice We have translated some example time Petri nets with the translation proposed in [7] and with our translation, and we have used U PPAAL (see [14]) to check a reachability property on the resulting networks of timed automata.
+Although our translation only works for bounded TPNs and does not always give a model in the U PPAAL style (with handshake synchronizations), it generally produces networks with fewer automata, because their translation produces n+1 automata for an initial net with n transitions.
+And we think that our translation gives an NTA which is more readable.
+Regarding the number of clocks, we also generally have fewer clocks because we have one clock by process instead of one clock by transition.
+But as mentioned in [7], U PPAAL only considers the active clocks during the verification.
+In our case, in a given state, all clocks are active and with the translation of [7], the number of active clocks is equal to the number of enabled transitions in the corresponding marking (Theorem 3 in [7]).
+Therefore, we can have fewer active clocks if there are some conflicts.
+[5] B. Berard, F. Cassez, S. Haddad, D. Lime, and O. H. Roux, "When are timed automata weakly timed bisimilar to time Petri nets?"
+Theoretical Computer Science, vol.
+403, no.
+2-3, pp.
+202-220, 2008.
+[6] J. Byg, K. Joergensen, and J. Srba, "An efficient translation of timed-arc Petri nets to networks of timed automata," in ICFEM'09, ser.
+LNCS, vol.
+5885.
+Springer-Verlag, 2009, pp.
+698-716.
+[7] F. Cassez and O. H. Roux, "Structural translation from time Petri nets to timed automata," Journal of Systems and Software, 2006.
+[8] J. M. Colom and M. Silva, "Convex geometry and semiflows in P/T nets.
+A comparative study of algorithms for computation of minimal p-semiflows," in Proceedings of the 10th International Conference on Applications and Theory of Petri Nets.
+London, UK: Springer-Verlag, 1991, pp.
+79-112.
+[9] J. Desel and J. Esparza, Free choice Petri nets.
+USA: Cambridge University Press, 1995.
+New York,  [10] V. Diekert, The Book of Traces, G. Rozenberg, Ed.
+River Edge, NJ, USA: World Scientific Publishing Co., Inc., 1995.
+D. Towards identification of concurrency in timed systems This work is a starting point for a more advanced study of concurrency in timed systems.
+Indeed, concurrency in timed systems involves both causality and the time stamping of events.
+Transitions that appear as concurrent in an untimed model may not remain independent when time constraints are added.
+First, time constraints may easily force a temporal ordering between them.
+But, even worse, the occurrence of a transition may have consequences on apparently concurrent transitions due to time constraints: this is what happens in our TPN of Fig.
+2 where firing c after delay 1 from marking {p1 , p2 } prevents d from firing (because it forces b to fire earlier).
+In our translation, the necessity to allow the automata to read the states of their neighbors highlights these complex dependences between different processes.
+[11] G. Gardey, O. H. Roux, and O. F. Roux, "State space computation and analysis of time Petri nets," Theory Pract.
+Log.
+Program., vol.
+6, no.
+3, pp.
+301-320, 2006.
+[12] M. Hack, "Analysis of production schemata by Petri nets," Cambridge, USA, 1972.
+[13] T. A. Henzinger, P. W. Kopke, and H. Wong-Toi, "The expressive power of clocks," in ICALP, 1995, pp.
+417-428.
+[14] K. G. Larsen, P. Pettersson, and W. Yi, "Uppaal in a nutshell," STTT, vol.
+1, no.
+1-2, pp.
+134-152, 1997.
+[15] K. Lautenbach, "Liveness in Petri nets," G.M.D., Bonn, Germany, Tech.
+Rep., July 1975.
+[16] D. Lugiez, P. Niebert, and S. Zennou, "A partial order semantics approach to the clock explosion problem of timed automata," Theor.
+Comput.
+Sci., vol.
+345, no.
+1, pp.
+27-59, 2005.
+ACKNOWLEDGMENT This work is partially supported by the FARMAN project EMoTiCon and the French ANR project DOTS.
+[17] P. M. Merlin, "A study of the recoverability of computing systems," Ph.D. dissertation, University of California, Irvine, 1974.
+R EFERENCES [1] S. Akshay, B. Bollig, and P. Gastin, "Automata and logics for timed message sequence charts," in FSTTCS'07, ser.
+LNCS, vol.
+4855.
+New Delhi, India: Springer, 2007, pp.
+290-302.
+[18] P. Niebert and H. Qu, "Adding invariants to event zone automata," in FORMATS, ser.
+LNCS, vol.
+4202.
+Springer, 2006, pp.
+290-305.
+[2] S. Akshay, B. Bollig, P. Gastin, M. Mukund, and K. Narayan Kumar, "Distributed timed automata with independently evolving clocks," in CONCUR'08, ser.
+LNCS, vol.
+5201.
+Toronto, Canada: Springer, 2008, pp.
+82-97.
+[19] J. Sifakis and S. Yovine, "Compositional specification of timed systems (extended abstract)," in STACS'96.
+London, UK: Springer-Verlag, 1996, pp.
+347-359.
+84

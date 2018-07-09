@@ -1,0 +1,576 @@
+arXiv:0803.3187v2 [cs.LO] 25 Mar 2008  Labeled Natural Deduction Systems for a Family of Tense Logics (Extended Version) Luca ViganoE Marco Volpe Department of Computer Science, University of Verona, Italy {luca.vigano, marco.volpe}@univr.it  Abstract We give labeled natural deduction systems for a family of tense logics extending the basic linear tense logic Kl .
+We prove that our systems are sound and complete with respect to the usual Kripke semantics, and that they possess a number of useful normalization properties (in particular, derivations reduce to a normal form that enjoys a subformula property).
+We also discuss how to extend our systems to capture richer logics like (fragments of) LTL.
+1 Introduction Hilbert-style systems, although uniform, are difficult to use in practice, especially in comparison with the more anaturala Gentzen-style systems such as natural deduction (ND), sequent, and tableaux systems.
+However, devising Gentzen-style systems for modal, relevance, and other non-classical logics often requires considerable ingenuity, as well as trading uniformity for simplicity and usability.
+A solution to this problem is to employ labeling techniques, which provide a general framework for presenting different logics in a uniform way in terms of Gentzen-style systems.
+The intuition is that labeling (also called prefixing, annotating or subscripting) allows one to explicitly encode additional information, of a semantic or proof-theoretical nature, that is otherwise implicit in the logic one wants to capture.
+So, for instance, instead of a modal formula A, we can consider the labeled formula (lwff) x : A, which intuitively means that A holds at the world denoted by x within the underlying Kripke semantics.
+We can also use labels to specify how worlds are related in a particular Kripke model, e.g.
+the relational formula (rwff) x < y states that the world y is accessible from x.
+Labeled deduction systems have been given for several non-classical logics, e.g.
+[1, 3, 6, 7, 8, 11, 12, 13, 16, 19], and research has focused not only on the design of systems for specific logics, but also, more generally, on the characterization of the classes of logics that can be formalized this way.
+General properties and limitations of labeling techniques have also been investigated.
+For example, [19] highlights an important trade-off between limitations and properties, which can be roughly summarized as follows.
+Assume that we have a set of rules for reasoning about the introduction and elimination of modal operators in lwffs x : A such as the following rules for , where we express x : A as the metalevel implication x < y =a y : A for an arbitrary y accessible from x (y is fresh, i.e.
+it is different from x and does not occur in any assumption on which y : A depends other than x < y): [x < y] .
+.. .
+y:A I (y fresh) x : A  x : A x < y E .
+y:A  Assume also that we reason on the semantic information provided by labeling using Horn-style relational rules x 1 < y1  .
+.
+.
+x n < yn x 0 < y0  where the xi and yi are labels, and n aL 0 (so that the rule has no premises when n = 0).
+While restricting our systems to such Horn rules allows us to present only a subset of all possible non-classical logics, we can still capture several of the most  common modal and relevance logics, and, more importantly, labeling provides an efficient general method for establishing the metatheoretical properties of these logics, including their completeness, decidability, and computational complexity.
+This method relies on the separation between the sub-system for reasoning about lwffs and the sub-system for reasoning about rwffs: derivations of lwffs can depend on derivations of rwffs (e.g.
+via the  rules), but rwffs depend only on rwffs (via the Horn rules).
+In this paper, we give labeled natural deduction systems for a family of tense logics extending the basic linear tense logic Kl [15].
+Our starting point is [19] but it should be immediately clear that Horn rules do not suffice: even a minimal tense logic like Kl requires its time points to be connected, i.e.
+for any two points x and y either x = y, or x is before y, or y is before x.
+It is straightforward to see that such a property cannot be captured by a Horn rule like the one above; rather, we need non-atomic rwffs, in particular disjunction (a) of relations, and more complex rules built using a full first-order language, such as the axiom ax.y.
+x < y a x = y a y < x  conn .
+A similar situation occurs if we wish to impose irreflexivity of our worlds.
+And thatas not all: as shown in [19] (in the case of modal logics, but the same arguments apply here, mutatis mutandis), if we move to such a first-order language and wish to retain completeness of the resulting systems, then we need to abandon the strict separation between the sub-system for lwffs and that for rwffs (and let derivations of rwffs depend also on lwffs).
+As we will see in more detail below, this is best achieved by introducing a so-called universal falsum, so that a contradiction in a world can be propagated not only to any other world but also to the relational structure to derive any rwff; and, vice versa, from a contradiction in the relational sub-system we can obtain any lwff.
+The main contributions, and the structure, of this paper are thus the following.
+In Section 2, we give a brief presentation of the syntax and semantics, and of a standard axiomatization, of Kl.
+In Section 3, we give a labeled natural deduction system N (Kl) for Kl , which we show to be sound and complete (extending the completeness proofs given for modal logics in [19]).
+Then, in Section 4, we show that N (Kl) possesses a number of useful normalization properties; in particular, derivations reduce to a normal form that enjoys a subformula property.
+In Section 5, we extend N (Kl) to capture some interesting extensions of Kl , and in Section 6 we discuss how to extend our systems to capture richer logics like (fragments of) LTL.
+We conclude, in Section 7, by comparing with related work and discussing future work.
+Detailed proofs and examples are given in an appendix.
+2 The basic linear tense logic Kl 2.1  Syntax  Definition 1 Given a set P of propositional variables, the set of well-formed Kl formulas is defined by the following Backus-Naur-form presentation, where p a P: A ::= p |aL| A a A | GA | HA .
+Truth of a tense formula is relative to a world in a model, so, intuitively, GA holds at a world iff A always holds in the future, and HA holds at a world iff A always holds in the past.
+We will formalize this standard semantics below, but in order to give a labeled ND system for Kl , we extend the syntax with labels and relational symbols that capture the worlds and the accessibility relation between them.
+Definition 2 Let L be a set of labels and let x and y be labels in L. If A is a well-formed Kl formula, then x : A is a labeled well-formed formula (labeled formula or lwff, for short).
+The set of well-formed relational formulas (relational formulas or rwffs, for short) is defined as follows: D ::= x < y | x = y | a | D a D | ax.
+D .
+We write D to denote a generic formula (lwff or rwff).
+We say that an lwff x : A is atomic when A is atomic, i.e.
+A is a propositional variable or A is aL.
+An rwff D is atomic when it does not contain any connective or quantifiers, i.e.
+D is a or D has the form x < y or x = y.
+The grade of an lwff or rwff is the number of occurrences of connectives (a or a), operators (G or H), and quantifiers (a).
+Finally, given a set of lwffs I and a set of rwffs a, we call the ordered pair (I, a) a proof context.
+The given syntax uses a minimal set of connectives, operators, and quantifiers.
+As usual, we can introduce abbreviations and use, e.g., az, aSS, a" and AZ, a, a, for the negation, the conjunction, and the disjunction in the labeled language and in the 2  relational one, respectively.
+For instance, az A aA A aaL and Da, a Da,a, aA (Da, a a) a Da,a, .
+We can also define a$?
+aA azaL, other quantifiers, e.g.
+ax.
+D aA AZax.
+AZD, and other temporal operators, e.g.
+FA aA az G az A to express that A holds sometime in the future.
+2.2  Semantics  Definition 3 A Kl frame is a pair (W, as), where W is a non-empty set of worlds and as a W A W is a binary relation that satisfies the properties of irreflexivity, transitivity and connectedness, i.e.
+for all (x, y) a W 2 we have x = y or (x, y) aas or (y, x) aas.
+A Kl model is a triple (W, as, V), where (W, as) is a Kl frame and the valuation V is a function that maps an element of W and a propositional variable to a truth value (0 or 1).
+In order to give a semantics for our labeled system, we need to define explicitly an interpretation of labels as worlds.
+Definition 4 Given a set of labels L and a model M = (W, as, V), an interpretation is a function It : L a W that maps every label in L to a world in W. Given a model M and an interpretation It on it, truth for an rwff or lwff D is the smallest relation |=M,It satisfying: |=M,It |=M,It |=M,It |=M,It  x<y x=y D1 a D2 ax.
+D  iff iff iff iff  (It(x), It(y)) aas; It(x) = It(y); |=M,It D1 implies |=M,It D2 ; for all y, |=M,It D[y/x];  |=M,It |=M,It |=M,It |=M,It  x x x x  iff iff iff iff  V(It(x), p) = 1; |=M,It x : A implies |=M,It x : B; for all y, |=M,It x < y implies |=M,It y : A; for all y, |=M,It y < x implies |=M,It y : A.  :p :AaB : GA : HA  Hence, 2M,It x : aL and 2M,It a.
+When |=M,It D, we say that D is true in M according to the interpretation It.
+By extension: |=M,It I |=M,It a |=M,It (I, a) I, a |=M,It D  iff iff iff iff  |=M,It |=M,It |=M,It |=M,It  x : A for all x : A a I; D for all D a a; I and |=M,It a; (I, a) implies |=M,It D.  Truth for lwffs and rwffs built using other connectives or operators can be defined in the usual manner.1  2.3  An axiomatization of Kl  Several different Hilbert-style axiomatizations have been given for the logic Kl; the following one is taken from [15]: (G1 ) G(A a B) a (GA a GB) (G2 ) az H az GA a A (G3 ) GA a GGA (G4 ) [G(A a" B) aSS G(A a" GB) aSS G(GA a" B)] a (GA a" GB) (NecG ) If aV A then aV GA (NecH ) If aV A then aV HA (MP ) If aV A and aV A a B then aV B  The axiom (G1 ) is standard for modal and temporal logics, while (G2 ) sets the dual relation between G and H, (G3 ) expresses the transitivity and (G4 ) the connectedness of G. For brevity, we have omitted the symmetric axioms (H1 )-(H4 ) that are obtained by replacing every G by H and vice versa.
+Moreover, every classical tautology is a tautology, and there are rules for modus ponens and necessitation for both G and H. 1 Note  that truth for lwffs is related to the standard truth relation for modal logics by observing that |=M x : A iff |=M x A.
+3  [x : A aaL] .. .. y :aL RAAaL x:A  [x : A] .
+.. .
+x:B aI x:AaB  [D a a] .. .. a D RAAa  x:AaB x:A aE x:B  [D1 ] .. .
+.
+D2 D1 a D2 aI  ax.y.z.
+(x < y a y < z) a x < z  D1 a D2 D2 trans <  D1  aE  [x < y] .. .. y:A GI a x : GA  D aI a ax.
+D  x : GA x < y GE y:A  ax.
+D aE D[y/x]  ax.y.
+x < y a x = y a y < x  ax.
+x = x  conn  D  [y < x] .. .. y:A HI a x : HA  refl =  x=y  D[y/x]  mon  x : HA y < x HE y:A  ax.
+AZ(x < x) x :aL uf 1 a  irrefl < a uf 2 x :aL  *In GI (respectively, HI), y is different from x and does not occur in any assumption on which y : A depends other than the discarded assumption x < y (respectively, y < x).
+In aI, the variable x must not occur in any open assumption on which D depends.
+Figure 1.
+The rules of N (Kl)  3 A labeled natural deduction system for Kl Our labeled ND system N (Kl) = N (KlL ) + N (KlR ) + N (KlG ) comprises of three sub-systems, whose rules are given in Figure 1.
+The propositional and temporal rules of N (KlL ) allow us to derive lwffs from other lwffs with the help of rwffs.
+The rules aI and aE are just the labeled version of the standard ([14, 17]) ND rules for implication introduction and elimination, where the notion of discharged/open assumption is also standard (e.g.
+the formula [x : A] is discharged in the rule aI).
+The rule RAAaL is a labeled version of reductio ad absurdum, where we do not enforce Prawitzas side condition that A 6= aL.2 The temporal operators G and H share the structure of the basic introduction/elimination rules, with respect to the same accessibility relation <; this holds because, for instance, we express x : GA as the metalevel implication x < y =a y : A for an arbitrary y accessible from x (as we did for  in the introduction).
+The relational rules of N (KlR ) allow us to derive rwffs from other rwffs only.
+The rules RAAa , a I, and a E are reductio ad absurdum and implication introduction and elimination for rwffs, while aI and aE are the standard rules for universal quantification, with the usual proviso for aI.
+There are also four axiomatic rules (or aaxiomsa, for short) refl =, irrefl <, trans <, and conn, which express the properties of =3 and <, where, for readability, we employed the symbols for disjunction, conjunction, and negation.
+The general rules of N (KlG ) allow us to derive lwffs from rwffs and vice versa.
+The rule mon applies monotonicity to an lwff or rwff D, while the rules uf 1 and uf 2 export falsum (and we thus call it a universal falsum) from the labeled sub-system to the relational one, and vice versa.4 Definition 5 (Derivations and proofs) A derivation of a formula (lwff or rwff) D from a proof context (I, a) in N (Kl) is a tree formed using the rules in N (Kl), ending with D and depending only on a finite subset of I aS a.
+We then write I, a aV D. A derivation of D in N (Kl) depending on the empty set, aV D, is a proof of D in N (Kl) and we then say that D is a theorem of N (Kl).
+2 See [19] for a detailed discussion on RAA , which in particular explains how, in order to maintain the duality of modal operators like  and aS, the aL rule must allow one to derive x : A from a contradiction aL at a possibly different world y, and thereby discharge the assumption x : A aaL.
+3 Note that we do not need further axioms to express symmetry and transitivity of =, since the former can be derived by using mon , conn , and irrefl <, and the latter by using mon.
+4 Note that the presentation of the system could be simplified by introducing a unique symbol for falsum (say f), shared by the labeled and the relational sub-systems.
+In that case, we would not need the rules uf 1 and uf 2, while the rules for falsum elimination RAAaL and RAAa could be replaced by the following rule, where with aD we denote the negation of a generic formula (labeled or relational):  [aD] .. .. f D RAAf However, we prefer to maintain a clear separation between the two sub-systems, as it will allow us to give a simpler presentation of normalization.
+4  [y : A][x < y] .. .
+.
+z:B x : FA FE a z:B  y:A x<y FI x : FA  [y : A][y < x] .. .
+.
+y:A y<x z:B x : PA PI PE a x : PA z:B [D[y/x]] .. [D1 ] [D2 ] .. .. .. .. .. a, ax.
+D D D[y/x] D1 a D2 D D aE a aI aE D ax.
+D Da,  D2 D1 a D2 aI2  D1 D1 a D2 aI1  *In FE (respectively, PE), y is different from x and z, and does not occur in any assumption on which the upper occurrence of z : B depends other than y : A or x < y (respectively, y < x).
+In aE, y does not occur in any assumption on which the upper occurrence of Da, depends other than D[y/x].
+Figure 2.
+Some derived rules [x<y]1  D2  D  x<z  y:A x:GA  GI 1 z:A  D2 x<z  D[z/y] GE  z:A  (a) Reduction for the detour GI /GE  D x:aL y:aL  D RAAaL  x:aL  uf 1  uf 1  D1  D2  D  x=y  D2 mon  D[y/x]  a  a  (b) A reduction for falsum-rules  y=z  D[z/x]  D3  D1  D3 mon  x=y y=z mon D x=z mon D[z/x]  (c) Reduction for the rule mon  Figure 3.
+Examples of reductions We will give concrete examples of derivations in the following sections.
+For simplicity, we will employ the rules for conjunction aSS and disjunction a", which are derived from the basic propositional rules as is standard, as well as other derived rules such as those for F, P, a, and a given in Figure 2.
+Since the axiomatization of Kl given in Section 2.3 is sound and complete, we could prove in N (Kl) the axioms and the rules of the axiomatization to establish the completeness of N (Kl) indirectly (and we do so in Section A.2.2).
+We can, however, also give a direct proof of the soundness and completeness of N (Kl).
+In fact, by adapting standard proofs for labeled systems (see, e.g., [8, 16, 19] and the detailed proofs in the appendix, which in particular extend those for modal logics in [19] to the case of universal falsum and other general rules that mix derivations of lwffs and rwffs), we have: Theorem 6 (Soundness and completeness of N (Kl)) N (Kl) = N (KlL ) + N (KlR ) + N (KlG ) is sound and complete, i.e.
+we have that I, a aV D iff I, a |=M,It D for every model M and every interpretation It.
+4 Normalization 4.1  Derivations in normal form  We will now show that the system N (Kl) possesses a number of useful normalization properties.
+To that end, we will follow the classical normalization process of [14] as much as possible, while some adaptations are inspired by [19].
+We begin by simplifying the proofs by restricting the applications of some of the rules.
+Lemma 7 If I, a aV D, then there exists a derivation of D from (I, a) where: (i) the conclusions of applications of RAAaL , RAAa , and mon are atomic; (ii) mon is not applied to lwffs of the form x :aL.
+The system obtained from N (Kl) by restricting the rules RAAaL , RAAa , and mon according to this lemma is equivalent to N (Kl).
+From now on, we will thus consider only this restricted system and keep calling it N (Kl).
+The ND systems given in [19] for families of modal and relevance logics are based on a strict separation between the labeled and the relational sub-systems (i.e.
+derivations of lwffs can depend on derivations of rwffs, but not vice versa).
+This separation is possible thanks to the restriction to relational theories that are Horn theories.
+Our system N (Kl) does not allow for such a separation, since the rules for universal falsum let relational derivations depend also on labeled ones.
+Thus, more complex derivations are possible, which implies that with respect to [19] we need to consider more forms of detours and hence more forms of reductions.
+5  Definition 8 We say that a formula D is a maximal formula in a derivation when it is both the conclusion of an introduction rule and the major premise of an elimination rule.
+We define the notion of label position for labels occurring in a formula D to which the rule mon is applied.
+By the restrictions of Lemma 7, D can have the form (i) x : p, (ii) x < y, or (iii) x = y.
+We say that x has label position 1 in (i), (ii) and (iii), and y has label position 2 in (ii) and (iii).
+A derivation is in pre-normal form (is a pre-normal derivation) if it has no maximal formulas and in every sequence of mon applications, all the applications which concern variables with the same label position occur consecutively.
+The notion of pre-normal derivation embodies the elimination of standard detours (given by a couple of introduction/elimination rule applications on the same connective or operator) and an ordering of mon applications that aims at eliminating mon detours, i.e.
+two or more applications of mon which concern variables with the same label position.
+Note that, since mon is only applied to atomic formulas of the form described above, once we have eliminated maximal formulas, the case of a sequence of mon applications is the only case in which we can have this kind of detour.
+Lemma 9 Every derivation in N (Kl) reduces to a derivation in pre-normal form.
+Proof (Sketch) First, we iteratively apply proper reductions (an example is in Figure 3(a)) that remove maximal formulas.
+Then the lemma follows by observing that applications of mon in a sequence can be permuted as shown in Figure 13 in the appendix.
+aL Definition 10 We call falsum-rules the rules RAAaL , RAAa , uf 1, and uf 2.
+We say that a formula D is a redundant formula in a derivation when: (i) D is both the conclusion and the premise of a falsum-rule; or (ii) D is both the conclusion and the major premise of a mon carrying out two substitutions in the same label position (see Figure 3(c)).
+A derivation is in normal form (is a normal derivation) iff it is in pre-normal form and does not contain any redundant formula.
+Theorem 11 Every derivation in N (Kl) reduces to a derivation in normal form.
+Proof (Sketch) By Lemma 9, every derivation reduces to a pre-normal derivation.
+Then we can apply permutative reductions (examples in Figure 3(b) a (c)) that remove redundant formulas.
+More details are given in the appendix.
+aL Normal derivations in N (Kl) have a well-defined structure that has a number of desirable properties.
+In particular, there is an ordering on the application of the rules, which we can exploit to prove a subformula property for our system.
+To that end, we adapt the standard definitions of subformula and track as follows: Definition 12 B is a subformula of A iff (i) A is B; (ii) A is A1 a A2 and B is a subformula of A1 or A2 ; (iii) A is GA1 and B is a subformula of A1 ; or (iv) A is HA1 and B is a subformula of A1 .
+We say that y : B is a subformula of x : A iff B is a subformula of A. D2 is a subformula of D1 iff (i) D1 is D2 ; (ii) D1 is Da,1 a Da,a,1 and D2 is a subformula of Da,1 or Da,a,1 ; or (iii) D1 is ax.
+D and D2 is a subformula of D. Given a derivation D in N (Kl), a track in D is a sequence of formulas D1 , .
+.
+.
+, Dn such that: (i) D1 is an assumption of D, an axiom, or the conclusion of a universal falsum rule (uf 1 or uf 2); (ii) Di stands immediately above Di+1 and is the major (or the only) premise of a rule for 1 a$?
+i < n; (iii) Dn is the conclusion of D, the premise of a universal falsum rule, or the minor premise of a rule.
+We call a track D1 , .
+.
+.
+, Dn a labeled track when each Di is an lwff and a relational track when each Di is an rwff.
+In other words, a track can only pass through the major premises of rules and it ends at the first minor premise of a rule, or at an application of universal falsum, or at the conclusion of D. The following lemmas formalize properties of the structure of the tracks and specify the way in which the tracks are linked one to each other.
+Lemma 13 Let D be a normal derivation, and let t be a track D1 , .
+.
+.
+, Dn in D. Then t consists of three (possibly empty) parts: (1) an elimination part, (2) a central part, and (3) an introduction part (see Figure 4) where: (i) each Di in the elimination part is the major premise of an elimination rule and contains Di+1 as a subformula; (ii) each Dj in the introduction part except the last one is the premise of an introduction rule and is a subformula of Dj+1 ; (iii) each Dk in the central part is atomic and is the premise of a falsum-rule or the major premise of a mon; (iv) the central part contains at most one application of falsum-rules; (v) tracks originating from an application of uf 1 or uf 2 have an empty elimination part; (vi) tracks ending in an application of uf 1 or uf 2 have an empty introduction part.
+6  Elimination Part: Central Part: Introduction Part:  aE, GE, HE  a E, aE  RAAaL , uf 1, mon  RAAa , uf 2, mon  aI, GI, HI  a I, aI  Figure 4.
+The structure of a labeled track (left) and that of a relational track (right)  tl  tr x<y GE, HE  tl  tl  tr tr x=y  a uf 2 x :aL  mon  tl CASE 1  tr CASE 3  CASE 2  x :aL uf 1 a  CASE 4  Figure 5.
+Possible connections between labeled tracks tl and relational tracks tr  Lemma 14 Let tl be a labeled track and tr a relational track in a derivation D. Then tl and tr can be connected in one of the following ways (shown in Figure 5): (i) the last formula in tr is the minor premise of a GE or of a HE whose major premise is a formula in the elimination part of tl ; (ii) the last formula in tr is the minor premise of a mon whose major premise is a formula in the central part of tl ; (iii) tr ends with an application of uf 2 and the conclusion of that application is the first formula in tl ; (iv) tl ends with an application of uf 1 and the conclusion of that application is the first formula in tr .
+Proof The statement follows trivially by observing that GE, HE, mon, uf 1, and uf 2 are the only rules that mix labeled and relational formulas and that, by Lemma 13, such rules can be applied only in a specific part of a track.
+aL  4.2  The subformula property  To prove a subformula property for N (Kl), we adapt further standard definitions: Definition 15 Given a derivation D in N (Kl), the main thread is the sequence t1 , .
+.
+.
+, tn of tracks such that: (1) the first formula in t1 is an assumption or an axiom; (2) ti and ti+1 are connected by means of an application of uf 1 or uf 2, for 1 a$?
+i a$?
+(n a 1); and (3) the last formula in tn is the conclusion of D. Let D be a derivation of D from (I, a) in N (Kl), SL be the set of subformulas of the formulas in I (or in I aS {D} if D is a labeled formula), and SR be the set of subformulas of the formulas in a aS Ax (or in a aS Ax aS {D} if D is a relational formula), where Ax is the set of axioms used in D. We say that D enjoys the subformula property iff 1. for all lwffs y : B used in the derivation D: (i) B a SL ; or (ii) B is an assumption D aaL discharged by an application of RAAaL where D a SL ; or (iii) B is an occurrence of aL obtained by aE from an assumption D aaL discharged by an application of RAAaL , where D a SL ; or (iv) B is an occurrence of aL obtained by an application of RAAaL that does not discharge any assumption; or (v) B is an occurrence of aL obtained by an application of uf 2; 2. for all rwffs D used in the derivation D: (i) D a SR ; or (ii) D is an assumption D1 aaL discharged by an application of RAAa where D1 a SR ; or (iii) D is an occurrence of a obtained by a E from an assumption Da, a a discharged by an application of RAAa , where Da, a SR ; or 7  (iv) D is an occurrence of a obtained by an application of uf 1; or (v) D is obtained by an application of mon.
+Lemma 16 Every normal derivation in N (Kl) satisfies the subformula property.
+Proof This follows immediately from the standard proof [14], which is based on the introduction of an ordering of the tracks in a normal derivation depending on their distance from a main thread.
+In our case, a main thread contains not only labeled formulas and we have to consider more cases than in the standard proof, given that the central part of a track can have a more complex structure (as it can also contain applications of uf 1, uf 2, and mon).
+aL This lemma shows that although normal derivations in N (Kl) have a more complex structure than normal derivations in ND systems for classical logic [14] and ND systems for families of modal and relevance logics [19], they have still a welldefined structure and satisfy a subformula property.
+It is important to remark that the special cases added to the definition of subformula property (i.e.
+formulas can be derived by applications of uf 1, uf 2, or mon) do not compromise automatic proof search completely, given that such cases can occur only in a limited section of a normal derivation (i.e.
+the central part of a track).
+We also note that the presence of axioms (and in particular the fact that they are expressed in a full first-order language) makes our proof of normalization more complex and our results weaker.
+Thus, it is not possible to use it as a means to show the consistency of the system or the validity of an interpolation theorem, as can be done for systems in [19], where relational properties are expressed by Horn rules and we have only atomic axioms.
+5 A family of tense logics The basic linear tense logic Kl leaves unanswered many fundamental natural questions about the structure of time.
+However, the labeling framework allows us to express several further relational properties in a straightforward and clean way, i.e.
+by only adding the corresponding relational axioms to the relational sub-system.
+In particular, we will now show how to extend N (Kl) to capture the extensions of Kl with: a first/final point; unbounded time; dense time; and discrete time (where we adopted the classification of [15]).5 Kl with a first/final point The semantics of Kl is given by means of temporal structures where nothing is said about the existence of a first or a final point.
+To express the existence of such points, we can add the following axioms6 to the relational sub-systems: ax.
+ay.
+AZ(y < x)  first  ax.
+ay.
+AZ(x < y)  final .
+The two axioms do not affect each other; thus we can decide to add both or just one of them to the system, according to the logic we want to represent.
+Soundness of the extended systems is straightforward, since the axioms mirror the properties that the models of the extended logic are required to satisfy.
+To show completeness, it suffices to extend the canonical model construction presented for N (Kl) (see Section A.2) to consider also the new relational axioms.
+Alternatively, we can simply prove completeness by proving the corresponding (see, e.g., [18]) Hilbert-style axioms (having a first point) and (having a final point) that are given in Figure 6.
+In Figure 7, we show the derivation for the first one (the proofs of the two axioms are symmetric).
+Also the normalization procedure of Section 4 can still be applied to the extended system: we have just to consider the possibility of more relational axioms.
+Kl with unbounded time Conversely, we can express the fact that the sequence of time points is unbounded, towards the past and/or towards the future.
+This corresponds to adding the conditions of seriality on the left and/or on the right, i.e.
+every point has a predecessor and/or a successor.
+For this, we can add two relational axioms corresponding to the axioms for left and right seriality given in Figure 6: ax.ay.
+y < x  lser  ax.ay.
+x < y  rser .
+5 It is worth to mention that in [6], Bonnette and GoreE give a labeled sequent system for the minimal tense logic Kt that can easily capture any combination of the reflexive, transitive, euclidean, symmetric and serial extensions of the logic.
+We have not considered all of these properties of the accessibility relation here, but the missing ones can be added straightforwardly thanks to the modularity of our system, which we exploit to capture the extensions towards LTL we consider in the remainder of the paper.
+The labeling discipline of [6] is different from ours and is tailored to a lean Prolog implementation of their sequent systems.
+In contrast, we focus here on the proof-theoretical aspects of our ND systems and leave an implementation for future work.
+6 The existence of a first (or a final) point is often expressed by adding a constant to the language.
+For example, we could introduce a constant 0 for the first point and an axiom stating that ay.
+AZ(y < 0).
+We prefer not to modify the language and keep the treatment of this property closer to that of other ones.
+8  H aL a" PH aL G aL a" FG aL Pa$?
+Fa$?
+(having a first point) (having a final point) (left-seriality) (right-seriality)  PA a PPA FA a FFA (Pa$?
+aSS A aSS GA) a (PGA) (Fa$?
+aSS A aSS HA) a (FHA)  (left-density) (right-density) (left-discreteness) (right-discreteness)  Figure 6.
+Some axioms for extensions of Kl conn  ax.y.
+x<yax=yay<x ay.
+t<yat=yat<x  aE  AZ(t<s)  aE  t<sat=sas<t  first  [ay.
+AZ(y<s)]2  aE  [t<s]3 AZE  a  a  a  ax.ay.
+AZ(y<x)  D2  a  a aE 4  aE 3  aE 2  a  uf 2  t:aL  RAAaL 1  t:HaLa"PHaL  where D1 is:  and D2 is: [ay.
+AZ(y<s)]2  [t:Pa$?aSSHPa$?
+]1 AZ(t:Pa$?)
+D1 [t=sas<t]3  AZ(q<s) aSSE [t=s]  4  aE a  mon  (s:Pa$?)
+s:aL s:aL  [ay.
+AZ(y<s)]2 [q<s]5  [t:Pa$?aSSHPa$?
+]1  AZE  t:HPa$?
+uf 2  AZ(r<s) aSSE  [s<t]  4  aE a  HE s:Pa$?
+PE 5  s:aL s:aL  uf 1  [r<s]6 AZE uf 2 PE 6  uf 1  a  a  Figure 7.
+Derivation of the modal axiom for first point As an example, we show completeness for (right-seriality), where D is some proof of s : a$?
+based on a proof of a$?
+or Aa" az A in classical logic (see, e.g., [14, 17]): ax.ay.
+x < y ay.
+t < y  D s:a$?
+rser aE  [t < s]1 FI  t : Fa$?
+t : Fa$?
+aE  1  Kl with dense time Another constraint that we can impose on relational structures is that the flow of time is dense, i.e.
+between any two points we can find a third point: ax.y.
+x < y a az.
+x < z a z < y  dens .
+Figure 11 in the appendix shows the proof of the axiom for (right-density); the proof for (left-density) can be obtained in a symmetric way by using the same axiom (dens).
+Kl with discrete time  Finally, we can express discreteness both towards the past and towards the future: ax.y.
+x < y a az.
+z < y a AZau.
+(z < u a u < y) ax.y.
+x < y a az.
+x < z a AZau.
+(x < u a u < z)  ldiscr rdiscr .
+We omit the proof of completeness for the corresponding axioms.
+6 Towards LTL We have seen that ND systems for several extensions of Kl can be given by extending the abase systema N (Kl).
+This is not the case for all the possible extensions, however, as some properties, e.g.
+continuity or finite intervals, are second-order properties [18] and thus require an appropriate higher-order relational language.
+We now briefly discuss whether (and how) it is possible to extend N (Kl) to capture a richer logic like (fragments of) LTL.
+9  MTL: a subset of LTL For brevity, we restrict our attention to future temporal operators only (but the extension to the past is straightforward) and begin by considering the system N (Kl) extended with the axioms rdiscr and rser so that the flow of time is discrete and unbounded towards the future (in this case, the presence of rser allows us to simplify rdiscr to ax.
+az.
+x < z a AZau.
+(x < u a u < z)).
+We can express in our syntax the relation next in terms of the relation < (see, e.g., [10]), i.e.
+we can introduce a relational symbol al (with the meaning of immediately precedes) as an abbreviation: s al t aA s < t a ax.
+AZ(s < x) a AZ(x < t) .
+This allows us to enrich the language with an operator X, whose semantics can be given without having to introduce a specific relation for it in the definition of a model.
+We just need to require that models for this logic are Kl models where < is also discrete and serial on the right, and extend the definition of truth with: |=M,It x : XA  iff  |=M,It x al y  and  |=M,It y : A .
+Rules for introduction and elimination of X can now be given in a clean way, with the usual freshness proviso for XI:7 [x al y] .
+.. .
+y:A XI (y fresh) x : XA  x : XA x al y XE .
+y:A  The logic that we capture in this extended system, which we call N (KMTL ), is not LTL yet.
+We are able to express the existence of an immediate successor, but we miss a way to say that between any two points (related by as) there can be only a finite sequence of points related one to each other by the relation next.
+We would need to express the finite interval property, but this is a second-order property, as observed above.
+In [12], a subset of LTL called Small Temporal Logic, or STL for short, is introduced and given a natural deduction system.
+The reasons behind the definition of STL are the difficulties arising from dealing with the induction principle (relating al and <) that is needed in order to represent LTL.
+While the semantics of LTL can be given by considering Kripke structures defined over a relation of successor (denoted by N ) and by defining as as the least transitive closure of N , in the semantics of STL the relation as is just required to contain N .
+It follows that a rule for induction is not needed in a system for STL.
+It is easy to verify that N (KMTL ) is complete with respect to the semantics of STL.
+Moreover, it can be proven to correspond to a logic alargera than STL for which the condition of linearity (or connectedness) on the relation as holds: we call this logic Medium Temporal Logic MTL.8 We could also introduce rules for the operators since and until, but they would be quite complex and problematic from a proof-theoretical point of view; see [2] for a labeled tableaux system for a distributed temporal logic that comprises full LTL, and [5] for tableaux-like ND rules for LTL.
+LTL Several systems of labeled natural deduction for LTL, e.g.
+[4, 5, 12], introduce an induction rule like the following [x < xa, ][xa, al xa,a, ][xa, : A] .. .. a,a, x :A x:A x<y ind y:A  which does not operate at a purely relational level.
+Some remarks are worth about a solution like this.
+First of all, the rule ind adds some more points of contact between the labeled and the relational sub-systems and leads to a failure of normalization.
+Moreover, one can show that the axiom of connectedness is not needed anymore since it is in a way acontaineda in the induction principle.
+In fact, the axiom (3) az G(GA a B) a G(GB a A) of weak connectedness must obviously hold in LTL, for it can be subsumed by the induction axiom (see, e.g., [9]).
+Thus, in the case we want to use a rule like ind to capture LTL, it seems more reasonable to follow a different approach that avoids 7 The fact that every time point has one (and only one) immediate successor follows from right-discreteness, right-seriality, and connectedness, and it allows one to express rules for X both in a universal and in an existential formulation.
+We give here the universal one.
+8 An axiomatization of MTL can be obtained, as shown in [10], by adding the following axioms to those given for future-time Kl:  (KX ) X(A a B) a (XA a XB) (FUNC ) (X az A a az XA) aSS ( az XA a X az A) (RECG ) (GA a X(A aSS GA)) aSS (X(A aSS GA) a GA)  10  both the extension of the relational language to a first-order language and the introduction of the universal falsum.
+In other words, we could have a system for LTL which uses only Horn rules in the relational theory (from which it follows that we have only atomic rwffs and no relational falsum) but extends the labeled sub-systems with a rule for induction that mixes labeled and relational premises.
+7 Conclusions We have already discussed some works that are related to the labeled ND systems for tense logics that we have given here (for which, summarizing, we have proved not only soundness and completeness, but also a number of useful proof-theoretical properties, and for which we also discussed extensions leading up to LTL).
+As we observed, the main difficulties in applying the labeled deduction framework in the context of linear temporal logics arise from the need of expressing the condition of connectedness in the case of the basic linear tense logic Kl (see [11] for a discussion) and the induction principle in the case of LTL.
+In fact, [11] gives a fairly complex labeled tableaux system for the logic Kl (called there the linear temporal logic Kt4.3), which is analytical in that it only comprises elimination rules for temporal operators and can be used as a decision procedure.
+In contrast, the main distinctive feature of our approach is the extension of a fixed base system for the temporal operators with relational rules that express the relational properties of the considered logic.
+This, in particular, allows for uniform and modular proofs of meta-theoretic properties for families of logics, like the proofs we have given here.
+Moreover, it makes our systems amenable to extensions to other logics as we have begun investigating towards LTL and to the branching-time logics CTL and CTLa .
+To that end, we plan to capitalize on the labeled ND systems for LTL given in [4, 12], which both make use of a specific rule for induction.
+References [1] A. R. Anderson, N. D. Belnap, Jr., and J. M. Dunn.
+Entailment, The Logic of Relevance and Necessity, volume 2.
+Princeton University Press, Princeton, New Jersey, 1992.
+[2] D. Basin, C. Caleiro, J. Ramos, and L. ViganoE.
+A Labeled Tableaux System for the Distributed Temporal Logic DTL.
+In Proceedings of TIMEa08, IEEE Computer Society Press, 2008.
+[3] D. Basin, M. DaAgostino, D. M. Gabbay, S. Matthews, and L. ViganoE, editors.
+Labelled Deduction.
+Kluwer Academic Publishers, Dordrecht, 2000.
+[4] A. Bolotov, A. Basukoski, O. Grigoriev, and V. Shangin.
+Natural deduction calculus for linear-time temporal logic.
+In M. Fisher, W. van der Hoek, B. Konev, and A. Lisitsa, editors, Proceedings of JELIAa06, LNCS 4160, pages 56a 68.
+Springer, 2006.
+[5] A. Bolotov, O. Grigoriev, and V. Shangin.
+Automated natural deduction for propositional linear-time temporal logic.
+In Proceedings of TIMEa07, pages 47a58.
+IEEE Computer Society Press, 2007.
+[6] N. Bonnette and R. GoreE.
+A labelled sequent system for tense logic kt .
+In J. Fenstad, editor, Proceedings of the Australian Joint Conference on Artificial Intelligence, LNAI 1502, pages 71a82.
+Springer-Verlag, 1998.
+[7] M. DaAgostino, D. Gabbay, R. Hahnle, and J.Posegga, editors.
+Handbook of Tableau Methods.
+Kluwer Academic Publishers, 1999.
+[8] D. Gabbay.
+Labelled Deductive Systems.
+Clarendon Press, 1996.
+[9] R. I. Goldblatt.
+Logics of Time and Computation.
+CSLI Lecture Notes, 1987.
+[10] V. Goranko.
+Temporal logics of computations.
+Manuscript, 2000.
+[11] A. Indrzejczak.
+A labelled natural deduction system for linear temporal logic.
+Studia Logica, 11(75):345a376, 2003.
+[12] D. Marchignoli.
+Natural Deduction Systems for Temporal Logics.
+PhD thesis, Dipartimento di Informatica, UniversitaE di Pisa, February 2002.
+[13] E. OrLowska.
+Relational proof systems for modal logics.
+In H. Wansing, editor, Proof Theory of Modal Logic, pages 55a78.
+Kluwer Academic Publishers, 1996.
+[14] D. Prawitz.
+Natural Deduction: a Proof-Theoretical Study.
+Number 3 in Stockholm Studies in Philosophy.
+Almquist and Wiskell, 1965.
+[15] N. Rescher and A. Urquhart.
+Temporal Logic.
+Springer-Verlag, 1971.
+[16] A. Simpson.
+The Proof Theory and Semantics of Intuitionistic Modal Logic.
+PhD thesis, College of Science and Engineering, School of Informatics, University of Edinburgh, 1994.
+[17] A. Troelstra and H. Schwichtenberg.
+Basic Proof Theory.
+Cambridge University Press, 2000.
+[18] Y. Venema.
+Temporal logic.
+In L. Goble, editor, The Blackwell Guide to Philosophical Logic, pages 203a223.
+Blackwell Publishers, Malden, USA, 2001.
+[19] L. ViganoE.
+Labelled Non-Classical Logics.
+Kluwer Academic Publishers, 2000.
+11  A Proofs In this appendix we give the full proofs of the lemmas and theorems given in the body of the paper.
+In Sections A.1 and A.2, we give the proofs for the soundness and completeness of the system N (Kl) (Theorem 6) and for the completeness of the extensions of N (Kl) (Section 5).
+In Section A.3, we give proofs for the normalization results presented in Section 4.
+A.1  Soundness  Theorem 17 N (Kl) = N (KlL ) + N (KlR ) + N (KlG ) is sound, i.e.
+it holds: (i) I, a aV D implies I, a |=M,It D for every model M and every interpretation It; (ii) I, a aV x : A implies I, a |=M,It x : A for every model M and every interpretation It.
+Proof (i) The proof is by induction on the structure of the derivation of D. The base case is when D a a and is trivial.
+There is one step case for every axiom or rule.
+The axioms conn, trans <, and irrefl < directly refer to the properties of connectedness, transitivity, and irreflexivity of Kl models (Definition 3) and thus are trivially sound, while refl = and mon preserve soundness by definition of |=M,It x = y (Definition 4).
+Consider the case of an application of RAAa  I a [Daa]1 D a D  RAA1a  where a1 = a aS {D a a}.
+By the induction hypothesis, I, a1 |=M,It a for every model M and every interpretation It.
+Let us consider an arbitrary model M and an arbitrary interpretation It; we assume |=M,It (I, a) and prove |=M,It D. Since 2M,It a, from the induction hypothesis we obtain 2M,It (I, a1 ), that, given the assumption |=M,It (I, a), leads to 2M,It D a a, i.e.
+|=M,It D and 2M,It a by Definition 4.
+The cases for a I, a E, aI and aE follow by simple adaptations of the standard proofs for classical logic.
+Finally, consider the case of an application of uf 1 Ia D x:aL  uf 1  a  for a proof context (I, a) and some label x.
+By the induction hypothesis, we have I, a |=M,It x :aL for every M and every It.
+Given a generic model M and a generic interpretation It, we can write 2M,It x :aL; it follows that 2M,It (I, a) and then also I, a |=M,It a by Definition 4.
+(ii) As in (i), by induction on the structure of the derivation of x : A.
+The base case is trivial and there is a step case for every rule of the labeled system.
+The cases of introduction and elimination of connectives and that of universal falsum are as in (i).
+Consider an application of the rule GI I a [x<y]1 D y:A x:GA  GI 1  where I, a1 aV y : A with y fresh and with a1 = a aS {x < y}.
+By the induction hypothesis, for every model M and every interpretation It it holds I, a |=M,It y : A.
+We let It be any interpretation such that |=M,It (I, a) and show that |=M,It x : GA. Let w be any world such that It(x) as w. Since It can be trivially extended to another interpretation (still called It for simplicity) by setting It(y) = w, the induction hypothesis yields |=M,It y : A, and thus |=M,It x : GA.  12  Finally, consider an application of the rule GE I1 a1  I2 a2  D1  D2  x:GA  x<y  GE .
+y:A  Let M be an arbitrary model and It an arbitrary interpretation.
+If we assume |=M,It (I1 aS I2 , a1 aS a2 ), then from the induction hypotheses we obtain |=M,It x : GA and |=M,It x < y, and thus |=M,It y : A by Definition 4.
+The treatment of HI and HE is analogous.
+aL  A.2  Completeness  In the following, in order to simplify the derivations, we will use some derived rules.
+We show here, as an example, how to derive the rules FI and FE (see Figure 2) from the rules for introduction/elimination of G. We remind that the following equivalence holds: FA aA az G az A aA (G(A aaL)) aaL.
+The rule y:A  x<y  FI x:FA  can be derived as follows  [x:G(AaaL)]1  x<y GE  y:AaaL  y:A y:aL  aE  RAAaL  x:aL  aI 1  x:G(AaaL)aaL  while an application of FE [y:A] [x<y]  D x:FA  z:B  FE  z:B  can be replaced by the following derivation [y:A]3 [x<y]2  D [z:BaaL]1  z:B z:aL y:aL  y:AaaL x:G(AaaL)aaL  x:G(AaaL) x:aL z:B  aE  RAAaL aI 3 GI 2 aE  RAAaL 1  A.2.1 Completeness by canonical model construction In the following, slightly abusing notation, we will write D a (I, a) whenever D a I or D a a, and write x a (I, a) whenever the label x occurs in some D a (I, a).
+Definition 18 A proof context (I, a) is N (Kl)-consistent iff I, a 0 x :aL for every x, and it is N (Kl)-inconsistent otherwise.
+Note that we can have inconsistency also by deriving a in the relational system; given the rules uf 1 and uf 2 for universal falsum, also this case is captured by the previous definition.
+For simplicity, in the following we will omit the aN (Kl)a and simply speak of consistent and inconsistent proof contexts.
+13  Proposition 19 Let (I, a) be a consistent proof context.
+Then: (i) for every x and every A, either (I aS {x : A}, a) is consistent or (I aS {x : az A}, a) is consistent; (ii) for every relational formula D , either (I, a aS {D}) is consistent or (I, a aS {AZD}) is consistent.
+Proof (i) Suppose that both (I aS {x : A}, a) and (I aS {x : az A}, a) are inconsistent.
+Then from I aS {x : A}, a aV x :aL, by applying the rule aI, we get I, a aV x : az A.
+Similarly, from I aS {x : az A}, a aV x :aL, by applying the rule RAAaL , we get I, a aV x : A.
+But, if both x : A and x : az A are derivable in the proof context (I, a), then it also holds I, a aV x :aL, by az E. It follows that the original proof context (I, a) had to be inconsistent (contradiction).
+(ii) The proof for the relational case is analogous and is obtained by using the corresponding relational rules i.e.
+a I, RAAa and AZE.
+aL Definition 20 A proof context (I, a) is maximally consistent iff the following three conditions hold: 1.
+(I, a) is consistent, 2. for every relational formula D, either D a a or AZD a a, 3. for every x and every A, either x : A a I or x : az A a I. Completeness follows by a Henkinastyle proof, where a canonical model MC = (W C , asC , V C ) C  C  is built from a proof context (I, a) to show that (I, a) 0 D implies I, a 2M ,It D for every formula D. In standard proofs for unlabeled modal, temporal, and for other non-classical logics, the set W C is obtained by progressively building maximally consistent sets of formulas, where consistency is locally checked within each set.
+In our case, given the presence of lwffs and rwffs, we modify the Lindenbaum lemma to extend (I, a) to one single maximally consistent context (Ia , aa ), where consistency is agloballya checked also against the additional assumptions in a.9 The elements of W C are then built by partitioning Ia and aa with respect to the labels, and the relation asC between the worlds is defined by exploiting the information in aa .
+In the Lindenbaum lemma for predicate logic, a maximally consistent and D-complete set of formulas is inductively built by adding for every formula az ax.
+A a witness to its truth, namely a formula az A[c/x] for some new individual constant c. This ensures that the resulting set is D-complete, i.e.
+that if, for every closed term t, A[t/x] is contained in the set, then so is ax.
+A.
+A similar procedure applies here not only for rwffs AZax.
+D, but also in the case of lwffs of the form x : az GA. That is, together with x : az GA we consistently add y : az A and x < y for some new y, which acts as a witness world to the truth of x : az GA.
+This ensures that the maximally consistent context (Ia , aa ) is such that if x < z a (Ia , aa ) implies z : B a (Ia , aa ) for every z, then x : GB a (Ia , aa ), as shown in Lemma 22 below.
+Note that in the standard completeness proof for unlabeled modal logics, for instance, one instead considers a canonical model MC and shows that if W1 a W C and MC , W1  az GA, then W C also contains a world W2 accessible from W1 that serves as a witness world to the truth of az GA at W1 , i.e.
+MC , W2  az A. Lemma 21 Every consistent proof context (I, a) can be extended to a maximally consistent proof context (Ia , aa ).
+Proof We first extend the language of N (Kl) with infinitely many new constants for witness terms and for witness worlds.
+Let t range over the original terms, s range over the new constants for witness terms, and r range over both; further, let w range over labels, v range over the new constants for witness worlds, and u range over both.
+All these may be subscripted.
+Let D1 , D2 , ... be an enumeration of all lwffs and rwffs in the extended language; when Di is u : A, we write az Di for u : az A.
+We iteratively build a sequence of consistent proof contexts by defining (I0 , a0 ) = (I, a) and (Ii+1 , ai+1 ) to be: 9 We consider only consistent proof contexts.
+If (I, a) is inconsistent, then I, a aV D for all D, and thus completeness immediately holds for all lwffs and rwffs.
+14  aV (Ii , ai ), if (Ii aS {Di+1 }, ai ) is inconsistent; else aV (Ii aS {u : az GA, v : az A}, ai aS {u < v}) for a v not occurring in (Ii aS {u : az GA}, ai ) if Di+1 is u : az GA; else aV (Ii aS {u : az HA, v : az A}, ai aS {v < u}) for a v not occurring in (Ii aS {u : az HA}, ai ) if Di+1 is u : az HA; else aV (Ii , ai aS {AZax.
+D, AZD[s/x]}) for an s not occurring in (Ii , ai aS {AZax.
+D}) if Di+1 is az ax.
+D; else aV (Ii aS {Di+1 }, ai ) if Di+1 is an lwff or (Ii , ai aS {Di+1 }) if Di+1 is an rwff.
+Now define (Ia , aa ) = (  [  Ii ,  iaL0  [  ai ) .
+iaL0  We show that the proof context (Ia , aa ) is maximally consistent, i.e.
+it verifies the three conditions of Definition 20.
+(i) First we prove that our construction preserves consistency by showing that every (Ii , ai ) is consistent.
+The only interesting cases are when Di+1 is one of az GA, az HA, or AZax.
+D. We only consider the first case, since the second one is symmetrical, and the third is very similar.
+If (Ii aS {u : az GA}, ai ) is consistent, then so is (Ii aS {u : az GA, v : az A}) for a v not occurring in (Ii aS {u : az GA}, ai ).
+By contraposition, suppose that Ii aS {u : az GA, v : az A} , ai aS {u < v} aV uj :aL by a derivation D (where v does not occur in (Ii aS {u : az GA}, ai )).
+Then in N (Kl) we can have a derivation like the following: Ii  ai  [v: azA]1  u: azGA  [u<v]2  D uj :aL v:A u:GA  RAAaL 1 GI 2  u: azGA u:aL  azE  This shows that (Ii aS {u : az GA}, ai ) is inconsistent, which is not the case.
+(ii) Consider an rwff D. Suppose that both D a / aa and AZD a / aa hold.
+Let D be Di+1 for some i in our enumeration of formulas and AZD be Dj+1 .
+Now suppose i < j (the other case is symmetric).
+D a / aa implies that (Ii , ai aS {Di+1 }) is inconsistent.
+Given that in our inductive construction we only add formulas to the proof context, i.e.
+ai a aj , we have that (Ij , aj aS {Di+1 }) is also inconsistent.
+Then, by Proposition 19(ii), (Ij , aj aS {Dj+1 }) has to be consistent and Dj+1 is added by definition to aj .
+This implies Dj+1 a aa , i.e.
+AZD a aa .
+(iii) The proof for labeled formulas is the same as in the previous case and proceeds by contraposition by using Proposition 19(i).
+aL Lemma 22 Let (I, a) be a maximally consistent proof context.
+Then: (i) I, a aV D iff D a (I, a); (ii) D1 a D2 a a iff D1 a a implies D2 a a; (iii) ax.
+D a a iff D[y/x] a a for all y; (iv) u : A a B a I iff u : A a I implies u : B a I; (v) u1 : GA a I iff u1 < u2 a a implies u2 : A a I for all u2 ; (vi) u1 : HA a I iff u2 < u1 a a implies u2 : A a I for all u2 .
+Proof We treat only some cases, the others are similar and follow by maximality and consistency of (I, a).
+15  (i) The proof is analogous for rwffs and lwffs, we see the first case.
+(a) If D a (I, a), then trivially I, a aV D. (a) Consider an rwff D such that D a / (I, a).
+Then, by Definition 20, AZD a (I, a).
+It follows trivially that I, a aV AZD holds.
+By hypothesis, I, a aV D and thus by using AZE we get I, a aV a, that contradicts the consistency of (I, a).
+(v) (a) Suppose u1 : GA a / I and u2 : A a I for every u2 such that u1 < u2 a a.
+Then, by maximality of (I, a), u1 : az GA a I.
+Now suppose there exists a u3 such that u1 < u3 a a and u3 : az A a I.
+Then, by hypothesis, we know u3 : A a I and this leads to a contradiction.
+Otherwise, if such a u3 does not exist, we can conclude u1 : GA a I that leads to a contradiction as well.
+(a) We show it by contraposition.
+Suppose u1 : GA a I, u1 < u2 a a and u2 : A a / I.
+By maximality of (I, a), we have u2 : az A a I.
+Then the following is an N (Kl) proof that shows (I, a) is inconsistent.
+u1 :GA  u1 <u2  GE u2 : azA  u2 :A u:aL  azE  aL  Our construction of maximally consistent proof contexts (Lemma 21) does not exclude the presence of two labels x and y that are related by the relation x = y.
+Now we want to derive a model from such a construction.
+Since we know from Definition 4 that |=M,It x = y holds only if It(x) = It(y), we need to state an equivalence relation between labels on which the function It can be defined.
+Definition 23 Let C = (I, a) be a maximally consistent proof context and LC the set of labels occurring in it, we define the binary relation aAC on LC as follows: for every u1 , u2 a LC , u1 aAC u2  iff  u1 = u2 a a.
+Proposition 24 Given a maximally consistent proof context C, the relation aAC is an equivalence relation.
+Proof  It follows trivially by the maximality of C and by the rules refl =, mon, irrefl < and conn.  aL  Notation 25 It follows from Proposition 24 that every maximally consistent proof context C determines a partition of the set LC of labels occurring in it.
+In the following, we will also use the notation [u]C to indicate the equivalence class containing the label u, i.e.
+[u]C = {ua, | u aAC ua, }.
+Definition 26 Let C = (I, a) be a maximally consistent proof context and LC be the set of labels occurring in it.
+We define the canonical model MC = (W C , asC , V C ) as follows: aV W C = {[u]C | u a LC }; aV ([ui ]C , [uj ]C ) a asC iff ui < uj a a; aV V C ([u]C , p) = 1 iff u : p a I.
+We define the canonical interpretation ItC : LC a W C as follows: ItC (u) = [u]C for every u a LC .
+Remark 27 Note that in the previous definition asC and V C are well defined, since it is easy to verify that for every u1 , u2 a LC it holds: aV u1 aAC u2 implies for every u3 a LC , u1 < u3 a a iff u2 < u3 a a; aV u1 aAC u2 implies for every u3 a LC , u3 < u1 a a iff u3 < u2 a a; aV u1 aAC u2 implies for every p a P, u1 : p a I iff u2 : p a I.
+16  ax.y.
+x<yax=yay<x x<yax=yay<x  [x<y]2  conn [x<yax=y]  1  aE  [x=y]2  AZ(x<y) AZE  a  AZ(x=y) AZE  a aE  a  [y<x]1  2  AZ(y<x) AZE  a aE  a  1  Figure 8.
+Proof for connectedness of canonical models Proposition 28 Given a maximally consistent proof context C = (I, a), the canonical model MC is a Kripke model for Kl .
+Proof It suffices to show that MC is irreflexive, transitive and connected.
+Suppose there exist three worlds W1 , W2 , and W3 in W C such that (W1 , W2 ) aasC and (W2 , W3 ) aasC , but (W1 , W3 ) aas / C. By definition 26, this implies there exist at least three labels x, y and z such that It(x) = W1 , It(y) = W2 , It(z) = W3 , x < y a a and y < z a a, but x < z a / a, i.e.
+by the maximality of C, AZ(x < z) a a.
+But this leads to the inconsistency of (I, a), as shown by the following derivation.
+trans< ax.y.z.
+(x<yay<z)ax<z aE  x<y  y<z  x<yay<z  (x<yay<z)ax<z  aI aE  x<z  AZ(x<z)  a  AZE  Connectedness of MC can be proved in a similar way by using the rule conn.
+Suppose there exist two distinct worlds W1 and W2 in W C such that (W1 , W2 ) aas / C and (W2 , W1 ) aas / C .
+By definition 26, this implies there exist at least two labels x and y such that It(x) = W1 , It(y) = W2 , x = y a / a, x < y a / a and y < x a / a, i.e.
+by the maximality of C, AZ(x = y) a a, AZ(x < y) a a and AZ(y < x) a a.
+But this leads to the inconsistency of (I, a), as shown by the derivation in Figure 8.
+Irreflexivity of MC can be shown in a similar way.
+aL Lemma 29 Let C = (I, a) be a maximally consistent proof context, MC the canonical model and ItC the canonical interpretation built on C as in Definition 26.
+Then: C  (i) D a a iff I, a |=M  ,ItC C  (ii) u : A a I iff I, a |=M  D; ,ItC  u : A.
+Proof C  (i) (a) By hypothesis, D a a.
+Then, if we assume |=M C  ,ItC  C  (I, a), it immediately follows |=M  ,ItC  D.  C  (a) By hypothesis, I, a |=M ,It D. Let us suppose D a / a.
+By maximality of (I, a), it follows AZD a a.
+Then we C C C C have also I, a |=M ,It AZD (see direction (a)).
+But, since we have by hypothesis I, a |=M ,It D, this yields the C C absurd I, a |=M ,It a.
+(ii) The proof for labeled formulas is analogous.
+aL Theorem 30 N (Kl) = N (KlL ) + N (KlR ) + N (KlG ) is complete, i.e.
+it holds: C  (i) if I, a 0 w : A , then there exist a Kl model MC and an interpretation ItC such that I, a 2M C  (ii) if I, a 0 D , then there exist a Kl model MC and an interpretation ItC such that I, a 2M Proof  17  ,ItC  ,ItC  D.  w : A;  trans< ax.y.z.
+(x<yay<z)ax<z aE  ay.z.
+(t<yay<z)at<z  aE  az.
+(t<sas<z)at<z  [t<s]2  aE [t:GA]1  [s<r]3  t<s a s<r  (t<sas<r)at<r t<r  aI aE  GE  r:A  GI 3  s:GA  GI 2  t:GGA  t:GAaGGA  aI 1  Figure 9.
+Derivation of the axiom (G3 ) (i) If I, a 0 w : A, then (I aS {w : az A}, a) is consistent; otherwise there exists a wi such that I aS {w : az A}, a aV wi :aL, and then I, a aV w : A.
+Therefore, by Lemma 21, (I aS {w : az A}, a) is included in a maximally consistent proof context C = ((I aS {w : az A})a , aa ).
+Let MC be the canonical model for C. It suffices to find an interpretation C C according to which MC is not a model for w : A.
+By Lemma 29, (I aS {w : az A})a , aa |=M ,It w : az A, where C C C C MC is a Kl model by Proposition 28.
+It follows I aS {w : az A})a , aa 2M ,It w : A, and thus I, a 2M ,It w : A.
+(ii) We can repeat the same proof for relational formulas.
+If I, a 0 D, then (I, a aS {AZD}) is consistent.
+Then we can build C C C C a maximally consistent proof context Ia , (a aS {AZD})a such that Ia , (a aS {AZD})a 2M ,It D, and thus I, a 2M ,It D. aL  A.2.2 Completeness by axioms It is possible to give an indirect proof of completeness by showing that all the axioms listed in Section 2.3 for the logic Kl are derivable in N (Kl).
+In the following derivations, for simplicity, we will sometimes use derived operators and derived rules, and exploit trivial equivalences between formulas implicitly.
+We begin by giving derivations for the axioms (G1) and (G2 ): [t:G(AaB)]1  [t<s]3  [t:GA]2  [t<s]3  GE  GE  s:AaB  s:A s:B t:GB  aE  GI 3 aI 2  t:GAaGB  aI 1  t:G(AaB)a(GAaGB)  [s:GA]2 [t:PGA]1  [s<t]2 t:A  t:A t:PGAaA  GE PE 2  aI 1  The derivation for (G3 ) is shown in Figure 9, while the derivation for (G4 ) is in Figure 10.
+We omit here the derivations for the symmetric axioms (H1 )-(H4 ).
+Completeness of the extended systems considered in Section 5 can be also proved by deriving the corresponding axioms.
+In Section 5, we have already proved the axioms for having a first point and right-seriality.
+We show the derivations for right-density and for right-discreteness in Figure 11 and Figure 12, respectively.
+Derivations of the other axioms (final point, left-seriality, left-density, left-discreteness) are symmetric and we thus omit them.
+A.3  Normalization  Proof [Lemma 7] (i) We show that any application of RAAaL , RAAa , and mon with a non-atomic conclusion can be replaced with a derivation in which such rules are applied only to formulas of smaller grade by the set of transformations given below.
+By iterating  18  conn  ax.y.
+x<yax=yay<x ay.
+s<yas=yay<s s<ras=rar<s [t:F azAaSSF azB] [t:F azAaSSF azB]2 t:F azA  D1  aE  t:aL  D2  D3  a  a aE 8  a aE  a aSSE  5  uf 2  t:aL t:aL  [s=rar<s]5  a  2  t:F azB  aSSE  aE  FE 4  FE 3  RAAaL 2  t:GAa"GB  aI 1  t:(G(Aa"B)aSSG(Aa"GB)aSSG(GAa"B))a(GAa"GB)  where D1 is: [t:(G(Aa"B)aSSG(Aa"GB)aSSG(GAa"B))]1 aSSE t:G(Aa"GB)  [t<s]3  [s: azA]3  azE  s:aL s:aL  [s: azGB]6  [s:A]7  GE (s:Aa"GB)  [s:GB]7  s:aL  azE a"E 7  RAAaL 6  s:GB  [s<r]5  [r: azB]4  GE  r:B r:aL  azE uf 1  a  D2 is: [t:(G(Aa"B)aSSG(Aa"GB)aSSG(GAa"B))]1 aSSE t:G(Aa"B)  [s: azA]3  [t<s]3 GE  s:Aa"B  [s:A]12  s:aL s:aL s:B  [s: azB]11 azE  [s:B]12 azE  s:aL  a"E 12  RAAaL 11  [s=r]8  [r: azB]4  r:B r:aL  mon  azE uf 1  a  and D3 is: [t:(G(Aa"B)aSSG(Aa"GB)aSSG(GAa"B))]1 aSSE t:G(GAa"B)  [r: azGA]9  [t<r]4  [r:GA]10  r:GAa"B  r:aL r:aL r:GA  [r: azB]4 azE  GE  [r:B]10  r:aL  azE a"E 10  RAAaL 9  [r<s]8  [s: azA]3  GE  s:A s:aL  azE uf 1  a  Figure 10.
+Derivation of the axiom (G4 )  [t<rar<s]4 ax.y.
+x<yaaz.
+(x<zaz<y) ay.
+(t<yaaz.
+(t<zaz<y)) t<saaz.
+(t<zaz<s)  [s:A]  dens [t: azFFA] [t<s]2  t<r t:FFA azE  uf 1  a a t:aL t:FFA  t:FAaFFA  3  t:aL  az.
+(t<zaz<s)  t:FFA  [t<rar<s]4  r:FA  aE  [t:FA]1  aE  r<s FI  aE aE  2  aE 4 uf 2 RAAaL 3 FE 2  aI 1  Figure 11.
+Derivation of the modal axiom for right-density  19  aE FI  D a r:aL ax.y.
+x<ya(az.
+x<za(AZau.
+x<uau<z)) ay.
+t<ya(az.
+t<za(au.
+AZ(t<u)aAZ(u<z))) t<qa(az.
+t<za(au.
+AZ(t<u)aAZ(u<z))) [t:Fa$?aSSAaSSHA]  1  rdiscr  r:A  aE  s:HA [t<u]3  HI 5  [t<sa(au.
+AZ(t<u)aAZ(u<s))]4 t<s  aE FI  t:FHA t:aL  aE  azE uf 1  a  az.
+t<za(au.
+AZ(t<u)aAZ(u<z))  aE 4  a a  RAAaL 6  [t: azFHA]2  aE  aSSE  t:Fa$?
+uf 2  FE  3  uf 2  t:aL  RAAaL 2  t:FHA  t:(Fa$?aSSAaSSHA)aFHA  aI 1  where D is: [t:Fa$?aSSAaSSHA]1 aSSE  t:HA conn  ax.y.
+x<yax=yay<x ay.
+r<yar=yay<r r<tar=tat<r  [r: azA]  6  [r<t]7 HE  r:A  aE  r:aL  aE  azE  D1  uf 1  a  a a  aE 7  and D1 is: [t:Fa$?aSSAaSSHA]1 t:A [r: azA]6 r:aL [r=tat<r]  7  aSSE  [r=t]8  r:A azE  [t<sa(au.AZ(t<u)aAZ(u<s))]4 mon  AZ(t<r)aAZ(r<s)  uf 1  aE  au.AZ(t<u)aAZ(u<s)  a  [AZ(t<r)]9  aE  [t<r]8  a aE 8  Figure 12.
+Derivation of the modal axiom for right-discreteness  20  [r<s]5 AZE  a aE 9  a a  [AZ(r<s)]9 AZE  these transformations, we get a derivation of D from I, a where the conclusions of applications of RAAaL , RAAa , and mon are atomic.
+(1) First, we consider applications of RAAaL .
+There are three possible cases, depending on whether the conclusion is x : B a C, x : GB, or x : HB.
+Note that in the following transformations we only show the part of the derivation where the reduction, denoted by , actually takes place; the missing parts remain unchanged.
+(Case 1) [x:BaC]1 [x:CaaL]  2  x:C  [x:(BaC)aaL]  x:aL  D  x:(BaC)aaL  y:aL  [x:B]3  aE  aE  aI 1  D  RAAaL  x:BaC  y:aL  RAAaL 2  x:C  aI 3  x:BaC  (Case 2) [x:GB]1  GE  [y:BaaL]2  y:B  y:aL  [x:GBaaL] y:aL  x:GBaaL D  RAAaL  aE  RAAaL  D  x:aL  x:GB  [x<y]3  y:aL  aI 1  RAAaL 2  y:B x:GB  GI 3  Case 3 concerns formulas of the form y : HA; it is analogous to the previous one and we omit the reduction for it.
+(2) Applications of RAAa can be reduced to applications on formulas of lower grade, following an approach analogous to that of RAAaL .
+It is easy to see that in this case, we can also restrict to applications of RAAa in which the conclusion is not a.
+We have to consider two possibilities: formulas of the form D1 a D2 and formulas of the form ax.
+D. We consider only the second case, since the first one is analogous to the case of implication for labeled formulas: [Daa]1 [ax.
+Daa]  ax.
+Daa  D  D  a  a  RAAa  ax.
+D  D ax.
+D  aI  RAA1a aI  (3) Finally, we consider applications of the rule mon.
+We have five cases depending on the form of the formula that is the major premise of the mon application: (a) x : A a B (b) x : GA (c) x : HA (d) D1 a D2 (e) ax.
+D  21  D  D1 x=z  xRy zRy  D mon  D2  D1 x=z  xRy  y=u  zRu  D3  mon  mon  zRy  z=v  vRy  mon  vRu  D3 z=v  mon  vRu  D2 y=u  mon  Figure 13.
+Rule permutation for the ordering of mon applications  (Case a) [y:A]1 x:AaB  x:AaB  x=y  mon  y:AaB  x=y  x:A  mon  aE  x:B  x=y  y:B  mon  aI 1  y:AaB  (Case b) [y<z]1 x:GA  x=y  x:GA  mon  y:GA  x=y  x<z z:A y:GA  mon  GE  GI 1  (Case e) ax.
+D ax.
+D  aE  D  y=z  mon  y=z  mon  D[z/y]  ax.
+D[z/y]  ax.
+D[z/y]  aI  The case (c) is analogous to (b), while the transformation for the case (d) is as in (a) where a plays the role of a.
+(ii) We show that every application of mon on a lwff of the form x :aL can be replaced by an application of RAAaL that does not discharge any assumption: D  Da, x=y  x:aL y:aL  D  x:aL  mon  RAAaL  y:aL  aL Proof [Lemma 9] We follow the procedure based on proper reductions used in [19] and we only treat the cases aI/aE, GI/GE and aI/aE.
+The transformations for the detours a I/a E and HI/HI can be easily inferred from these.
+Any formula D in a derivation is the root of a tree of rule applications leading back to assumptions.
+We call side formulas of D the formulas in this tree other than D. In order to eliminate maximal formulas from a derivation, it suffices to apply the transformations listed below, picking in the set of maximal formulas the formula with the highest grade that has only maximal formulas of lower grade as side formulas, and iterating this process until there are no more maximal formulas in the proof.
+The process ends because at every step no new maximal formula as large as (or larger than) the eliminated one is introduced.
+[x:A]  D2  D1  (i)  x:B x:AaB  aI  x:A D1  D2 x:A  x:B  aE  x:B  [x<y]  (ii)  D  x<z  y:A  D[z/y] GI  x:GA  x<z z:A  22  GE  z:A  D D  (iii)  ax.
+D  D[y/x]  aI  D[y/x]  D[y/x]  aE  Finally, in Fig.
+13 we show how to permute applications of rules in order to get a derivation where, given a sequence of mon applications, the ones on the same label position occur one immediately below the other.
+We denote with R a relational symbol that can stay both for < and for =.
+In the derivation on the left, the first and the third application of mon refer to the same label position and thus are moved one immediately below the other.
+The derivations obtained in this way will then be further simplified during the normalization process.
+aL Proof [Theorem 11] First, we observe that by Lemma 9 we can obtain a derivation in pre-normal form.
+Now let us show how to remove redundant formulas.
+We know from Lemma 7 that every application of a falsum-rule has an atomic formula as a conclusion.
+Thus it is sufficient to consider the following transformations: Ia D  Ia D  x:aL  (i)  y:aL  RAAaL  x:aL  RAAaL  z:A  z:A  RAAaL  where A is aL or an atomic formula.
+Note that if the formula z : A aaL is contained in I and discharged by the second application of RAAaL in the derivation on the left, then the same can be done in the derivation on the right.
+D x:aL  (ii)  y:aL  D RAAaL  x:aL  uf 1  uf 1  a  a  D x:aL  (iii)  a  D uf 1  x:aL  uf 2  y:aL  y:aL  RAAaL  D  (iv)  a x:aL  D  uf 2  a  uf 1  a  For the rule mon, given the ordering of mon applications obtained by permutations defined in Lemma 9, the only case we have to treat is when two applications of mon working on the same label position of a formula occur consecutively.
+Then we simply exploit the transitivity of = (obtained by using mon).
+Note that, by Lemma 7, in the following reduction D is an atomic formula.
+D D 1  D  2  x=y  mon  D[y/x]  D1  D3 y=z  D mon  D2  D3  x=y  y=z  x=z  mon  mon  D[z/x]  D[z/x]  aL Proof [Lemma 13] (i) and (ii) follow from the absence of maximal formulas in a normal derivation: in a track t, no introduction rule application can precede an application of an elimination rule.
+In other words, a track in a normal derivation is such that the elimination part (when not empty) starts with a non-atomic formula and consists of some applications of elimination-rules; if the elimination part ends with an atomic formula, then the central part (when not empty) consists of some applications of rules whose conclusion is still an atomic formula; the introduction part (when not empty) starts with an atomic formula and consists of some applications of introduction rules (see Fig 4).
+23  (iii) comes from the fact that in a normal derivation a falsum-rule and the mon-rule can be applied only to atomic formulas.
+(iv) follows directly from the absence of redundant formulas in a normal derivation (see Theorem 11).
+For (v) and (vi), observe that tracks originating from an application of uf 1 or uf 2 start with an atomic formula and thus cannot have an elimination part, while tracks ending in an application of uf 1 or uf 2 end with an atomic formula and thus their introduction part must be empty.
+aL  24

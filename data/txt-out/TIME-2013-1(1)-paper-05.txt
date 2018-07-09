@@ -1,0 +1,1052 @@
+LTL Satisfiability Checking Revisited Jianwen Li* , Lijun Zhang+ , Geguang Pu* , Moshe Y. Vardi++ and Jifeng He* * Software  + State  Engineering, East China Normal University Key Laboratory of Computer Science, Institute of Software, Chinese Academy of Sciences ++ Computer Science, Rice University  Abstract--We propose a novel algorithm for the satisfiability problem for Linear Temporal Logic (LTL).
+Existing approaches first transform the LTL formula into a Buchi automaton and then perform an emptiness checking of the resulting automaton.
+Instead, our approach works on-the-fly by inspecting the formula directly, thus enabling finding a satisfying model quickly without constructing the full automaton.
+This makes our algorithm particularly fast for satisfiable formulas.
+We report on a prototype implementation, showing that our approach significantly outperforms state-of-the-art tools.
+I.  I NTRODUCTION  Model-checking tools are successfully used for checking whether systems have desired properties [CGP99].
+The application of model-checking tools to complex systems involves a nontrivial step of creating a mathematical model of the system and translating the desired properties into a formal specification expressed by means of temporal assertions.
+When the model does not satisfy a given assertion, model-checking tools accompany this negative answer with a counterexample, which points to an inconsistency between the system and the desired behaviors.
+The success of model checking led to the emergence of assertion-based design, where one starts the design process by formalizing designer intent by means of temporal assertions [FKL04].
+Since at that early stage of the design process model checking cannot be employed, there is a need for techniques that would debug these assertions, as it is quite likely that such assertions contain errors [PSC+ 06].
+A basic check is that of satisfiability [SC85]: checking that each temporal assertion can be satisfied and the full set of assertions be satisfied together.
+(A stronger test is that of realizability [ALW89], but is out of the scope of this paper.)
+An in-depth empirical study of LTL satisfiability was undertaken by Rozier and Vardi [RV07], [RV10].
+A basic observation underlying their work is that LTL satisfiability checking can be reduced to model checking.
+Consider an LTL formula ph over a set P rop of atomic propositions.
+If a model M is universal, that is, it contains all possible traces over P rop, then ph is satisfiable precisely when the model M does not satisfy !ph.
+Thus, it is easy to add a satisfiability-checking feature to LTL model-checking tools.
+LTL model checkers can be classified as explicit or symbolic.
+Explicit model checkers, such as SPIN [Hol97] or SPOT [DLP04], construct the state-space of the model explicitly and search for a trace falsifying the assertion [CVWY92].
+In contrast, symbolic model checkers, such as CadenceSMV [McM99] or NuSMV [CCGR00], represent the model and analyze it symbolically using binary decision diagrams (BDDs) [BCM+ 92].
+LTL model checkers follow the automata-theoretic  approach [VW86], in which the complemented LTL assertion is explicitly or symbolically translated to a Buchi automaton, which is then composed with the model under verification; see also [Var07].
+The model checker checks for nonemptiness, by searching for a trace of the model that is accepted by the automaton.
+Rozier and Vardi [RV07], [RV10] carried out an extensive experimental investigation of LTL satisfiability checking via a reduction to model checking.
+By using large LTL formulas, they offered challenging model-checking benchmarks to both explicit and symbolic model checkers.
+For symbolic model checking, they used CadenceSMV and NuSMV.
+For explicit model checking, they used SPIN as the search engine, and tested essentially all publicly available LTL translation tools.
+They used a wide variety of benchmark formulas, either generated randomly, as in [DGV99], or using scalable patterns.
+Rozier and Vardi reached two major conclusions.
+First, most LTL translation tools are research prototypes and cannot be considered industrial quality tools.
+Among all the tools tested, only SPOT can be considered an industrial quality tool.
+Second, when it comes to LTL satisfiability checking, the symbolic approach is clearly superior to the explicit approach.
+Even SPOT, the best LTL translator in our experiments, was rarely able to compete effectively against the symbolic tools.
+The evidence marshalled by Rozier and Vardi for the conclusion in favor of the symbolic approach is quite compelling, but a close examination shows that it applies only to satisfiability checking via model checking.
+That is, if one chooses to perform satisfiability checking via a reduction to model checking, then the symbolic approach offers superior performance.
+It is conceivable, however, that a direct explicit approach to satisfiability checking would outperform the symbolic approach.
+In explicit model checking, it is possible to perform the nonemptiness test on the fly, that is, by letting the search algorithm drive the construction of the automaton [CVWY92].
+(In fact, the on-the-fly approach was proposed also for model checking, but was not adopted by SPIN due to its software architecture [Hol97]).
+In this paper we revisit the LTL satisfiability problem to examine the advantage of the on-the-fly approach.
+The driving intuition is that the on-the-fly approach may be quite advantageous in satisfiability checking, since it enables finding a model quickly without constructing the full automaton.
+Furthermore, the sole focus on satisfiability checking may be amenable to various heuristics that are not applicable in the context of model checking.
+We report here on a novel LTL satisfiability checking tool, Aalta, and demonstrate that it outperforms both SPOT and CadenceSMV.
+To substantiate our results we also revisit the experimental  methodology of Rozier and Vardi.
+Their focus has been on testing satisfiability of large LTL formulas, either scalable patterns or random.
+But typical temporal assertions are rather small [BAC98].
+What makes the LTL satisfiability problem hard is the fact that we need to check large conjunctions of small temporal formulas.
+We describe here a new class of challenging benchmarks, which are random conjunctions of specification patterns from [BAC98].
+Our conclusions on the superiority of Aalta are based both on the benchmarks of Rozier and Vardi and the newly introduced benchmarks.
+The organization of the paper is as follows.
+We provide preliminary material in Section II.
+In Section III we describe the novel algorithm underlying Aalta.
+In Section IV we detail our experimental methodology.
+We describe our experimental results in Section V. Section VI discusses related work and Section VII concludes the paper.
+*  x |= ph1 U ph2 iff there exists i > 0 such that xi |= ph2 and for all 0 6 j < i, xj |= ph1 ;  *  x |= ph1 R ph2 iff either xi |= ph2 for all i >= 0, or there exists i >= 0 with xi |= ph1 [?]
+ph2 and xj |= ph2 for all 0 <= j < i;  According to the semantics, it holds phRps = !
+(!phU !ph).
+Definition 2 (Satisfiability): We say ph is satisfiable, denoted by SAT (ph), if there exists a consistent trace x such that x |= ph.
+In the remainder of this paper, if not stated explicitly, all traces considered are assumed to be consistent.
+Notation.
+We define some notation that we use throughout this paper.
+*  II.
+P RELIMINARIES  A.
+Linear Temporal Logic Let AP be a set of atomic properties.
+The syntax of LTL formulas is defined by:  *  ph ::= tt | ff | a | !a | ph [?]
+ph | ph [?]
+ph | phU ph | phR ph | Xph where a [?]
+AP , ph is an LTL formula.
+We use the usual abbreviations: F a = ttU a, and Ga = ffRa.
+We say ph is a propositional formula if it does not contain temporal operators X, U or R. We say ph is a literal if it is an atomic proposition or its negation.
+We use L to denote the set of literals.
+We use lower case letters a, b, c to denote literals, a, b, g to denote propositional formulas, and ph, ps to denote LTL formulas.
+Note that, w.l.o.g., we are considering LTL formulas in negation normal form (NNF) - all negations are pushed down to literal level.
+LTL formulas are often interpreted over (2AP )o .
+Since we consider LTL in NNF forms, formulas are interpreted on infinite literal sequences S := (2L )o .
+o  A trace x = o0 o1 o2 .
+.
+.
+is an infinite sequence over S .
+For x and k >= 1 we use x k = o0 o1 .
+.
+.
+ok-1 to denote the prefix of x up to its k-th element, and xk = ok ok+1 .
+.
+.
+to denote the suffix of x from its (k + 1)-th element.
+Thus, x = x k xk .
+We use e, e0 .
+.
+.
+to denote finite sequences in S* .
+First, we need the notion of consistent traces: Definition 1 (Consistent Trace): We sayVa literal set A is consistent iff for all a [?]
+A we have that a 6[?]
+ff.
+A trace x = o0 o1 .
+.
+.
+is consistent iff oi is consistent for all i.
+Let o [?]
+S be a consistent set of literals, and a a propositional formula.
+We define o |= a in the standard way: if a is a literal then o |= a iff a [?]
+o, o |= a1 [?]
+a2 iff o |= a1 and o |= a2 , and o |= a1 [?]
+a2 iff o |= a1 or o |= a2 .
+Moreover, o |= tt and o 6|= ff.
+The semantics of temporal operators with respect to a consistent trace x is given by: *  x |= a iff x 1 |= a;  *  x |= X ph iff x1 |= ph;  For a formula ph, we use cl(ph) to denote the set of subformulas of ph.
+We denote by APph the set of atoms appearing in ph, by Lph the set of literals over APph , and by Sph the set of consistent literal sets over APph .
+V Let ph = i[?
+]I phi such that the root operator of phi is not a conjunctive.
+We define the set of conjuncts of ph as CF (ph) := {phi | i [?]
+I}.
+When ph does not include a conjunctive as a root operator, CF (ph) includes only ph itself.
+The set of disjuncts DF (ph) is defined in an analogous way.
+*  For a formula ph of the form ph1 U ph2 or ph1 Rph2 , let left(ph) (right(ph)) be left (right) subformulas of ph.
+*  For all propositional formula a appearing in the paper, we always check first whether a is satisfiable.
+If not, we shall replace a by ff.
+B.
+Normal Form Expansion Our algorithm will extend the given formula based on the notion of normal form for LTL formulas defined as follows: Definition 3 (Normal Form): The normal form of an LTL formula ph, denoted as NF (ph), is a set defined as follows: 1) 2) 3) 4) 5) 6)  NF (ph) = {ph [?]
+X(tt)} if ph 6[?]
+ff is a propositional formula.
+If ph [?]
+ff, we define NF (ff) = [?
+]; NF (Xph) = {tt [?]
+X(ps) | ps [?]
+DF (ph)}; NF (ph1 U ph2 ) = NF (ph2 ) [?]
+NF (ph1 [?]
+X(ph1 U ph2 )); NF (ph1 Rph2 ) = NF (ph1 [?
+]ph2 )[?
+]NF (ph2 [?
+]X(ph1 Rph2 )); NF (ph1 [?]
+ph2 ) = NF (ph1 ) [?]
+NF (ph2 ); NF (ph1 [?]
+ph2 ) = {(a1 [?]
+a2 ) [?]
+X(ps1 [?]
+ps2 ) | [?
+]i = 1 , 2 .
+ai [?]
+X(psi ) [?]
+NF (phi )};  From the definition it is obvious that if a[?
+]X(ps) [?]
+NF (ph), then a is a conjunctive clause, namely a conjunction of literals.
+For a formula ph, our algorithm will detect sucessor formulas based on the set NF (ph).
+First, W we shall showWthat the formula ph is logically equivalent to NF (ph), here NF (ph) W represents the formula 1<=j<=k (aj [?]
+Xphj ) with aj [?]
+Xphj [?]
+NF (ph) and k = |NF (ph)|.
+We note that the empty disjunction (OR-ing over an empty set of operands) is defined as ff.
+Then, we establish the equivalence property: W Lemma 1: For the formula ph, it holds ph [?]
+NF (ph).
+The lemma below states that along the expansion the set of subformulas is decreasing (except the constant tt):  4) 5)  Lemma 2: If a [?]
+Xps [?]
+NF (ph), then CF (ps) [?]
+cl(ph) [?]
+{tt}.
+6)  III.
+N EW S ATISFIABILITY C HECKING A LGORITHM  We first illustrate the main idea of our methodology.
+The key of our on-the-fly-approach is the notion of obligation set.
+As we show below, satisfying an obligation set gives a sufficient condition for satisfying a given formula.
+For a given formula, the obligation set contains several possible obligations, each obligation consists of some literals that characterize a possible way of satisfying the formula.
+We give the flavor of this notion in term of a few examples: *  for the formula aU b or W aRb the obligation set is {{b}}; for the formula 1<=i<=n ai U bi the obligation set is {{b1 }, {b2 }, .
+.
+.
+, {bn }}; for the formula V 1<=i<=n ai U bi the obligation set is {{b1 , b2 , .
+.
+.
+, bn }}.
+L  For V a formula ph, if one of its obligations O [?]
+2 is consistent, i.e.
+a[?
+]O a 6[?]
+ff, the trace x = Oo is consistent, and moreover, it satisfies the corresponding formula.
+If there is no consistent obligation, we construct a Transition System Tph for ph on-thefly.
+States consist of reachable formulas, and transitions are obtained by unrolling the current formula according to the normal form expansion.
+In our construction we need first to tag the subformulas such that all the literals are identified by their positions in until subformulas.
+We need the notion of accepting SCCs: Definition 4: For an SCC B of a transition system (here it is viewed as a directed graph) we denote by L(B) the set of all literals appearing in transitions between states in B.
+We say B is accepting if L(B) is a superset of some obligation O [?]
+Olg(ps) and ps [?]
+B.
+We show that the formula is satisfiable if an accepting strongly connected component (SCC) is found that contains a consistent obligation.
+Summarizing, combining with the trivial on-the-fly checking, our approach works as follows: 1) 2) 3)  If a consistent obligation is found in the processed states so far, then the formula is satisfiable; If an accepting SCC is found during the generation of the transition system, then the formula is also satisfiable.
+In the worst case, the formula is unsatisfiable after exploring on the whole transition system.
+Now we present our approach in the following subsections.
+A.
+Obligation Set The key of our on-the-fly satisfiability algorithm is the notion of obligation set, defined for the input formula ph: Definition 5 (Obligation Set): For a formula ph, we define its obligation set, denoted by Olg(ph), as follows: 1) 2) 3)  Olg(tt) = {[?]}
+and Olg(ff) = {{ff}}; If ph is a literal, Olg(ph) = {{ph}}; If ph = Xps, Olg(ph) = Olg(ps);  If ph = ps1 [?]
+ps2 , Olg(ph) = Olg(ps1 ) [?]
+Olg(ps2 ); If ph = ps1 [?
+]ps2 , Olg(ph) = {O1 [?
+]O2 | O1 [?]
+Olg(ps1 )[?]
+O2 [?]
+Olg(ps2 )}; If ph = ps1 U ps2 or ps1 Rps2 , Olg(ph) = Olg(ps2 );  For O [?]
+Olg(ph), we refer to it as an obligation V of ph.
+Moreover, we say O is a consistent obligation iff a 6[?]
+ff holds, where a [?]
+O.
+The obligation set Olg(ph) enumerates all obligations the given formula ph is subject to.
+Each obligation O [?]
+Olg(ph) characterizes a possible way to resolve the obligations proposed by the formula, in the sense that a formula is satisfiable if one of its obligation can be resolved accordingly.
+The particular obligation {ff} can never be resolved.
+The power of this characterization is best explained by the following theorem: Theorem 1: Assume O [?]
+Olg(ph) is a consistent obligation.
+Then, Oo |= ph.
+The theorem can be proven by simple structural induction over ph.
+We illustrate the usefulness of the theorem by the following example: Example 1: * Consider G(aRb).
+It has only one obligation {b} which is consistent.
+Thus, the trace {b}o satisfies G(aRb).
+*  Consider the formula ph := GF (a [?]
+b) [?]
+F (!a): first, the obligation {a, b, !a} is not consistent.
+Further, the normal form NF (ph) contains !a [?]
+X(GF (a [?]
+b))).
+Thus we can reach the formula GF (a [?]
+b) along !a.
+Moreover, GF (a [?]
+b) has a consistent obligation set O = {a, b}.
+Theorem 1 then provides a trace x with: x := {!a}Oo |= ph.
+*  The opposite direction of Theorem 1 does not hold.
+Consider for example the formula F (a) [?]
+G(X!a).
+It has a single obligation {a, !a} which is not consistent.
+However, {a}{!a}o is a satisfying trace.
+Consider another formula F (a) [?]
+G(!a) which has the same obligation.
+This formula is obviously not satisfiable.
+Theorem 1 is indeed very useful: it returns an affirmative answer as far as a consistent obligation is found for the current candidate.
+This is often the case for satisfiable formulas.
+In the following sections, we exploit this notion to derive an on-thefly algorithm for all formulas.
+B. Tagging Input Formulas First, from the discussions and definitions above, we observe that the obligation set ignores the left subformulas of until and release operators.
+If Theorem 1 does not give an affirmative answer, the left subformulas then play a role in our construction.
+As a preparation for the general case, we need first tag the atoms in the input formula in our approach such that they can be differentiated.
+The example below illustrates why tagging is useful in our construction: Example 2: Consider ph := (a [?]
+b)U (Ga), in which the atom a appears twice.
+Without tagging, we can see there exists a b a transition ph - -ph- - ph which forms a SCC B, and L(B) = {a, b} is a superset of the obligation {a}.
+However, obviously, the infinite path through this SCC can not satisfy ph.
+On the other side, our algorithm first tags the formula to pht = (a1 [?]
+b)U (Ga2 ).
+Then the transition system for the tagged formula will be constructed.
+The tagged SCC B has label L(B) = {a1 , b} which is not a superset of the obligation {a2 }.
+Thus B is not an accepting SCC, and the infinite path a1 b ph- - ph can not satisfy ph.
+through SCC ph -- We need some notations to formalize the tagging process.
+For a given input formula ph under consideration.
+For each atom a appearing in ph, we enumerate all occurrences of a by Sa := {a1 , a2 , .
+.
+.
+, an }, provided a appears n times in ph.
+The easiest tagging function is the identity function, i.e., we consider all ai syntactically different, but semantically equivalent.
+The complexity of our approach will depend on the number of syntactically different atoms.
+This tagging is inefficient: below we give an improved tagging function.
+Given a formula ph we denote U (ph) the set of until subformulas of ph.
+Then:  Definition 7 (LTL Transition System): Let ph be the input formula and pht the tagged formula.
+The labeled transition system Tph is a tuple hAct, Sph , - - , pht i where: 1) 2) 3) 4)  pht is the initial state, Act is the set of conjunctive formulas over Lpht .
+the transition relation - - [?]
+Sph x Act x Sph is defined a by: ps1 - - ps2 iff there exists a [?]
+X(ps2 ) [?]
+NF (ps1 ); Sph is the smallest set of formulas such that ps1 [?]
+Sph , a and ps1 - - ps2 implies ps2 [?]
+Sph .
+Again, note that the transition system for ph is defined by starting from the tagged formula pht .
+The set of states is the set of formulas reachable from pht , with pht as the initial state.
+Note between two states there can be more transitions.
+A state ph has no outgoing transitions iff for all a [?]
+Xps [?]
+NF (ph) and a is equivalent to ff.
+In this case ph is not satisfiable.
+Now we introduce the notion of accepting traces:  Definition 6 (Tagging Formula): Let a [?]
+AP be an atom appearing in ph.
+Then, the tagging function Fa : Sa - 2U (ph) is defined as: ps [?]
+Fa (ai ) iff ai appears in right(ps).
+Definition 8: A run of Tph is a (finite or infinite) path r = a0 a1 a2 ph -- ps1 -- ps2 -- .
+.
+.
+in Tph .
+A trace x = o0 o1 .
+.
+.
+[?]
+So is accepted by the run r if oi |= ai for all i.
+We define the tagged formula pht as the formula obtained by replacing ai by aFa (ai ) for each ai [?]
+Sa .
+For o [?]
+S, we write ph - - ps if there exists ph - - ps such that o |= a.
+For a finite sequence e = o0 o1 ..ok , we e ok o0 o1 o2 write ph - - ps iff ph -- ps1 -- ps2 -- .
+.
+.
+--- psk+1 = ps.
+x More specially, we write ph - - ph iff x can be written as x = ei e0 e1 e2 .
+.
+.
+such that ei is a finite sequence and ph -- ph for all i >= 0.
+Thus, after tagging APpht will contain more atoms.
+Note that all these new copies are semantically equivalent to a, i.e., aFa (ai ) [?]
+a for all aFa (ai ) .
+Given a tagging function Fa , two copies ai , aj are syntactically equivalent iff Fa (ai ) = Fa (aj ).
+More explicitly, a1 = a2 = Fa (a1 ) = Fa (a2 ).
+As an example, consider ph = aU (a [?]
+aU !a).
+Let psu = aU !a, and Sa = {a1 , a2 , a3 , a4 }.
+From Definition 6 we know Fa (a1 ) = [?
+], Fa (a2 ) = Fa (a3 ) = {ph}, and Fa (a4 ) = {ph, phu }.
+So the tagging function will introduce three syntactically different copies of a, and we denote pht by a1 U (a2 [?]
+a2 U !a4 ).
+Here even a1 , a2 , a4 are syntactically different, they are semantically equivalent.
+Thus it holds for example a2 [?]
+!a4 [?]
+ff.
+Note the size of subformulas may increase after tagging.
+According to Definition 6, the following lemma is obvious: Lemma 3 (Tagging Cost): Let ph be the input formula and pht the formula obtained after tagging ph.
+Then, |cl(pht )| <= 2m * |cl(ph)|, where m = |U (ph)|.
+C. LTL Transition System First, we note that for all formula ph, it holds ph [?]
+pht .
+This implies SAT (ph) iff SAT (pht ).
+As our approach will work with the tagged formula pht , in the remaining of the paper: *  *  Syntactically: for a given input formula ph, all atoms are ranging over the tagged atoms appearing in pht , thus AP = APpht , L = Lpht and S = Spht = 2L .
+Semantically: tagged atoms are equivalent to the original atom.
+Thus, the notion of consistent traces and consistent obligations are defined by taking the semantical equivalences of tagged atoms into consideration.
+For a given formula ph, we shall define below a labelled transition system Tph for it:  o  a  Lemma 2 implies the following properties of |Sph |: Corollary 1: For any formula ph, it holds: 1) 2)  for all ps [?]
+Sph , it holds CF (ps) [?]
+cl(pht ) [?]
+{tt}, |Sph | <= 2n + 1 where n denotes the number of subformulas of pht .
+D. On-the-fly Satisfiability Algorithm First, we introduce some notations: *  For notational convenience, we fix l as our input formula in this section.
+Let Tl be the transition system for the tagged formula lt .
+*  For all ph [?]
+Sl , we denote by STph the subsystem of Tl consisting all states reachable from ph.
+Now we present our main theorem: Theorem 2: Let ph [?]
+Sl .
+Then, SAT (ph) iff there exists a SCC B of STph and a state ps in B such that L(B) is a superset of some obligation O [?]
+Olg(ps).
+Sketch: The full proof is given in the appendix.
+We sketch the proof idea here, which is best illustrated in Figure 1.
+Let x = o0 o1 .
+.
+.
+be a (consistent) trace such that x |= ph.
+Then, o0 o1 there is a run in STph accepting x, i.e., we have ph -- ps1 -- n .
+.
+.. After some prefix x , since there are only finitely many states reachable, we will be able to partition the suffix into e1 e2 .
+.
+.
+where all ei are finite sequences, and all ei lead from ps to ps itself.
+Such formula ps will be referred to as a looping formula.
+21  2    20  2m'  10   12  1    n  IV.
+11   30  3m''  3  1m  31  32 Fig.
+1.
+A snapshot illustrating the relation x |= ph  Looping formulas arising from U and R operators must b be treated differently.
+For instance aRb - - aRb resolves the a obligation {b}, however aU b - - aU b does not.
+To characterize this difference, we shall memorize atoms appearing along the edges and check whether the obligation {b} is met.
+Interestingly, R operators are easy to handle, but things get more involved if the same atom appears on both sides of U operators, such as aU a.
+Here we make use the fact that we are working on the tagged formula, and our transition system is labelled with tagged atoms.
+Thus we can efficiently check whether appearing atoms correspond to those obligations for U formulas or not.
+With these notions, the theorem can be proven by the following idea: any edge label is a propositional formula that is not ff, thus any run in the transition system induces a consistent trace, which can be proven to satisfy the formula iff the collected atoms along the trace can produce an obligation.
+Thus, the formula is satisfiable if and only if we can find an SCC B such that O [?]
+L(B).
+The above theorem states that the satisfiability of an LTL formula l can be checked directly on the transition system Tl .
+Together with Theorem 1, we arrive at the following on-the-fly algorithm, which we refer to as OF OA(l): 1) 2) 3) 4)  We first tag the formula and get lt .
+Then we construct Tl , where we explore the states in an on-the-fly manner, by performing nest depth-first [CVWY92], Whenever a formula is found, we compute the obligation set.
+In case that it contains a consistent obligation set, we return true because of Theorem 1, If a SCC B is reached, ph [?]
+B, and L(B) is a superset of some obligation set O [?]
+Olg(ph), we return true, If all SCCs are explored, and all do not have the property in step 3, we return false.
+We discuss briefly the complexity of the proposed algorithm.
+First, we remark that the worst case senario happens if all extended formulas do not contain any consistent sets, which happens for instance for the formula GF (a) [?]
+GF (!a).
+Given the input formula l, we first construct lt .
+By Lemma 3, we have |cl(lt )| <= 2m * |cl(l)|, where m = |U (l)| is the number of until subformulas of l. By Corollary 1, the number of states is bounded by |Sph | <= 2n + 1, where n = 2m * |cl(l)|.
+In addition, for each reachable state ph, we compute the obligation Olg(ph), which is exponential in the number of conjunctions in ph, but linear in other operators.
+E XPERIMENTAL M ETHODOLOGY  We have implemented our algorithms in a tool called Aalta1 .
+We denote Theorem 1 as the obligation acceleration technique (OA, for short).
+Similarly, we refer to the technique that underlie Theorem 2 as the on-the-fly technique (OF, for short).
+In the tool we have the following two configurations: (i) OF: On-the-fly checking without OA, (ii) OFOA: On-the-fly checking with OA (default).
+1) Testing tools: In default Aaltais implelmented with the on-the-fly plus obligation acceleration (OFOA) techniques.
+In this paper we compare the performance of Aalta with two other LTL satisfiability solvers: PANDA+CadenceSMV [RV11] and SPOT [DLP04].
+SPOT is considered as the best explicit LTLto-Buchi translator [RV07], [RV10].
+Its most recent version (1.0.2) has an integrated emptiness checking implementation (with "-e" flag) and it is considerably improved since the benchmarking in [RV07], [RV10].
+That benchmarking showed the superiority of CadenceSMV for LTL satisfiability checking, and this has been further improved in PANDA+CadenceSMV [RV11].
+Thus, we benchmarked all three tools.
+(Since PANDA consists of 30 different symbolic encodings, we run all these encodings in parallel and chose the best result among them.)
+2) Platform: We conducted our benchmarking on the SUG@R cluster in Rice University2 .
+SUG@R is an Intel Xeon compute cluster.
+It contains 134 SunFire x4150 nodes from Sun Microsystems.
+Each node has two quad-core Intel Xeon processors running at 2.83GHz, yielding a system-wide total of 1064 processor cores.
+In our experiments, each test is run on a single core with a timeout of 10 minutes for each test formula.
+The OS is Red Hat Enterprise 5 Linux, 2.6.18 kernel.
+Times are measured using the Unix time command.
+All time measurements are "end-to-end"; we measure the time starting from formula input to the satisfiability-checking result (SAT or UNSAT).
+3) Input Formulas: We use here the benchmarks from [RV07], [RV10], [RV11].
+These include random, pattern and counter formulas.
+We tested over 60,000 random formulas and all eight kinds of pattern (lengths varying from 1 to 1000) and four counter formulas (lengths varying from 1 to 20).
+These benchmarks are suitable for testing satisfiability of large formulas.
+Typical temporal assertions are, however, quite small in practice [BAC98].
+What makes the LTL satisfiability problem hard is the fact that we need to check large conjunctions of small temporal formulas, as we need to check that the conjunction of all input assertions is also satisfiable.
+We introduce here a novel class of challenging LTL benchmarks, which are random conjunctions of specification patterns from [BAC98].
+Random Conjunction Formulas: Formally, a random conjunction formula RC(n) has the form: RC(n) = V 1<=i<=n Pi (v1 , v2 , .
+.
+.
+, vk ), where n is the number of conjuncts elements and Pi (1 <= i <= m) is a randomly chosen property pattern formula used frequently in practice [BAC98].
+The propositions {v1 , v2 , .
+.
+.
+, vk } used in these formulas are also chosen randomly.
+More precisely, we generate the class of random conjunction formulas in the following way: 1 www.lab205.org/aalta 2 http://www.rcsg.rice.edu/sugar/  20  Checking time (s)  Average Checking Time (s)  Best PANDA+CadenceSmv vs SPOT vs Aalta checking for R pattern formulas  Average Best PANDA+CadenceSmv vs SPOT vs Aalta checking time 100 Aalta PANDA+CadenceSmv SPOT 80 60 40 20  Aalta PANDA + CadenceSmv SPOT  15  10  5  0  0 0  50  100  150  0  200  50  Formula Length Experimental results for random formulas with 3 variables.
+Checking time (seconds)  Best PANDA+CadenceSmv vs SPOT vs Aalta checking for S pattern formulas 5 Aalta PANDA + CadenceSmv SPOT 4 3 2 1  Fig.
+3.
+Average Checking time (seconds)  Fig.
+2.
+0 0  100  200  300  400  1) 2)  3)  Experimental results for S(n) =  V  1<=i<=n  Gpi .
+We extract all pattern formulas3 .
+For a formula in RC(n), we conjoin n pattern formulas selected randomly.
+In each pattern formula, we instantiate the variables as random literals (positive or negative) over a set of six atomic propositions.
+In our experiments we generated 500 random formulas for each n.  4) Correctness: To test Aalta's correctness, we assume that the results from PANDA+CadenceSMV and SPOT are correct and we compare the results Aalta's.
+Aalta successfully passes all the tests.
+3 http://patterns.projects.cis.ksu.edu/documentation/patterns/ltl.shtml  Experimental results for R(n) =  V  n i=1  250  (GF pi [?]
+F Gpi+1 ).
+Best PANDA+CadenceSmv vs SPOT vs Aalta checking for random conjunction formulas 50 Aalta PANDA + CadenceSmv SPOT 40 30 20 10 0  500  0  Variable numbers Fig.
+4.
+100 150 200 Variable numbers  Fig.
+5.
+2 4 6 8 10 12 14 Number of conjunctive elements  Experimental results for random conjunctive formulas.
+V.  E XPERIMENTAL R ESULTS  In this section we analyze the experimental results.
+Generally speaking, our results demonstrate that Aalta outperforms both SPOT and PANDA+CadenceSMV.
+A. Aalta performs best for random formulas.
+We first compare the three tools on random benchmarks.
+We use here three atomic propositions and formula length of up to 200.
+In total, we tested 20,000 formulas.
+Fig.
+2 shows performance results for the three tools, where for each length we report average running time on 500 formulas.
+We can see that Aalta outperforms the other tools on random formulas.
+In fact, Aalta significantly outperforms the other tools; for  Average checking time for random formulas from Aalta with OFOA and OF Aalta with OFOA Aalta with OF Average checking time (s)  Average checking time (s)  20  Average checking time for random conjuncition formulas from Aalta with OFOA and OF 20 Aalta with OFOA Aalta with OF  15  10  5  15  10  5  0 0  50  100 150 formula length  0  200  Fig.
+6.
+Experimental results for 3-variable random formulas from Aalta with OFOA and OF.
+60% of the formulas, Aalta returns in a few millisecond, while SPOT and PANDA+CadenceSMV takes tens of seconds.
+In fact, Aalta completes checking all 20,00 formulas in one hour, where neither SPOT nor PANDA+CadenceSMV were able to complete in 40 hours.
+The superiority of Aalta stems from the fact that 95% of the test formulas turn out to be satisfiable; furthermore, 80% of them are checked using the obligation acceleration technique.
+Indeed, on unsatisfiable formulas PANDA+CadenceSMV is faster than Aalta, performing nearly twice as fast as than Aalta.
+Overall, however, Aalta's heuristics for quick satisfiability testing do pay off.
+B. Aalta performs best for most of the pattern formulas.
+Our experiments show that Aalta performs best for all pattern formulas except the S-pattern formula, where SPOT performs best, For example, Fig.
+3 displays the comparing results for the R-pattern formulas, where SPOT scales exponentially with formula length, while PANDA+CadenceSMV is quicker, and Aalta performs the best.
+Here it is clear that SPOT pays the price for not performing the automaton nonemptiness test on the fly, as the automata scale exponentially.
+In fact, even Aalta scales exponentially for R-pattern formulas without the obligation acceleration technique.
+For S-pattern formulas, the results are shown in Fig.
+4.
+Here, all three tools scale polynomially, since automata size scales linearly.
+SPOT performs better than Aalta, as its automaton construction is faster.
+0  2  4  6 8 10 formula length  12  14  Fig.
+7.
+Experimental results for random conjunction formulas from Aalta with OFOA and OF.
+1)  2)  The number of cases that can be checked by the obligation acceleration technique is much smaller here.
+For random conjunction, less than 20% cases can be checked by the obligation acceleration, and only about 30% can be checked by finding an accepting SCC; The fraction of unsatisfiable formulas is higher here; about 50% of the formulas are satisfiable, so Aalta's advantage in quick satisfiability finding is reduced.
+Checking satisfiability for random-conjunction formulas emerges as a challenging problem, requiring further research.
+It would be interesting to combine Aalta with the abstraction technique of [CRST07].
+D. The obligation acceleration enhances on-the-fly checking.
+One of the effective heuristics of Aalta is the OA technique: a consistent obligation implies satisfiability directly.
+Now we compare here the results from Aalta implemented with the OFOA and pure OF strategies in checking random and random conjunction formulas.
+Fig.
+6 and Fig.
+7 indicate that OA indeed plays a key role.
+For random formulas the OFOA strategy performs much faster than the pure OF strategy.
+Moreover, the OFOA strategy can be even exponentially better for special cases, such as the R pattern formulas mentioned above.
+Although the advantage declines for random conjunction formulas, the OFOA strategy is still twice as fast as the OF strategy.
+C. Aalta performs best for random conjunction formulas.
+Checking satisfiability of random conjunction formulas is quite challenging, but Aalta still performs best.
+The results are shown in Fig.
+5.
+The number of conjuncts extends only to 15 (with average formula length of 100) and all tools time out for larger formulas.
+The advantage of Aalta here is less marked; it performs about twice as fast as SPOT and PANDA+CadenceSMV.
+VI.
+R ELATED W ORK  The classical approach to LTL satisfiability checking is by reduction to model checking.
+This can be implemented using either explicit-state techniques or symbolic techniques.
+Rozier and Vardi [RV07], [RV10] studied this approach and benchmarked several tools.
+They concluded that the combination of SPIN [Hol97] and SPOT [DLP04] yields the best  performance for the explicit-state approach, but symbolic tools such as CadenceSMV [McM99] or NuSMV [CCG+ 02] yield better performance.
+In follow-up work [RV11], Rozier and Vardi studied several symbolic encodings of automata for LTL formulas and described a tool, PANDA, built on top of CadenceSMV, which implements a portfolio approach, running many symbolic encodings in parallel and selecting the best performing one.
+Several authors described direct approaches to LTL satisfiability checking, including Wolper [Wol85] and Schwendimann [Sch98].
+Wolper's algorithm uses multiple-pass incremental tableau procedure, while Schwendimann's requires only one pass.
+Although, theoretically, the multiple-pass algorithm works in EXPTIME and the worst complexity of the onepass works in 2EXPTIME, Goranko, Kyrilov, and Shkatov [VGS10] showed that, in practice, the one-pass procedure is more efficient than the multiple-pass one.
+Yet another approach to LTL satisfiability is based on temporal resolution [FDP01].
+Cimati et al.
+described a Boolean abstraction technique for LTL satisfiability, which can be combined with different satisfiability-checking techniques [CRST07].
+De Wulf et al.
+[DDMR08] described a semi-symblic approach based on anti-chains.
+Schuppan and Darmawan [SD11] performed a comprehensive experimental evaluation of LTL satisfiability solvers.
+They considered a wide range of solvers implementing three major classes of algorithms, based on model checking, tableau, and temporal resolution.
+They concluded that no solver dominates or solves all instances, and recommend a portfolio approach, similar to that of [RV11].
+Our tool, Aalta, is closest in spirit to the model-checking approach, but it combines automaton generation and nonemptiness checking in an on-the-fly approach.
+In this paper we demonstrate its performance advantage over model-checkingbased tools.
+We leave comprehensive comparison in the style of [SD11] to future work.
+VII.
+C ONCLUSIONS  In this paper, we proposed a novel on-the-fly satisfiability checking approach for LTL formulas.
+Our approach exploits the notion of obligation set, which provides efficient ways for identifying many satisfiable formulas.
+We have implemented a tool, Aalta, and run experiments using existing and new benchmarks.
+In most of the cases, Aalta significantly outperforms existing model-checking-based LTL satisfiability solvers.
+R EFERENCES [ALW89]  M. Abadi, L. Lamport, and P. Wolper.
+Realizable and unrealizable concurrent program specifications.
+In Proc.
+25th Int.
+Colloq.
+on Automata, Languages, and Programming, volume 372 of Lecture Notes in Computer Science, pages 1-17.
+Springer, 1989.
+[BAC98] M. Dwyer B, G.S.
+Avrunin, and J.C. Corbett.
+Property specification patterns for finite-state verification.
+In Proc.
+2nd workshop on Formal methods in software practice, pages 7-15.
+ACM, 1998.
+[BCM+ 92] J.R. Burch, E.M. Clarke, K.L.
+McMillan, D.L.
+Dill, and L.J.
+Hwang.
+Symbolic model checking: 1020 states and beyond.
+Information and Computation, 98(2):142-170, 1992.
+[CCG+ 02] A. Cimatti, E.M. Clarke, E. Giunchiglia, F. Giunchiglia, M. Pistore, M. Roveri, R. Sebastiani, and A. Tacchella.
+Nusmv 2: An opensource tool for symbolic model checking.
+In Proc.
+14th Int'l Conf.
+on Computer Aided Verification, Lecture Notes in Computer Science 2404, pages 359-364.
+Springer, 2002.
+[CCGR00]  A. Cimatti, E.M. Clarke, F. Giunchiglia, and M. Roveri.
+NuSMV: a new symbolic model checker.
+It'l J. on Software Tools for Technology Transfer, 2(4):410-425, 2000.
+[CGP99] E.M. Clarke, O. Grumberg, and D. Peled.
+Model Checking.
+MIT Press, 1999.
+[CRST07] A. Cimatti, M. Roveri, V. Schuppan, and S. Tonetta.
+Boolean abstraction for temporal logic satisfiability.
+In Proc.
+15th Int'l Conf.
+on Computer Aided Verification, volume 4590 of Lecture Notes in Computer Science, pages 532-546.
+Springer, 2007.
+[CVWY92] C. Courcoubetis, M.Y.
+Vardi, P. Wolper, and M. Yannakakis.
+Memory efficient algorithms for the verification of temporal properties.
+Formal Methods in System Design, 1:275-288, 1992.
+[DDMR08] M. De Wulf, L. Doyen, N. Maquet, and J.-F. Raskin.
+Antichains: Alternative algorithms for ltl satisfiability and model-checking.
+In Proc.
+14th Int'l Conf.
+on Tools and Algorithms for the Construction and Analysis of Systems, volume 4963 of Lecture Notes in Computer Science, pages 63-77.
+Springer, 2008.
+[DGV99] N. Daniele, F. Guinchiglia, and M.Y.
+Vardi.
+Improved automata generation for linear temporal logic.
+In Proc.
+11th Int.
+Conf.
+on Computer Aided Verification, volume 1633 of Lecture Notes in Computer Science, pages 249-260.
+Springer, 1999.
+[DLP04] A. Duret-Lutz and D. Poitrenaud.
+SPOT: An extensible model checking library using transition-based generalized buchi automata.
+In Proc.
+12th Int'l Workshop on Modeling, Analysis, and Simulation of Computer and Telecommunication Systems, pages 76-83.
+IEEE Computer Society, 2004.
+[FDP01] M. Fisher, C. Dixon, and M. Peim.
+Clausal temporal resolution.
+ACM Trans.
+Comput.
+Log., 2(1):12-56, 2001.
+[FKL04] H.D.
+Foster, A. Krolnik, and D.J.
+Lacey.
+Assertion-Based Design.
+Springer, 2004.
+[Hol97] G.J.
+Holzmann.
+The model checker SPIN.
+IEEE Transactions on Software Engineering, 23(5):279-295, 1997.
+[McM99] K. McMillan.
+The SMV language.
+Technical report, Cadence Berkeley Lab, 1999.
+[PSC+ 06] I.
+Pill, S. Semprini, R. Cavada, M. Roveri, R. Bloem, and A. Cimatti.
+Formal analysis of hardware requirements.
+In Proc.
+43rd Design Automation Conference, pages 821-826.
+ACM, 2006.
+[RV07] K.Y.
+Rozier and M.Y.
+Vardi.
+LTL satisfiability checking.
+In Proc.
+14th International SPIN Workshop, volume 4595 of Lecture Notes in Computer Science, pages 149-167.
+Springer, 2007.
+[RV10] K.Y.
+Rozier and M.Y.
+Vardi.
+LTL satisfiability checking.
+Int'l J. on Software Tools for Technology Transfer, 12(2):1230-137, 2010.
+[RV11] K.Y.
+Rozier and M.Y.
+Vardi.
+A multi-encoding approach for LTL symbolic satisfiability checking.
+In Proc.
+17th Int'l Symp.
+on Formal Methods, volume 6664 of Lecture Notes in Computer Science, pages 417-431.
+Springer, 2011.
+[SC85] A.P.
+Sistla and E.M. Clarke.
+The complexity of propositional linear temporal logic.
+Journal of the ACM, 32:733-749, 1985.
+[Sch98] S. Schwendimann.
+A new one-pass tableau calculus for pltl.
+In Proceedings of the International Conference on Automated Reasoning with Analytic Tableaux and Related Methods, TABLEAUX '98, pages 277-292.
+Springer-Verlag, 1998.
+[SD11] V. Schuppan and L. Darmawan.
+Evaluating ltl satisfiability solvers.
+In Proceedings of the 9th international conference on Automated technology for verification and analysis, AVTA'11, pages 397- 413.
+Springer-Verlag, 2011.
+[Var07] M.Y.
+Vardi.
+Automata-theoretic model checking revisited.
+In Proc.
+8th Int.
+Conf.
+on Verification, Model Checking, and Abstract Interpretation, volume 4349 of Lecture Notes in Computer Science, pages 137-150.
+Springer, 2007.
+[VGS10] A. Kyrilov V. Goranko and D. Shkatov.
+Tableau tool for testing satisfiability in ltl: Implementation and experimental analysis.
+Electr.
+Notes Theor.
+Comput.
+Sci., 262:113-125, 2010.
+[VW86] M.Y.
+Vardi and P. Wolper.
+An automata-theoretic approach to automatic program verification.
+In Proc.
+1st IEEE Symp.
+on Logic in Computer Science, pages 332-344, 1986.
+[Wol85] P. Wolper.
+The tableau method for temporal logic: An overview.
+Logique et Analyse, 110-111:119-136, 1985.
+A PPENDIX In this appendix we provide all of the missing proofs in the main paper.
+A.
+Proofs of Lemma 1  C. Proof of Theorem 1 Proof: We prove by structural induction over ph.
+The basic cases when ph is either tt, ff and or any literal are trivial.
+For the induction step we consider: *  If ph = Xps then we have O [?]
+Olg(ph) = Olg(ps).
+By inductive hypothesis we have Oo |= ps.
+Thus, Oo |= ph as well;  *  If ph = ph1 U ph2 then we have O [?]
+Olg(ph2 ), according to the definition of obligation set.
+By inductive hypothesis we have Oo |= ph2 .
+Moreover according to LTL semantics we know Oo |= ph as well;  *  The case ph = ph1 Rph2 is similar to previous case;  *  If ph = ph1 [?]
+ph2 , we have O [?]
+Olg(ph1 ) or O [?]
+Olg(ph2 ).
+Assume O [?]
+Olg(ph2 ) without loss of generality.
+By inductive hypothesis we have Oo |= ph2 , implying Oo |= ph as well;  *  If ph = ph1 [?]
+ph2 then there exist O1 [?]
+Olg(ph1 ) and O2 [?]
+Olg(ph2 ) such that O = O1 [?]
+O2 .
+Since O is consistent so both O1 and O2 must be consistent.
+By inductive hypothesis we have O1o |= ph1 and O2o |= ph2 .
+Again since O is consistent have Oo |= ph1 [?]
+ph2 .
+Proof: We prove it by structural induction over ph: *  The case that ph is propositional formula or a next formula is trivial by definition.
+*  If ph = ph1 [?]
+ph2 , then applying induction W W hypothesis we have ph [?]
+ph1 [?]
+ph2 [?]
+W NF (ph1 ) [?]
+NF (ph2 ) [?]
+W (NF (ph1 ) [?]
+NF (ph2 )) [?]
+NF (ph1 [?]
+ph2 ).
+*  If ph = ph1 [?]
+ph2 , then applying inductionWhypothesis W we have ph [?]
+ph1 [?]
+ph2 [?]
+( NF (ph1W )) [?]
+( NF (ph2 )).
+By inspection, this is equivalent to NF (ph1 [?]
+ph2 ).
+*  If ph = ph1 U ph2 , then by Definition 3 we know NF (ph) = NF (ph2 ) [?]
+NF (ph1 [?]
+Xph), and that ph [?]
+ph2 [?]
+(ph1 [?]
+Xph).
+By induction hypothesis we have W that ph2 [?]
+NF (ph2 ).
+Moreover, we also proved W previously that ph1 [?
+]Xph [?]
+NF (ph1 [?]Xph).
+W Thus we can prove that ph [?]
+ph W W2 [?]
+(ph1 [?]
+Xph) [?]
+NF (ph2 ) [?]
+NF (ph1 [?]
+Xph) [?]
+NF (ph);  *  The case ph = ph1 Rph2 is similar to the case when ph is a Until formula.
+B.
+Proof of Lemma 2 Proof: First, CF (ps) [?]
+cl(ph) by structural induction over ph.
+The base cases ph = tt, ff and propositional formulas are trivial.
+Otherwise: 1)  2) 3)  4)  5)  If ph = ph1 [?]
+ph2 .
+Then NF (ph) = NF (ph1 ) [?]
+NF (ph2 ).
+So a [?]
+Xps [?]
+NF (phi ) with i = 1 or i = 2.
+By induction hypothesis we have CF (ps) [?]
+cl(phi ) [?]
+cl(ph).
+If ph = Xph1 .
+In this case we have NF (ph) = {tt [?]
+Xph0 | ph0 [?]
+DF (ph1 )}.
+Since CF (ph0 ) [?]
+cl(ph1 ) [?]
+cl(ph), so we have CF (ps) [?]
+cl(ph).
+If ph = ph1 [?]
+ph2 , then we know for every a [?]
+Xps [?]
+NF (ph) there exists a1 [?]
+Xps1 [?]
+NF (ph1 ) and a2 [?]
+Xps2 [?]
+NF (ph2 ) such that a = a1 [?]
+a2 and ps = ps1 [?]
+ps2 .
+Since by induction hypothesis we know CF (ps1 ) [?]
+cl(ph1 ) and CF (ps2 ) [?]
+cl(ph2 ), so CF (ps) [?]
+cl(ph) holds.
+If ph = ph1 U ph2 .
+We have two cases.
+Either we have the right expansion a [?]
+Xps [?]
+NF (ph2 ), in which case CF (ps) [?]
+cl(ph2 ) [?]
+cl(ph) follows directly by induction hypothesis.
+For the left expansion case, we have a [?]
+Xps [?]
+NF (ph1 [?]
+Xph), implying that there exists a1 [?]
+Xps1 [?]
+NF (ph1 ) such that ps = ps1 [?]
+ph.
+So CF (ps) [?]
+cl(ph) follows by exploiting the induction hypothesis that CF (ps1 ) [?]
+cl(ph1 ) [?]
+cl(ph).
+If ph = ph1 Rph2 , then we can prove similarly as the case when ph = ph1 U ph2 .
+D. Proof of Corollary 1 Proof: The first clause follows by a simple induction over the path from pht to ps.
+Note the constant 1 is due to the possibility of producing tt along the expansion.
+E. Proof of Theorem 2 This section is devoted to the proof of Theorem 2.
+We organize the proof as follows.
+We first introduce the notion of looping formulas and discuss their properties.
+We then continue with the soundness and completeness proofs of the theorem.
+Assumption.
+Throughout the section, we have the following assumptions: *  l denotes the fixed input formula, Tl is the transition system for l.  *  all traces are over So [?]
+2Llt , i.e., the set of consistent literals over Llt .
+*  all formulas appearing in this section are taken from the set of states Sl , i.e., ph, ps...
+[?]
+Sl .
+Thus, all formulas in this appendix will be ranging over tagged atoms appearing in lt .
+1) Looping Formulas and Their Properties: We start with a simple lemma about the relation between satisfiability and the transitions: Lemma 4: Let x [?]
+So be a trace.
+Then, for all n >= 1, xn there exists ps such that x |= ph = ph -- ps [?]
+xn |= ps.
+Proof: Let x = o0 o1 .
+.
+.. We prove the lemma by induction over the number n.  *  For the W base case we let n = 1.
+Then: x |= ph = x |= NF (ph) = [?
+]a [?]
+Xps [?]
+NF (ph) * x |= (a [?]
+Xps) x1  = [?]a[?
+]Xps [?]
+NF (ph)*x1 |= ps[?
+]o0 |= a = [?
+]ps*ph -- ps [?]
+x1 |= ps.
+*  For the induction step, we assume the lemma holds for all n = 1, 2, .
+.
+.
+, k and prove that it holds for n = k + 1 as well.
+Applying the induction hypothesis xk  on k, we have: x |= ph = ph -- ps [?]
+xk |= ps holds.
+Further, for xk |= ps we apply the induction hypothesis with respect to the base case and obtain xk |= ps = x1  k ps -- ps 0 [?]
+xk+1 |= ps 0 , so we can conclude that x |=  The order [?]
+is obviously a partial order.
+For a looping formula ph, the set CF (ph) posses at least one minimal element (w.r.t.
+the order [?]).
+Below we prove that all minimal elements of the set expand either to tt or themselves.
+e  Lemma 6: If ph - - ph then for all minimal element ps [?]
+e CF (ph) we have ps - - tt or ps.
+e  Proof: Let ps be a minimal element in CF (ph).
+Since ph - - e ph and ps [?]
+CF (ph), there must exist ps 0 such that ps - - ps 0 and CF (ps 0 ) [?]
+CF (ph) or ps 0 = tt.
+If ps 0 6= tt, then according to Lemma 2 we know CF (ps 0 ) [?]
+cl(ps).
+However, cl(ps) [?]
+CF (ph) = {ps} because of the minimality of ps.
+Thus ps 0 = ps.
+x k+1  ph = ph ---- ps 0 [?]
+xk+1 |= ps 0 .
+The proof is done.
+Essentially, x |= ph is equivalent to that we can reach a formula ps along the prefix x n such that the suffix xn satisfies ps.
+Thus, if x |= ph holds, then x will be accepted by a run in STph .
+Now we introduce the notion of looping formulas: Definition 9 (Looping formula): We say ph is a looping formula iff there exists a trace x [?]
+So which can be written as an infinite sequence x = e0 e1 e2 .
+.
+.
+such that ei is a finite ei x sequence and ph -- ph for all i >= 0.
+We write ph - - ph in this case, and say ph is a looping formula with respect to x.
+The following corollary is a direct consequence of Lemma 4 and the fact that we have only finitely many formulas in Sph : Corollary 2: If x |= ph, then there exists n >= 1 such that xn ph -- ps and xn |= ps and ps -- ps.
+xn  Proof: From Lemma 4 x |= ph implies there is an infinite o0 o1 o2 expansion path s = ph -- ps1 -- ps2 -- .
+.
+.
+such that xi |= psi for all i >= 1.
+Since we have only finitely states, there must exist a ps reachable from ph such that it appears infinitely often along this path.
+Obviously, this formula ps is a looping formula as required.
+This corollary gives the hint that after a finite prefix we can focus on the satisfiability of looping formulas.
+Now we give a lemma stating a nice property for the release operator:  Definition 11: Let e = o0 o1 .
+.
+.
+on (n >= 0).
+Then, we say the finite sequence e satisfies the formula ph, denoted by e |=f ph, iff there exists O [?]
+Olg(ph) such that O [?]
+e. Here O [?]
+e is an abbreviation for O [?]
+[?
+]ni=0 oi .
+Please note that the relation is defined by checking syntactic inclusion.
+Thus, assuming the input formula is aU a, which is a1 U a2 after tagging.
+According to the above definition, {a1 } 6|=f a2 .
+The reader shall bear this in mind in the remaining of this section.
+Below we present some simple properties of the relation |=f which will be useful later: Lemma 7: 1) Assume e |=f ph, then e |=f ph [?]
+ps.
+2) Assume e |=f ph and e |=f ps, then e |=f ph [?]
+ps.
+Proof: Let e = o0 o1 .
+.
+.
+on .
+We consider the first case: e |=f ph implies that there exists O [?]
+Olg(ph) such that O [?]
+e. Since O [?]
+Olg(ph) [?]
+Olg(ph[?
+]ps), we have e |=f ph[?]ps.
+For the second case: e |=f ph implies that there exists O1 [?]
+Olg(ph) such that O1 [?]
+e. Similarly, e |=f ps implies that there exists O2 [?]
+Olg(ps) such that O2 [?]
+e. Since we have O1 [?]
+O2 [?]
+Olg(ph [?]
+ps) and O1 [?]
+O2 [?]
+e, we have e |=f ph [?]
+ps.
+The following lemma corresponds to Lemma 5 for until formulas with respect to the finite satisfaction relation: e  Lemma 8: Let ph = ph1 U ph2 and ph - - ph.
+Then, e 6|=f ph.
+e  - ph as Proof: Let e = o0 o1 .
+.
+.
+on and we rewrite ph - o2 on o0 ph -- ps1 -- .
+.
+.
+--- ph.
+Note it is apparent that ph -- o0 0 0 (ph [?]
+ph1 ) with ph1 -- ph1 .
+Thus, by induction one can show o0 o1 that along the path ph -- ps1 -- ps2 .
+.
+.
+it holds ph [?]
+CF (psi ) for all i.
+Since the transition for conjunctive formula psi is obtained by combining transitions for each ps 0 [?]
+CF (psi ), the transition for the subformula ph [?]
+CF (psi ) must be from left subformula ph1 , i.e., a [?]
+Xps [?]
+NF (ph1 [?]
+Xph).
+As a result, for each i, the label oi must be a superset of CF (ai ), and CF (ai ) contains the literals from ph1 .
+Moreover, the tagging function has been used to classify the atoms.
+According to Definition 6 the atoms in ph1 and ph2 are never tagged the same - this is because the atoms in ph2 will tag ph while those in ph1 will not.
+So ph1 and ph2 still don't have common atoms, thus CF (ai ) contains no obligation literals from ph2 ; o0  x  Lemma 5: If ph = ph1 Rph2 and ph - - ph, then x |= ph.
+x  2) Soundness Proof of Theorem 2: We first introduce the relation |=f :  xn  xn  Proof: Since ph - - ph, so we have [?
+]n * ph -- ph [?]
+ph -- ph.
+Let ei = oi oi+1 .
+.
+.
+on (0 <= i <= n).
+Here all expansions for the formula ph along the path must be from the right subformula xn ph2 of ph, i.e., a [?]
+Xps [?]
+NF (ph2 [?]
+Xph).
+Since ph -- ph, we ei have that [?
+]0 <= i <= n * ph2 -- tt, which implies xj |= ph2 for xn all 0 <= j <= n. Inductively for ph -- ph we can get the same property.
+So [?
+]j >= 0 we have x |= ph2 , implying x |= ph.
+Finally, we shall introduce an order on formulas to identify structural properties of looping formulas.
+We propose the following order for formulas: Definition 10 (Poset on Formulas): For formulas ph, ps, we write ph [?]
+ps iff ph [?]
+cl(ps).
+According to the definition 5, the obligation literals of ph are all from those of ph2 .
+Thus, from the definition of |=f (Definition 11), we know e 6|=f ph.
+The following lemma says that if there exists a partitioning x = e1 e2 ... that makes ph expanding to itself by each ei and ei |=f ph holds, then x |= ph.
+Lemma 9: Given a looping formula ph and a trace x, let ei x = e1 e2 .
+.
+.
+* if [?
+]i >= 1 * ph -- ph [?]
+ei |=f ph, then x |= ph.
+Proof: We enumerate V the set CF (ph) = {ph1 , ph2 , .
+.
+.
+, phn }, and we shall prove x |= CF (ph).
+Let S0 denote the minimal elements of CF (ph) with respect to the partial order [?].
+Moreover, we define Si+1 = Si [?
+]{ps 0 [?]
+CF (ph) | [?
+]ps [?]
+Si .ps [?]
+ps 0 }.
+Obviously, there is a finite index k such that Sk = CF (ph).
+We proceed with induction over the index: 1)  2)  *  If ph = ph1 [?]
+ph2 , then x |= ph1 [?]
+x |= ph2 .
+By induction hypothesis we have [?
+]n1 * x n1 |=f ph1 and [?
+]n2 * x n2 |=f ph2 hold.
+Observe that x n |=f ph implies x m |=f ph for all m >= n. Now from Lemma 7 we have that x n |=f ph with n := max(n1 , n2 ).
+*  If ph = ph1 [?]
+ph2 , then x |= ph1 [?]
+x |= ph2 .
+By induction hypothesis we have [?
+]n1 * x n1 |=f ph1 or [?
+]n2 * x n2 |=f ph2 holds.
+Without loss of generality, assume [?
+]n1 * x n1 |=f ph1 .
+Lemma 7 implies then x n1 |=f ph1 [?]
+ph2 .
+*  If ph = ph1 U ph2 , x |= ph1 U ph2 implies that there exists i >= 0 such that xi |= ph2 .
+By induction hypothesis we have [?
+]n * xi n |=f ph2 hold, thus there exists an obligation O [?]
+Olg(ph2 ) such that O [?]
+xi n .
+This implies O [?]
+x i+n , thus x i+n |=f ph holds.
+*  If ph = ph1 Rph2 , we observe first that x |= ph2 must hold.
+By induction hypothesis we know [?
+]n*x n |=f ph2 .
+According to Definition 11 we have that x n |=f ph holds as well.
+ei  Basic step: Let ps [?]
+S0 .
+By Lemma 6 if ph -- ph, then ei ei ei ps -- tt or ps -- ps.
+If [?
+]ei * ps -- tt holds, x |= ps ei follows from Lemma 4.
+Otherwise we have ps -- ps for all i >= 1.
+According to LTL semantics ps must be either until or release formula.
+Applying Lemma 8 we know that ps cannot be an Until formula, and thus be a Release formula.
+Then V Lemma 5 implies that x |= ps, and therefore x |= S0 .
+V For induction step we assume x |= Sk .
+Consider ei arbitrary ei : let ps [?]
+Sk+1 \ Sk and assume ps -- ps 0 .
+ei 0 Since ph -- ph, we have CF (ps ) [?]
+CF (ph).
+By the construction of the set Si , CF (ps 0 ) does not contain any other elements in Sk+1 , thus we have CF (ps 0 ) [?]
+{ps} [?]
+Sk .
+First we assume CF (ps 0 ) [?]
+Sk .
+Then from the induction hypothesis we know ei+1 ei+2 .
+.
+.
+|= ps 0 so ei ei+1 .
+.
+.
+|= ps (From Lemma 4), thus x |= ps.
+ei Now consider the case ps [?]
+CF (ps 0 ):ps -- ps implies that ps must be a Release formula.
+Then Lemma 5 V implies again that x |= ps, and therefore x |= Sk+1 .
+x  Lemma 12: Let ph be a looping formula, and assume ph - - ph and x |= ph hold.
+Then there exists a partitioning x = e1 e2 .
+.
+.
+ei and [?
+]i >= 0 * ph -- ph [?]
+ei |=f ph holds.
+x  Proof: Assume ph - - ph [?]
+x |= ph.
+We first prove that there xn xn exist n such that ph -- ph [?]
+x n |=f ph [?]
+(ph -- ph [?]
+xn |= ph).
+From Lemma 11 x |= ph implies that there exists k such that x k |=f ph.
+Since ph is a looping formula with respect to x, we xn  xn  can find the n >= k such that ph -- ph and ph -- ph hold.
+For n >= k, x n |=f ph holds as well.
+Now we apply Lemma 4: xn  x |= ph implies that ph -- ph and xn |= ph.
+xn  Now we are ready to prove the soundness part of the theorem:  Since ph -- ph [?]
+xn |= ph, applying the arguments above inductively yields the lemma.
+x  Lemma 10 (Soundness): Let ph [?]
+Sl .
+Assume that there exists a SCC B of STph such that ps [?]
+B and L(B) is a superset of some obligation set O [?]
+Olg(ps).
+Then, SAT (ph).
+o  1 Proof: As B is a SCC, we have a path d := ps(ps1 ) -- ok-1 ps2 -- .
+.
+.
+---- ps such that e visits all states in B and all transitions between states in B (e = o1 o2 .
+.
+.
+ok-1 ).
+Since all states in STph are reachable from ph, there must exist a finite e0 sequences e0 such that ph -- ps.
+We construct x := e0 e o .
+By assumption there exists O [?]
+Olg(ps) such that O [?]
+L(B) = [?
+]k-1 i=1 oi .
+So according to the definition of |=f we have e |=f ps.
+Thus from Lemma 9 we have x |= ph.
+So ph is satisfiable.
+o2  3) Completeness Proof of Theorem 2: Lemma 11: x |= ph = [?
+]n * x n |=f ph.
+Proof: We prove it by structural induction over the formula ph.
+For the base case assume ph is tt or a literal, x 1 |=f ph by definition.
+Moreover, ph can not be ff.
+Now we consider the induction step: *  If ph = Xps, then x |= ph = x1 |= ps.
+By induction hypothesis we know [?
+]n*x1 n |=f ps holds, so x n+1 |=f ph holds.
+The above lemma states that if ph - - ph as well as x |= ph, we can find a partitioning e1 e2 .
+.
+.
+that makes ph expend to itself by each ei and ei |=f ph holds.
+Combining Lemma 6, Lemma 7 and Corollary 1, we have our central theorem: Lemma 13 (Completeness): Let ph [?]
+Sl .
+Then, SAT (ph) implies that there exists a SCC B of STph and such that ps [?]
+B and L(B) is a superset of some obligation set O [?]
+Olg(ps).
+Proof: Since SAT (ph), let x such that x |= ph.
+Then by xn Corollary 2 there exists n >= 0 and ps [?]
+Sph such that ph -- ps, xn ps -- ps and xn |= ps.
+Moreover, by Lemma 12, there exists a partition xn = e1 e2 .
+.
+.
+such that for every finite sequence ei ei we have ps -- ps as well as ei |=f ps.
+As the state ps is visited infinitely often, there must be a SCC B such that ps [?]
+B.
+According to the definition of |=f we know that there e1 exists O [?]
+Olg(ps) such that O [?]
+e1 .
+Obviously, ps -- ps is contained in some SCC B, thus e [?]
+L(B), implying O [?]
+L(B).

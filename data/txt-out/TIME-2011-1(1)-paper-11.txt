@@ -1,0 +1,560 @@
+Interleaved Programs and Rely-Guarantee Reasoning with ITL Gerhard Schellhorn, Bogdan Tofan, Gidon Ernst and Wolfgang Reif Institute for Software and Systems Engineering University of Augsburg Augsburg, Germany {schellhorn,tofan,ernst,reif}@informatik.uni-augsburg.de  Abstract--This paper presents a logic that extends basic ITL with explicit, interleaved programs.
+The calculus is based on symbolic execution, as previously described.
+We extend this former work here, by integrating the logic with higherorder logic, adding recursive procedures and rules to reason about fairness.
+Further, we show how rules for rely-guarantee reasoning can be derived and outline the application of some features to verify concurrent programs in practice.
+The logic is implemented in the interactive verification environment KIV.
+Keywords-Interval Temporal Logic; Compositional Reasoning; Concurrency; Rely-Guarantee Reasoning  I. I NTRODUCTION Compared to sequential programs, the design and verification of concurrent programs is more difficult.
+Two reasons contribute to this: the more complex control flow caused by scheduling and the fact that reasoning about initial and final states only (pre- and postconditions) is no longer sufficient, but must be extended to intermediate states.
+Numerous specialized automatic methods have been developed to verify decidable system classes, e.g., model checking, decision procedures and abstract interpretation techniques.
+While these are often successful on correct programs, they have two significant disadvantages: first, they typically do not provide insight, why a property is correct.
+Second, there is usually not much feedback when they fail.
+If there is an output, it is often hard to understand, in particular when programs are encoded as first-order specifications of transition systems with program counters.
+The alternative to specific automated proof techniques is interactive theorem proving.
+A main advantage is that expressive specification languages can be used and (readable) feedback for failed proof attempts can be provided.
+Of course, the price is that a much higher expertise with the tool is required.
+Most interactive provers are based on variants of higher-order logic (HOL).
+However, embedding concurrency into HOL requires a big effort to encode the semantics of programs and of (temporal) assertions.
+Therefore, the expressive temporal logic and the native programming language described here has been directly implemented in the theorem prover KIV [1] with the following goals: - High-level verification of system designs with abstract programs and abstract (algebraic) data types, as op-  -  -  posed to verification using a fixed set of data types and a specific programming language.
+Readable proof goals with explicit programs that are not encoded as transition systems.
+Verification of sequential programs should not become more complicated using the extended logic than using the wp-calculus already implemented in KIV.
+Arbitrary correctness and progress properties of programs should be expressible.
+Compositional proofs for parallel programs, in particular rely-guarantee reasoning.
+The basic approach to extend ITL [2] by shared-variable interleaved programs has already been described in [3].
+It focuses on porting the well-known principle of symbolic execution [4] of sequential programs to parallel programs.
+For lack of space, we do not repeat the rules used to implement this principle here.
+Instead, this paper focuses on several extensions of the logic.
+Section II describes the embedding of the basic logic into higher-order logic, instead of first-order logic.
+Global frame assumptions are replaced with local ones.
+Section III describes compositional interleaving.
+Section IV adds recursive procedures.
+Section V outlines how forms of relyguarantee reasoning can be derived, by abstracting each program with a rely-guarantee formula.
+Section VI describes well-founded induction, and shows how weak fairness of interleaving is encoded.
+Section VII outlines a few applications, highlighting the use of some features of the logic.
+Finally, Section VIII concludes.
+II.
+T HE BASIC L OGIC Our definition of ITL is similar to [5], but instead of first-order logic we use higher-order logic, i.e., simply typed lambda calculus as the base logic and we extend the semantics to interleaved programs.
+A. Signatures and Algebras A higher-order signature SIG = (S, OP ) consists of two finite sets.
+A set S of sorts, with bool [?]
+S, which is used to define the set of types T as the least set that includes all sorts and all function types t - t, where t [?]
+T and t = t1 , .
+.
+.
+, tn .
+The set OP contains typed operators op : t,  including the usual boolean operators, e.g., true, false : bool and .
+[?]
+.
+: bool x bool - bool.
+The semantics of a signature is an algebra A, which defines a nonempty carrier set As as the semantics of every sort s. The set Abool is always {tt, ff}.
+The semantics of a function type is the set of all functions of that type.
+An operator symbol op is interpreted as a total function opA .
+The predefined boolean operators have standard semantics.
+B.
+Expressions and Temporal Formulas Temporal logic expressions are defined over a signature SIG, dynamic (flexible) variables x, y, z [?]
+X and static variables u [?]
+U .
+In concrete formulas, we follow the KIV convention to use uppercase names for flexible and lowercase names for static variables.
+An arbitrary variable is written v [?]
+X [?]
+U .
+As usual in higher-order logic, expressions e of type bool are formulas, denoted by ph.
+e ::= u | x | x0 | x00 | op | e(e) | e1 = e2 | lu.
+e | [?]
+v. ph | ph1 until ph2 | ph1 ; ph2 | ph* | A ph | step | ph1 kph2 | ph1 knf ph2 Expressions must satisfy standard typing constraints, e.g., in e(e) the type of e must be a function type with argument types equal to the types of the arguments e. The parameters of lambda expressions and quantifiers must all be different variables.
+The first line defines higher-order expressions that do not involve temporal logic.
+Dynamic variables can be primed and double primed.
+Lambda expressions allow for static variables only, while quantifiers allow both static and dynamic variables.
+The chop operator ph1 ; ph2 is used as sequential composition of programs.
+The star operator ph* is similar to a loop.
+Universal path quantification is denoted as A ph, and step characterizes atomic steps of a program.
+ph1 kph2 and ph1 knf ph2 denote weak-fair and arbitrary (nonfair) interleaving of ph1 and ph2 .
+By convention, temporal operators bind stronger than junctors, and quantifiers bind as far to the right as possible.
+Free variables free(e) are defined as usual.
+C. Semantics Standard semantics of ITL defines an interval I = (I(0), I(1), .
+.
+.)
+to be a finite or infinite sequence of states, where a state maps variables to values.
+Static variables are disallowed to change between states.
+To have a compositional semantics for interleaving (as explained in Section III), our semantics alternates between system and environment transitions by adding intermediate primed states: I = (I(0), I 0 (0), I(1), I 0 (1), .
+.
+.).
+The transitions from I(0) to I 0 (0), I(1) to I 0 (1) etc.
+are system steps, while the steps from I 0 (0) to I(1), I 0 (1) to I(2) etc.
+are environment steps.
+The idea is similar to reactive sequences in [6].
+Finite intervals with length #I = n have 2n + 1 states and end in the unprimed state I(n).
+Infinite intervals have #I = [?].
+For an interval I and m <= n <= #I, I[m..n]  denotes the subinterval from I(m) to I(n) inclusive.
+I[n..] is the postfix starting with I(n).
+The semantics JeK(I) of an expression e of type t w.r.t.
+an interval I (and an algebra A, which we leave implicit) is an element of At .
+In particular, a formula ph evaluates to ff or tt.
+In the latter case we write I |= ph (ph holds over I).
+A formula is valid, written |= ph, if it holds for all I. Unprimed variables are evaluated over the first state, i.e., JvK(I) = I(0)(v).
+Primed and double primed variables x0 and x00 are evaluated over I 0 (0) and I(1) respectively, if the interval is nonempty.
+For an empty interval, both are evaluated over I(0) by convention.
+Operators get their semantics from the algebra, i.e., JopK(I) = opA .
+The semantics of quantifiers is defined using value sequences s = (s(0), s 0 (0), .
+.
+.)
+for a vector v of variables.
+Each s(i) and s 0 (i) is a tuple of values of the same types as v. If some vk is a static variable, then all values s(i)k and s 0 (i)k for that variable have to be identical.
+The value sequence for x in I is written I(x), and the modified interval I[v - s] maps v in each state to the corresponding values in s, when #s = #I.
+Similarly, I[u - a] modifies static variables u to values a.
+The semantics of a tuple of expressions e is the tuple of semantic values for each ek .
+With these prerequisites, the semantics of the rest of the expressions, except interleaving, is defined as follows: Je(e)K(I) Jlu.eK(I)  [?]
+JeK(I)(JeK(I))  [?]
+a 7- JeK(I[u - a])  I |= e1 = e2 iff Je1 K(I) = Je2 K(I)  I |= [?]
+v. ph iff for all s, #s = #I : I[v - s] |= ph I |= step iff #I = 1  I |= ph1 until ph2 iff there is n <= #I with I[n..] |= ph2 and for all m < n : I[m..] |= ph1 I |= A ph iff for all J with J(0) = I(0) : J |= ph I |= ph1 ; ph2 iff either #I = [?]
+and I |= ph1 or there is n <= #I, n 6= [?]
+with I[0..n] |= ph1 and I[n..] |= ph2 I |= ph* iff either #I = 0 or there is a sequence n = (n0 , n1 , .
+.
+.
+), n0 = 0, such that for i + 1 < #n : ni < ni+1 <= #I and I[ni ..ni+1 ] |= ph.
+Additionally, when #n < [?]
+: I[n#n-1 ..] |= ph The semantics of higher-order formulas ph(x) without primed variables or temporal operators depends on I(0) only.
+These formulas are called state formulas in the following.
+Higher-order formulas ph(x, x0 ) describe properties of the first system step, while formulas ph(x0 , x00 ) describe the first environment step respectively.
+The semantics of the chop operator "; " agrees with the semantics of a compound.
+Either the first part (ph1 ) does  not terminate and the full interval is a run of ph1 , or the interval can be split into two parts: a first, finite part where ph1 runs and a second, possibly infinite, part where ph2 runs.
+Similarly, the star operator corresponds to a loop which runs ph for a nondeterministic, maybe infinite number of times.
+The iteration splits the interval into finitely or infinitely many parts I[0..n1 ] , I[n1 ..n2 ] , .
+.
+., each of which is required to satisfy ph (the last part is infinite, if the split is finite, but the interval infinite).
+For an empty interval ph* trivially holds using zero iterations.
+In the following, we use the following operators defined as abbreviations: [?]
+v. ph [?]
+!
+[?]
+v. !
+ph  Eph [?]
+!
+A!
+ph  3 ph [?]
+true until ph  2ph[?
+]!3!ph  * ph [?]
+step; ph  *ph[?]!
+*!ph inf [?]
+2 !
+last  last [?]
+!
+(step; true)  The empty interval consisting of just I(0) is characterized by the formula last, infinite intervals by inf.
+D. Programs Programs are introduced as specific formulas, which influence system steps only.
+A program is valid over an interval I if I is a possible run of the program.
+Finite intervals correspond to terminating programs.
+Deviating from [3], assignments x := e are not required to leave all variables except x unchanged (expressed there as a formula dxe, the global frame assumption).
+This requirement turned out not to be practical, as then all variables are free in assignments, which prevents elimination of quantifiers by new variables, as used in the rules of sequent calculus.
+Therefore, like in TLA [7], we now use an explicit vector of disjoint, flexible variables x as a local frame assumption around a program a.
+Assignments in [a]x leave all variables unchanged that do not occur on the left hand side, but are in x.
+For (parallel) assignments we therefore have: [z := e]x [?]
+z 0 = e [?]
+step [?]
+y = y 0  , where y = x \ z  Any formula ph may be used as a program.
+Frame assumptions propagate over chop and star to assignments [ph1 ; ph2 ]x [?]
+[ph1 ]x ; [ph2 ]x  and  [ph* ]x [?]
+([ph]x )*  and similarly over interleaving.
+Frame assumptions around other types of formulas are simply dropped.
+All the usual constructs for sequential programs can now be defined: 0  [skip]x [?]
+step [?]
+x = x [if* ph then a1 else a2 ]x [?]
+ph [?]
+[a1 ]x [?]
+!
+ph [?]
+[a2 ]x [if ph then a1 else a2 ]x [?]
+[if* ph then (skip; a1 ) else (skip; a2 )]x  y  [let z = e in a]x [?]
+[?]
+y. y = e [?]
+[az ]x,y [?]
+2 y 00 = y 0 y  [choose z with ph  [?]
+in a1 ifnone a2 ]x  y  ([?]
+y. phz [?]
+[a1 z ]x,y [?]
+2 y 00 = y 0 ) [?]
+(!
+[?]
+z. ph) [?]
+[a2 ]x  skip is a stutter step, which leaves all variables in x unchanged.
+A normal if evaluates the test in an extra step (indicated by leading skips in the then and else part).
+if* is used to model instructions such as compare-and-set (CAS), which execute a test and an assignment atomically.
+The definition of let introduces new flexible variables y as local variables for z.
+These must be disjoint from the variables used in e, x and a.
+The variables in a are y renamed to these new variables, written az .
+The 2-formula indicates that the local variables y are not modified by environment steps.
+The choose is a nondeterministic let (taken from ASMs [8]).
+It chooses some values that satisfy ph, binds them to y and executes a1 with z renamed to y.
+If there is no possible choice of values, e.g., if ph is false, then a2 is executed.
+Note that the semantics of programs is well-defined without any restrictions on the expressions and formulas used in programs.
+In practice, however, tests and assignments are state expressions (such programs are guaranteed to have a nonempty set of runs from any initial state, while others could be equivalent to false).
+III.
+C OMPOSITIONAL I NTERLEAVING One of the crucial design criteria for our logic was that interleaving (and operators such as chop and star) must be compositional, i.e., the following rule of sequent calculus is sound1 .
+[a1 ]x ` ph1 [a2 ]x ` ph2 (ph1 kph2 ) ` ps [a1 k a2 ]x ` ps  (1)  Proving that an interleaved program [a1 k a2 ]x satisfies a property ps then can be done by proving that the two individual programs satisfy properties ph1 and ph2 and then abstracting the programs to their properties to prove ps.
+Section V shows how this feature can be exploited, by setting ph1 and ph2 to suitable rely-guarantee properties.
+Compositionality holds, when the semantics of interleaving is definable by interleaving individual intervals: I |= ph1 k ph2  iff there are I1 , I2 : I1 |= ph1 and I2 |= ph2 and I [?]
+I1 k I2  This definition of interleaving is possible only for a semantics of programs that takes its environment into account.
+Therefore, we have chosen a semantics with alternating system and environment steps.
+In our setting, parallel programs communicate via shared variables.
+For synchronization we use an operator await ph  *  [while ph do a]x [?]
+(ph [?]
+[a]x )* ; (!
+ph [?]
+last) [while ph do a]x [?]
+[while* ph do (skip; a)]x  1 A sequent ph , ph , .
+.
+.
+` ps , ps , .
+.
+.
+abbreviates the formula 1 2 1 2 (ph1 [?]
+ph2 [?]
+.
+.
+.)
+- (ps1 [?]
+ps2 [?]
+.
+.
+.).
+A rule is sound, if valid premises above the line imply a valid conclusion.
+Rules are applied bottom-up reducing goals to simpler goals.
+that blocks the executing process as long as condition ph is not satisfied.
+A blocked process repeatedly executes stutter steps that additionally fulfill the formula blocked.
+It is defined in terms of a special boolean variable Blk, which is implicitly contained in all frame assumptions and therefore not changed by assignments and skip.
+In contrast, a blocked step is specified to toggle Blk.
+blocked  [?]
+Blk0 6= Blk  [await ph]x [?]
+[while* !
+ph do Blk := !
+Blk]x We now define weak fair I1 k I2 and non-fair I1 knf I2 interleaving of two intervals.
+In comparison to [3] (that is based on SOS rules) we prefer a slightly different approach here that fits better to the axioms from Section VI.
+To characterize fairness, we introduce explicitly scheduled interleavings I1 [?]
+I2 .
+They are sets of pairs (I, s) of the resulting intervals I and schedules s = (s(0), s(1), .
+.
+.).
+Each s(i) is either 1 or 2, indicating which interval was scheduled for execution.
+We denote the postfix of s starting with s(n) as s[n..] .
+A schedule is fair if it is either finite, or infinitely often changes the selected process.
+Thus, we have: I1 k I2 [?]
+{I : there is a fair s with (I, s) [?]
+I1 [?]
+I2 } I1 knf I2 [?]
+{I : there is s with (I, s) [?]
+I1 [?]
+I2 } The set I1 [?
+]I2 is defined recursively as the union of 6 cases.
+We describe the first three, where I1 is scheduled, the other three cases are symmetric.
+1) The first process terminates in the current state, i.e., I1 is empty.
+If I1 (0) = I2 (0), then {(I2 , ())} with an empty schedule is returned.
+Otherwise interleaving is not possible and the empty set is returned.
+2) The first step of process 1 is not blocked (I1 |= !
+blocked).
+Then its first system transition is executed, and the system continues with interleaving the remaining process with the second.
+The set of all pairs (I, s) is returned, where I(0) = I1 (0), I 0 (0) = I10 (0), s(0) = 1 and (I[1..] , s[1..] ) [?]
+I1[1..] [?]
+I2 .
+3) The first process is blocked in the current state.
+If I2 has terminated, then the result is as in the first case, but with I1 and I2 exchanged.
+Otherwise, I1 (0) = I2 (0) must hold, to have any results, and a transition of the second process is taken, even though the first is scheduled.
+The resulting pairs (I, s) have s(0) = 1, I(0) = I2 (0), I 0 (0) = I20 (0), and (I[1..] , s[1..] ) must be in I1[1..] [?]
+I2[1..] .
+Both transitions are consumed and the overall transition is blocked iff the first transition of I2 is blocked too.
+Note that the schedule ends as soon as one interval is finished, it may be shorter than the resulting interleaved interval.
+As an example for interleaving consider two one-step intervals I1 = (I1 (0), I10 (0), I1 (1)) and I2 = (I2 (0), I20 (0), I2 (1)) with unblocked steps and a schedule s = (1, 2).
+The interleaved result then is I =  (I1 (0), I10 (0), I2 (0), I20 (0), I1 (1)), when I2 (1) = I1 (1).
+Otherwise interleaving is not possible.
+The local environment step from I10 (0) to I1 (1) is mapped to the sequence (I10 (0), I2 (0), I20 (0), I1 (1)) in the result, corresponding to the intuition that the environment steps of one process consist of alternating sequences of global environment steps and steps of the other process.
+Environment assumptions for one process (cf.
+rely conditions in Section V) must therefore be satisfied by such sequences.
+IV.
+P ROCEDURES To be practically useful, a programming language should have recursive procedures.
+Many semantic encodings of programming languages either do not consider procedures at all, or they study procedures without parameters only.
+A common way of introducing procedures when defining the semantics of programming languages is to have local procedure declarations and environments which store them.
+Our logic instead prefers globally defined procedures.
+This has the advantage that it becomes possible to specify procedures using axioms in addition to procedure implementations.
+We will exploit the possibility to specify procedures in Section VII.
+We do not use procedures that compute on global variables, since these do not allow to determine the modified variables.
+Instead, all variables a procedure computes on must be given explicitly as parameters.
+Technically, the signature SIG = (S, OP, P roc) is extended with typed procedure names p : t1 ; t2 [?]
+P roc.
+The first vector of types indicates the types of input (or call by value) parameters, the second vector indicates the types of input/output (or call by reference) parameters.
+The set of formulas (boolean expressions) is extended to contain procedure calls p(e; x), where e are expressions of types t1 and x are pairwise disjoint variables of types t2 .
+The semantics pA of a procedure p : t1 ; t2 is part of the algebra A and consists of a set of pairs (a, s).
+Each pair describes a potential run of the procedure: a is a vector of initial values for the input parameters from the carrier sets of types t1 .
+s is a value sequence that exhibits, how the reference parameters change in each step.
+Note that this semantics implies that input parameters work like local variables.
+Changes to these parameters while the procedure is executing are not globally visible.
+The semantics of a procedure call is I |= p(e; x) iff (JeK(I), I(x)) [?]
+pA A procedure call within a frame assumption abbreviates [p(e; z)]x [?]
+p(e; z) [?]
+2 y = y 0  , where y = x \ z  Specifications may now contain axioms for procedures.
+A typical contract for a procedure with pre- and postcondition ph, ps is: ph [?]
+p(x; y) [?]
+(2 y 00 = y 0 ) - 3 (last [?]
+ps)  It states that starting the procedure p in a state where ph holds and assuming that the environment never changes the reference parameters y, the procedure will always reach a final state, where ps holds.
+Procedures can also be used as placeholders for arbitrary formulas ph by specifying p(; x) - ph using x = free(ph) as reference parameters.
+The implementation of procedures is specified by (possibly mutually recursive) procedure declarations of the form p(x; y).
+a.
+Two requirements for the body a guarantee that the semantics is correct.
+First, a may only assign to its parameters x, y and local variables introduced by let and choose.
+Second, a must be a regular program: such a program uses state formulas only in its expressions (tests, parameters of procedures, right hand sides of assignments).
+Regular programs a can be proved to be monotonic in their calls: for two procedures p and q with the same argument types if pA [?]
+q A , then {I : I |= a} [?]
+{I : I |= a0 } where a0 replaces all calls to p in a with calls to q.
+Therefore, the semantics of recursive procedure declarations can be defined according to Knaster-Tarski's standard fixpoint theorem.
+In particular, a declaration p(x; y).a yields the fixpoint equation pA = {(I(0)(x), I(y)) : I |= [let z = x in axz ]y } For deduction, the unfolding axiom  For instance, the verification of p1 knf p2 can be decomposed with the following rely-guarantee rule, for i = 1, 2.
+` reflexive(Gi ) + pi ` Ri -- Gi  ` transitive(Ri ) R ` Ri  Gi ` R3-i Gi ` G (2)  p1 knf p2 , 2 R ` 2 G The conclusion of this rule states that each step of an interleaved system execution preserves a guarantee G at all times in an environment R. This is because a component's rely Ri is preserved by both the system's environment and each step of the other component.
+Hence, the first premise ensures that each system step of pi preserves its guarantee Gi , thus G, at all times.
+Note that according to the definition of interleaving in Section III, an environment step of a procedure can consist of both steps of the global environment and steps of the other program.
+Therefore, guarantee conditions must imply the other rely.
+The calculus permits to formally derive rule (2) as follows: first, components p1 and p2 are abstracted by the corresponding sustains formula using (1).
+Then the proof derives a contradiction by induction over the number of steps until G is violated and symbolic execution.
+Abstraction is used, since an arbitrary component procedure pi can not be executed.
+The sustains operator, however, can be executed according to the following unwinding rule.
++  +  p(e; y) - [?]
+z. z = e [?]
+[axz ]y,z [?]
+2 z 0 = z 00  (R -- G) - G [?]
+(R - * (R -- G))  is implied, which directly expands the let.
+New local variables z, which can not be changed by the environment, are used for the value parameters x (initialized with e).
+Changes to the reference parameters are globally visible.
+A symbolic execution step of -- proves that G is maintained by the first program transition and by the rest of the interval if the previous environment transition satisfies R. We note that rely-guarantee rules for systems with an unbounded number of interleaved components can be derived as well.
+In practice, these rules typically include further predicates, e.g., for invariants or pre- postconditions.
+We have also derived local rely-guarantee rules, where specifications consider a small number of representative components only, instead of using an arbitrary number of local states, as in the original approach [9].
+Such reductions are useful when verifying concurrent data structures, where processes exhibit similar behaviors.
+Rely-guarantee reasoning also serves as a base for the decomposition of global correctness and progress properties of concurrent systems (cf.
+Section VII).
+Furthermore, we have encoded the complete relyguarantee proof system from Xu et al.
+[10].
+Informally, their rely-guarantee specifications p sat (pre, rely, guar , post) ensure that starting from a state that satisfies precondition pre in an environment that always fulfills rely, program p satisfies the guarantee guar in each step and establishes postcondition post upon termination.
+A translation of these specifications in our logic is:  V. R ELY-G UARANTEE P ROOFS Rely-guarantee rules [9] define suitable abstractions for individual system components to avoid reasoning about their interleaved execution.
+In our setting, these abstractions typically are p(y) ` R(y 0 , y 00 ) -- G(y, y 0 ) +  where a procedure p is abstracted by a temporal formula + R -- G. The state variables y and the frame assumption + are usually omitted.
+The sustains operator -- ensures that the guarantee conditions G are maintained by p's steps, as long as previous environment transitions have preserved its rely conditions R. It is defined as2 +  R -- G [?]
+!
+(R until !
+G) 2 In previous work, we used the equivalent, but more complex formula G unless (G [?]
+!
+R).
+Formula G* ; (G [?]
+!
+R) is equivalent too.
++  p, pre ` rely * -- (guar [?]
+( last - post)) +  By using the transitive closure rely * , we can summarize consecutive rely (environment) transitions.
+This is necessary to weaken our requirement of transitive relies, since environment steps abstract from the number of transitions of other processes in our setting.
+In contrast, executions in [10] record environment transitions at the level of atomic actions and therefore do not have to be transitive.
+To prove that no deadlocks occur, Xu uses an additional run-predicate, which characterizes unblocked program states.
+A similar encoding can be defined in our setting, by introducing an additional predicate run and adding run - !
+blocked to the guarantee conditions.
+Moreover, we can express total correctness of programs w.r.t.
+a relyguarantee specification simply as p, pre ` (rely * -- guar ) [?]
+3 ( last [?]
+post) +  VI.
+I NDUCTION AND W EAK FAIRNESS In higher-order logic, proving a formula ph(N ) by induction over a well-founded order [?]
+gives an induction hypothesis [?]
+M. M [?]
+N - ph(M ), which must be shown to imply ph(N ).
+For temporal reasoning this is not sufficient, as this induction hypothesis would hold only for the current interval, while de facto it holds for all intervals.
+In [3] we have put a 2 in front of the induction hypothesis, which gives an induction hypothesis for all suffixes of the current interval.
+However, when recursive procedures are used, it is sometimes necessary to have the induction hypothesis for an infix of the current interval, which is determined by a recursive call.
+Thus, the following stronger rule is used for induction over a term e: e = n, Ind-Hyp(n) ` ph `ph  (3)  where Ind-Hyp(n) [?]
+A[?]
+v.(e [?]
+n - ph), n is a new static variable, and v = free(ph) [?]
+free(e).
+The validity of the induction hypothesis depends on the static variable n only, so it is preserved unchanged when stepping through an interval by symbolic execution3 .
+The induction hypothesis is applied like a global lemma e [?]
+n - ph.
+To reason about temporal formulas, in addition to wellfounded induction most calculi use additional induction rules to reason about the passing of time (here: the length of intervals).
+Our calculus prefers to reduce such principles to standard well-founded induction whenever possible.
+In particular, the following equivalence is used: 3 ph - [?]
+N. N = N 00 + 1 until ph  (4)  3 It would be sufficient to use the weaker 2 x operator instead of A, where x ph [?]
+true; ph; true.
+However, 2 x has "for all subintervals" is defined as 2 other uses (see [11]) where it should be symbolically executed, while the induction hypothesis should not.
+N is a new flexible variable for natural numbers, that is decremented until a state is reached, where ph holds.
+Note that N = N 00 + 1 is equivalent to N > 0 [?]
+N 00 = N -1.
+When proving a property 2 ph, this equivalence is used to get a proof by contradiction, by assuming that there is a number of steps N , after which ph is false.
+The proof is then by induction over the initial value of N .
+Proving that + a program satisfies a rely-guarantee property R -- G first introduces a new boolean variable B, and then applies (4) on 3 B.
+(R -- G) - [?]
+B.
+3 B - ((R [?]
+!
+B) -- G) +  +  The resulting counter N counts the number of steps for which the guarantee must be upheld, provided the rely is true until then.
+Both induction principles are special cases of induction over the length of a prefix of the current interval (called prefix induction).
+Such an induction is possible for safety formulas ph, that are valid over a full interval I, when every prefix of I can be extended to an interval where ph holds.
+All higher-order formulas, always-, until- formulas and all regular sequential programs without local variables and procedure calls fall into the class of safety formulas.
+More details on prefix induction and the semantics of the necessary prefix operator is given in [12].
+Reasoning about an interleaved program a1 k a2 by symbolic execution is indifferent to whether the interleaving is weak-fair or nonfair.
+Either the first step of a1 is executed, leaving a restprogram a10 k a2 , or the first step of a2 is executed, leaving a1 k a20 .
+However, symbolic execution alone is not sufficient to deal with weak fairness.
+We need a way to ensure, that in a fair interleaving, eventually each of the programs will execute a step.
+To make this "eventually" explicit, we define an extended interleaving operator L1 : a1 k L2 : a2 , where L1 and L2 are two formulas ("labels"), which enforce scheduling.
+Informally, whenever label L1 is true, the next step of the interleaving must be one of a1 .
+If this step is blocked, then a step of a2 is executed as well.
+If a1 is in its last state then L1 has no effect.
+a1 k a2 is thus considered as an abbreviation for both labels being false.
+The definition of Section III is adapted to remove (I, s) from I1 [?]
+I2 if for some n < #s I[n...] |= L1 , but s(n) = 2, or if I[n...] |= L2 and s(n) = 1.
+No interleaving is possible when both L1 and L2 are true in the same state.
+Using scheduling labels is inspired by the auxiliary variables used in [13] to encode fairness.
+However, our calculus does not pre-encode fairness (by immediately transforming the program), but introduces them on the fly by the rule L1 : a1 k L2 : a2 - [?]
+B.
+3 B [?]
+((L1 [?]
+B): a1 k L2 : a2 ) and a symmetric rule for a2 .
+Typically, L1 and L2 are both  false, so the rule simplifies to: a1 k a2 - [?]
+B.
+3 B [?]
+(B: a1 k a2 )  (5)  Informally, the formula asserts that there exists a number of steps, after which the new boolean variable B becomes true, thus enforcing a step of a1 .
+A simple example demonstrates the interplay between the given rules.
+2X 0 = X 00 , X = 0, [X := 1 k skip* ]X ` 3 X = 1 would be proved by applying (5), then (4) on 3 B, which introduces the variable N .
+Induction (3) over N then yields N = N 00 + 1 until B, n = N, Ind-Hyp(n), 2X 00 = X 0 , X = 0, [B: X := 1 k skip* ]X ` 3 X = 1 Executing a step now either makes B true, then the left process is scheduled and X = 1 now, or if B remains false, then the resulting sequent is almost identical, but N has been decremented (n = N +1) and induction can be applied.
+Interestingly, nonfair interleaving satisfies almost the same rule.
+Either a1 will be scheduled after some steps, or the run consists of an infinite sequence of unblocked a2 steps: a1 knf a2  -  ([?]
+B.
+3 B [?]
+(B: a1 knf a2 )) [?]
+a2 [?]
+inf [?]
+2 !
+blocked [?]
+E [?]
+x. a1  The requirement E [?]
+x. a1 where x = free(a1 ) ensures that a1 is satisfied by at least one interval I1 that can be used to derive I2 [?]
+(I1 knf I2 ).
+Compared to fair interleaving, this rule introduces only a simple additional case in proofs.
+It has been used in the verification of lock-freedom, where unfair scheduling of processes must be considered.
+VII.
+A PPLICATIONS Based on rely-guarantee reasoning, we have derived decomposition theorems for linearizability [14] and lockfreedom [15].
+This section outlines them and their application on some case studies from the literature.
+Further details are available online [16].
+Decomposition of Linearizability and Lock-Freedom Linearizable procedures appear to take effect instantly at one step (the linearization point) between invocation and response.
+We prove linearizability by locating the linearization point of a procedure cp during its execution in a refinement proof, using an abstraction predicate Abs(cs, as), which relates valid concrete states cs to corresponding abstract states as.
+Refinement between a concrete and abstract procedure cp resp.
+ap can then be expressed as cp(cs) ` [?]
+as.
+ap(as) [?]
+2 (Abs(cs, as) [?]
+Abs(cs 0 , as 0 )) To prove linearizability, ap is instantiated with skip steps skip* that model concrete non-linearization steps, and an atomic step alin(as) for the linearization point.
+Moreover, rely conditions R that were established by rely-guarantee  reasoning may be assumed (cf.
+[12] for details).
+When Abs is a partial function Absf , the existential quantifier for as can be dropped, resulting in the proof obligation cp(cs), 2 (R [?]
+Absf (cs) = as [?]
+Absf (cs 0 ) = as 0 ) (6) ` skip* ; alin(as); skip* The right hand side becomes a safety formula and prefix induction can be applied.
+Finding an induction principle that also covers existentially quantified (safety) formulas is an open issue.
+Lock-free implementations avoid major problems associated with locks, such as convoying, deadlocks, livelocks or priority inversion.
+Lock-freedom guarantees termination of some operation in a finite number of steps, even when individual operations are arbitrarily delayed or fail.
+However, individual operations might starve under interference.
+We use an additional, reflexive and transitive relation U to describe interference freedom ("unchanged").
+To prove lockfreedom, each system procedure must terminate without U interference and also after violating predicate U in a step (cf.
+[17] for details): cp, 2 R ` 2 (2 U (cs 0 , cs 00 ) [?]
+!
+U (cs, cs 0 ) - 3 last ) The temporal framework permits to derive that this local proof obligation implies lock-freedom of an interleaved system.
+In contrast, [18] defines a new logic to reason about lock-freedom, outlining their decomposition on paper only.
+Case Studies Proof obligation (6) suffices to verify linearizability of algorithms that have an internal linearization point (within the code of the executing process), even when its location depends on subsequent system behavior.
+This is possible, since future states of an interval can be easily analyzed in temporal logic.
+One example of such a linearization point can be found in Michael and Scott's lock-free queue algorithm [19].
+In case of a dequeue when the queue is empty, the reading of the shared head-of-queue pointer is a linearization point if the read copy equals the shared head-ofqueue in a future state.
+While other verification approaches, e.g., [20], require additional techniques in such cases, one can decide whether to linearize in the current state of an execution, using the temporal next operator.
+Our verification of a lock-free stack with hazard pointers applies abstraction on sequential programs.
+In programming environments without support for garbage collection, hazard pointers [21] enable safe memory reclamation of objects that are removed from a lock-free data structure.
+Each process is associated with a fixed number of shared pointers (so called hazard pointers), to signal contending processes not to deallocate a location.
+Originally, atomic access on hazard pointers was assumed.
+Our work confirms that non-atomic access to hazard pointers suffices too, even though a process might then read corrupted hazard pointer entries.
+To generically specify nonatomic read and write operations, we exploit that we can  specify procedures.
+The non-atomic read operation na read is specified as follows.
+na read (Lv , Sv ) ` * 3 last [?]
+2 (!
+blocked [?]
+Sv = Sv 0 ) [?
+]( 2 (* !
+last - Sv 0 = Sv 00 ) - 2 (* last - Lv 0 = Sv 0 )) Procedure na read terminates after at least one step, it does not block and never changes the shared value Sv to be read; if Sv is never changed by the environment, the local copy Lv finally equals Sv .
+Using such generic specifications, we can abstract from implementation details of non-atomic access to shared variables.
+The proofs apply abstraction to replace each generic procedure call with its specification, thus enabling symbolic execution.
+VIII.
+C ONCLUSION This paper contributes some new and improved concepts and their semantic foundation - embedding into higher-order logic, procedures, rules for fairness and induction - to the basic approach based on symbolic execution of programs and formulas we have defined earlier.
+The calculus has been successfully used to verify a number of case studies.
+The current focus was on verification of linearizability and lock-freedom of lock-free algorithms, where we managed to verify some significant examples that had no mechanized proof before.
+Proof complexity has been quite manageable.
+The main difficulty of concurrency proofs is finding correct theorems with correct invariants and rely conditions.
+There are still some open problems.
+Finding good proof rules that allow elegant verification of refinement "modulo stuttering" (as in TLA, but for arbitrary programs, not just transition systems) is still an open issue that is of great practical relevance.
+From the theoretical point of view, our calculus contains two complete fragments: Moszkowski's ITL axioms [22] and the rely-guarantee calculus from [10].
+Completeness in general, however, is still an open issue.
+R EFERENCES [1] W. Reif, G. Schellhorn, K. Stenzel, and M. Balser, "Structured specifications and interactive proofs with KIV," in Automated Deduction--A Basis for Appl., W. Bibel and P. Schmitt, Eds.
+Dordrecht: Kluwer, vol.
+II, pp.
+13 - 39, 1998.
+[6] W.-P. de Roever, F. de Boer, U. Hannemann, J. Hooman, Y. Lakhnech, M. Poel, and J. Zwiers, Concurrency Verification: Introduction to Compositional and Noncompositional Methods, ser.
+Cambridge Tracts in Theoretical Computer Science.
+Cambridge University Press, 2001, no.
+54.
+[7] L. Lamport, "The temporal logic of actions," ACM Trans.
+Program.
+Lang.
+Syst., vol.
+16, no.
+3, pp.
+872-923, 1994.
+[8] E. Borger and R. F. Stark, Abstract State Machines-- A Method for High-Level System Design and Analysis.
+Springer-Verlag, 2003.
+[9] C. B. Jones, "Specification and design of (parallel) programs," in Proc.
+of IFIP'83.
+North-Holland, pp.
+321-332, 1983.
+[10] Q. Xu, W. de Roever, and J.
+He, "The rely-guarantee method for verifying shared variable concurrent programs," FACJ, vol.
+9, no.
+2, pp.
+149-174, 1997.
+[11] F. Ortmeier and G. Schellhorn, "Formal fault tree analysis practical experiences," in Proceedings of AVoCS 2006, 2006.
+[12] S. Baumler, G. Schellhorn, B. Tofan, and W. Reif, "Proving linearizability with temporal logic," Formal Aspects of Computing (FAC), 2009, appeared online first, http://www.springerlink.com/content/7507m59834066h04/.
+[13] K. Apt and E.-R. Olderog, Verification of Sequential and Concurrent Programs.
+Springer-Verlag, 1991.
+[14] M. Herlihy and J.
+Wing, "Linearizability: A correctness condition for concurrent objects," ACM Trans.
+on Prog.
+Languages and Systems, vol.
+12, no.
+3, pp.
+463-492, 1990.
+[15] H. Massalin and C. Pu, "A lock-free multiprocessor os kernel," Columbia University, Tech.
+Rep. CUCS-005-91, 1991.
+[16] "Presentation of KIV-proofs for concurrent algorithms," 2011, http://www.informatik.uni-augsburg.de/ swt/projects/lock-free.html.
+[17] B. Tofan, S. Baumler, G. Schellhorn, and W. Reif, "Temporal logic verification of lock-freedom," in In Proc.
+of MPC 2010, ser.
+Springer LNCS 6120, 2010, pp.
+377-396.
+[18] A. Gotsman, B. Cook, M. Parkinson, and V. Vafeiadis, "Proving that nonblocking algorithms don't block," in POPL.
+ACM, 2009, pp.
+16-28.
+[2] B. Moszkowski, "A temporal logic for multilevel reasoning about hardware," IEEE, vol.
+18, no.
+2, pp.
+10-19, 1985.
+[19] M. M. Michael and M. L. Scott, "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms," in Proc.
+15th ACM Symp.
+on Principles of Distributed Computing, 1996, pp.
+267-275.
+[3] S. Baumler, M. Balser, F. Nafz, W. Reif, and G. Schellhorn, "Interactive verification of concurrent systems using symbolic execution," AI Comm., vol.
+23, no.
+(2,3), pp.
+285-307, 2010.
+[20] S. Doherty, L. Groves, V. Luchangco, and M. Moir, "Formal verification of a practical lock-free queue algorithm," in FORTE 2004, ser.
+LNCS, vol.
+3235, 2004, pp.
+97-114.
+[4] R. M. Burstall, "Program proving as hand simulation with a little induction," Information Processing, pp.
+309-312, 1974.
+[21] M. M. Michael, "Hazard pointers: Safe memory reclamation for lock-free objects," IEEE Trans.
+Parallel Distrib.
+Syst., vol.
+15, no.
+6, pp.
+491-504, 2004.
+[5] A. Cau, B. Moszkowski, and H. Zedan, ITL - Interval Temporal Logic, Software Techn.
+Research Laboratory, SERCentre, De Montfort University, The Gateway, Leicester, 2002, www.cms.dmu.ac.uk/ cau/itlhomepage.
+[22] B. C. Moszkowski, "An automata-theoretic completeness proof for interval temporal logic," in Proc.
+of ICALP.
+London, UK: Springer-Verlag, pp.
+223-234, 2000.

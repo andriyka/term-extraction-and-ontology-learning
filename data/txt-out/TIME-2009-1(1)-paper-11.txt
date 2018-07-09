@@ -1,0 +1,693 @@
+Simple Algorithm for Simple Timed Games?
+Y. Abdeddaim1 , E. Asarin2 , and M. Sighireanu2  hal-00374700, version 1 - 9 Apr 2009  1  Department of Embedded Systems, ESIEE Paris, University of Paris-Est Cite Descartes, BP 99, 93162 Noisy-le-Grand Cedex, France 2 LIAFA, University Paris Diderot and CNRS, 75205 Paris 13, France.
+y.abdeddaim@esiee.fr, {asarin,sighirea}@liafa.jussieu.fr  Abstract.
+We propose a subclass of timed game automata (TGA), called Task TGA, representing networks of communicating tasks where the system can choose when to start the task and the environment can choose the duration of the task.
+We search to solve finite-horizon reachability games on Task TGA by building strategies in the form of Simple Temporal Networks with Uncertainty (STNU).
+Such strategies have the advantage of being very succinct due to the partial order reduction of independent tasks.
+We show that the existence of such strategies is an NP-complete problem.
+A practical consequence of this result is a fully forward algorithm for building STNU strategies.
+Potential applications of this work are planning and scheduling under temporal uncertainty.
+1  Introduction  Timed Game Automata (TGA) model has been introduced in [21] in order to represent open timed systems, and is nowadays extensively studied both from a theoretical and applied viewpoints.
+As usual in the game theory, main problems for timed games are (1) search for winning strategies that allow to the protagonist player (or the controller) to reach his or her aims whatever the opponent player (or the environment) does, and (2) search for winning states (from which such a strategy exists).
+A winning strategy can be interpreted as a control program that respects its specification (or maximizes some value function) for any actions of the environment, and for this reason game-solving for TGA is often referred to as controller synthesis.
+Such a synthesis finds applications to, e.g., industrial plants [24], robotics [1], or multi-media documents [17].
+A large class of applications of timed games, relevant to this work, is scheduling and planning under temporal uncertainty (see [3, 12]).
+For this kind of applications, the protagonist masters all the behaviour of the system, except the durations of its actions.
+The aim is to ensure a good functioning of the system for any timing (decided by the opponent/environment player in some predefined bounds).
+Thus a strategy is a control program, schedule or plan robust to timing variations in the controlled process.
+During the last decade, the planning community has developed several techniques for timed planning problems.
+?
+This work has been supported by the French ANR project AMAES.
+hal-00374700, version 1 - 9 Apr 2009  These techniques (e.g., [18]) are based on constraint programming and give good performances in practice.
+On the other hand, during first years of timed games, a major difficulty was related to the fast state explosion and non-scalability of algorithms and tools.
+Theoretically, this is not surprising since the upper bound complexity of solving reachability games on TGA has been proved EXPTIME [16].
+But the main reason of these bad performances was that most algorithms explored (in a backward way [21, 2], or in a mixed one [24]) almost all the huge symbolic state space of the timed game automaton.
+Four years ago, an important practical progress in timed strategy synthesis has been attained by Cassez et al.
+[9], who adapted to the timed case a forward on-the-fly game-solving algorithm from [19], and implemented the resulting algorithm in the tool Uppaal-Tiga [7].
+This tool has a performance comparable to reachability analysis of timed automata, and thus makes timed game solving only as difficult as timed verification.
+However, in many practical cases, even this solution is not always satisfactory.
+One issue is still the state explosion preventing the tool from finding a strategy.
+Another issue is a big size and complexity of the strategy synthesized.
+It is often too heavy to be deployed on the controller.
+For distributed systems, the controller has to be centralized because the strategy obtained is difficult to distribute.
+Partial order based methods [8, 20] could help, but as far as we know, they have not yet been applied to timed games.
+In this paper, we give a formal explanation of the good results obtained by the planning community by (1) identifying a game model for the timed planning problems and by (2) showing that the complexity of solving such games becomes NP-complete if we search to build strategies of a special form.
+As a consequence, we obtain a fully forward algorithm for solving timed games by building compact and easy to distribute strategies.
+More precisely, we consider games played on a special kind of TGA, so-called task timed game automata (TTGA).
+Such an automaton is a parallel composition of several TGA called tasks.
+In every task, the controller executes a (possibly infinite) sequence of steps.
+At each step, the controller decides when to launch some actions whose durations are chosen by the environment and it waits the end of actions launched before starting the next step.
+Figure 1 gives an example of a TTGA with five tasks.
+The task Move repeats three steps infinitely, at each step the controller launches one action using the controllable transition (solid arrow); the duration of this action is chosen by the environment in the interval given on the uncontrollable transition (dashed arrow).
+Notice that, in our games, the environment (the opponent player) has no discrete choice, it determines only some durations.
+The controller has only the choice of the task to execute, but tasks cannot do discrete choices.
+The aim of the controller is to reach some set of goal states before some deadline (the horizon of the game), and never leave the set of safe states until this goal.
+For such games, we will consider strategies of a certain form.
+First, we disallow "conditional moves", i.e., the discrete choices of the controller are fixed, and the only way that it reacts to the choices of the environment is by adapting  hal-00374700, version 1 - 9 Apr 2009  the time at which it launches its actions.
+This requirement limits somewhat the power of the controller.
+For example, we are not able to obtain optimality like in [2] because this needs conditional schedulers.
+Second, instead of a memoryless strategy saying for each state what to do (like in almost all the papers/tools on timed games), we represent a strategy by a compact data structure, called STNU [25], and a computational procedure saying for every game history what are possible next moves for the protagonist.
+In [1] we show that such a strategy is, by its nature, a more complex object than the usual "state feedback" (or memory-less), but it is in most cases smaller wrt the number of transitions needed to reach the goal, more permissive wrt the number of runs included, and easier to distribute in a multi-component timed system (although some parts of the execution shall be centralized).
+Related work.
+A data structure similar to STNU, called event zones, has been used in [20] for the verification of timed automata.
+STNU extend event zones with uncontrollable edges.
+The IxTeT planner [14] uses the STNU data structure and an A* -like search algorithms to obtain STNU plans from constraint-based specification.
+Our work gives a TGA model sufficient and yet more expressive for modeling pure1 timed planning problems considered by IxTeT.
+Moreover, the completeness of the algorithm used by IxTeT, even for pure timed planning problems, has been a conjecture.
+We provide here a proof of this conjecture.
+Finally, our work fulfills the study of the relation between STNU and TGA started by Vidal in [26].
+In his work, Vidal shows that TGA are more expressive than STNU and provides a semantics for the execution of STNU strategies in terms of reachability games on TGA.
+Move 1  Pic  Arm  Com  Vw  1  1  1  1  x [?]
+[1, 2]  Arm@1,{x}  Move@3& 2  x [?]
+[3, 4]  Vw@3&  x [?]
+[1, 3]  Arm@3,{x}  6  2  2  4  2  Arm@1,{x} x [?]
+[3, 6] x [?]
+[2, 4]  2 x [?]
+[20, 30]  x [?]
+[8, 10]  5  3  x [?]
+[5, 6]  Arm@1,{x}  3 3  3  3  x [?]
+[40, 50] 4  4  Fig.
+1.
+TTGA network for the Explore rover.
+1  x [?]
+[0, 0], {x}  Move@1,{x}  IxTeT models are in fact hybrid since they may relate timed variables (clocks) and discrete variables.
+hal-00374700, version 1 - 9 Apr 2009  2  Task Timed Game Automata  A TTGA is the parallel composition of a finite set of special TGA called tasks.
+In each task, the transitions form a sequence with a (possibly empty) final cycle.
+The sequence of transitions is built from subsequences where a controllable transition is followed by zero or more uncontrollable transitions.
+These subsequences model a step of the controller starting zero or more tasks with uncontrollable durations but with totally ordered finishing times.
+When executing a controllable transition, a task may synchronize with its peers only by inspecting their location.
+First, let us recall the classical definition of TGA.
+Let X be a finite set of clocks with values in R>=0 .
+We note by B(X) the set of rectangular constraints on variable in X which are possibly empty conjuncts of atomic constraints of the form x ~ k where k [?]
+N, ~[?]
+{<, <=, >=, >}, and x [?]
+X.
+A constraint in B(X) defines an interval in R>=0 for any x [?]
+X.
+Definition 1.
+[21] A Timed Game Automata (TGA) is a tuple A = (L, `0 , X, E, Inv) where L is a finite set of locations, `0 [?]
+L is the initial location, X is a finite set of real-valued clocks, E [?]
+L x B(X) x {c, u} x 2X x L is a finite set of controllable (label c) and uncontrollable (label u) transitions, Inv : L - B(X) associates to each location its invariant.
+For simplicity, this classical definition does not include discrete variables.
+However, TGA can be extended with discrete variables whose values can be tested and assigned in transitions.
+Also, TGA can be composed in parallel to form networks of TGA.
+The synchronization between parallel TGA can be done using shared clocks or discrete variables.
+Then, a TTGA is a network of TGA where (1) each TGA has a special form, called task, (2) the clocks are not shared between parallel tasks, and (3) the synchronization is done only using location constraints.
+A location constraint i@[m, n] requires that the task i is in any location between locations m and n. Let I be a finite set of tasks identifiers.
+We denote by I(I) the set of possibly empty conjunctions of locations constraints over the set of tasks I. Wlog, we consider that all location constraints in I(I) are well formed, i.e., they refer to existing locations in these tasks.
+Definition 2.
+A task timed game automaton (TTGA) is a finite set of tasks, A = ||i[?
+]I Ti , each task Ti being a tuple (Li , `0i , xi , Ei ) where Li is a finite set of locations, `0i [?]
+Li is the initial location, xi is the local clock, and Ei : Li * I(I\{i}) x B(xi ) x {c, u} x Li is a finite set of transitions satisfying the following constraints: (i) (sequence fully connected) at most one location has no successor by Ei , i.e., |Li | - 1 <= |Dom(Ei )|, (ii) (no synchronization for the environment) for any transition ` 7- (gd , gx , u, `0 ) [?]
+Ei the constraint gd is empty (true),  hal-00374700, version 1 - 9 Apr 2009  (iii) (no time blocking for the environment) for any two consecutive transitions ` 7- (gd , gx , a, `0 ) and `0 7- (gd0 , gx0 , a0 , `00 ) s.t.
+a = u, gx defines an interval in R>=0 which precedes the interval defined by gx0 .
+Compared to TGA, tasks have only one clock and a transition relation given by a partial function.
+Moreover, it follows from (i) that a task is either a finite sequence (when |Li | - 1 = |Dom(Ei )|) or a sequence with a final cycle (when |Li | = |Dom(Ei )|).
+For this reason, we will denote locations ` [?]
+Li by a natural number representing the size of the shortest path between `0i and `; by convention, we denote `0i by 1.
+The transitions of tasks have a (discrete) location constraint, but no set of clocks to be reset.
+Instead, this set is implicitly determined by the kind of transitions, since xi is reset iff the transition is controllable.
+Another implicit definition in tasks is the invariant labeling for locations, Inv.
+For any ` [?]
+Li , the invariant of ` is implicitly xi <= M , where M is the upper bound of the interval defined by the timed guard gx in the transition ` 7- (gd , gx , a, `0 ) in Ei (or empty if such transition does not exists).
+With this implicit definition for Inv, the constraint (iii) ensures that when the environment executes an uncontrollable transition, it can not be blocked by the invariant of the target location.
+Moreover, uncontrollable transitions are executed in a strict sequence and a controllable transition is executed after the termination of all previous uncontrollable transitions.
+This constraint has an important consequence: the cycle of a task shall contain at least one controllable transition to reset the clock.
+Wlog, we will suppose that cycles always start with a controllable transition.
+Also, like for TGA, we consider only tasks with non-Zeno cycles.
+Since TTGA is a subclass of TGA, we omit the definition of its semantics (see [4] for details).
+We only recall some notions needed to define game semantics.
+A run of a TGA is a sequence of alternating time and discrete transitions also represented by a timed words (a1 , t1 ) .
+.
+.
+(am , tm ) where a1 , .
+.
+.
+, am are discrete transitions and t1 , .
+.
+.
+, tm are the real values corresponding to the global time at which each discrete transition is executed.
+A normal run is a timed word such that when i <= j then ti <= tj .
+We denote by r[0], r[i], and last(r) the first state, the ith state (i.e., after the ith discrete action), and resp.
+the last state2 of a run r. Runs(A, s) denotes the set of normal runs of A starting in state s. Example 1.
+Our running example is an instance of the Explore system inspired from a Mars rover [5].
+The rover explores an initially unknown environment and it can (a) move with the cameras pointing forward; (b) move the cameras (fixed to an arm); (c) take pictures (while still) with the cameras pointing downward, and (d) communicate (while still).
+The mission of the rover is to navigate in order to take pictures of predefined locations, to communicate with an orbiter during predefined visibility windows, and to return to its initial location before 14 hours.
+There is a lot of temporal uncertainties, especially in the duration of moves and communications.
+A TTGA model of this rover is given on Figure 1.
+Task Move models navigation between three predefined locations reached in 2  A state of an automaton is given by the locations of components and valuations of clocks.
+locations 1, 3, resp.
+5.
+Task Pic models tacking a picture at the second location.
+Task Arm models arm moving between two positions: forward (location 1) and downward (location 3).
+Task Com models the communication with an orbiter when the rover is at the first location (the base) and the visibility window is active.
+Task Vw models the visibility window whose start and end are controlled by the environment and it is active in location 3.  hal-00374700, version 1 - 9 Apr 2009  3  Simple Games  The games we consider on TTGA belong to a special subclass of reachability games.
+We first provide general definitions about reachability games [15].
+A reachability game structure is a tuple G = (A, I, G, S) where A is an automaton with edges labeled by controllable and uncontrollable actions, an initial state I in A, a goal set of states G, and a safe set of states S. The game starts in the initial state I and, in every state, the controller and the environment choose between waiting or taking a transition they control.
+The state evolves according to these choices.
+If the current state is not in S, then the environment wins.
+If the current state is in G, then the controller wins.
+Solving a game G consists in finding a strategy f such that the automaton A starting from I and supervised by f satisfies at any point the constraints in S and reaches G. A special class of reachability games are finite horizon games where the game stops after some finite horizon B.
+In TCTL, this means that A supervised by f satisfies the formula I [?]
+A[S U<=B (S [?]
+G)].
+In this work, we consider a finite horizon reachability game defined as follows: Definition 3.
+A simple game is a finite horizon game G = (A, I, G, S) such that: - A is a TTGA and I is its initial state, - G is specified using a (non empty) conjunction of location constraints i@[m, n] saying that any location of task i between m and n is part of the goal, - S is specified using a conjunction of constraints of the form: * i@[m, n] == j@[k, `] (embedding) which requires that if task i is in a location in [m, n] then task j is in a location in [k, `], and * i@[m, n] ] j@[k, `] (mutex) which requires mutual exclusion between locations in [m, n] of task i and locations in [k, `] of task j. Wlog, we consider that safety and goal constraints are minimal, i.e., all redundant conjuncts are eliminated.
+Example 2.
+G for the Explore example is specified by the constraint: g = Move@1 [?]
+Pic@3 [?]
+Com@3 specifying that the rover has to take the picture, to communicate with the orbiter, and to return at its initial location.
+The horizon is B = 14 and the set S is given by the constraint d below.
+In d, the first two conjuncts forces the rover to take the picture (Pic@2) when the arm is downward (Arm@3) and the rover is still at the second location (Move@3); the next conjuncts ask that rover is moving (Move at locations 2, 4, or 6) with the arm oriented forwardly (Arm@1).
+d= V (Pic@2 == Arm@3) [?]
+(Pic@2 == Move@3)[?]
+`[?
+]{2,4,6} (Move@` == Arm@1)[?]
+(Com@2 == Move@1) [?]
+(Com@2 == Vw@3)  hal-00374700, version 1 - 9 Apr 2009  4  Strategies and STNU  We first recall some definitions concerning strategies.
+A strategy for a controller playing a game G is a relation f between Runs(A, I) and the set of controllable transitions in A extended with a special symbol l. Its semantics is given by the following three rules: (1) if (r, l) [?]
+f , the controller may wait in the last state of r, (2) if (r, e) [?]
+f , the controller may take the controllable transition e, (3) if r is not related by f , the controller has no way to win for r with the strategy f .
+Given a strategy f , we define the plays of f , plays(f ), to be the set of normal runs that are possible when the controller follows the strategy f .
+Given a reachability game structure G, a strategy f is a winning strategy for the game G if for all r [?]
+plays(f ) such that r[0] [?]
+I, there exists a position i >= 0 such that r[i] [?]
+G, and for all positions 0 <= j <= i, r[j] [?]
+S. 4.1  STNU  For finite horizon games, the winning strategies have a finite representation (in absence of Zeno runs).
+A compact way to represent such strategies is the Simple Temporal Network with Uncertainties (STNU).
+We present shortly STNU, further details can be found in [25, 23].
+An STNU is a weighted oriented graph in which edges are divided into two classes: controllable (or requirement) edges and uncontrollable (or contingent) edges.
+The weights on edges are non-empty intervals in R. The nodes in the graph represent (discrete) events, called time-points.
+The edges correspond to (interval) constraints on the durations between events.
+The time-points which are target of an uncontrollable edge are controlled by the environment, subject to the limits imposed by the interval on the edge.
+All other time-points are controlled by the controller, whose goal is to satisfy the bounds on the controllable edges.
+Definition 4.
+An STNU Z is a 5-tuple hN, E, C, l, ui, where N is a set of nodes, E is a set of oriented edges, C is a subset of E containing controllable edges, and l : E - R [?]
+{-[?]}
+and u : E - R [?]
+{+[?]}
+are functions mapping edges into extended real numbers that are the lower and upper bounds of the interval of possible durations.
+Each uncontrollable edge e [?]
+E\C is required to satisfy 0 <= l(e) < u(e) < [?].
+Multiple uncontrollable edges with the same finishing points are not allowed.
+Each STNU is associated with a distance graph [11] derived from the upper and lower bound constraints.
+An STNU is consistent iff the distance graph does not contain a negative cycle, and this can be determined by a single-source shortest path propagation such as in the Bellman-Ford algorithm [10].
+hal-00374700, version 1 - 9 Apr 2009  Choosing one of the allowed durations for each edge in an STNU Z corresponds to a schedule of time-points and gives a distance graph which can be checked for consistency.
+Then schedules of Z represent finite normal runs over the events in Z.
+Choosing one of the allowed durations for each uncontrollable edge in an STNU Z determines a family of distance graphs called projections of Z.
+Each projection determines a set of finite runs where uncontrollable timepoints are executed always at the same moments.
+An execution strategy f for an STNU Z is a partial mapping from projections of Z to schedules for Z such that for any choice p of execution time for uncontrollable time-points, f assigns an execution time for all time-points in Z such that (1) if the time-point is uncontrollable, the execution time is equal to one chosen in p, and (2) if the time-point is controllable, the execution time satisfies the constraints on edges in Z.
+An execution strategy is said viable if it produces a consistent schedule for any projection of Z.
+So an STNU represents several execution strategies.
+Various types of execution strategies have been defined in [25].
+We consider here the dynamic execution strategies which assign a time to each controllable time-point that may depend on the execution time of uncontrollable edges in the past, but not on those in the future (or present).
+An STNU is dynamically controllable (DC) if it represents a dynamic execution strategy.
+For this reason, we call in the following an STNU strategy an STNU having the DC property.
+Definition 5.
+An STNU strategy Z is winning if any schedule of Z is a winning run.
+In [23, 22] is shown that the DC property is tractable, and that a polynomial (O(n5 ) with n = |N |) algorithm exists defined as follows: procedure PDC (STNU Z) returns Z 0 or [?]
+The algorithm applies iteratively on Z a set of rewriting rules including the ones in the shortest path algorithm [10].
+These rules introduce controllable edges and tighten the bounds of controllable edges in the input STNU.
+The algorithm returns the rewritten STNU Z 0 if it is DC, or an empty STNU [?]
+otherwise.
+Figure 2 shows four STNU with the same nodes and edges, but with different labels and properties (uncontrollable edges are represented by dashed arrows).
+4.2  Interfacing STNU with simple games  In order to be a strategy for a simple game G, an STNU shall speak about the transitions of the TTGA A done before reaching some goal state in G. We formalize here this relation by defining (1) the interface of a game G and (2) the satisfaction relation between an STNU and a game interface.
+Intuitively, the interface of a simple game is an STNU containing a timepoint for any transition of the game that can take place until the horizon of the game is reached; these time-points are related with edges labeled by the timing constraints in the TTGA of the game.
+For tasks with cycles, a transition may appear several times until the game end.
+Due to the special form of tasks,  [5,8] [0,7]  [5,7] [5,7]  [0,2] a.
+[5,5] [5,7]  [0,2] b.
+[0,2] [5,7]  [0,2] c.  [0,2] d.  hal-00374700, version 1 - 9 Apr 2009  Fig.
+2.
+STNU (a) DC but not reduced, (b) reduced wrt shortest path, (c) reduced wrt DC, (d) not DC.
+we can unfold these tasks and compute (see [4] for details) for each transition m of a task i its maximal number of occurrence in the horizon B, denoted by u(i)(m) >= 1.
+Thus, we can identify each transition e that can be executed during the game horizon by a triple (i, m, u) where i [?]
+I is the identifier of the task owning e, m [?]
+Li is the source location of e, and u [?]
+[1, u(i)(m)] is the occurrence number computed for e. In the following, we denote by prec(i, m, u) the transition preceding (i, m, u) in the unfolding of task i.
+Similarly, prec c (i, m, u) denotes the last controllable transition before (i, m, u) in the unfolding of task i.
+If (i, m, u) is the first controllable transition in the unfolding, both notations return (i, 0, 1).
+The interface of a simple game G with horizon B is an STNU ZG = hNG , EG , CG , lG , uG i and a labeling of time-points sG : I x N x N - NG defined as follows.
+NG contains two special time-points t0 and tG corresponding respectively to the initial moment and to the goal moment.
+Moreover, for each task i [?]
+I and each transition m [?]
+Ei , NG contains a number of time-points given by u(i)(m).
+sG labels time-points in NG with transition occurrences such that sG (i, m, u) is defined if 1 <= u <= u(i)(m) and sG (i, 0, 1) = t0 for any i [?]
+I. EG relates nodes in NG wrt timing constraints and ordering of transitions in A.
+More precisely, the node corresponding to some occurrence u of a transition e = m 7- (gd , gx , a, n) is related by EG to the node corresponding to the last controllable transition preceding e (and which resets the local clock) in order to express the duration between the execution of these transitions (events) given by the timed guard gx .
+The edge (sG (prec c (i, m, u)), sG (i, m, u)) is labeled with the interval defined by gx and it is in CG iff a = c. The precedence relation on transitions of each task is represented by a controllable transition labeled by [0, [?]).
+To model the finite horizon constraint of the game, CG (and EG ) contains a controllable edge (t0 , tG ) labeled by [0, B].
+Consider the game given in Example 2.
+Figure 3 provides the interface of this game.
+The time-points are put in clusters recalling the task owning the transitions represented by the time-points.
+Controllable edges without labeling intervals are implicitly labeled by [0, +[?]).
+The interface is the "largest" STNU for G wrt the time-points represented and the constraints on edges; it can not represent a strategy for G because neither goal nor safety constraints are satisfied.
+However, the interface is used as a sanity check for candidate STNU strategy: a candidate strategy shall contain  tG  Move  [0,14] [3,4]  [5,6]  [1,2]  [1,3]  [2,4]  [3,4]  [5,6]  [1,3]  [2,4]  Pic [3,6] t0  Arm [2,4] [0,0]  ..3 times...  Com  hal-00374700, version 1 - 9 Apr 2009  [8,10]  Vw [20,30]  [40,50]  Fig.
+3.
+Interface for the Explorer game with horizon B = 14.  a "consistent" subset of time-points and edges in the interface of G. Formally, an STNU Z = hN, E, C, l, ui is said to satisfy the interface (ZG , sG ) of a game G, denoted by Z |= G, iff (1) N is a subset of NG containing t0 and tG such that if the time-point labeled by sG with (i, m, u) is in N then all its predecessors in the unfolding are also present, and (2) edges defined in EG between nodes included in N are also defined in E with the same kind (controllable or uncontrollable) and the same labeling intervals for uncontrollable edges; for controllable edges, the labeling interval in Z shall be included in the corresponding one in ZG .
+Intuitively, Z shall include exactly the same constraints as ZG on common uncontrollable edges but may squeeze the constraints on controllable edges.
+5  Computing STNU Strategies  We consider the following two problems for simple games G with horizon B given in unary: G-Solve: Decide if a winning strategy exists for G. G-Solve-STNU: Decide if a winning STNU strategy exists for G. Our first result is that, despite the simplicity of the game considered, the problem of finding strategies for such games is still NP-hard.
+hal-00374700, version 1 - 9 Apr 2009  Theorem 1.
+The G-Solve problem is NP-hard.
+Proof.
+The proof consists in reducing the CliqueCover problem [13] to the synthesis of a strategy for simple games.
+An instance of the CliqueCover problem is an integer k and an undirected graph P = (V, E) with n vertices (|V | = n) numbered 1 to n. The CliqueCover problem is to decide whether a graph can be partitioned into k cliques.
+We explain how to reduce this problem to Gk -Solve problem, where Gk is a simple game.
+The TTGA of Gk is built as follows: for each vertex i [?]
+[1, n] of P , we define a task indexed by i with the form: V x >=0,c,{xi } 0<=x <1,u,{} 1 --i------ - 2 ----i------ 3.
+The set S of Gk is specified by (i,j)6[?
+]E i@2 ] j@2, i.e., for each pair of vertices (i, j) such that there is no edge in E between i and j we ask mutual exclusion between the locations 2 of the corresponding tasks.
+The set G of Gk is specified by [?
+]i i@3, i.e., all tasks shall reach location 3.
+The horizon of Gk is fixed to k. It follows (details in [4]) that P can be covered by k cliques or less iff the instance of the Gk -Solve problem has a strategy to win.
+Moreover, an STNU strategy can be built for Gk .
+A direct consequence of the proof above is: Corollary 1.
+The G-Solve-STNU problem is NP-hard.
+The upper bound of complexity for G-Solve is given by the upper bound of solving reachability game problems for TGA, i.e., EXPTIME in [16].
+This tight upper bound is obtained for general TGA with safety games and state based (memory less) strategies.
+The following theorem says that this upper bound decreases for G-SolveSTNU problems to NP.
+Theorem 2.
+The G-Solve-STNU problem is NP-complete.
+Proof idea.
+We show that it exists a correct and complete polynomial test to check that an STNU strategy Z satisfying the interface of a simple game G is a winning STNU strategy.
+Then, the theorem follows since for a horizon B given in unary, the description of a candidate STNU strategy is polynomial in the number of transitions in G and in the horizon B (Lemma 5).
+The polynomial test is given on Figure 4.
+First (line 1), Z is filled with the missing time-points and edges in the interface of G thus obtaining a new STNU Z.
+Second (line 2), the DC algorithm is applied on Z to test its dynamic b is tested for controllability and to compute its reduced form.
+Third (line 6), Z b satisfaction of goal and safety constraints in G. This test is done by searching in Z a set of edges (called shapes) for each goal constraint in G, for each discrete guard on controllable transitions of the TTGA of G, and for each safety constraint in S. The technical point in the proof is the definition of shapes such that the test is correct and complete.
+A shape is a positive boolean composition of precedence relations between two time-points.
+A time-point t precedes the time-point t0 in an STNU Z, denoted by Z ` t [?]
+t0 , iff Z contains an edge from t to t0 labeled  Require: STNU Z s.t.
+Z |= G. Ensure: Returns true if Z is a winning strategy for G. 1: Z - Z [?]
+ZG b - PDC (Z) 2: Z b = [?]
+then 3: if Z 4: return false 5: end if b |= shape b 6: return Z Goal and Z |= shape Safe Fig.
+4.
+Test for winning STNU strategy.
+hal-00374700, version 1 - 9 Apr 2009  by an interval included in (0, +[?]).
+For example, the shape used to test that the b is prec(i, m, u) [?]
+tG [?]
+tG [?]
+(i, n, u) goal constraint i@[m, n] is satisfied by Z b for some u.
+To test (see Figure 7).
+The test succeeds if such shape exists in Z  i prec(i,m,u) tG (i,n,u) Fig.
+5.
+Shape for goal constraint i@[m, n].
+safety constraint and discrete guards on transitions, the shapes shall be carefully defined in order to obtain completeness.
+For example, the shape for a constraint i@[m, n] == j@[k, l] is the disjunction of three cases which are not disjoint (see Figure 8).
+Intuitively, the constraint is satisfied if for any occurrence u of transitions in task i leading to location m (time-point prec(i, m, u)) and leaving the location n (time-point (i, n, u)) there exists an occurrence u0 of the transition in task j leading to location k (time-point prec(j, k, u0 )) and leaving the location l (time-point (j, l, u0 )) such that one of the following cases holds: (i) the safety constraint is entirely satisfied since prec(j, k, u0 ) precedes prec(i, m, u) and (i, n, u) precedes (j, l, u0 ), (ii) the safety constraint is satisfied at the beginning of the interval [m, n] for i but nothing is asked for the end because the goal (time-point tG ) is reached before the end of the interval j@[k, l]; indeed, the game semantics asks that safety constraints are satisfied until the goal is reached but not beyond, (iii) the safety constraint is not satisfied because the considered time-points are after the goal.
+The correctness proof follows easily from the definition of shapes.
+The completeness is based on the convexity of the STNU strategies and the fact that the shapes defined can not exclude correct but convex STNU.
+The full proof is given in [4].
+i  j  prec(j,k,u')  prec(i,m,u)  i  j  prec(j,k,u')  prec(i,m,u)  i  prec(i,m,u)  (j,l,u') (a)  (j,l,u') (b)  Fig.
+6.
+Shape for safety constraint i@[m, n] == j@[k, l].
+hal-00374700, version 1 - 9 Apr 2009  tG  tG  (i,n,u)  To finish the proof, we compute the complexity of the proposed algorithm.
+If the horizon B is given in unary, the number of points in the interface of G is polynomial, so the first two steps of the algorithm (lines 1-2) are also polynomial (DC is polynomial in the number of time-points in Z).
+Testing shapes (line 5) is also polynomial.
+Indeed, to test the satisfaction of some constraint (in guards, goal, or safety), one has to find a set of edges of constant size (the shape) in the STNU.
+But the number of edges in STNU is quadratic wrt the number of nodes, so we obtain the following result: Lemma 1.
+Given an STNU Z satisfying the interface of a game G, the problem of deciding if Z is a winning strategy for G is in PTIME.
+Now, let us compute the size of a representation for STNU that are candidate strategies for a game G. If the TTGA of G has n transitions, the maximal number of time-points in the interface of G is n x B + 2, limit reached when each transition takes one time unit.
+Then, the maximal number of edges that has to be specified for the STNU candidate is O(n2 x B 2 ).
+Each of these edges is labeled by an interval given by two integer numbers.
+However, these numbers are limited by the horizon B. Lemma 2.
+The size of describing a candidate STNU strategy for a game G is O(n2 x B 3 ) where n is the number of transitions in the network N and B is the horizon of the game.
+6  j  Algorithm for solving simple games  The proof of Theorem 2 gives also the sufficient conditions for an STNU to be a winning strategy for a simple game G: (1) it has to satisfy the interface of G, (2) it has to be DC, and (3) its reduced form by PDC has to implement some set of precedence relations defined by the shapes for guards, goal, and safety constraints.
+The last condition defines a combinatorial space W for building winning STNU strategies: for each time-point in the interface of G and for each constraint in G involving the transition represented by the time-point, a choice of precedence constraints has to be made.
+(c)  Then, a simple and fully forward algorithm for building winning STNU strategy is a backtracking algorithm in the combinatorial space W. The algorithm implements each precedence constraint by a controllable edge labeled by a maximal interval (i.e., (0, +[?]))
+and may use PDC as a selection (cut off) test for the partially built candidates.
+Such an algorithm does not find all winning strategies of G but only "standard" ones, i.e., STNU strategies that contain all the time-points of the interface and have maximal intervals on controllable transitions.
+This property of solutions built by our algorithm is due to the fact that the algorithm for testing DC computes the maximal timing constraints on controllable links.
+The proof of correctness and completeness of this algorithm is given in [4].
+hal-00374700, version 1 - 9 Apr 2009  7  Conclusion  We defined a class of timed games for which searching winning strategies in STNU form is NP-complete.
+This result gives a formal interpretation of results obtained by the planning and scheduling community with constraint based techniques.
+Moreover, it shows the existence of a fully forward algorithm for solving games on TGA.
+This algorithm builds STNU strategies which are finite memory strategies with no discrete choices but including several orderings between independent actions of the controller.
+Such strategies have to be compared with ones built using classical tools on TGA in order to obtain qualitative results about their size (i.e., number of transitions), volume [6] (i.e., number of runs), etc.
+References 1.
+Y. Abdeddaim, E. Asarin, M. Gallien, F. Ingrand, C. Lessire, and M. Sighireanu.
+Planning Robust Temporal Plans A Comparison Between CBTP and TGA Approaches.
+In ICAPS.
+AAAI, 2007.
+2.
+Y. Abdeddaim, E. Asarin, and O. Maler.
+On optimal scheduling under uncertainty.
+In TACAS, volume 2619 of LNCS, pages 240-253.
+Springer-Verlag, 2003.
+3.
+Y. Abdeddaim, E. Asarin, and O. Maler.
+Scheduling with timed automata.
+Theor.
+Comput.
+Sci., 354(2), 2006.
+4.
+Y. Abdeddaim, E. Asarin, and M. Sighireanu.
+Simple algorithm for sumple timed games.
+HAL preprint hal-XXXX, 2009.
+5.
+M. Ai-Chang, J. Bresina, L. Charest, A. Jonsson, J. Hsu, B. Kanefsky, P. Maldague, P. Morris, K. Rajan, and J. Yglesias.
+MAPGEN: Mixed initiative planning and scheduling for the Mars 03 MER mission.
+In ISAIRAS, 2003.
+6.
+E. Asarin and A. Degorre.
+Volume and entropy of regular timed languages.
+HAL preprint hal-00369812, 2009.
+7.
+G. Behrmann, A. Cougnard, A. David, E. Fleury, K. Larsen, and D. Lime.
+UppaalTiga: Time for playing games!
+In CAV, volume 4590 of LNCS.
+Springer-Verlag, 2007.
+8.
+J. Bengtsson, B. Jonsson, J. Lilius, and W. Yi.
+Partial order reductions for timed systems.
+In CONCUR, volume 1466 of LNCS, pages 485-500.
+Springer-Verlag, 1998.  hal-00374700, version 1 - 9 Apr 2009  9.
+F. Cassez, A. David, E. Fleury, K. Larsen, and D. Lime.
+Efficient on-the-fly algorithms for the analysis of timed games.
+In CONCUR, volume 3653 of LNCS.
+Springer-Verlag, 2005.
+10.
+T.H.
+Cormen, C.E.
+Leiserson, and R.L.
+Rivest.
+Introduction to Algorithms.
+The MIT Press, 1997.
+11.
+R. Dechter, I. Meiri, and J. Pearl.
+Temporal Constraint Network.
+Artificial Intelligence, 49(1-3):61-95, 1991.
+12.
+A. Fehnker.
+Guiding and Cost-Optimality in Model Checking of Timed and Hybrid Systems.
+PhD thesis, KUNijmegen, 2002.
+13.
+M.R.
+Garey and D.S.
+Johnson.
+Computers and Intractability: A Guide to the Theory of NP-Completeness.
+W. H. Freeman, 1979.
+14.
+M. Ghallab and H. Laruelle.
+Representation and control in IxTeT, a temporal planner.
+In AIPS, 1994.
+15.
+E. Gradel, W. Thomas, and T. Wilke, editors.
+Automata, Logics, and Infinite Games: A Guide to Current Research [outcome of a Dagstuhl seminar, February 2001], volume 2500 of LNCS.
+Springer-Verlag, 2002.
+16.
+T. Henzinger and P. Kopke.
+Discrete-time control for rectangular hybrid automata.
+Theor.
+Comput.
+Sci., 221:369-392, 1999.
+17.
+N. Layaida, L. Sabry-Ismail, and C. Roisin.
+Dealing with uncertain durations in synchronized multimedia presentations.
+Multimedia Tools Appl., 18(3):213-231, 2002.
+18.
+Solange Lemai and F. Ingrand.
+Interleaving temporal planning and execution in robotics domains.
+In AAAI, San Jose, CA, USA, 2004.
+19.
+X. Liu and S. Smolka.
+Simple linear-time algorithms for minimal fixed points (extended abstract).
+In ICALP, volume 1443 of LNCS.
+Springer-Verlag, 1998.
+20.
+D. Lugiez, P. Niebert, and S. Zennou.
+A partial order semantics approach to the clock explosion problem of timed automata.
+Theor.
+Comput.
+Sci., 345(1):27-59, 2005.
+21.
+O. Maler, A. Pnueli, and J. Sifakis.
+On the synthesis of discrete controllers for timed systems.
+In STACS, volume 900 of LNCS.
+Springer-Verlag, 1995.
+22.
+P. Morris.
+A structural characterization of temporal dynamic controllability.
+In CP, volume 4204 of LNCS.
+Springer-Verlag, 2006.
+23.
+P. Morris, N. Muscettola, and T. Vidal.
+Dynamic control of plans with temporal uncertainty.
+In IJCAI, 2001.
+24.
+S. Tripakis and K. Altisen.
+On-the-fly controller synthesis for discrete and densetime systems.
+In FM, volume 1706 of LNCS.
+Springer-Verlag, 1999.
+25.
+T. Vidal.
+A unified dynamic approach for dealing with temporal uncertainty and conditional planning.
+In ICAPS, Breckenridge, CO, USA, 2000.
+26.
+T. Vidal and H. Fargier.
+Handling contingency in temporal constraint networks: from consistency to controllabilities.
+JETAI, 11(1), 1999.
+A  Semantics of TTGA  A state of a task Ti is a triple (`, s, v) [?]
+L x NI x RX >=0 such that s[i] = `; (`, s) is called the discrete part of the state.
+From a state (`, s, v) such that v |= tc[`][?]
+, a task can either let time progress or do a discrete transition and reach a new state.
+This is defined by the transition relation -- built as follows: a  hal-00374700, version 1 - 9 Apr 2009  - For a = c, (`, s, v) --(`0 , s0 , v 0 ) iff there exists a transition (`, gd , gx , a, {xi }, `0 ) [?]
+Ei such that s |= gd , v |= gx , s0 = s[i@`0 ], v 0 = v[{xi }], and v 0 |= tc(`0 )[?]
+(i.e., the upper bound of constraints in tc(`0 )[?]
+).
+a - For a = u, (`, s, v) --(`0 , s0 , v) iff there exists a transition 0 (`, true, gx , a, {xi }, ` ) [?]
+Ei such that v |= gx , s0 = s[i@`0 ], and v |= tc(`0 )[?]
+.
+d - For d [?]
+R>=0 , (`, s, v) --(`, s, v 0 ) if v 0 = v + d then v 0 , v [?]
+[[tc[`][?]
+]].
+Thus, the semantics of a task Ti is a labeled transition system (LTS) STi = 0 (Q, q0 , --) where Q = L x NI x RX >=0 , q0 = (`i , s1 , 0), and the set of labels is {c, u} [?]
+R>=0 .
+The semantics of TTGA is defined similarly.
+A state of the TTGA is a tuple (`, s, v) such that for any task i s[i] = `[i] and v |= [?]i[?
+]I tc[`[i]][?]
+.
+The transition relation -- is defined as above for discrete transitions.
+For timed transitions, all timed constraints of transitions starting from ` shall be verified: if d [?]
+R>=0 , d (`, s, v) --(`, s, v 0 ) if v 0 = v + d, and v 0 , v [?]
+[[[?]i[?
+]I tc[`[i]][?]
+]].
+A run of a TTGA is a sequence of alternating time and discrete transitions in its LTS.
+Runs can also be represented by timed words (a1 , t1 ) .
+.
+.
+(am , tm ) where a1 , .
+.
+.
+, am [?]
+Act and t1 , .
+.
+.
+, tm are the real values corresponding to the time at which each discrete action is executed.
+Then, a normal run has a timed word such that when i <= j then ti <= tj .
+We denote by last(r) the last state of a run r. We denote by Runs(N, (`, s, v)) the set of normal runs of a network N starting in state (`, s, v).
+A maximal run is a run where time is not blocked by the time constraints, i.e., either it is an infinite run or it ends in a state which location has no discrete successor by any Ei or in a state such that s 6|= guard (`) for any ` of the state.
+The constraint (iv) of the definition gives a necessary syntactic condition on the timed constraints of transitions in order to obtain complete runs.
+Indeed, it implies that for any two successive transitions ps1 ,ph1 ,a1 ps2 ,ph2 ,a2 of a task Ti , ` --- ---- `0 --- ---- `00 such that a1 6= c we have that if, e.g., ph1 = xi [?]
+[m1 , M1 ] and ph2 = xi [?]
+[m2 , M2 ] then M1 < m2 <= M2 .
+Then, by firing the first transition we are sure that the state invariant of `0 is satisfied.
+B  Computing Unfolding of Tasks  Due to the form of TTGA, the minimum execution time of each TTGA is given by the following formula: d(Ti )(o) = d1 (Ti ) + o x d* (Ti )  where d1 (Ti ) is the minimum time taken to execute the first time all transitions of the task Ti , o is the number of iterations of the loop of Ti , and d* (Ti ) is the minimum time taken to execute the next iterations of the loop of Ti .
+All these times are computed only from the timed constraints on the transitions of Ti and the computation does not consider the dependences implied by the discrete guards of transitions.
+The minimum execution time for the first execution of all transitions of Ti is given by: d1 (Ti ) = St  ctrl.
+d1 (t)  + db1 (Ti )  hal-00374700, version 1 - 9 Apr 2009  d1 (t) = max ({l[t]} [?]
+{l[t - 1] | (t - 1) unctrl})  0, Ei (|Li | - 1) ctrl.
+db1 (Ti ) = l[|Li | - 1], Ei (|Li | - 1) unctrl.
+where l[t] is the lower bound (stronger constraint c <= xi ) in the timed guard of transition t. Intuitively, the minimum time for the first execution of Ti is computed from the lower bounds given by the time constraints on the controllable and uncontrollable transitions of Ti .
+Recall that transitions are indexed by their source locations, so t - 1 represent the transition before t in the TTGA.
+Also, since controllable transitions reset the local clock, the minimal execution time of the task is the sum of minimal times elapsed between two controllable transitions plus the residue due to the en of the task which may be not a controllable transition.
+The time elapsed between two successive controllable transitions t1 and t2 is given either by the maximum between the lower bound of t2 and the lower bound of the uncontrollable transition just before t2 , i.e., t2 - 1 if it is uncontrollable.
+The minimum execution time of the second and next iterations of the loop of Ti is computed similarly by tacking the lower bounds of time constraints on the controllable transitions of the loop.
+However, when considering the predecessor of a controllable transition in the loop t, we have to stay in the loop, i.e., t - 1 has to be in the loop.
+Then, for the first controllable transition of the loop we have to consider the last uncontrollable transition in the loop (given by |Li |) if it exists: d* (Ti ) = St ctrl.
+in loop of Ti d* (t) + db* (Ti ) d* (t) = max ( {l[t]}[?]
+{l[t - 1] | t - 1 is unctrl.
+in the loop}  0, |Li | is ctrl.
+db* (Ti ) = l[|Li |], |Li | is unctrl.
+We define the mapping u : I - N - N which gives for each transition j (j >= 1) of the task i the maximum number of unfolding in order to cover the horizon B.
+Moreover, u(i)(0) returns the maximum number of complete  executions of the loop of Ti to cover B.
+ min{o | d(Ti ) <= B} if d* (Ti ) 6= 0 u(i)(0) = 0 otherwise  0 if j 6[?]
+loop of Ti     u(i)(0) if j [?]
+loop of Ti     but d(u)(i)(j) > B and  d(u)(i)(j - 1) > B u(i)(j) = 1 +   u(i)(0) + 1 if j [?]
+loop of Ti     and d(u)(i)(j) <= B or    d(u)(i)(j - 1) <= B where  hal-00374700, version 1 - 9 Apr 2009  d(u)(i)(j) = d1 (Ti ) + u(i)(0) x d* (Ti ) +St<j  ctrl.
+in loop of Ti d* (t)  + l[j]  Example 3.
+The computation of unfoldings for the Explorer rover (see Figure 1) is given on Table 1.
+The table pictured in this figure gives for each task and for each transition (named by its source location) the number of time-points represented for this transition in the game interface.
+Task (i) u(0)(i) d(Ti )(o) Move 0 9 + 9o Pic 0 3 Arm 3 3 + 3o Com 0 8 Vw 0 40  1 2 1 5 1 1  Transitions (j) 2 3 4 5 2 2 2 1 1 - - - 5 5 4 - 1 - - - 1 1 - -  6 1 - - - -  Table 1.
+Unfolding computation for Explore example.
+C  Proof of Theorem 1  Let k be an integer and P be an undirected graph P = (V, E) with n vertices (|V | = n) numbered 1 to n. Let Gk be the game built at Theorem 1.
+We show that P can be covered by k cliques or less iff the Gk -Solve problem has a strategy to win.
+(=) If P has at most k cliques, let V = [?
+]0<=`<=k-1 V` with V` the set of `th clique.
+By definition of Gk , for any `, all tasks indexed by vertices in V` can be in their location 2 at the same time.
+Then, the first transition of these tasks can be executed at the same time without invalidating the safety property of Gk and they have to leave location 2 after one time unit at most.
+A winning strategy  for Gk is to take at moment t the controllable transition of the tasks indexed by the vertices in Vt .
+By construction of Gk , all tasks will end in location 3 before k time units and the safety constraints are satisfied.
+(=) If the game Gk has a winning strategy, this strategy shall start all tasks in the interval [0, k].
+Since each task takes at most one time unit, then there are at most k groups of tasks executed simultaneously (i.e., in their location 1) during [0, k].
+By construction of G, these tasks correspond to vertices related by an edge in P , so P has at most k cliques.
+Show that an STNU strategy exists.
+hal-00374700, version 1 - 9 Apr 2009  D  Proof of Theorem 2  The proof gives a polynomial test to decide if an STNU strategy Z satisfying the interface of a simple game G is a winning strategy for G (Lemma 3 and 4 below).
+Then, the theorem follows since for a horizon B given in unary, the description of potential STNU candidate for a winning strategy is polynomial in the size of the game and the bound B (Lemma 5 below).
+The algorithm testing when an STNU is a winning strategy for a simple game is given on Figure 4.
+The shapes used in the test algorithm are defined from the goal G, the guards in the network N , and the safety constraints S. An atomic shape is a precedence constraint between two time-points, denoted by t [?]
+t0 , saying that the time-point t precedes time-point t0 .
+An STNU Z containing the time-points t and t0 satisfies the atomic shape t [?]
+t0 , denoted by Z ` t [?]
+t0 , iff Z contains a link from t to t0 whose label is an interval with strictly positive lower bound (i.e., an interval in (0, +[?])).
+Atomic shape constraints are combined using conjunctions, disjunctions and quantification over time-points to form shape constraints.
+More precisely, the time-points in shape constraints belong to STNU satisfy-1 ing the interface of G, so they are labeled (due to sG ) by triples (i, m, u) with i [?]
+I the index of the task, m >= 1 the order number of the state source of the transition, and u >= 1 the occurrence of the transition.
+Quantification in shapes is done over the occurrence numbers u in time-points labels.
+Shapes (without quantification) can be represented graphically as shown on Figures 7 and 8.
+Time-points are labeled by their tuple (tasks index, transition index, occurrence number).
+Dashed lines are used to show time-points belonging to the same task.
+Formally, the syntax of shape constraints is: Atomic shape 3 a ::= (i, m, u) ~ tG | (i, m, u) ~ (j, k, l) Shape 3 s ::= a | s [?]
+s | s [?]
+s | [?]u.
+s | [?]u.
+s where i, j [?]
+I, m, k >= 1 are index of transitions in Ti resp.
+Tj , u, l >= 1 are occurrences of these transitions, and ~[?]
+{[?
+], }.
+For example, the shape constraint of Figure 7 is prec(i, m, u) [?]
+tG [?
+](i, n, u)  tG where we use prec(i, m, u) to represent the time-point for the transition preceding the transition (i, m, u) on Ti .
+i prec(i,m,u) tG (i,n,u)  hal-00374700, version 1 - 9 Apr 2009  Fig.
+7.
+Shape for i@[m, n] [?]
+G.  The shape constraints used in the algorithm to test the goal are built from the goal constraints as follows: ^ shape Goal ::= [?]u.
+prec(i, m, u) [?]
+tG [?]
+tG [?]
+(i, n, u) i@[m,n][?
+]G  which means that for each constraint in the goal, g = i@[m, n], there exists an occurrence number for the transitions preceding transition (i, m) (which leads to the mth state of Ti ) and the transition (j, n) (which goes out from the nth state of Ti ) such that the goal is reached at tG between these two moments.
+Shapes used to test safety are generated from safety constraints as follows:   ^ ^ ^  shape Safe ::= shape (i,m)  [?]
+shape d i[?
+]I  act[(i,m)][?
+]Actc  d[?
+]S  where the first set of conjuncts gives shape constraints from the guards of controllable transitions in each TTGA, while the second set represents shapes from the safety constraints S of G. In defining these shapes, a special treatment shall be considered for points succeeding the goal time-point tG because the safety constraints shall be satisfied until reaching the goal but they are not mandatory afterwards.
+Consider now a controllable transition (i, m) and some of its occurrence u.
+Then, the safety constraint corresponding to the guard of (i, m) may be ignored if time-point corresponding to (i, m, u) is after the goal.
+Otherwise, for each indexed interval constraint j@[k, l] in the guard of (i, m), the time-point (i, m, u) shall be between some occurrence u0 of the transition leading to the state k of Tj (i.e., prec(j, k, u0 )) and the transition going out from the state l. Then, shape (i,m) is defined by: [?]u.
+V tG [?]
+(i, m, u) [?]
+j@[k,l][?
+]guard[(i,m)]  [?
+]u0 .
+prec(j, k, u0 ) [?]
+(i, m,  u) [?]
+(i, m, u) [?]
+(j, l, u0 )  The shapes for safety constraints in i@[m, n] == j@[k, l] are generalization of shapes for guards: [?]u.
+tG [?]
+prec(i, m, u)[?]
+[?
+]u0 .
+prec(j, k, u0 ) [?]
+prec(i, m, u) [?]
+ (i, n, u) [?]
+(j, l, u0 ) [?]
+tG [?]
+(j, l, u0 )  hal-00374700, version 1 - 9 Apr 2009  Intuitively, the ith TTGA is between states m and n while the j th TTGA is between states k and l if for any occurrence u of transitions leading to state m (prec(i, m, u)) and the one leaving the state n ((i, n, u)) there exists an occurrence u0 of transitions of Tj leading to state k (prec(j, k, u0 )) and leaving the state l ((j, l, u0 )) such that one of the following cases is true: - the safety constraint is entirely satisfied by the u occurrence of the execution of Ti between states m and n and by the u0 occurrence of the execution of Tj between states k and l, - the safety constraint is satisfied at the beginning of these executions but not at the end of the intervals due to the fact that the goal is reached before execution of Tj between k and l ends, or - the safety constraint is not satisfied because the considered occurrences are after the goal.
+Figure 8 gives an illustration of each case above.
+Note that the above cases are not disjoint and this is an important fact for the proof of completeness of our test procedure (Lemma 1).
+i  j  prec(j,k,u')  prec(i,m,u)  i  j  prec(j,k,u')  prec(i,m,u)  i  prec(i,m,u)  j tG  tG  (i,n,u) (j,l,u') (a)  (j,l,u') (b)  Fig.
+8.
+Shape for safety i@[m, n] == j@[k, l] of S.  Finally, the shapes for mutual exclusion safety constraints i@[m, n] ] j@[k, l] are defined as follows: [?]u.
+tG [?]
+prec(i, m, u) [?][?
+]u0 .
+(j, l, u0 - 1) [?]
+prec(i, m,  u) [?]
+(i, n, u) [?]
+prec(j, k, u0 ) [?]
+[?]u.
+tG [?]
+prec(j, k, u) [?][?
+]u0 .
+(i, n, u0 - 1) [?]
+prec(j, k,  u) [?]
+(j, l, u) [?]
+prec(i, m, u0 )  (c)  where for any i [?]
+I and any state m in Ti , (i, m, 0) represents t0 .
+Intuitively, the safety constraint i@[m, n] ] j@[k, l] is satisfied if for each occurrence u of an execution between states m and n in Ti (and k and l in Tj ) one of the following conditions holds: - this occurrence is after the goal, i.e., the u occurrence of the transition leading to the m (resp.
+k) is after the goal, or - the execution takes place strictly between occurrences u0 - 1 and u0 of execution of Tj from state k to l (resp.
+Ti from state m to n) for some u0 >= 1.
+Like for inclusion constraints, these two cases are also overlapping.
+The following lemma states the correctness and the completeness of our algorithm.
+hal-00374700, version 1 - 9 Apr 2009  Lemma 3.
+An STNU Z satisfying the interface of a game G is a winning strategy iff the algorithm IsWinningStrategy returns true.
+Proof.
+(=) Let Z be an STNU such that Z ` G and the test algorithm returns true.
+The algorithm builds from Z an STNU which is DC and satisfies all the goal and safety constraints.
+By definition of winning strategies, the result follows.
+(=) The proof of completeness uses the convexity of the STNU strategies and the fact that the shape tested cannot exclude correct but convex STNU.
+Let Z be a winning strategy satisfying the interface of G. Then Z is already DC and satisfies the goal and safety constraints.We suppose that Z is in the reduced form of DC.
+The algorithm first completes Z to obtain the full interface of G. However, the time-points added are only appended to the last time-point of each task so they can not influence the links in Z.
+Then, the DC algorithm applied to Z only introduces more controllable links involving the newly introduced time-points, but does not change the original part of Z. b and it is a winning strategy, it means that Then, since Z is contained in Z each schedule of Z determines a play which goes through a goal configuration.
+Since (1) STNU can not represent union of goal states and (2) the constraints on states in G are disjoint imply that only one possibility to satisfy state constraints in G is present in Z.
+This configuration can be used to satisfy the shape for the goal.
+All plays of Z already satisfy the safety constraints (guards and constraints in S).
+Since the added points in Z are all after the goal configuration, they trivially satisfy the safety shapes since all these shapes are trivial for points after tG .
+For time-points before tG , we claim that these time-points satisfy exactly one of the disjunction of the shapes in shape Safe .
+The idea is to show that (1) the shapes considered correspond to disjoint set of plays and (2) the plays of Z cannot be in two such shapes due to convexity of Z.
+Figure 9 gives an intuition of the point (1) for the shapes corresponding to inclusion safety constraints i@[m, n] = j@[k, l].
+The plan represents in x axis the beginning of executions (prec(i, m, u) and prec(j, k, u0 )) and in the y axis the end of theses executions ((i, n, u) and (j, l, u0 )).
+Then all considered  hal-00374700, version 1 - 9 Apr 2009  points shall be in the second half of the first quadrant.
+Points A, B, C and D represent occurrences of the executions in Tj respectively, i.e., the the first, second, third, and fourth occurrences of prec(j, k, u0 ) and (j, l, u0 ).
+In fact, these points are DBM zones in Z, but they can be abstracted to points dues to the following property: the consecutive occurrences of executions of Tj are disjoint and moreover, (j, l, u0 ) [?]
+prec(j, k, u + 1).
+The zones attached to points A-C and G correspond to executions on Ti allowed by the shape for safety constraint i@[m, n] = j@[k, l].
+For points A and B situated before the goal (x and y are less than tG ), the executions on Ti shall satisfy prec(j, k, u0 ) [?]
+prec(i, m, u) and (i, n, u) [?]
+(j, l, u0 ).
+For point C, although the beginning of execution of Tj is before tG , this execution ends after tG , so the executions allowed for Ti satisfy prec(j, k, u0 ) [?]
+prec(i, m, u).
+Finally, all points greater than tG correspond to valid executions.
+It is important to see that we have only convex regions and any DBM covering these regions is fully included in one of them.
+D  y  C  tG  G B  A  tG  x  Fig.
+9.
+Proof of completeness.
+If Z is winning, it shall satisfy every safety constraint d of the form i@[m, n] == j@[k, l], that is for every moment t, if i is in t between states m and n, then either t is after tG or task j is between states k and l. The intervals in which j is between states k and l are disjoint (they are the hypotenuse of the triangle determined by the point attached to this point) because they correspond to different occurrences of this interval.
+Then, to satisfy the safety constraint d, the hypotenuse for intervals i@[m, n] shall be contained in the hypotenuse of triangles for points A-C or after tG .
+These zone are those defined by the safety shape for this constraint.
+To finish the proof, we compute the complexity of the proposed algorithm.
+If B (the game horizon) is given in unary, the number of points in the interface  of G is polynomial, so the first two steps of the algorithm (lines 1-2) are also polynomial (DC is polynomial in the number of time-points in Z).
+Testing shapes (lines 5 and 7) is also polynomial.
+Indeed, for each constraint (in guards, goal or safety), to test its satisfaction one has to find a (small) set of links in the graph defined by the STNU.
+The number of links in this graph is quadratic wrt the number of vertices.
+We obtain then the following lemma which is a first step in establishing the complexity of our problem.
+hal-00374700, version 1 - 9 Apr 2009  Lemma 4.
+Given an STNU Z satisfying the interface of a game G, the problem of deciding if Z is a winning strategy for G is in PTIME.
+Now, let us compute the size of a representation for STNU that are candidate strategies for a game G. If the TTGA of G has n transitions, the maximal number of time-points in the interface of G is nxB+2, limit reached when each transition takes one time unit.
+Then, the maximal number of edges that has to be specified for the STNU candidate is O(n2 x B 2 ).
+Each of these edges is labeled by an interval given by two integer numbers which are limited by the horizon B.
+Then, we obtain the following result which finishes the proof of NP completeness.
+Lemma 5.
+The size needed for describing a candidate STNU strategy for a game G is O(n2 x B 3 ) where n is the number of transitions in the TTGA of G and B is the horizon of the game given in unary.
+E  Properties of the simple algorithm  Proposition 1.
+All controllable edges in a SWS for a game G are maximal wrt the game interface and constraints.
+An STNU Z is included in some SWS iff (1) Z contains all time-points of the interface of G, (2) Z it is minimized using DC (so consistent), and (3) all controllable edges in Z are labelled by intervals included in the interval labeling the same edge in SWS.
+Corollary 2.
+An STNU Z satisfying the interface of G is a winning strategy iff b is included in some standard solution for the game G. Z b is built as shown in Figure 4, i.e., by adding to Z all time-points and where Z edges in the interface of G and then applying DC.
+Proof.
+= If Z is a winning strategy for G, then it satisfies the goal and safety b is obtained from Z constraints in G and for any choice of the environment.
+Z by adding time-points which are not useful for satisfying safety and goal (since these time-points are related only with the last time-points of Z on each task...).
+Moreover, the DC algorithm does not change the controllability property.
+From the completeness result of Lemma 3, it results that in order to satisfy the goal b shall include some combination of and safety constraints of G, Z (and so Z) safety and goal shapes.
+This combination gives the SWS to be chosen.
+But SWS is the maximal STNU with interface of G implementing the shapes and being b shall be included in this SWS.
+controllable, so Z = By the correctness of result of Lemma 3.
+A direct consequence of the above property is given in the following corollary and it will be used to prove the relative completeness of our algorithm for solving simple games:  hal-00374700, version 1 - 9 Apr 2009  Corollary 3.
+The G-Solve-STNU has a solution iff there exists a "standard" solution for G. Let B the set of standard winning strategies (SWS) built for the game G. From the definition of SWS, the elements of B are STNU containing all points of the interface of G, implementing different shapes for each goal and safety constraints, and being DC.
+The maximal size of B is given by the maximal number of choices for the implementation of goal and safety constraint for each occurrence of transitions/states in the interface of G. For example, if i@[m, n] [?]
+G and u(i)(m) is the number of occurrences of the mth transition on task i, the number of choices to implement this (part of the) goal is given by u(i)(m).
+For a safety constraint i@[m, n] == j@[k, l], the number of choices is given by (3u(j)(k))u(i)(m) .
+In general the maximal size of B is exponential in the size (number of points) of the interface of G.

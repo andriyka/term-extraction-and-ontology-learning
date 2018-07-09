@@ -5,20 +5,15 @@ import os
 from os import listdir
 from os.path import isfile, join
 
-config = ConfigParser.ConfigParser()
-config.readfp(open('configuration/config.ini'))
 
-txt_dir=config.get('main', 'txt_dir')
-dataset_dest=config.get('main', 'dataset_dir')
-
-def create_data_set(txt_source_dir = txt_dir, dataset_dest_key = dataset_dest, sample_type = 'rev_chrono', all_files = False, sample_size = 30):
+def create_data_set(txt_source_dir, dataset_dest_key, sample_type = 'rev_chrono', all_files = False, sample_size = 30):
     file_names = sorted([os.path.join(txt_source_dir, f) for f in listdir(txt_source_dir) if isfile(join(txt_source_dir, f))
                           and f.lower().endswith(".txt")])
     sample_size = sample_size if not all_files else len(file_names)
     if sample_type == 'chrono':
         sample = file_names[:sample_size]
     elif sample_type == 'rev_chrono':
-        sample = file_names[:-sample_size]
+        sample = list(reversed(file_names[-sample_size:]))
     elif sample_type == 'bi_dir':
         inds = range(0, sample_size)
         sample = []
@@ -46,8 +41,8 @@ def create_data_set(txt_source_dir = txt_dir, dataset_dest_key = dataset_dest, s
 
 
 
-if __name__ == '__main__':
-    create_data_set(sample_type = 'bi_dir', sample_size = 50)
+#if __name__ == '__main__':
+    #create_data_set(sample_type = 'bi_dir', sample_size = 50)
 
 
 

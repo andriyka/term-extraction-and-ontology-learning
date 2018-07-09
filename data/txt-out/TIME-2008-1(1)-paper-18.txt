@@ -1,0 +1,316 @@
+15th International Symposium on Temporal Representation and Reasoning  A Greedy Approach Towards Parsimonious Temporal Aggregation Juozas Gordevicius  Johann Gamper  Michael Bohlen  Free University of Bozen-Bolzano, Italy {gordevicius,gamper,boehlen}@inf.unibz.it Abstract  time intervals for which to report a result tuple, e.g., for each year from 2000 to 2005.
+For each such interval a result tuple is produced by aggregating over all argument tuples that overlap the interval.
+STA is not guaranteed to give good summaries of the data, since the intervals are specified a priori without considering the distribution of the data.
+In this paper we present a new data-driven aggregation operator, called greedy parsimonious temporal aggregation (PTAg ).
+It is based on the following observation: many applications do not need the fine-grained result of ITA, but require a concise overview of the data, i.e., a small set of result tuples that represent the most significant changes over time.
+PTAg approximates ITA by greedily merging adjacent ITA result tuples that have similar aggregate values until the result relation is sufficiently small.
+This yields a data-driven approach that allows to control the size of the result relation.
+Temporal aggregation is a crucial operator in temporal databases and has been studied in various flavors.
+In instant temporal aggregation (ITA) the aggregate value at time instant t is computed from the tuples that hold at t. ITA considers the distribution of the input data and works at the smallest time granularity, but the result size depends on the input timestamps and can get twice as large as the input relation.
+In span temporal aggregation (STA) the user specifies the timestamps over which the aggregates are computed and thus controls the result size.
+In this paper we introduce a new temporal aggregation operator, called greedy parsimonious temporal aggregation (PTAg ), which combines features from ITA and STA.
+The operator extends and approximates ITA by greedily merging adjacent tuples with similar aggregate values until the number of result tuples is sufficiently small, which can be controlled by the application.
+Thus, PTAg considers the distribution of the data and allows to control the result size.
+Our empirical evaluation on real world data shows good results: considerable reductions of the result size introduce small errors only.
+Example 1.
+Consider a temporal relation P ROJECTS that records the name of an employee (E ), the project he/she works for (P ), his/her monthly salary (S ), and a timestamp, T , that represents the time interval (in months) during which the project contract is effective.
+An instance of the P ROJECTS relation is graphically shown in Fig.
+1(a), where the timestamps of the tuples are drawn as horizontal lines.
+Assume the following ITA query Q1: "What are the average and maximal monthly salaries for each project?".
+The result of this query is illustrated in Fig.
+1(b).
+It contains more tuples than the input relation, but many tuples represent only small fluctuations in the aggregate values, e.g., s1 , .
+.
+.
+, s5 .
+To reduce the size of the ITA result, we iteratively merge pairs of the most similar, adjacent tuples.
+Fig.
+1(c) shows a possible reduction to three tuples, which is obtained by applying six consecutive merging steps.
+Note that the tuples in the reduced result relation show significant changes in the aggregate values.
+The similarity between two adjacent tuples is decided upon their aggregate values, and the aggregate values of the new result tuple are computed as the weighted average over the corresponding aggregate values of the merged tuples.
+For example, the tuples s1 , .
+.
+.
+, s5 have similar aggregate values and are merged in four steps to produce the PTAg result tuple z1 , stating that in the interval [1, 12] the average  1 Introduction Temporal aggregation is a crucial operator in temporal databases that aims to summarize large sets of time-varying information.
+It has been studied in various flavors, most importantly as instant temporal aggregation (ITA) [2, 3, 4, 6, 7, 8].
+ITA works at the smallest time granularity and produces a result tuple whenever an argument tuple starts or ends.
+Its main drawback is that the result size depends on the argument relation.
+Due to temporally overlapping argument tuples the result relation is often larger than the argument relation, and can get up to twice as large [2].
+This behavior is in conflict with the very idea of aggregation, which is to provide a summary of the data.
+Span temporal aggregation (STA) [2, 3] allows to control the result size by permitting an application to specify the  1530-1311/08 $25.00 (c) 2008 IEEE DOI 10.1109/TIME.2008.24  88  r2 = (Ann, A, 850)  1  r4 = (Ann, A, 1200)  r3 = (John, A, 900)  r1 = (John, A, 800)  5  r5 = (Tom, A, 800)  9  13  17  21  t  (a) P ROJECTS relation s6 = (A, 1050, 1200) s2 = (A, 825, 850) s4 = (A, 875, 900) s3 = (A, 850, 850) s5 = (A, 900, 900) s1 = (A, 800, 800)  s8 = (A, 800, 800) s7 = (A, 1000, 1200)  (b) ITA result for query Q1 z1 = (A, 850.0, 862.5)  z2 = (A, 1016.67, 1200.0)  z3 = (A, 800.0, 800.0)  (c) PTAg result for query Q1  Figure 1.
+Parsimonious temporal aggregation over the P ROJECTS relation.
+and maximum salaries for project A are approx.
+850 and 862.5, respectively.
+Note, that in this paper we do not consider merging tuples that are separated with temporal gaps nor tuples from different aggregation groups.
+tuples with one numerical attribute and ignores the length of the tuples' timestamp.
+Adjacent tuples are coalesced if the induced local error is below a user-specified threshold.
+The PTAg operator allows multiple attribute values, and the size of the result is controlled by the application.
+The rest of the paper is organized as follows.
+Section 2 discusses related work.
+In Sec.
+3 the new temporal aggregation operator is introduced and defined.
+Section 4 reports about a first empirical evaluation.
+Section 5 presents conclusions and future work.
+2  3 Greedy Parsimonious Temporal Aggregation In this section we introduce and define a new temporal aggregation operator, termed greedy parsimonious temporal aggregation (PTAg ).
+It takes into consideration the input data distribution and allows to control the size of the result relation.
+PTAg approximates ITA and can be defined as a two-step process: (1) compute the ITA result on the argument relation, and (2) iteratively merge pairs of the most similar, adjacent tuples in the ITA result until an application-specific size constraint is satisfied.
+Related Work  Various forms of temporal aggregation have been proposed, including instant temporal aggregation (ITA), moving-window temporal aggregation, and span temporal aggregation (STA) [2, 3, 4, 5, 6, 7, 8].
+They differ mainly in how the time line is partitioned and how the aggregation groups are defined.
+Most of the past research activities concentrated on the development of efficient evaluation strategies for ITA, both for memory-based evaluation [2, 3, 4] as well as for disk-based evaluation [4, 8].
+In [7] temporal aggregation is formalized in a uniform framework that enables the analysis and comparison of the different forms of temporal aggregation.
+In a similar vein, the multi-dimensional temporal aggregation operator in [2] extends and generalizes previous temporal aggregation operators, by providing more flexibility in partitioning the time line and specifying aggregation groups.
+PTAg is a new temporal aggregation operator that combines features from ITA and STA.
+By merging similar tuples in the ITA result relation until it is sufficiently small, PTAg follows a data-driven approach that considers the distribution of the input data and allows to control the size of the result relation.
+An approach similar to PTAg is the approximate temporal coalescing framework in [1].
+It is limited to temporal  Preliminaries.
+We assume a discrete time domain, [?
+]T , where the elements are termed chronons (or time points), equipped with a total order, <T (e.g.
+calendar months with the order <).
+A timestamp (or time interval) T is a convex set over the time domain and is represented by two chronons, [TS , TE ], denoting its inclusive starting and ending points, respectively.
+A relation schema is a three-tuple R = (, [?
+], dom), where  is a non-empty, finite set of attributes, [?]
+is a finite set of domains, and dom :  - [?]
+is a function that associates a domain with each attribute.
+A temporal relation schema is a relation schema with at least one timestamp valued attribute, i.e., [?
+]T [?]
+[?].
+A tuple r over schema R is a finite set that contains for every Ai [?]
+a pair Ai /vi such that vi [?]
+dom(Ai ).
+A relation over schema R is a finite set of tuples over R, denoted as r.  89  Relation r is termed sequential with respect to a set of attributes A = {A1 , .
+.
+.
+, Ak } if the following holds true:  To simplify the notation we assume an ordering of the attributes and represent a temporal relation schema as R = (A1 , .
+.
+.
+, Am , T ) and a corresponding tuple as r = (v1 , .
+.
+.
+, vm , T ).
+For a tuple r and an attribute A we write r.A to denote the value of the attribute A in r. For a set of attributes A1 , .
+.
+.
+, Ak , k <= m, we define r[A1 , .
+.
+.
+, Ak ] = (r.A1 , .
+.
+.
+, r.Ak ).
+[?
+]ri [?
+]rj (ri [?]
+r [?]
+rj [?]
+r [?]
+ri 6= rj [?]
+ri [A] = rj [A] == ri .T [?]
+rj .T = [?])
+Example 3.
+Obviously, the ITA result in Fig.
+1(b) is sequential with respect to the grouping attribute P .
+Instant Temporal Aggregation.
+For each combination of grouping attribute values, ITA computes an aggregation result at each time point, t, by considering all argument tuples that hold at t and have the same grouping attribute values.
+Merging Similar Tuples.
+Having computed the ITA over the argument relation, the next step is to iteratively merge pairs of the most similar, adjacent tuples that have identical grouping attribute values.
+Definition 1.
+(Instant Temporal Aggregation) Let r be a temporal relation with schema R = (A1 , .
+.
+.
+, Am , T ), F = {fAl1 , .
+.
+.
+, fAlp } be a set of aggregate functions, and A = {A1 , .
+.
+.
+, Ak } be the grouping attributes.
+Then the result of instant temporal aggregation, s, has the schema S = (A1 , .
+.
+.
+, Ak , fAl1 , .
+.
+.
+, fAlp , T ) and is defined as G  ita  Definition 3.
+(Adjacent Tuples) Let R and A be as in Def.
+2 and r be a sequential relation over A.
+Two tuples ri , rj [?]
+r are adjacent (with respect to A), ri [?]
+rj , iff ri [A] = rj [A] [?]
+ri .TE = rj .TS - 1 Example 4.
+In Fig.
+1(b) we have s1 [?]
+s2 [?]
+* * * [?]
+s8 .
+T  [F][A][T ]r = {x | t [?]
+[?]
+[?]
+g [?]
+p[A]r [?]
+When two adjacent tuples, si [?]
+sj , are merged into a new tuple, z, the aggregate values of z are determined as the weighted average, [?
+], of the corresponding aggregate values in si and sj .
+Thus, for an aggregate function, fAij , the new value in z is computed as si .fAij [?]
+sj .fAij =  rg = {r | r [?]
+r [?]
+r[A] = g [?]
+t [?]
+r.T } [?]
+rg 6= [?]
+[?]
+x = (g.A1 , .
+.
+.
+, g.Ak , fAl1 (p[Al1 ]rg ), .
+.
+.
+, fAlp (p[Alp ]rg ), [t, t])}  |si .T |si .fAi +|sj .T |sj .fAi  where p is the projection operator and p is the duplicate preserving projection operator.
+j  j  .
+Obviously, each merging step introduces a small error with respect to the ITA result.
+By taking the weighted average of the aggregate values, we get the best approximation of the ITA result (independently of the actual aggregation function).
+Now we can define a merge function, m, that takes as input an ITA result relation, s, and a similarity measure, D, and merges the two most similar, adjacent tuples in s. |si .T |+|sj .T |  The variable t ranges over the temporal domain, and g ranges over all combinations of grouping attribute values in r. For each combination of t and g, the set rg collects the argument tuples that are valid at time t and have the same grouping attribute values as g. If rg is not empty, a result tuple, x, is created by extending g with the aggregate values and a timestamp that represents the time instant t. Before applying an aggregate function, rg is projected to the attribute the function is applied to.
+Note that the above definition does not include the final coalescing of valueequivalent tuples over consecutive time points into tuples over maximal time periods during which the aggregate values do not change.
+Definition 4.
+(Merge) Let s, A, F, and T be as in Def.
+1, and D : s x s - R+ be a similarity measure.
+Furthermore, let  Example 2.
+The ITA query Q1 over the P ROJECTS relation has a single grouping attribute, P , and the aggregate functions are F = {avg(S ), max (S )}.
+The final result after coalescing consecutive tuples with identical aggregate values is illustrated in Fig.
+1(b).
+(1)  (si , sj ) = arg mins[?
+]s,s0 [?]s,s[?
+]s0 D(s, s0 )  (2)  z = (s.A1 , .
+.
+.
+, s.Ak , si .fAl1 [?]
+sj .fAl1 , .
+.
+.
+, si .fAlp [?]
+sj .fAlp , [si .TS , sj .TE ])  Then the merge function, m, is defined as m(s, D) = (s \ {si , sj }) [?]
+{z}.
+si and sj are the two most similar, adjacent tuples in s according to D. If two or more pairs of tuples have the same smallest distance, the pair si , sj is arbitrarily chosen from these pairs.
+The new tuple, z, is specified as follows: the values of the grouping attributes are the same as in si (or sj ), the timestamp is the period from the starting point of si to the ending point of sj , and the aggregate values are computed as the weighted average.
+A fundamental property of ITA aggregation is that the timestamps of the result tuples within a single aggregation group do not intersect.
+We term such temporal relations sequential.
+Definition 2.
+(Sequential Relation) Let r be a temporal relation with schema R = (A1 , .
+.
+.
+, Ak , Ak+1 , .
+.
+.
+, Am , T ).
+90  Example 5.
+Consider the ITA result in Fig.
+1(b), and assume that s1 and s2 are the most similar, adjacent tuples according to some D. Then the merge function substitutes s1 and s2 by the new tuple (A, 815.5, 830, [1, 5]).
+Merging the latter with s3 and then with s4 and s5 yields the final result tuple z1 as depicted in Fig.
+1(c).
+Proof.
+The result of ITA aggregation is a sequential relation and merge function merges only sequential tuples.
+The algorithm for computing PTAg follows directly the definition.
+The time complexity is comprised of two parts: the calculation of the ITA and the merge process.
+In the worst case, the ITA takes O(n2 ) time and returns a relation of size 2n - 1 [2], where n is the size of the argument relation.
+The merge process over the ITA result has a quadratic worst case complexity O(n2 ) when c = 1.
+This complexity stems from the fact that one scan of the ITA result is required to determine the pair with the smallest distance and the number of merges might be 2n-2.
+With a heap structure that stores the precomputed distances it is possible to reduce the time complexity of the merging step to O(n log n).
+The Similarity Measure.
+The similarity measure, D, is used to determine pairs of adjacent tuples, si [?]
+sj , with the most similar aggregate values.
+In this paper we adopt a similarity measure which is based on the weighted distance between the aggregate values of si and sj and the new tuple, z, that would be produced by merging si and sj , i.e., D(si , sj ) = lp X  (|si .T | * |si .fAl -z.fAl | + |sj .T | * |sj .fAl -z.fAl |)  4 Evaluation  l=l1  We have performed a number of experiments that are mainly focusing on the quality of the PTAg result using a real-world data set from University of Arizona that stores salary information of employees from 1981 to 1997 at the granularity level of months.
+The attributes include employee ID, the salary, the department, and the project.
+The data set contains 83 856 tuples, and the following ITA queries have been issued over this data set: Q1: What is the average salary?
+Q2: What is the average and maximum salary?
+The ITA result of both queries has a total of 2 657 tuples.
+Figure 2(a) shows the ITA result of Query Q1, and Fig.
+2(b) the corresponding PTAg result with c = 40.
+It is evident that the reduced result closely resembles the ITA result.
+Similar, Fig.
+2(d) shows the ITA result of Query Q2, and Fig.
+2(e) the corresponding PTAg result with c = 20.
+Here each tuple is represented by two horizontal lines that represent the average and maximum salary, respectively.
+Again, the resemblance to the ITA result is evident.
+To confirm the visual resemblance between the ITA result and the PTAg result and to measure the quality of the PTAg result, we compute the absolute error, AE(s, z), between the ITA and PTAg result sets.
+AE is calculated by traversing the time line and summing up at each time point the absolute differences in the aggregate values between the ITA tuples in s and the corresponding PTAg tuples in z.
+(similar as in the distance function, D).
+We normalize AE with respect to the maximal error, i.e., when c is set to 1.
+Fig.
+2(c) shows the growth of the absolute error for the two queries.
+We have observed that the error measure is a good indicator for the optimal termination point of the merging process.
+During the merging process, the error tends to stay low until some point when it starts to grow up very fast.
+The best compression to quality ratio is achieved by stopping the merging process at that point.
+At that point  where z.fAl = si .fAl [?]
+sj .fAl .
+The similarity measure returns 0 when merging two tuples with identical nontemporal attribute values.
+This is exactly what coalesce does.
+In all other cases D returns a positive value.
+Note that D measures the local error with respect to the ITA result that is introduced when merging two tuples.
+Other similarity measures might be considered.
+In particular, it might be useful to introduce weights to leverage the impact of different attributes over different domains to the overall similarity value.
+The PTAg Operator.
+By applying the merge function iteratively, the ITA result is reduced step-by-step until its size is smaller or equal to a user-defined value c. This leads to the definition of PTAg .
+Definition 5.
+(Greedy Parsimonious Temporal Aggregation) Assume r, R, A, F and T as in Def.
+1.
+Further, let D be a similarity measure, m be the merge function, and c be a user-defined value for the result size.
+Then greedy parsimonious temporal aggregation is defined as follows: G pta [F][A][T ][D][c]r = m(G ita [F][A][T ]r, D, c) where ( m(s, D, c) =  s  iff |s| <= c  m(m(s, D), D, c) otherwise.
+Example 6.
+Figure 1(c) shows the result of PTAg for Query Q1, where c = 3 and D as introduced above.
+Lemma 1.
+Let r, A, F, T , E, and c be as in Def.
+5.
+Then the PTAg result relation, z = G pta [F][A][T ][D][c]r, is a sequential relation.
+91  8 7.5  7 6.5 6 5.5 5 44000  7  Error  Average Salary  Average Salary  8 7.5  6.5 6 5.5  45000  46000  47000 48000 Time  49000  50000  5 44000  51000  45000  47000 48000 Time  49000  50000  51000  (b) Q1 PTAg , c=40  (a) Q1 ITA  50 40 30 20 10 0 44000  45000  46000  47000 48000 Time  49000  50000  51000  (d) Q2 ITA  100  (c) Absolute and local errors of Q1, Q2  60  Execution Time  60  600 500 400 300 200 Number of tuples in PTA result  2  70 AVG and MAX Salary  70 AVG and MAX Salary  46000  1 0.9 AE of Q1 D of Q1 0.8 AE of Q2 0.7 D of Q2 0.6 0.5 0.4 0.3 0.2 0.1 0 800 700  50 40 30 20  gPTA gPTA with Heap 1.5 1 0.5  10 0 44000  0 45000  46000  47000 48000 Time  49000  50000  51000  (e) Q2 PTAg , c=20  0  100  200  300  400 500 600 700 Number of Tuples  800  900 1000  (f) Execution times of PTAg  Figure 2.
+Aggregation results, error growth and time complexity of PTAg operator.
+the resources of similar tuples are exhausted, and the algorithm is forced to merge not so similar ones.
+The same figure plots also the totals of the similarity measure D calculated at each merge step.
+Observe, that these values grow in the same manner as the absolute error.
+Thus, we can conclude that the used similarity measure (which actually computes a local error) approximates well the global error.
+Fig.
+2(f) compares the execution time of our PTAg implementation.
+Using the heap offers significant performance improvement.
+bines categorical and numerical attributes.
+Similar, bridging temporal gaps in the merging process will introduce a different kind of error that needs a different treatment.
+Finally, we will analyze different ways of combining the aggregate values when tuples are merged.
+5  References  Acknowledgments We are grateful to the anonymous reviewers for the indepth reviews of the article and valuable comments.
+Conclusions and Future Work  [1] K. Berberich, S. J. Bedathur, T. Neumann, and G. Weikum.
+A time machine for text search.
+In SIGIR, pages 519-526, 2007.
+[2] M. H. Bohlen, J. Gamper, and C. S. Jensen.
+Multidimensional aggregation for temporal data.
+In EDBT, volume 3896 of LNCS, pages 257-275.
+Springer, 2006.
+[3] N. Kline and R. T. Snodgrass.
+Computing temporal aggregates.
+In Proceedings of the 11th International Conference on Data Engineering (ICDE'95), pages pp.
+222-231, Taipei, Taiwan, March 1995.
+[4] B.
+Moon, I. F. Vega Lopez, and V. Immanuel.
+Efficient algorithms for large-scale temporal aggregation.
+IEEE Transactions on Knowledge and Data Engineering, 15(3):pp.
+744- 759, May/June 2003.
+[5] R. T. Snodgrass, S. Gomez, and L. E. McKenzie.
+Aggregates in the temporal query language tquel.
+IEEE Trans.
+Knowl.
+Data Eng., 5(5):826-842, 1993.
+[6] P. Tuma.
+Implementing Historical Aggregates in TempIS.
+PhD thesis, Wayne State University, Detroit, Michigan, 1992.
+[7] I. F. Vega Lopez, R. T. Snodgrass, and B.
+Moon.
+Spatiotemporal aggregate computation: A survey.
+IEEE Transactions on Knowledge and Data Engineering, 17(2):pp.
+271-286, 2005.
+[8] J. Yang and J. Widom.
+Incremental computation and maintenance of temporal aggregates.
+The VLDB Journal, 2003.
+In this paper we have introduced a new temporal aggregation operator, called greedy parsimonious temporal aggregation (PTAg ), which combines features from ITA and STA.
+PTAg takes the result of ITA and greedily merges adjacent tuples with similar aggregate values to produce a reduced result set, the size of which can be controlled by the user.
+The new operator takes advantage of the input data distribution and overcomes the main limitation of ITA, where the result set can typically exceed the input in size.
+A first empirical evaluation shows good results: considerable reductions of the result size introduce small errors only.
+The ideas presented in this paper can be extended in various directions.
+First, we are working on a more efficient evaluation algorithm that computes the PTAg result directly from the argument relation, thus avoiding the intermediate computation of ITA.
+Second, the merging process shall be extended to allow merges across different aggregation groups as well as to bridge small temporal gaps between tuples.
+Third, a careful investigation of different similarity measures is worthwhile.
+Specifically, when merging across aggregation groups we need a distance function that com-  92

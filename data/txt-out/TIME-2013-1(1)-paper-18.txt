@@ -1,0 +1,314 @@
+2013 20th International Symposium on Temporal Representation and Reasoning  Making Time Just Another Axis in Geospatial Services Piero Campalani, Dimitar Misev, Alan Beccati and Peter Baumanna a School of Engineering & Science (JUB), Bremen, Germany Email: {p.campalani,d.misev,a.beccati,p.baumann}@jacobs-university.de Alongside, the consolidation and advancements of standards for the geospatial realm ([8], [9]) are creating premises for open interconnectedness and interoperability of location-based web services.
+In particular, the Geography Markup Language (GML) a the XML grammar dedZned by the Open Geospatial Consortium (OGC) a is a description of application schemas, transport and storage of geographical features, as they are described in the ISO 19100 series of standards and the OpenGIS Abstract SpecidZcation.
+Among the several conceptual models covered by GML (e.g.
+spatial geometries, coverages, units of measure), of particular interest for this work are the schemas for Coordinate Reference Systems (CRSs), a key aspect of geoscience datasets, and their application to gridded coverages.
+In [10] the authors described the advantages of a GML-oriented approach for referencing geospatial data when implementing services on the web, and this inevitably needs to include a proper management of the temporal information.
+Time should not be meant as just an additional attribute, e.g.
+support information, but should be integrated in the model of a coverage as a coordinate on its own, wrapping time series of data onto a single object, this way extending querying and processing capabilities of web services to the temporal dimension [11].
+This is eagerly awaited by the scientidZc community, including geo image services ([12], [13]), the Model Web ([14], [15]), or geological sciences [16].
+In this article we will propose a framework for serving regular/irregular time series of datasets by means of spatio-temporal CRSs in an OGC-oriented Web environment, and by seamless integration of the temporal dimension in the generic n-dimensional space of analysis, with focus on the implications for the OGC Web Coverage Service (WCS) [17] and Web Coverage Processing Service (WCPS) [18].
+After an overview of related works in Sec.
+II, Sec.
+III will introduce the syntax behind the specidZcation and web-based retrieval of CRS dedZnitions; Sec.
+IV will describe how GML addresses the recording of temporal coordinates as well as the concepts of the proposed framework; practical examples are presented in Sec.
+V; conclusions are eventually drawn in Sec.
+VI.
+AbstractaThe use of large multidimensional, complex datasets to study the roots and the consequences of real-world phenomena is systematically gaining importance in the recent years.
+These datasets and their requisite metadata can be managed by queryable databases, and the increasing processing capabilities of distributed computing and Array DBMS are opening new scenarios for Web-based access and analysis.
+The spatio-temporal nature of these observations requires the establishment of an automated machine-readable system that seamlessly accounts for time as not just an attribute, but rather as one more axis in the n-dimensional structure.
+This paper proposes a conceptual framework for the integration of temporal with spatial dimensions.
+Based on the widely used Geography Markup Language (GML) it exploits temporal Coordinate Reference Systems (CRSs) in analogy to, and interoperable with, well-known spatial CRSs.
+The proposed approach is then concretely applied to the OGC Web protocols Web Coverage Service (WCS) and Web Coverage Processing Service (WCPS), by means of which a user can visualize, aggregate, process remotely stored archives of scientidZc data.
+It is based on an open-source CRS resolver, SECORE, which translates URL identidZers of CRSs into their GML dedZnitions.
+SECORE has been adopted by OGC as its standard CRS resolver, and the whole concept is supported by an ad-hoc OGC working group.
+Keywords-time series; coordinate systems; geoservices; big data;  I. I NTRODUCTION The increasing availability of multidimensional scientidZc datasets is giving room to a always wider range of applications that can take advantage of jointly spatial and temporal analytics capabilities [1].
+In particular, Earth monitoring via satellites and remote sensing technologies offers a powerful mean for analyzing long-term datasets that are crucial for a clearer understanding of phenomena and thus for prevention; rising atmospheric CO2 or the Antarctic ozone hole were indeed discovered by a fruitful analysis of spatio-temporal datasets.
+Developing applications can transversely span a variety of different domains, from land use [2] to cryosphere analysis [3], from environmental heritage [4] to planetary sciences [5], and more.
+The mere visualization of the data is usually not enough if not accompanied by analysis and consequently adequate processing capabilities [1].
+The rising of distributed computing resources as commodity services and the systematic development of Array DBMSs ([6], [7]) are making it possible to achieve important speed increases for analyses.
+1530-1311/13 $26.00 AS 2013 IEEE 1550-1311/13 DOI 10.1109/TIME.2013.24  II.
+R ELATED W ORKS The extension of spatial data models to the temporal dimension in a unidZed manner is a crucial aspect when 119 133  investigating dynamic phenomena [19].
+Augmenting spatial modelling and analytics capabilities with temporal semantics has been addressed in in many areas of geosciences, dating back at least twenty years [20].
+In recent years there has been a growing attention on the dZeld of spatio-temporal databases and how to query on them [21].
+Such databases deal with geometries which can change over time in order to provide a DBMS data model and SQL-integrated query language capable of handling time-dependent geometries [22].
+The proposed URI-based model of referring to a temporal dimension can be applied independently of the type of geometry of the desired feature, whether it is a point cloud over time, a time series of images, a trajectory, and so on.
+This architecture might be seen as an additional extension, to be built on top of spatio-temporal databases to enable an online, and most of all interoperable, query interfaces.
+Regarding OGC standardizations, this is not the dZrst effort to establish a dZrst-class citizen temporal dimension: for instance, Web Map Service (WMS) a most notably implemented by open-source geoservices like MapServer and GeoServer [23] a is working on the visualization of multidimensional gridded data with temporal capabilities via a aTIMEa parameter [24].
+Time is treated as a special dimension, with mechanisms different from spatial selection.
+The hereby discussed schema tends instead to a uniform inclusion of time, with no particular special treatment with respect to other spatial axes in the n-D aquarium.
+Outside the context of OGC there are other ever-growing initiatives for temporal analysis of features and timegeography.
+For instance, an international group of archaeologists, geoscientists, and experts in geomatics and data acquisition is emerging with the common goal of developing an international data standard for archaeological 4D data [25].
+The R environment for statistical computing can already offer packages for the analysis of spatio-temporal datasets of different natures (e.g.
+points, grids, trajectories) with dZrstclass citizen time analysis, as well as space-time statistical modelling tools [26].
+Still at an early stage, the temporal extension for PostgreSQL, PostTIME [27], is currently being developed, and it is capable to manage different types of temporal reference, based on either temporal coordinates, calendars and as well ordinal systems.
+In all these cases, still there is a lack of dZexibility when it comes to dedZne custom CRSs for time, and usually one cannot have more than one single temporal dimension.
+Indeed, one of the key-point of our proposal is the freedom to generate custom ad-hoc temporal reference systems, and to attach one or more of them to the owned datasets.
+Several services need to dedZne custom geospatial (or planetary) CRSs, and many of them can be fetched from Spatial Reference [28] in different formats, GML included.
+Our  inherently distributed URI-oriented CRS resolver could coexist with it providing means for composing spatio-temporal CRSs that reliably host the data to be served, independently of the internal architectures.
+III.
+CRS  IDENTIFICATION  Coordinate Reference Systems contain all the information necessary to precisely relate abstract coordinates to concrete physical locations, in either space or time.
+As such they are at the heart of all applications dealing with real-world data, when the knowledge of its unique physical coordinates is essential.
+CRSs can be fully described in several machineunderstandable languages, including Geography Markup Language (GML) and Well-Known Text (WKT).
+Communicating complete CRS dedZnitions is rather impractical, especially since a vast majority of the GIS applications rely on some commonly accepted standard Spatial Reference System IdentidZers (SRID).
+Concerning geospatial CRSs, virtually all major spatial vendors have created their own SRID implementation or refer to those maintained by an authority, such as the Oil and Gas Producers (OGP) Surveying and Positioning Committee.
+The EPSG SRID value for the WGS84 CRS is 4326 for example.
+Based on SRID codes and the now deprecated CRS URN identidZers [29], we have devised a simple, expressive, and HTTP compatible mechanism for CRS identidZcation and dedZnition management.
+A brief overview is given here; for full details we refer the reader to [30], [31].
+CRS identidZers are modelled as Uniform Resource Locators (URL) [32], which uniquely resolve to the according CRS dedZnition.
+This dZts well into the OGC Web Service (OWS) Common standard [33], according to which CRS references are XML attributes or elements of type anyURI.
+Furthermore, it takes advantage of a well established architecture rather than introducing new protocols for resolving the identidZed CRS dedZnition.
+A Web service which understands CRS URL identidZers and is able to dynamically construct and respond with an according CRS dedZnition is already available, and will be soon deployed at OGC.
+Next we present the syntax and semantics of CRS identidZers.
+We have categorized CRS identidZers into three types, according to the types of dedZnitions they refer to.
+A.
+Single CRS A single CRS dedZnition is uniquely identidZed by the authority that maintains this CRS, the dedZnition version, and the SRID code.
+This translates to a URL identidZer in key-value pair (KVP) format as shown in Listing 1.
+Alternatively, we can have a RESTful URL equivalent (see Listing 2), in which case the argument order is dZxed to authority, version, code: ahttp://www.opengis.net/def/crs/ EPSG/0/4326a is an example of such identidZer for the wellknown WGS84 CRS.
+134 120  { r e s o l v e r ap r e f i x } / d e f / c r s ?
+a u t h o r i t y ={ a u t h o r i t y }& v e r s i o n ={ v e r s i o n }& code={code}  Listing 1.
+{ r e s o l v e r ap r e f i x } / d e f / crsacompound?
+1={ l a t / l o n CRS i d e n t i f i e r }& 2={ h e i g h t 1D CRS i d e n t i f i e r }& 3={ t e m p o r a l CRS i d e n t i f i e r }  Single CRS identidZer (KVP format).
+Listing 4.
+{ r e s o l v e r ap r e f i x } / d e f / c r s / { a u t h o r i t y } / { v e r s i o n }/{ code}  Listing 2.  such a CRS is then simply a list of the URLs identifying the component CRSs.
+CCRSs have been widely used to chain horizontal and vertical CRSs, which indeed in historic geodetic practice used to be determined independently [37].
+This concept can be extended to involve theoretically any viable combination of CRSs, in both space and time.
+For example, there is no pre-existing coordinate reference system for referencing 4D latitude/longitude/height/time data, so we can get a compound CRS on the dZy with an identidZer like the one shown in Listing 4.
+A single CRS identidZer (RESTful).
+h t t p : / / www.
+opengis .
+n e t / d e f / c r s / AUTO2/ 1 .
+3 / 4 2 0 0 1 ?
+l a t i t u d e =30 & l o n g i t u d e =a87  Listing 3.
+Example of an AUTO2 parametrized CRS with two parameters.
+B. Parametrized CRS  IV.
+T EMPORAL CRS  A parametrized CRS is an incomplete, abstract CRS, where some parts of the dedZnition have to be provided by the identidZer in order to instantiate a concrete dedZnition.
+A parametrized CRS dedZnition references the single CRS which will be instantiated, and a list of parameters.
+Each parameter has: aV aV  aV  Compound CRS identidZer.
+R (and ISO) GML encoding standard offers a OpenGIS wide variety of XML application schemas for expressing geographical features: it is clearly not limited to the purely spatial description of an object, offering models for the handling of temporal geometries and temporal reference systems as well.
+A coverage is a subtype of feature that has a spatiotemporal domain and a set of homogeneous 1- to n-dimensional tuples, and may either represent one feature or a collection of features [38].
+A CRS is usually meant as a spatial coordinate system that is related to Earth through one datum (geospatial CRS), but in its generic dedZnition a CRS might be bound to any object, whether it is an ellipsoid representing a different planet, or as well a temporal calendar for instance.
+In the latter case, we would then have a temporal CRS.
+Indeed GML provides the gml:TemporalCRS type, simply dedZned as 1D coordinate reference systems used for the recording of time [38].
+Listing 5 shows the relative XML type dedZnition, which is basically composed of a temporal Coordinate System (CS) and a temporal datum.
+As shown in Listing 6, a gml:TimeCS provides the dedZnition of one single axis which in turn dedZnes the proper temporal metadata, i.e.
+the unit of measure (@uom) and a label, or abbreviation (axisAbbrev).
+The abbreviation is unique and mandatory and could be easily used as identidZer for the time dimension when dealing with web requests that need to fetch e.g.
+a sub-portion of the coverage in the temporal dimension (examples will follow in the next section).
+Optionally, a coverage service might dedZne minimum and maximum values usually meant for that temporal axis, and as well a direction which could be of practical use e.g.
+when dealing with temporal dimensions which are heading to the  a name, by which it can be referenced in the CRS identidZer; an optional value, which can be a single value a as a default if none is supplied in the identidZer a or a formula (Java Script expression [34]) which can compute the value based on the values of other parameters; an optional XPath target expression specifying where in the referenced CRS dedZnition should the value be set.
+This new CRS type allows to create very dZexible CRS definitions and thus avoids creating new prededZned dedZnitions whenever some parameters need to be slightly different.
+For example, Listing 3 identidZes the Auto universal transverse mercator Layer CRS (AUTO2:42001) as specidZed in WMS 1.3 [35], which is an automatic spatial coordinate reference system which gives the user the possibility to customize the centre of projection.
+This way the proposed parametrized CRS lets the user specify this centre of projection as a tuple of latitude/longitude degrees (over Pensacola FL in the example), which are internally handled to set the correct central meridian and false northing parameters of the dedZnition.
+Further details on CRS parametrization can be found in [30].
+C. Compound CRS A Compound Coordinate Reference System (CCRS) is dedZned as an ordered composition of single non-compound, non-repeating component CRSs [36].
+A URL identifying  135 121  In addition to any custom unit of measure that could be referenced by an external URI, there are well-known labels which could be directly applied, e.g.
+a for year, wk for week, and so on (see [39] for a thorough list).
+With regards to the complex GML modeling of stratigraphic geological time scales (see [40] and [41]), an absolute chronometric approach might be more practical, for instance by setting a time reference system with units millions of years (Ma), positive backwards.
+In practice, the purpose of this framework is to let the system work with numerical coordinates by indexing the temporal domain, this way enabling OGC-compliant spatio-temporal queryable datasets on a web service.
+Indeed, when describing the topology of a spatio-temporal feature in GML a that is where or when the feature components (points, lines, solids) are a then an element of type gml:DirectPositionType (a list of IEEE doubleprecision 64-bit dZoating-point numbers) is always required, whereas descriptive textual representations are not possible.
+The service shall thus dedZne a gml:TemporalCRS with proper resolution and origin for the referred dataset, so that the domain of validity in time of the CRS can include its temporal extent.
+The URL identidZer of the newly created temporal CRS (see Sec.
+III) can then be concatenated to the spatial CRS of the feature in order to safely automatize its spatio-temporal reference system and to correctly translate the requests into the internal database system.
+As a visual example, Fig.
+1 depicts a time series of aerosols vertical prodZles from lidar observations onboard the CALIPSO satellite: a single 3D gridded coverage jointly binds three images in order to form a unique cube for spacetime queries.
+As previously explained, the transition from the single image to the time series is achieved by extending its inherent geodetic CRS to a spatio-temporal composition with a temporal one.
+Further practical use cases with data condZguration guidance along real request/response examples will be presented in the next section.
+In order to avoid confusion, from now on we will refer to (geo)spatial CRSs as as-CRSsa, temporal CRSs as at-CRSsa and compound spatio-temporal CRSs as ast-CRSsa.
+< element name = " TemporalCRS " type = " gml : TemporalCRSType " s u b s t i t u t i o n G r o u p = " gml : A b s t r a c t S i n g l e C R S "/ > < complexType name = " TemporalCRSType " > < complexContent > < extension base = " gml : AbstractCRSType " > < sequence > < choice > < element ref = " gml : timeCS " / > < element ref = " gml : usesTemporalCS "/ > </ choice > < element ref = " gml : temporalDatum " / > </ sequence > </ extension > </ complexContent > </ complexType >  Listing 5.  gml:TemporalCRSType.
+< complexType name = " C o o r d i n a t e S y s t e m A x i s T y p e " > < complexContent > < extension base = " gml : I d e n t i f i e d O b j e c t T y p e " > < sequence > < element ref = " gml : axisAbbrev " / > < element ref = " gml : axisDirection " / > < element ref = " gml : minimumValue " minOccurs ="0"/> < element ref = " gml : maximumValue " minOccurs ="0"/> < element ref = " gml : rangeMeaning " minOccurs ="0"/> </ sequence > < attribute name = " uom " use = " required " type = " gml : UomIdentifier " / > </ extension > </ complexContent > </ complexType >  Listing 6.  gml:CoordinateSystemAxisType.
+< complexType name = " T e m p o r a l D a t u m T y p e " > < complexContent > < extension base = " gml : T e m p o r a l D a t u m B a s e T y p e " > < sequence > < element ref = " gml : origin " / > </ sequence > </ extension > </ complexContent > </ complexType >  Listing 7.  gml:TemporalDatumType.
+V. P RACTICAL EXAMPLES  past, so that positive coordinates can be used (for example in the case of geological time reference where is common practice to use an unsigned numbers of millions of years as meter).
+In order to give full meaning to a temporal coordinate, it must be linked to an absolute point in time by means of a temporal datum (see Listing 7), just like a geodetic datum binds a set of axes to an Earth model.
+In the simpler case, the datum just needs to specify the origin of the temporal CRS, which in the current version of GML is in the form of an xsd:dateTime element, i.e.
+a concatenation of a date and a timestamp separated by a literal letter a T a.
+A dZrst straightforward use of the proposed framework comes when serving a regularly spaced time series of 2D images.
+Nevertheless, the concept generally applies for irregularly spaced series of n-dimensional features as well, not necessarily having a linkage to a geodetic system of coordinates (they could be medical CT scans as well, for instance).
+We can imagine to have several years of daily aggregates of spectral projected images from a generic spaceborne sensor over, say, Armenia and that we group them into a single coverage named ARM-day-TS.
+Each single map is a  136 122  fi  < TemporalCRS xmlns =[...] gml : id = " ANSI - Date " > < description > Continuous count of days starting from Jan 1 , 1601 (00 h00 ).
+Equal to floor ( JulianDate -2305812.5).
+</ description > < identifier c o d e S p a c e = " http :// www .
+opengeospatial .
+org " > { resolver - prefix }/ crs / OGC /0.1/ ANSI - D </ identifier > < name > ANSI date number </ name > < timeCS > < TimeCS id = " days - CS " > < identifier c o d e S p a c e = " http :// www .
+opengeospatial .
+org " > { resolver - prefix }/ cs / OGC /0.1/ days </ identifier > < axis > < C o o r d i n a t e S y s t e m A x i s id = " day - axis " uom = " d " > < identifier c o d e S p a c e = " http :// www .
+opengeospatial .
+org " > { resolver - prefix }/ axis / OGC /0.1/ days </ identifier > < axisAbbrev >t </ axisAbbrev > < axisDirection > future </ axisDirection > </ C o o r d i n a t e S y s t e m A x i s > </ axis > </ TimeCS > </ timeCS > < temporalDatum > < TemporalDatum id = " ANSI - TD " > < identifier c o d e S p a c e = " http :// www .
+opengeospatial .
+org " > { resolver - prefix }/ datum / OGC /0.1/ ANSI </ identifier > < origin > 1601 -01 -01 T00 :00 </ origin > </ TemporalDatum > </ temporalDatum > </ TemporalCRS >  	 fi  fi   Figure 1.
+A visual example of the spatio-temporal gridded coverage model applied to a time series of lidar vertical prodZles from the CALIPSO satellite mission (Cloud-Aerosol Lidar and Infrared PathdZnder Satellite Observations, NASA/CNES).
+collection on N spectral observation over different frequency channels and it has been mapped to UTM 38N cartesian coordinates with the WGS84 datum.
+It should be noted how the multispectral nature of the feature does not increase its dimensionality, but rather its attribute space a known as range in the GML nomenclature.
+The spatio-temporal dimensionality of our dataset is then three: two spatial axes a for which we can easily adopt the prededZned UTM EPSG:32628 s-CRS a and one temporal axis, which needs to be anchored to a proper t-CRS.
+This will have an arbitrary origin and preferably daily resolution, since we do not need dZner-grained time analysis in this case.
+An example of temporal CRS is proposed in Listing 8, which shows an hypothetical dedZnition for the ANSI date numbers, whose epoch dates back to January 1, 1601 (the beginning of the previous 400-year cycle of leap years in the Gregorian calendar, which ended with the year 2000).
+As a side note, despite the dimensionality of our proposed grid coincides with the dimensionality of the encompassing spatio-temporal space, this must not be meant as a dZxed rule: more generally we can put any n-D feature inside an m-D CRS space, as soon as n a$?
+m, e.g.
+oblique 2D maps in the 3D space, trajectories in the 3D space, and so on.
+Moreover, more one t-CRS could be anchored to th dataset, as could be the case of 5D meteorological forecasts data-cubes [42].
+The overall system of coordinates for our data could thus be as showed in Listing 9, which in turn dedZnes three axis: the easting E and northing N, both dedZned by the cartesian CS of the UTM CRS, and the date t of the temporal CRS.
+Having set up the metadata of our collection, we can then published it in a machine-understandable way, so that a client could read its description and then analyse it with cross-sections (WCS/WCPS), request intra-spectral process-  Listing 8.
+Example of gml:TemporalCRS.
+ing operations, aggregate through time or space (WCPS), etc.
+As a practical example, a user might want to visualize the ratio of two different channels over the whole available spatial extent as a GeoTiff image, and this could be achieved by the WCPS request showed in Listing 10.
+In order to allow a user specify more meaningful ISO 8601 time descriptions instead of time indexes, the use of quotes could be adopted as switch: in the WCPS example of Listing 10 then one could replace the ANSI date with its equivalent in the Gregorian calendar, which would be the glorious a2012-12-21a.
+As a further example, one could exploit the GML encoding of a WCS response to retrieve the temporal series of data over a certain time interval and for a specidZed Region of Interest (RoI), like with the KVP-encoded request presented in Listing 11.
+In this specidZc case, the request would then return the desired result over our ARM-day-TS along with a comprehensive description of the associated geometry, optional descriptive metadata and data range types [43].
+The WCS 2.0 upcoming CRS extension [44] could also be exploited to retrieve data with more easily comprehensible longitude/latitude degrees coordinates, but this goes beyond the scope of this article.
+137 123  { r e s o l v e r ap r e f i x } / d e f / crsacompound?
+1={ r e s o l v e r ap r e f i x } / d e f / c r s /EPSG/0/32638& 2={ r e s o l v e r ap r e f i x } / d e f / c r s /OGC/ 0 .
+1 / ANSIaD  Listing 9.
+< gmlcov : R e c t i f i e d G r i d C o v e r a g e xmlns =[...] gml : id = " ID " > < boundedBy > < Envelope srsName = " { resolver - prefix }/ crs - compound ?
+1={ resolver - prefix }/ crs / EPSG /0/32638& 2={ resolver - prefix }/ crs / OGC /0.1/ ANSI - D " axisLabels ="E N t" uomLabels ="m m d" srsDimension ="3"> < lowerCorner > 415000 4430000 149536 </ lowerCorner > < upperCorner > 500000 4530000 149565 </ upperCorner > </ Envelope > </ boundedBy >  A spatio-temporal compound CRS.
+f o r map i n (ARMadayaTS ) return encode ( s l i c e ( map .
+7 / map .
+4 , { t (150470)} ) , a GTiff a )  Listing 10.
+Example of WCPS query with time slicing.
+h t t p : / / { s e r v i c eadomain } / path / t o / wcs / s e r v l e t ?
+s e r v i c e =WCS& v e r s i o n =2.0.0& r e q u e s t =GetCoverage& c o v e r a g e i d =ARMadayaTS& subset =E(415000 ,500000)& subset =N(4430000 ,4530000)& subset = t ( a 2010a06a01 a , a 2010a06a30 a )& f o r m a t = a p p l i c a t i o n / gml+xml  Listing 11.
+< domainSet > < RectifiedGrid id = " ID " d i m e n s i o n = " 3 " srsName = " { resolver - prefix }/ crs - compound ?
+1={ resolver - prefix }/ crs / EPSG /0/32638& 2={ resolver - prefix }/ crs / OGC /0.1/ ANSI - D " axisLabels ="E N t" uomLabels ="m m d" srsDimension ="3"> < limits > < GridEnvelope > < low > 15 130 151 </ low > < high > 100 230 180 </ high > </ GridEnvelope > </ limits > < axis Labels >i j k </ axis Labels > < origin > < Point id = " ID " > < pos > 415000 4430000 149536 </ pos > </ Point > </ origin > < offsetVector > 1000 0 0 </ offsetVector > < offsetVector >0 1000 0 </ offsetVector > < offsetVector >0 0 1 </ offsetVector > </ RectifiedGrid > </ domainSet >  Example of WCS query with time subsetting.
+Listing 12 shows how this GML response would look like.
+In the dZrst place, due to the regular spatio-temporal spacing between the coverage points, the returned element would be a gmlcov:RectifiedGridCoverage (though GML can support more complex irregular and warped topologies as well, see [45]).
+The dZrst boundedBy section dedZnes the Envelope, that is the bounding box of the RoI, i.e.
+the one that was specidZed in the useras request (Listing 11), a posteriori of possible trimmings over areas outside the coverage extent.
+This part is optional in the response and its purpose is to provide a direct transcription of the returned extent.
+Afterwards, there is the gml:domainSet which describes the topology of the retrieved data cube in much more detail, allowing the client host to recover the position of each single point of the dataset in both space and time.
+As visible in both of these two blocks of GML, the stCRS dedZned in Listing 9 is referenced here in the @srsName attribute, with associated informative metadata regarding its number of dimensions (@srsDimension), associated labels (@axisLabel) and Units of Measure (UoM, @uomLabels) for each axis in the st-CRS.
+The indexes that appear inside the gml:GridEnvelope element dedZne the neutral index-based structure of the grid, to describe its topology independently of the external st-CRS onto which it is mapped.
+The grid indexes shown in the example are meaningful with respect to the WCS request in Listing.
+11, and assume that i) the entire source coverage spans the area (4 AV 105 ,43 AV 105 )A(5AV105 ,46AV105 ) [m2 ] in the projected geographic space with a nominal resolution of 1A1 km2 , ii) the origin of the time series is the 1st of January 2010 (ANSI date 149385),  < rangeSet > < DataBlock > < rangeParameters / > < tupleList > [...] </ tupleList > </ DataBlock > </ rangeSet > < rangeType > [...] </ rangeType > </ gmlcov : R e c t i f i e d G r i d C o v e r a g e >  Listing 12.
+GML description a spatio-temporal coverage.
+and that iii) grid indexes of the complete topology start from 0.
+The subsequent XML elements map the grid onto the domain-aware space of the st-CRS.
+Firstly, the names ai j ka exposed in the axisLabels element are the labels associated to the grid dimensions and should not be confused with the labels listed in the @uomLabels attribute.
+Thinking of a rotated grid into a cartesian coordinate system might help distinguishing the two categories.
+The offsetVector elements indeed denote the inherent directional resolution for each one of the grid axis, by means of a 3D tuple of coordinates a which dZt in the 3D st-CRS a representing the endpoint of a vector starting from the  138 124  origin.
+The spatio-temporal location of each grid point can then be recovered by starting from the origin and spanning the coverage with the offset vectors.
+In the proposed response, we can see that the resolution is of 1000 km for the grid axes in the horizontal spatial component of the st-CRS, while it is of 1 day along time.
+In case of weekly aggregates instead, we would have had the triplet {0,0,7} as offset vector along time.
+It is again underlined that the UoMs associated with the tuplesa components in the offset vectors a and generally for any coordinate listed in the response a can either be read in the @uomLabels attributes or as well, if missing, in the GML dedZnitions of each single CRS (see @uom attribute in Listing.
+8).
+To conclude, the actual payload of the response (rangeSet) and its description (rangeType) were partially hidden with ellipsis in the example since not relevant here.
+A demo of the proposed framework has been implemented and tested by means of Petascope a a Java implementation of OGC standards and the reference implementation of WCPS [46] a on top of the rasdaman Array DBMS [47].
+R EFERENCES [1] J. Dozier and J. Frew, aEnvironmental informatics,a Annual Review of Environment and Resources, vol.
+37, no.
+1, 2012.
+[2] S. Natali, A. Beccati, S. DaElia, M. Veratelli, P. Campalani, M. Folegani, and S. Mantovani, aMultitemporal data management and exploitation infrastructure,a in Analysis of Multitemporal Remote Sensing Images (Multi-Temp), 2011 6th International Workshop on the.
+IEEE, 2011, pp.
+217a220.
+[3] G. Triebnig, A. Diamandi, R. Hall, E. Malnes, L. Marklund, S. MetsaEmaEki, T. Nagler, J. Pulliainen, H. Rott, C. Schiller et al., aCryoLand-GMES service snow and land ice-interoperability, service integration and user access,a Environmental Software Systems.
+Frameworks of eEnvironment, pp.
+341a348, 2011.
+[4] B. Cuca, R. Brumana, M. Scaioni, and D. Oreni, aSpatial data management of temporal map series for cultural and environmental heritage,a International Journal of Spatial Data Infrastructure Research (IJSDIR), vol.
+6, 2011.
+[5] J. H. P. Oosthoek, A. P. Rossi, B. P., D. Misev, and P. Campalani, aPlanetary data: A workshop for users and software developers,a in Planetary Data: A Workshop for Users and Software Developers, June 2012.
+VI.
+C ONCLUSIONS We have presented a framework for Web services that enables a valid OGC-compliant embedding of time as a dimension into the coverage models offered by the GML schema dedZnitions.
+The proposed model uses existing gml:TemporalCRS elements to augment the coordinate reference system (CRS) of a coverage from purely spatial to spatio-temporal; it can be generally applied to arbitrary time scales and resolutions, and the overall system complexity is relatively low.
+The use of URIs as policy for CRSs referencing completes the picture of a coherent automated system, with no need of out-of-band handling of the temporal dimension.
+Particular attention was put on the practical application of the framework to the OGC WCS and WCPS services, and concrete request/response examples were described.
+These examples were also successfully implemented and tested over a Java-servlet/Array-DBMS architecture.
+The proposed framework a under discussion by the OGC consortium [48] a makes a step forward towards an open interconnectedness and interoperability of Web services for spatio-temporal coverages.
+Forthcoming applications in the context of the European EarthServer project [49] will accelerate further evaluation and testing phases, and will represent lighthouse services for the access and elaboration of time series of scientidZc datasets.
+[6] P. Baumann, A. Dehmel, P. Furtado, R. Ritsch, and N. Widmann, aThe multidimensional database system rasdaman,a in ACM SIGMOD Record, vol.
+27, no.
+2.
+ACM, 1998, pp.
+575a577.
+[7] P. CudreE-Mauroux, H. Kimura, K. Lim, J. Rogers, R. Simakov, E. Soroush, P. Velikhov, D. Wang, M. Balazinska, J. Becla et al., aA demonstration of SciDB: a science-oriented DBMS,a Proceedings of the VLDB Endowment, vol.
+2, no.
+2, pp.
+1534a1537, 2009.
+R [8] Open Geospatial Consortium (OGC), aGeospatial and location standards,a http://www.opengeospatial.org/, accessed on June 25, 2013.
+[9] INSPIRE, aINSPIRE geoportal,a http://inspire-geoportal.ec.
+europa.eu/, accessed on June 25, 2013.
+[10] P. Baumann, P. Campalani, D. Misev, and J. Yu, aFinding my CRS: A systematic way of identifying CRSs,a in ACM SIGSPATIAL GIS, November 2012, pp.
+71a78.
+[11] F. Prandi, R. De Amicis, G. Conti, and A. Debiasi, aUse of OGC web standard for a spatio-temporal enabled SDI for civil protection,a in Proceedings of the 17th International Conference on 3D Web Technology.
+ACM, 2012, pp.
+105a 111.
+[12] L. Bernard and A. Wytzisk, aA web-based service architecture for distributed spatiotemporal modeling,a in Proceedings of the 5th AGILE Conference on Geographic Information Science, 2002, pp.
+25a27.
+ACKNOWLEDGMENT The research leading to the results presented here has received funding from the European Communityas Seventh Framework Programme (EU FP7) under grant agreement n. 283610 aEuropean Scalable Earth Science Service Environment (EarthServer)a.
+[13] J. Yu and P. Baumann, aOn the systematic generation of reference output for geo image services,a in Geoinformatics, 2011 19th International Conference on.
+IEEE, 2011, pp.
+1a6.
+139 125  [32] T. Berners-Lee, L. Masinter, and M. McCahill, aUniform Resource Locators (URL),a RFC 1738 (Proposed Standard), Internet Engineering Task Force, Dec. 1994, obsoleted by RFCs 4248, 4266, updated by RFCs 1808, 2368, 2396, 3986, 6196, 6270.
+[Online].
+Available: http://www.ietf.org/ rfc/rfc1738.txt  [14] E. Pebesma, D. Cornford, G. Dubois, G. Heuvelink, D. Hristopulos, J. Pilz, U. StoEhlker, G. Morin, and J. SkA,ien, aINTAMAP: the design and implementation of an interoperable automated interpolation web service,a Computers & Geosciences, vol.
+37, no.
+3, pp.
+343a352, 2011.
+[15] B. GraEler and C. Stasch, aFlexible representation of spatiotemporal random dZelds in the model web,a in EGU General Assembly Conference Abstracts, vol.
+14, 2012, p. 4617.
+[33] OGC, aOGC Web Service Common Implementation SpecidZcation 2.0.0,a 2010.
+[34] M. Grogan, aJSR-223 a Scripting for the JavaTM Platform.
+Final Draft SpecidZcation, version 1.0,a Oct. 2006.
+[16] R. Lake, aThe application of geography markup language (GML) to the geological sciences,a Computers & Geosciences, vol.
+31, no.
+9, pp.
+1081a1094, 2005.
+[17] OGC, aOGC Web Coverage Service (WCS) - Core,a 2010.
+[35] J. de la BeaujardieEre, aWeb map service,a OpenGIS Web Map Server Implementation SpecidZcation, pp.
+06a042, 2006.
+[18] OGC, aOGC Web Coverage Processing Service (WCPS) Language Interface Standard,a 2009.
+[36] aISO 19111:2007: Geographic information a Spatial referencing by coordinates,a 2007.
+[19] M. F. Worboys, aA unidZed model for spatial and temporal information,a The Computer Journal, vol.
+37, no.
+1, pp.
+26a 34, 1994.
+[37] OGP, aGuidance Note 7, part 1 a Using the EPSG Geodetic Parameter Dataset,a 2011.
+[Online].
+Available: {http://www.epsg.org/}  [20] M. Wachowicz and R. G. Healey, aTowards temporality in GIS,a Innovations in GIS, vol.
+1, pp.
+105a115, 1994.
+R Geography Markup Language (GML) [38] OGC, aOpenGIS Encoding Standard,a August 2007.
+[21] R. H. GuEting, M. H. BoEhlen, M. Erwig, C. S. Jensen, N. A. Lorentzos, M. Schneider, and M. Vazirgiannis, aA foundation for representing and querying moving objects,a ACM Transactions on Database Systems (TODS), vol.
+25, no.
+1, pp.
+1a42, 2000.
+[39] G. Schadow and C. J. McDonald, aThe UnidZed Code for Units of Measure (UCUM),a http://unitsofmeasure.org/ucum.
+html, 2012, accessed on June 25, 2013.
+[40] S. Cox and S. Richard, aA formal model for the geologic time scale and global stratotype section and point, compatible with geospatial information transfer standards,a Geosphere, vol.
+1, no.
+3, pp.
+119a137, 2005.
+[22] M. A. Sakr and R. H. GuEting, aSpatiotemporal pattern queries,a Geoinformatica, vol.
+15, no.
+3, pp.
+497a540, 2011.
+[23] S. Steiniger and A. J.
+Hunter, aFree and open source GIS software for building a spatial data infrastructure,a in Geospatial Free and Open Source Software in the 21st Century.
+Springer, 2012, pp.
+247a261.
+[41] M. Sen and T. Duffy, aGeoSciML: Development of a generic geoscience markup language,a Computers & Geosciences, vol.
+31, no.
+9, pp.
+1095a1103, 2005.
+[42] B. Domenico, S. Nativi, J. Caron, L. Bigagli, and E. Davis, aA standards-based, web services gateway to netCDF datasets,a in Proc.
+of AMSa22nd IIPS Conference, Atlanta, Georgia, abstr, no.
+8.1, 2006.
+[24] J. Blower, A. Gemmell, G. GrifdZths, K. Haines, A. Santokhee, and X. Yang, aA Web Map Service implementation for the visualization of multidimensional gridded environmental data,a Environmental Modelling and Software, 2013.
+[43] C. Reed, aThe Open Geospatial Consortium and Web Services Standards,a Geospatial Web Services: Advances in information interoperability, pp.
+1a16, 2011.
+[25] Geography Department of Ghent University and CReSTIC, a4DArcheo,a http://sites.google.com/site/4darcheo/, 2012, accessed on June 25, 2013.
+R Web Coverage Service Interface Standard [44] OGC, aOGC CRS Extension,a December 2011, (Draft document).
+[26] E. Pebesma, aspacetime: Spatio-temporal data in R,a Journal of Statistical Software, vol.
+51, no.
+7, pp.
+1a30, 2012.
+R Geography Markup Language (GML) a [45] C. Portele, aOGC Extended schemas and encoding rules,a February 2012.
+[27] P. B. eit, aPostTIME,a https://github.com/52North/PostTIME, 2012, accessed on June 25, 2013.
+[46] A. AiordaEchioaie and P. Baumann, aPetascope: An opensource implementation of the OGC WCS geo service standards suite,a in ScientidZc and Statistical Database Management.
+Springer, 2010, pp.
+160a168.
+[28] H. Butler, C. Schmidt, and D. Springmeyer, aSpatial Reference,a http://spatialreference.org, 2007, accessed on June 25, 2013.
+[29] OGC, aDedZnition identidZer URNs in OGC namespace,a 2007.
+[47] RASter DAta MANager (rasdaman), www.rasdaman.org, 2009, accessed on June 25, 2013.
+[30] D. Misev, M. Rusu, and P. Baumann, aA semantic resolver for coordinate reference systems,a Web and Wireless Geographical Information Systems, pp.
+47a56, 2012.
+[48] OGC, aTemporalDWG web,a http://external.opengeospatial.
+org/twiki public/TemporalDWG, accessed on June 25, 2013.
+R Name Type SpecidZcation for CRSs,a 2012.
+[31] OGC, aOGC  [49] EarthServer, aThe EarthServer Initiative,a //www.earthserver.eu/, accessed on June 25, 2013.
+140 126  http:

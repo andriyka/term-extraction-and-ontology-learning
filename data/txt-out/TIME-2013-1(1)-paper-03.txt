@@ -1,0 +1,1413 @@
+Extracting Unsatisfiable Cores for LTL via Temporal Resolution (full version; r352 December 18, 2012)  arXiv:1212.3884v1 [cs.LO] 17 Dec 2012  Viktor Schuppan (Email: Viktor.Schuppan@gmx.de)  Abstract.
+Unsatisfiable cores (UCs) are a well established means for debugging in a declarative setting.
+Still, tools that perform automated extraction of UCs for LTL are scarce.
+Using resolution graphs to extract UCs is common in many domains.
+In this paper we show how to construct resolution graphs for temporal resolution as implemented in the temporal resolution-based solver TRP++ and how to use them to extract UCs for propositional LTL.
+We implement our method in TRP++, and we experimentally evaluate it.
+Source code of our tool is available.
+1  Introduction  Motivation Unsatisfiable cores (UCs) are well established in formal verification, with important uses being debugging in a declarative setting (e.g., [BDTW93]) and avoiding the exploration of parts of a search space that can be known not to contain a solution for reasons "equivalent" to the reasons for previous failures (e.g., [CTVW03]).
+LTL (e.g., [Pnu77, Eme90]) and its relatives are important specification languages for reactive systems (e.g., [EF06]).
+Experience in verification (e.g., [BBDER01,Kup06]) as well as in synthesis (e.g., [BGJ+ 07]) has lead to specifications themselves becoming objects of analysis.
+Consider two ways to examine a specification ph in LTL [PSC+ 06].
+First, one can ask whether a certain scenario ph0 , also given as an LTL formula, is permitted by ph.
+That is the case iff ph [?]
+ph0 is satisfiable.
+Second, one can check whether ph ensures a certain property ph00 given in LTL.
+ph00 holds in ph iff ph [?]
+!ph00 is unsatisfiable.
+In the first case, if the scenario turns out not to be permitted by the specification, a UC can help to understand which parts of the specification and the scenario are responsible for that.
+In the second case a UC can show which parts of the specification imply the property.
+Moreover, if there are parts of the property that are not part of the UC, then those parts of the property could be strengthened without invalidating the property in the specification; i.e., the property is vacuously satisfied (e.g., [BBDER01, KV03, AFF+ 03, FKSFV08, Kup06]).
+Despite this relevance interest in UCs for LTL has been somewhat limited (e.g., [CRST07, Sch12b, HH11]).
+In particular, publicly available tools that automatically extract fine-grained UCs for propositional LTL are scarce.
+Extracting UCs is often possible using any solver for the logic under consideration by weakening subformulas one by one and using the solver to test  whether the weakened formula is still unsatisfiable (e.g., [Sil10]).
+While that is simple to implement, repeated testing for preservation of unsatisfiability may impose a significant run time burden.
+Hence, it is interesting to investigate methods to extract UCs from a single run of a solver.
+Extracting UCs from resolution graphs is common in propositional SAT (e.g., [GN03,ZM03a]).
+A resolution method (e.g., [BG01, Rob65]) for LTL, temporal resolution (TR), was suggested by Fisher [Fis91, FDP01] and implemented in TRP++ [HK04, HK03, trp].
+Contributions In this paper we make the following contributions.
+1.
+We construct resolution graphs for TR for propositional LTL as implemented in TRP++ [HK04, HK03, trp], and we show how to use them to extract UCs.
+2.
+We implement our method in TRP++, and we experimentally evaluate it.
+We make the source code of our solver available.
+Conceptually, under the frequently legitimate assumption that a system description can be translated into an LTL formula, our results extend to vacuity for LTL [BBDER01, KV03, AFF+ 03, FKSFV08, Kup06].
+Related Work In [CRST07] Cimatti et al.
+perform extraction of UCs for PSL to accelerate a PSL satisfiability solver by performing Boolean abstraction.
+Their notion of UCs is coarser than ours and their solver is based on BDDs and on SAT.
+An investigation of notions of UCs for LTL including the relation between UCs and vacuity is performed in [Sch12b].
+No implementation or experimental results are reported, and TR is not considered.
+Hantry et al.
+suggest a method to extract UCs for LTL in a tableau-based solver [HH11].
+No implementation or experiments are reported.
+Awad et al.
+[AGH+ 12] use tableaux to extract UCs in the context of synthesizing business process templates.
+The description of the method is sketchy and incomplete, the notion of UC appears to be one of a subset of a set of formulas, and no detailed experimental evaluation is carried out.
+In [CMT11] Cimatti et al.
+show how to prove and explain unfeasibility of message sequence charts for networks of hybrid automata.
+They consider a different specification language and use an SMT-based algorithm.
+Some work deals with unrealizable rather than unsatisfiable cores.
+[CRST08] handles specifications in GR(1), which is a proper subset of LTL.
+Konighofer et al.
+present methods to help debugging unrealizable specifications by extracting unrealizable cores and simulating counterstrategies [KHB09] as well as performing error localization using model-based diagnosis [KHB10].
+Raman and Kress-Gazit [RKG11] present a tool that points out unrealizable cores in the context of robot control.
+[Sch12b] explores more fine-grained notions of unrealizable cores than [CRST08,KHB09].
+Structure of the Paper Section 2 starts with preliminaries.
+TR and its clausal normal form SNF are introduced in Sec.
+3.
+In Sec.
+4 we describe the construction of a resolution graph and its use to obtain a UC.
+The UCs obtained in Sec.
+4 are lifted from SNF to LTL in Sec.
+5.
+In Sec.
+6 we provide examples that illustrate why these UCs are useful and how to obtain them.
+We discuss our implementation and experimental evaluation in Sec.
+7.
+Section 8 concludes.
+Due to space constraints proofs are sketched or omitted.
+For a full version [Sch12a] of 2  this paper including proofs and for our implementation, examples, and log files see [pap].
+2  Preliminaries  We use a standard version of LTL, see, e.g., [Eme90].
+Let B be the set of Booleans, and let AP be a finite set of atomic propositions.
+The set of LTL formulas is constructed inductively as follows.
+The Boolean constants 0 (false), 1 (true) [?]
+B and any atomic proposition p [?]
+AP are LTL formulas.
+If ps, ps 0 are LTL formulas, so are !ps (not), ps [?]
+ps 0 (or), ps [?]
+ps 0 (and), Xps (next time), psUps 0 (until), psRps 0 (releases), Fps (finally), and Gps (globally).
+We use ps - ps 0 (implies) as an abbreviation for !ps [?]
+ps 0 .
+3  Temporal Resolution (TR)  In this section we describe TR [FDP01] as implemented in TRP++ [HK03, HK04, trp].
+We first explain the clausal normal form TR is based on.
+In Sec.
+3.2 we provide a concise description of TR as required for the purposes of this paper.
+In Sec.
+3.3 we give some intuition on how TR works with a slant towards BDDbased symbolic model checking (e.g., [BCM+ 92, CGH97, CGP01]).
+We wish to emphasize that TR is an existing technique that has been developed since the early 1990s [Fis91].
+Our contribution in this paper is an extension of TR that allows to extract UCs from a run of TRP++ on an unsatisfiable LTL formula.
+Hence, while in this section we do our best to provide both a precise description of TR as well as some intuition on how it works, space constraints limit the extent of this description.
+Therefore, we refer readers interested in more details, a more extensive explanation, or correctness proofs of TR to [FDP01] for a general overview, to [Dix98, Dix97, Dix96, Dix95] for details on loop search, and to [HK03, HK04, trp] for the implementation in TRP++.
+3.1  Separated Normal Form (SNF)  TR works on formulas in a clausal normal form called separated normal form (SNF) [Fis91, FN92, FDP01].
+For any atomic proposition p [?]
+AP p and !p are literals.
+Let p1 , .
+.
+.
+, pn , q1 , .
+.
+.
+, qn0 , l with 0 <= n, n0 be literals such that p1 , .
+.
+.
+, pn and q1 , .
+.
+.
+, qn0 are pairwise different.
+Then 1.
+(p1 [?]
+.
+.
+.
+[?]
+pn ) is an initial clause; 2.
+(G((p1 [?]
+.
+.
+.
+[?]
+pn ) [?]
+(X(q1 [?]
+.
+.
+.
+[?]
+qn0 )))) is a global clause; and 3.
+(G((p1 [?]
+.
+.
+.
+[?]
+pn ) [?]
+(F(l )))) is an eventuality clause.
+l is called an eventuality literal.
+As usual an empty disjunction (resp.
+conjunction) stands for 0 (resp.
+1).
+() or (G()), denoted 2, stand for 0 or G(0) and are called empty clause.
+The set of V all SNF clauses is denoted C. Let c1 , .
+.
+.
+, cn with 0 <= n be SNF clauses.
+Then 1<=i<=n ci is an LTL formula in SNF.
+Every LTL formula ph can be transformed into an equisatisfiable formula ph0 in SNF [FDP01].
+3  rule  premise 1  pa- premise 2 rt.
+pa- conclusion rt.
+init-ii init-in step-nn step-nx step-xx  (P [?]
+l) M (P [?]
+l) M (G(P [?]
+l)) M (G(P [?]
+l)) M (G((P) [?]
+ML (X(Q [?]
+l))))  aug1 aug2  (G((P) [?]
+(F(l)))) (G((P) [?]
+(F(l))))  BFS-loopit-init-x BFS-loopit-init-n BFS-loopit-init-c BFS-loopit-sub BFS-loopconclusion1 BFS-loopconclusion2  c [?]
+(G((P) [?]
+(X(Q)))) with |Q| > 0 (G(P))  part.
+p.1 p.2 vt. - c - c c  saturation (!l [?]
+Q) (G(!l [?]
+Q)) (G(!l [?]
+Q)) (G((Q) [?]
+(X(!l [?]
+R)))) (G((R) [?]
+(X(!l [?]
+S ))))  (P [?]
+Q) (P [?]
+Q) (G(P [?]
+Q)) (G((Q) [?]
+(X(P [?]
+R)))) (G((P [?]
+R) [?]
+(X(Q [?]
+S ))))  M M M M ML  4 4 4 4 4  4 4 4 4 4  4 4 4 4 4  (G(P [?]
+l [?]
+wl)) (G((!wl) [?]
+(X(l [?]
+wl))))  M M  4 6  -- --  4 4  M  c  L  4  --  4  M  (G((0) [?]
+(X(P))))  L  4  --  4  M  (G((0) [?]
+(X(P [?]
+l))))  L  6  6  4  L  4  --  6  4  4  4  4  6  4  M M M M ML  augmentation M M BFS loop search  (G(P))  L0 (G((Q) [?]
+(F(l))))  c[?
+](G(P)) with c - (G(Q)) (G(P))  L  (G((Q) [?]
+(F(l))))  M  (G((0) [?]
+(X(Q [?]
+l)))) gen- L erated by BFS-loop-it-init-c (G(P [?]
+Q [?]
+l)) M  (G(P))  L  (G((Q) [?]
+(F(l))))  M  (G((!wl) [?]
+(X(P [?]
+l))))  M  Table 1.
+Production rules used in TRP++.
+Let P [?]
+p1 [?]
+.
+.
+.
+[?]
+pn , Q [?]
+q1 [?]
+.
+.
+.
+[?]
+qn0 , R [?]
+r1 [?]
+.
+.
+.
+[?]
+rn00 , and S [?]
+s1 [?]
+.
+.
+.
+[?]
+sn000 .
+3.2  TR in TRP++  The production rules of TRP++ are shown in Tab.
+1.
+The 1st column assigns a name to a production rule.
+The 2nd and 4th columns list the premises.
+The 6th column gives the conclusion.
+Columns 3, 5, and 7 are described below.
+Columns 8-10 become relevant only in later sections.
+Algorithm 1 provides a high level view of TR in TRP++ [HK04].
+The algorithm takes a set of starting clauses C in SNF as input.
+It returns unsat if C is found to be unsatisfiable (by deriving 2) and sat otherwise.
+Resolution between two initial or two global clauses or between an initial and a global clause is performed by a straightforward extension of propositional resolution (e.g., [Rob65, FM09, BG01]).
+The corresponding production rules are listed under saturation in Tab.
+1.
+Given a set of SNF clauses C we say that one saturates C if one applies these production rules to clauses in C until no new clauses are generated.
+Resolution between a set of initial and global clauses and an eventuality clause with eventuality literal l requires finding a set of global clauses that allows to infer conditions under which XG!l holds.
+Such a set of clauses is called a loop in !l .
+Loop search involves all production rules in Tab.
+1 except init-ii , init-in , step-nn , and step-nx .
+In line 1 Alg.
+1 initializes M with the set of starting clauses and terminates iff one of these is the empty clause.
+Then, in line 2, it saturates M (terminating iff the empty clause is generated).
+In line 3 it augments M by applying production rule aug1 to each eventuality clause in M and aug2 once per eventuality literal in M , where wl is a fresh proposition.
+This is followed by another round of saturation in line 4.
+From now on Alg.
+1 alternates between searching for a loop for some eventuality clause c (lines 9-18) and saturating M if loop search has 4  Algorithm 1:  LTL satisfiability checking via TR in TRP++.
+Input: A set of SNF clauses C.  Output: Unsat if C is unsatisfiable; sat otherwise.
+19  M - C; if 2 [?]
+M then return unsat; saturate(M ); if 2 [?]
+M then return unsat; augment(M ); saturate(M ); if 2 [?]
+M then return unsat; M 0 - [?
+]; while M 0 6= M do M0 - M; for c [?]
+C .
+c is an eventuality clause do C 0 - {2}; repeat initialize-BFS-loop-search-iteration(M , c, C 0 , L); saturate-step-xx(L); C 0 - {c0 [?]
+L | c0 has empty X part}; C 00 - {(G(Q)) | (G((0) [?]
+(X(Q [?]
+l)))) [?]
+L generated by f ound - subsumes(C 0 , C 00 ); until found or C 0 = [?
+]; if found then derive-BFS-loop-search-conclusions(c, C 0 , M ); saturate(M ); if 2 [?]
+M then return unsat;  20  return sat;  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18  BFS-loop-it-init-c };  generated new clauses (line 19).
+It terminates, if either the empty clause was derived (line 19) or if no new clauses were generated (line 20).
+Loop search for some eventuality clause c may take several iterations (lines 11-15).
+Each loop search iteration uses saturation restricted to step-xx as a subroutine (line 12).
+Therefore, each loop search iteration has its own set of clauses L in which it works.
+We call M and L partitions.
+Columns 3, 5, and 7 in Tab.
+1 indicate whether a premise (resp.
+conclusion) of a production rule is taken from (resp.
+put into) the main partition (M ), the loop partition of the current loop search iteration (L), the loop partition of the previous loop search iteration (L0 ), or either of M or L as long as premises and conclusion are in the same partition (ML).
+In line 11 partition L of a loop search iteration is initialized by applying production rule BFS-loop-it-init-x once to each global clause with non-empty X part in M , rule BFS-loop-it-init-n once to each global clause with empty X part in M , and rule BFS-loop-it-init-c once to each global clause with empty X part in the partition of the previous loop search iteration L0 .
+Notice that by construction at this point L contains only global clauses with non-empty X part.
+Then L is saturated using only rule step-xx (line 12).
+A loop has been found iff each global clause with empty X part that was derived in the previous loop search iteration is subsumed by at least one global clause with empty X part that was derived in the current loop search iteration (lines 13-15).
+Subsumption between a pair of clauses corresponds to an instance of production rule BFS-loop-it-sub ; note, though, that this rule does not produce a new clause but records a relation between two clauses to be used later for extraction of a UC.
+Loop search for c terminates, if either a loop has been found or no clauses with empty X part were derived (line 16).
+If a loop has been found, 5  rules BFS-loop-conclusion1 and BFS-loop-conclusion2 are applied once to each global clause with empty X part that was derived in the current loop search iteration (line 18) to obtain the loop search conclusions for the main partition.
+3.3  TR -- Some Intuition  The following explanation is partly based on the correctness proofs used in TR (e.g., [FDP01, Dix95]).
+At various points we draw parallels to BDD-based symbolic model checking (below shortened to "model checking"; e.g., [BCM+ 92, CGH97, CGP01]).
+Transition Systems Given a set of atomic propositions AP a transition system G = (V, E, I) is a directed graph with a finite set of vertices V [?]
+2AP , a set of directed edges E [?]
+V x V , and a set of initial vertices I [?]
+V .
+A set of SNF clauses C induces a transition system as follows.
+C is partitioned into the 3 sets of initial clauses, global clauses with empty X part, and global clauses with nonempty X part (eventuality clauses are ignored).
+The set of vertices V is given by those valuations of AP that fulfill the bodies of the global clauses with empty X part.
+The set of edges is given by those pairs of vertices that fulfill the bodies of the global clauses with non-empty X part.
+The set of initial vertices is the subset of vertices that fulfill the initial clauses.
+Note that not all vertices may be reachable from an initial vertex.
+Given a set of SNF clauses C it is easy to see that its induced transition system contains an initialized infinite path that fulfills the eventuality clauses in C if and only if C is satisfiable.
+Saturation Saturation adds clauses to a set of SNF clauses C such that the resulting induced transition system G0 is restricted to those vertices of G that are the start of an infinite path in G. Resolution within each of the sets of initial clauses ( init-ii ), global clauses with empty X part ( step-nn ), and global clauses with non-empty X part ( step-xx ) -- provided the result has a non-empty X part -- induce the same transition system before and after such resolution.
+The same is true for resolution between a global clause with empty X part and a global clause with non-empty X part ( step-nx ) that results in a global clause with non-empty X part as well as for resolution between an initial clause and a global clause with empty X part ( init-in ).
+Note that while such resolution does not lead to a change in the induced transition system, these resolutions serve 2 purposes: 1. to generate clauses that are needed as input for resolution that does lead to a change in the induced transition system and 2. to generate the empty clause as a sign for unsatisfiability.
+Resolution between two global clauses with non-empty X part ( step-xx ) that results in a global clause with empty X part c may induce different transition systems before and after such resolution: before resolution is carried out, the induced transition system may have vertices not fulfilling the body of c, albeit with no outgoing edges; after resolution is carried out, the induced transition system will have no such vertices.
+This is also true for resolution between a global clause with empty X part and a global clause with non-empty X part ( step-nx ) that results in a global clause with empty 6  X part.
+As propositional resolution is complete and the above resolution steps are carried out until no new clauses are generated, at that point the induced transition system contains only vertices that are the start of an infinite path as stated above.
+This is somewhat comparable to model checking pruning a transition system to the set of vertices that are the start of an infinite path by repeatedly computing a backward image for a set of vertices and intersecting with that set of vertices until a fixed point is reached; note though, that model checking tends to proceed in a breadth-first manner, while TR is more flexible.
+BFS Loop Search Given a set of SNF clauses C with an eventuality clause (G((P ) [?]
+(F(l )))) BFS loop search adds clauses to C that remove those vertices from the induced transition system that do not fulfill P but cannot reach a vertex that fulfills l .
+Assume an eventuality clause (G((P ) [?]
+(F(l )))).
+The first iteration of a BFS loop search for a loop in !l produces global clauses with empty X part whose body is fulfilled by those vertices in the induced transition system G that can reach a vertex in G that fulfills l in one step.
+The second iteration extends that to one or two steps.
+This continues until a fixed point is reached where the bodies of the produced global clauses with empty X part are fulfilled by those vertices in the induced transition system G that can reach a vertex in G that fulfills l in one or more steps.
+The loop search conclusions then combine this new information with P and wl .
+In model checking the computation of vertices that can reach l in one or more steps by repeated computation of backward images is very similar; note, though, that in typical model checking with Buchi fairness (e.g., [BCM+ 92, CGH97, CGP01]) P and wl are not present.
+High Level View In App.
+A we turn the above discussion into a high level view of TR in TRP++ and we discuss the relation to cycle detection algorithms in model checking.
+4  UC Extraction  In this section we describe, given an unsatisfiable set of SNF clauses C, how to obtain a subset of C, C uc , that is by itself unsatisfiable from an execution of Alg.
+1.
+The general idea of the construction is unsurprising in that during the execution of Alg.
+1 a resolution graph is built that records which clauses were used to generate other clauses (Def.
+1).
+Then the resolution graph is traversed backwards from the empty clause to find the subset of C that was actually used to prove unsatisfiability (Def.
+2).
+The main concern of Def.
+1, 2, and their proof of correctness in Thm.
+1 is therefore that/why certain parts of the TR proof do not need to be taken into account when determining C uc .
+Definition 1 (Resolution Graph).
+A resolution graph G is a directed graph consisting of 1. a set of vertices V , 2. a set of directed edges E [?]
+V x V , 3. a labeling of vertices with SNF clauses LV : V - C, and 4. a partitioning QV of the set of vertices V into one main partition M V and one partition LVi for each 7  BFS loop search iteration: QV : V = M V ] LV0 ] .
+.
+. ]
+LVn .
+Let C be a set of SNF clauses.
+During an execution of Alg.
+1 with input C a resolution graph G is constructed as follows.
+In line 1 G is initialized: 1.
+V contains one vertex v per clause c in C: V = {vc | c [?]
+C}, 2.
+E is empty: E = [?
+], 3. each vertex is labeled with the corresponding clause: LV : V - C, LV (vc ) = c, and 4. the partitioning QV contains only the main partition M V , which contains all vertices: QV : M V = V .
+Whenever a new BFS loop search iteration is entered (line 11), a new partition LVi is created and added to QV .
+For each application of a production rule from Tab.
+1 that either generates a new clause in partition M or L or is the first application of rule BFS-loop-it-sub to clause c00 in C 00 in line 15: 1. if column 10 ( vt. c) of Tab.
+1 contains 4, then a new vertex v is created for the conclusion c (which is a new clause), labeled with c, and put into partition M V or LVi ; 2. if column 8 ( p.1 - c) (resp.
+column 9 ( p.2 - c)) contains 4, then an edge is created from the vertex labeled with premise 1 (resp.
+premise 2) in partition M V or LVi to the vertex labeled with the conclusion in partition M V or LVi .
+Definition 2 (UC in SNF).
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, let G be the resolution graph, and let v2 be the (unique) vertex in the main partition M V of the resolution graph G labeled with the empty clause 2.
+Let G0 be the smallest subgraph of G that contains v2 and all vertices in G (and the corresponding edges) that are backward reachable from v2 .
+The UC of C in SNF, C uc , is the subset of C such that there exists a vertex v in the subgraph G0 , labeled with c [?]
+C, and contained in the main partition M V of G: C uc = {c [?]
+C | [?
+]v [?]
+VG0 .
+LV (v) = c [?]
+v [?]
+M V }.
+Theorem 1 (Unsatisfiability of UC in SNF).
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, and let C uc be the UC of C in SNF.
+Then C uc is unsat.
+Assume for a moment that in columns 8 (p.1 - c) and 9 (p.2 - c) of Tab.
+1 all 6 are replaced with 4, i.e., that each conclusion in the resolution graph is connected by an edge to each of its premises rather than only to a subset of them.
+In that case the UC in SNF according to Def.
+2 would contain all clauses of the set of starting clauses C that contributed to deriving the empty clause and, hence, to establishing unsatisfiability of C. In that case it would follow directly from the correctness of TR that C uc is unsatisfiable.
+In the proof (see App.
+B) it remains to show that not including an edge 1. from premise 1 to the conclusion for rule aug2 , 2. from premise 2 to the conclusion for rule BFS-loop-conclusion2 , 3. from premise 2 to the conclusion for rule BFS-loop-it-init-c , and 4. from premise 1 to the conclusion for rule BFS-loop-it-init-c in the resolution graph G maintains the fact that the resulting C uc is unsatisfiable.
+By taking the fact that each vertex in the resolution graph has at most 2 incoming edges into account, the first part of the following Prop.
+1 is immediate from Def.
+1 and 2.
+The second part is obtained by bounding the number of 1. different clauses in each partition, 2. iterations in each loop search by the 8  Subf.
+Prop.
+SNF Clauses (+ polarity occurrences)  SNF Clauses (- polarity occurrences)  1/0/p !ps  1/0/p x!ps  -- (G(x!ps - (!
+xps )))  -- (G((!x!ps ) - xps ))  ps [?]
+ps0 x  ps[?
+]ps 0  (G(x  ps[?
+]ps 0  - xps )), (G(x - x 0 )) (G((!x ) - ((!
+xps ) [?]
+(!
+x 0 )))) ps[?
+]ps 0 ps ps[?
+]ps 0 ps  ps [?]
+ps0 x Xps  (G(x - ( xps [?]
+x 0 ))) ps[?
+]ps 0 ps[?
+]ps 0 ps xXps (G(xXps - (X xps )))  Gps  xGps  Fps  xFps  psUps 0 x  psRps 0 x  psUps 0  psRps 0  ) - (!
+xps ))), (G((!x ) - (!
+x 0 ))) ps[?
+]ps 0 ps[?
+]ps 0 ps (G((!xXps ) - (X!
+xps ))) (G((!x  (G(xGps - (XxGps ))), (G(xGps - xps )) (G((!xGps ) - (F!
+xps ))) (G(xFps - (F xps ))) (G((!xFps ) - (X!xFps ))), (G((!xFps ) - (!
+xps ))) (G(x  psUps 0  - ( x 0 [?]
+xps ))), ps - ( x 0 [?]
+(Xx )))), ps psUps 0 (G(x - (F x 0 ))) psUps 0 ps  (G((!x  psUps 0  (G(x  psUps 0  (G((!x  psUps 0  (G(x  psRps 0  psRps 0  psRps 0  - x 0 )), ps - ( xps [?]
+(Xx  (G((!x  (G(x  (G((!x  psRps 0  psRps 0  ) - (!
+x 0 ))), ps ) - ((!
+xps ) [?]
+(X!x  psUps 0  ))))  ) - ((!
+x 0 ) [?]
+(!
+xps )))), ps ) - ((!
+x 0 ) [?]
+(X!x )))), ps psRps 0 (G((!x ) - (F!
+x ))) psRps 0 ps0  ))))  Table 2.
+Translation from LTL to SNF.
+length of the longest monotonically increasing sequence of Boolean formulas over AP , and 3. loop searches by the number of different loop search conclusions.
+Proposition 1 (Complexity of UC Extraction).
+Let C be a set of SNF clauses to which Alg.
+1 is applied and shows unsatisfiability.
+Construction and backward traversal of the resolution graph and, hence, construction of C uc according to Def.
+2 can be performed in time O(|V |) in addition to the time required to run Alg.
+1.
+|V | is at most exponential in |AP | + log(|C|).
+5  From LTL to SNF and Back  We use a structure-preserving translation to translate an LTL formula into a set of SNF clauses, which slightly differs from the translation suggested in [FDP01].
+It is well known that ph and SNF (ph) according to Def.
+3 are equisatisfiable and that a satisfying assignment for ph (resp.
+SNF (ph)) can be extended (resp.
+restricted) to a satisfying assignment of SNF (ph) (resp.
+ph).
+Definition 3 (Translation from LTL to SNF).
+Let ph be an LTL formula over atomic propositions AP , and let X = {x, x0 , .
+.
+.}
+be a set of fresh atomic propositions not in AP .
+Assign each occurrence of a subformula ps in ph a Boolean value or a proposition according to col. 2 of Tab.
+2, which is used to reference ps in the SNF clauses for its superformula.
+Moreover, assign each occurrence of ps a set of SNF clauses according to col. 3 or 4 of Tab.
+2.
+Let SNF aux (ph) be the set of all SNF clauses V obtained from ph that way.
+Then the SNF of ph is defined as SNF (ph) [?]
+xph [?]
+c[?
+]SNF aux (ph) c. In the following Def.
+4 we describe how to map a UC in SNF back to a UC in LTL.
+The main idea in its proof of correctness (Thm.
+2) is to compare the SNF of ph and phuc by partitioning the SNF clauses into three sets: one that is shared by the two SNFs, one that replaces some occurrences of propositions in SNF (ph) with 1 or 0, and one whose clauses are only in SNF (ph).
+Then one can show that the UC of ph in SNF must be contained in the first partition.
+9  Definition 4 (Mapping a UC in SNF to a UC in LTL).
+Let ph be an unsatisfiable LTL formula, let SNF (ph) be its SNF, and let C uc be the UC of SNF (ph) in SNF.
+Then the UC of ph in LTL, phuc , is obtained as follows.
+For each positive (resp.
+negative) polarity occurrence of a proper subformula ps of ph with proposition xps according to Tab.
+2, replace ps in ph with 1 (resp.
+0) iff C uc contains no clause with an occurrence of proposition xps that is marked blue boxed in Tab.
+2.
+(We are sloppy in that we "replace" subformulas of replaced subformulas, while in effect they simply vanish.)
+Theorem 2 (Unsatisfiability of UC in LTL).
+Let ph be an unsatisfiable LTL formula, and let phuc be the UC of ph in LTL.
+Then phuc is unsat.
+Remark 1.
+In Def.
+10 of [Sch12b] a UC of an unsatisfiable formula in LTL is obtained by replacing some occurrences of positive polarity subformulas with 1 and some occurrences of negative polarity subformulas with 0 while maintaining unsatisfiability.
+By construction in Def.
+4 and with Thm.
+2 it is immediate that a UC in LTL according to Def.
+4 above is a UC according to Def.
+10 of [Sch12b].
+6  Examples  In this section we first present examples of using UCs for LTL to help understanding a specification given in LTL.
+Then we show an example of TR with the corresponding resolution graph and UC extraction in SNF.
+Using UCs in LTL to Help Understanding LTL Specifications We start with a toy example and then proceed to a more realistic one.
+Except for minor rewriting, all UCs in this section were obtained with our implementation.
+The first example (1a)-(1c) is based on [JB06].
+We would like to see whether a req (request) can be issued (1d).
+This is impossible, as (1a) requires a req to be followed by 3 gnts (grant), whereas (1b) forbids two subsequent gnts.
+The UC in (2) clearly shows this.
+(G(req - ((Xgnt) [?]
+(XXgnt) [?]
+(XXXgnt)))) (1a) [?]
+(G(gnt - X!gnt)) (1b) [?]
+(G(cancel - X((!gnt)Ugo))) (1c) [?]
+(Freq) (1d)  (G(req - ((Xgnt) [?]
+(XXgnt)))) (2a) [?]
+(G(gnt - X!gnt)) (2b) [?]
+(Freq) (2c)  The 2nd example (3) is adapted from a lift specification in [Har05] (we used a somewhat similar example in [Sch12b]).
+The lift has two floors, indicated by f0 and f1 .
+On each floor there is a button to call the lift (b0 , b1 ).
+sb is 1 if some button is pressed.
+If the lift moves up, then up must be 1; if it moves down, then up must be 0. u switches turns between actions by users of the lift (u is 1) and 10  actions by the lift (u is 0).
+For a more detailed explanation we refer to [Har05].
+(!u) [?]
+(f0 ) [?]
+(!b0 ) [?]
+(!b1 ) [?]
+(!up) (G((u - !Xu) [?]
+((!Xu) - u))) (G(f0 - !f1 )) (G((f0 - X(f0 [?]
+f1 )) [?]
+(f1 - X(f0 [?]
+f1 )))) (G(u - ((f0 - Xf0 ) [?]
+((Xf0 ) - f0 ) [?]
+(f1 - Xf1 ) [?]
+((Xf1 ) - f1 )))) (G(((!u) - ((b0 - Xb0 ) [?]
+((Xb0 ) - b0 ) [?]
+(b1 - Xb1 ) [?]
+((Xb1 ) - b1 ))))) (G(((b0 [?]
+!f0 ) - Xb0 ) [?]
+((b1 [?]
+!f1 ) - Xb1 ))) (G((f0 [?]
+Xf0 ) - ((up - Xup) [?]
+((Xup) - up)))) (G((f1 [?]
+Xf1 ) - ((up - Xup) [?]
+((Xup) - up)))) (G(((f0 [?]
+Xf1 ) - up) [?]
+((f1 [?]
+Xf0 ) - !up))) (G((sb - (b0 [?]
+b1 )) [?]
+((b0 [?]
+b1 ) - sb))) (G(((f0 [?]
+!sb) - (f0 U(sbR((Ff0 ) [?]
+(!up)))))) (G(((f1 [?]
+!sb) - (f1 U(sbR((Ff0 ) [?]
+(!up)))))) (G((b0 - Ff0 ) [?]
+(b1 - Ff1 )))  [?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+[?]
+(3a) (3b) (3c) (3d) (3e) (3f) (3g) (3h) (3i) (3j) (3k) (3l) (3m) (3n)  We first assume that an engineer is interested in seeing whether it is possible that b1 is continuously pressed (4).
+As the UC (5) shows, this is impossible as b1 must be 0 at the beginning.
+Gb1  (!b1 ) [?]
+Gb1  (4)  (5)  Now the engineer modifies her query such that b1 is pressed only from time point 1 on (6).
+As shown by the UC in (7) that turns out to be impossible, too.
+XGb1  (6)  (!u) [?]
+((!b1 ) [?]
+((G((!u) - ((Xb1 ) - b1 ))) [?]
+(XGb1 )))  (7)  The engineer now tries to have b1 pressed only from time point 2 on and, again, obtains a UC.
+She becomes suspicious and checks whether b1 can be pressed at all (8).
+She now sees that b1 cannot be pressed at all and, therefore, this specification of a lift must contain a bug.
+She can now use the UC in (9a)-(9f) to track down the problem.
+This example illustrates the use of UCs for debugging, as (9a)-(9f) is significantly smaller than (3).
+Fb1  (8)  (f0 ) [?]
+(!b1 ) [?]
+(!up) (9a) [?]
+(G(f0 - !f1 )) (9b) [?]
+(G(f0 - X(f0 [?]
+f1 ))) (9c) [?]
+(G((f0 [?]
+Xf0 ) - ((Xup) - up))) (9d)  [?]
+(G((f0 [?]
+Xf1 ) - up)) [?]
+(G(b1 - Ff1 )) [?]
+(F(b1 ))  (9e) (9f) (9g)  TR, Resolution Graph, and UC Extraction In Fig.
+1 we show an example of an execution of the TR algorithm with the corresponding resolution graph and UC extraction in SNF.
+The set of starting clauses C to be solved is G(a [?]
+!b), G(a [?]
+b [?]
+X(a [?]
+b)), G((!a) [?]
+Xa), G((!a) [?]
+F!a), shown in the first row from the bottom in the rectangle shaded in light red.
+In Fig.
+1 TR generally proceeds from bottom to top; in the top right corner the empty clause 2 is generated, indicating unsatisfiability.
+Clauses are connected with directed edges from premises to conclusions according to columns 8, 9 in Tab.
+1.
+Edges are labeled with production rules, where "BFS-loop" is abbreviated to "loop", "init" to "i", and "conclusion" to "conc".
+Saturation in line 2 of Alg.
+1 produces G(a [?]
+b [?]
+Xa) in the 2nd row from the bottom.1 The other 2 clauses in that row are generated by 1  While it may seem that some clauses are not considered for loop initialization or saturation, this is due to either subsumption of one clause by another (e.g.,  11  augmentation (line 3).
+The following saturation (line 4) produces no new clauses.
+The dark green shaded rectangle is the loop partition for the first loop search iteration.
+Row 3 contains the clauses obtained by initialization of the BFS loop search iteration (line 11).
+Row 4 then contains the clauses generated from those in row 3 by saturation restricted to step-xx (line 12).
+The subsumption test fails in this iteration, as none of the clauses in row 4 subsumes the empty clause (lines 13-15).
+The light green shaded rectangle is the loop partition for the next loop search iteration.
+Row 5 contains the clauses obtained by initialization and row 6 those obtained from them by restricted saturation.
+This time the subsumption test succeeds, and the loop search conclusions are shown in row 7 (line 18).
+Finally, row 8 contains the derivation of the empty clause 2 via saturation (line 19).
+The thick, dotted, blue clauses and edges show the part of the resolution graph that is backward reachable from 2.
+As all starting clauses in C are backward reachable from 2, the UC of C in SNF is C (note that this example serves to illustrate the mechanism rather than the benefit of UC extraction).
+7  Experimental Evaluation  Our implementation, examples, and log files are available from [pap].
+Implementation In a recent experimental evaluation of solvers for satisfiability of propositional LTL [SD11] TRP++ proved to be competitive.
+It is available as source code [trp].
+We therefore chose TRP++ as the basis for our implementation.
+TRP++ provides a translation from LTL to SNF via an external tool.
+To facilitate tracing a UC in SNF back to the input formula in LTL we implemented a translator from LTL to SNF inside TRP++, which reimplements ideas from the external translator.
+We used parts of TSPASS [LH10] for our implementation.
+For data structures we used C++ STL containers, for graph operations the Boost Graph Library [boo].
+Benchmarks Our examples are based on [SD11].
+In categories crafted and random and in family forobots we considered all unsatisfiable instances from [SD11].
+The version of alaska lift used here contains a small bug fix: in [WDMR08, SD11] the subformula Xu was erroneously written as literal Xu.
+Combining 2 variants of alaska lift with 3 different scenarios we obtain 6 subfamilies of alaska lift.
+For anzu genbuf we invented 3 scenarios to obtain 3 subfamilies.
+For all benchmark families that consist of a sequence of instances of increasing difficulty we stopped after two instances that could not be solved due to time or memory out.
+Some instances were simplified to 0 during the translation from LTL to SNF; these instances were discarded.
+In Tab.
+3 we give an overview of the benchmark families.
+Columns 1-3 give the category, name, and the source G(a [?]
+b [?]
+X(a [?]
+b)) by G(a [?]
+b [?]
+Xa)) or the fact that TRP++ uses ordered resolution (e.g., G(a [?]
+b [?]
+Xa) with G(!wa [?]
+X((!a) [?]
+wa)); [HK03, BG01]).
+Both are issues of completeness of TR and, therefore, not discussed in this paper.
+12  step  -nx  G(a [?]
+b)  G(a)  step-nn  2  step-nn  step-nn  G(a [?]
+(!a) [?]
+b)  lo  G((!wa) [?]
+X(a [?]
+(!a) [?]
+b)) G((!wa) [?]
+X!a)  c on -c  on  2  G(a [?]
+b)  step-nx  step-nn  x  -x  l  G(X(a [?]
+(!a) [?]
+b))  lo opit-su b  -  p oo  G(!a)  1  op  1 nc -co op lo  G(!a)  ep st  it  step-xx  b su  G(X(a [?]
+!b))  lo  c2  on c  G(a [?]
+b [?]
+Xa)  step-x x  op -c  -c op  lo  st ep -x x  G((!a) [?]
+Xa)  G(X!a)  G(X((!a) [?]
+wa))  st ep -x  xx ste  p-  x  G((!a) [?]
+Xa) G(X((!a) [?]
+wa))  ep -n x  G((!a) [?]
+wa)  i-x it-  aug1  G(a [?]
+!b)  G(!wa [?]
+X((!a) [?]
+wa)) st  lo o p-  -x  -i  lo op-iti-x  op -i lo  it  op lo  G(a [?]
+b [?]
+Xa) step-nx  loop-it-i-n  ti-  x  G(X!a)  loop-it-i-n  loop-it-i-n  G(a [?]
+b [?]
+Xa)  loop-conc1  xx  x  -x  p-  ste  ep  st  G(X(a [?]
+!b))  n  t-i-  G(!a)  loop-conc1  p-i  lo o  G(a [?]
+b)  G(a [?]
+b [?]
+X(a [?]
+b))  G((!a) [?]
+Xa)  G((!a) [?]
+F!a)  Fig.
+1.
+Example of an execution of the TR algorithm with corresponding resolution graph and UC extraction in SNF.
+of the family.
+Columns 4, 5 list the numbers of instances that were solved by our implementation without UC extraction and with UC extraction.
+Column 6 indicates the size (number of nodes in the syntax tree) of the largest instance solved without UC extraction.
+Setup The experiments were performed on a laptop with Intel Core i7 M 620 processor at 2 GHz running Ubuntu 10.04.
+Run time and memory usage were measured with run [BJ].
+The time and memory limits were 600 seconds and 6 GB.
+Results In Fig.
+2 (a) and (b) we show the overhead that is incurred by extracting UCs.
+An analysis by category (plots see App.
+D) shows that the overhead for instances of the application category, except for 2 that time out, is at most 100 %.
+In Fig.
+2 (c) we compare the sizes of the input formulas with the sizes of their UCs.
+Separate plots by category (see App.
+D) indicate that instances of the application category are reduced comparatively well.
+13  family  # solved |largest solved| no UC UC  source  application [Har05, WDMR08] [BGJ+ 07] [BDF09] crafted schuppan O1formula [SD11] schuppan O2formula [SD11] schuppan phltl [SD11] random rozier random [RV10] trp [HS02] alaska lift anzu genbuf forobots  73 16 25  71 16 25  4605 2676 635  21 8 4  21 8 4  1606 91 125  66 66 397 397  157 1421  Table 3.
+Overview of benchmark families.
+5000 mo to 600  unsatisfiable core [# nodes]  mo to 6  UC extraction  UC extraction  100  10  1  1  0.1  0.01  1000  100  10  0.1  0  0 0  0.1  1  10  100  600 to mo  no UC extraction  (a) run time [seconds]  1 0  0.01  0.1 1 no UC extraction  6 to mo  (b) memory [GB]  1  10 100 1000 input formula [# nodes]  5000  (c) size [# nodes]  Fig.
+2.
+(a) and (b): overhead incurred by UC extraction in terms of run time (in seconds) and memory (in GB) with no UC extraction on the x-axis and UC extraction on the y-axis.
+The off-center diagonal shows where y = 2x.
+(c): size reduction obtained by UC extraction.
+The x-axis shows the sizes of the input formulas, the y-axis shows the sizes of the UCs.
+Size is measured as the number of nodes in the syntax trees.
+Discussion Our data show that extraction of UCs is possible with quite acceptable overhead in run time and memory usage (Fig.
+2 (a), (b)).
+In particular, out of the 746 instances we considered with UC extraction disabled, 44 were simplified to 0 in the translation to SNF, 610 were shown to be unsatisfiable by TR, and 92 remained unsolved.
+Enabling UC extraction results in 2 time or memory outs out of 610 instances.
+The resulting UCs are often significantly smaller than the input formula (Fig.
+2 (c)).
+8  Conclusions  In this paper we showed how to obtain UCs for LTL via temporal resolution, and we demonstrated with an implementation in TRP++ that UC extraction can be performed efficiently.
+The resulting UCs are significantly smaller than the corresponding input formulas.
+The similarity of temporal resolution and BDDbased algorithms at a high level (Sec.
+3, App.
+A) and work on resolution with BDDs ( [JSB06]) suggests to explore whether computation of UCs is feasible for BDD-based algorithms.
+Another direction for transfer of our results is resolutionbased computation of unrealizable cores [Noe95].
+An immediate possibility to optimize the UCs we obtain is minimization by repeating extraction of UCs until a fixed point is reached and subsequent attempts to delete remaining clauses [ZM03b].
+14  Acknowledgements I thank B. Konev and M. Ludwig for making TRP++ and TSPASS including their LTL translators available.
+I also thank A. Cimatti for bringing up the subject of temporal resolution.
+Initial parts of the work were performed while working under a grant by the Provincia Autonoma di Trento (project EMTELOS).
+References AFF+ 03.
+R. Armoni, L. Fix, A. Flaisher, O. Grumberg, N. Piterman, A. Tiemeyer, and M. Vardi.
+Enhanced vacuity detection in linear temporal logic.
+In W. Hunt Jr. and F. Somenzi, editors, CAV, volume 2725 of Lecture Notes in Computer Science, pages 368-380.
+Springer, 2003.
+AGH+ 12.
+A. Awad, R. Gore, Z. Hou, J. Thomson, and M. Weidlich.
+An iterative approach to synthesize business process templates from compliance rules.
+Inf.
+Syst., 37(8):714-736, 2012.
+BBDER01.
+I.
+Beer, S. Ben-David, C. Eisner, and Y. Rodeh.
+Efficient detection of vacuity in temporal model checking.
+Formal Methods in System Design, 18(2):141-163, 2001.
+BCM+ 92.
+J. Burch, E. Clarke, K. McMillan, D. Dill, and L. Hwang.
+Symbolic model checking: 1020 states and beyond.
+Inf.
+Comput., 98(2):142-170, 1992.
+BDF09.
+A. Behdenna, C. Dixon, and M. Fisher.
+Deductive verification of simple foraging robotic behaviours.
+International Journal of Intelligent Computing and Cybernetics, 2(4):604-643, 2009.
+BDTW93.
+R. Bakker, F. Dikker, F. Tempelman, and P. Wognum.
+Diagnosing and solving over-determined constraint satisfaction problems.
+In IJCAI, pages 276-281, 1993.
+BG01.
+L. Bachmair and H. Ganzinger.
+Resolution theorem proving.
+In J. Robinson and A. Voronkov, editors, Handbook of Automated Reasoning, pages 19-99.
+Elsevier and MIT Press, 2001.
+BGJ+ 07.
+R. Bloem, S. Galler, B. Jobstmann, N. Piterman, A. Pnueli, and M. Weiglhofer.
+Specify, compile, run: Hardware from PSL.
+In S. Glesner, J. Knoop, and R. Drechsler, editors, COCV, volume 190(4) of ENTCS, pages 3-16.
+Elsevier, 2007.
+BJ.
+A. Biere and T. Jussila.
+Benchmark tool run.
+http://fmv.jku.at/run/.
+boo.
+http://www.boost.org/doc/libs/release/libs/graph/.
+CGH97.
+E. Clarke, O. Grumberg, and K. Hamaguchi.
+Another look at LTL model checking.
+Formal Methods in System Design, 10(1):47-71, 1997.
+CGP01.
+E. Clarke, O Grumberg, and D. Peled.
+Model checking.
+MIT Press, 2001.
+CMT11.
+A. Cimatti, S. Mover, and S. Tonetta.
+Proving and explaining the unfeasibility of message sequence charts for hybrid systems.
+In P. Bjesse and A. Slobodova, editors, FMCAD, pages 54-62, 2011.
+CRST07.
+A. Cimatti, M. Roveri, V. Schuppan, and S. Tonetta.
+Boolean abstraction for temporal logic satisfiability.
+In W. Damm and H. Hermanns, editors, CAV, volume 4590 of Lecture Notes in Computer Science, pages 532-546.
+Springer, 2007.
+CRST08.
+A. Cimatti, M. Roveri, V. Schuppan, and A. Tchaltsev.
+Diagnostic information for realizability.
+In F. Logozzo, D. Peled, and L. Zuck, editors, VMCAI, volume 4905 of Lecture Notes in Computer Science, pages 52-67.
+Springer, 2008.
+15  CTVW03.
+E. Clarke, M. Talupur, H. Veith, and D. Wang.
+SAT based predicate abstraction for hardware verification.
+In E. Giunchiglia and A. Tacchella, editors, SAT, volume 2919 of Lecture Notes in Computer Science, pages 78-92.
+Springer, 2003.
+Dix95.
+C. Dixon.
+Strategies for Temporal Resolution.
+PhD thesis, Department of Computer Science, University of Manchester, 1995.
+Available from ftp: //ftp.cs.man.ac.uk/pub/TR/UMCS-95-12-1.ps.Z.
+Dix96.
+C. Dixon.
+Search strategies for resolution in temporal logics.
+In M. McRobbie and J. Slaney, editors, CADE, volume 1104 of Lecture Notes in Computer Science, pages 673-687.
+Springer, 1996.
+Dix97.
+C. Dixon.
+Using Otter for temporal resolution.
+In H. Barringer, M. Fisher, D. Gabbay, and G. Gough, editors, ICTL, Applied Logic Series, pages 149- 166.
+Kluwer, 1997.
+Dix98.
+C. Dixon.
+Temporal resolution using a breadth-first search algorithm.
+Ann.
+Math.
+Artif.
+Intell., 22(1-2):87-115, 1998.
+EF06.
+C. Eisner and D. Fisman.
+A Practical Introduction to PSL.
+Springer, 2006.
+EL86.
+E. Emerson and C. Lei.
+Efficient model checking in fragments of the propositional mu-calculus (extended abstract).
+In LICS, pages 267-278.
+IEEE Computer Society, 1986.
+Eme90.
+E. Emerson.
+Temporal and modal logic.
+In Handbook of Theoretical Computer Science, Volume B: Formal Models and Sematics (B), pages 995- 1072.
+1990.
+FDP01.
+M. Fisher, C. Dixon, and M. Peim.
+Clausal temporal resolution.
+ACM Trans.
+Comput.
+Log., 2(1):12-56, 2001.
+FFK+ 01.
+K. Fisler, R. Fraer, G. Kamhi, M. Vardi, and Z. Yang.
+Is there a best symbolic cycle-detection algorithm?
+In T. Margaria and W. Yi, editors, TACAS, volume 2031 of Lecture Notes in Computer Science, pages 420- 434.
+Springer, 2001.
+Fis91.
+M. Fisher.
+A resolution method for temporal logic.
+In IJCAI, pages 99- 104, 1991.
+FKSFV08.
+D. Fisman, O. Kupferman, S. Sheinvald-Faragy, and M. Vardi.
+A framework for inherent vacuity.
+In H. Chockler and A. Hu, editors, Haifa Verification Conference, volume 5394 of Lecture Notes in Computer Science, pages 7-22.
+Springer, 2008.
+FM09.
+J. Franco and J. Martin.
+A history of satisfiability.
+In A. Biere, M. Heule, H. van Maaren, and T. Walsh, editors, Handbook of Satisfiability, volume 185 of Frontiers in Artificial Intelligence and Applications, pages 3-74.
+IOS Press, 2009.
+FN92.
+M. Fisher and P. Noel.
+Transformation and synthesis in metatem.
+Part I: Propositional metatem.
+Technical Report UMCS-92-2-1, University of Manchester, Department of Computer Science, 1992.
+Available from http: //citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.30.4998.
+GN03.
+E. Goldberg and Y. Novikov.
+Verification of proofs of unsatisfiability for CNF formulas.
+In DATE, pages 10886-10891.
+IEEE Computer Society, 2003.
+Har05.
+A. Harding.
+Symbolic Strategy Synthesis For Games With LTL Winning Conditions.
+PhD thesis, University of Birmingham, 2005.
+HH11.
+F. Hantry and M. Hacid.
+Handling conflicts in depth-first search for ltl tableau to debug compliance based languages.
+In E. Pimentel and V. Valero, editors, FLACOS, volume 68 of EPTCS, pages 39-53, 2011.
+16  HK03.
+HK04.
+HKQ03.
+HKSV01.
+HS02.
+HTKB92.
+JB06.
+JSB06.
+KHB09.
+KHB10.
+Kup06.
+KV03.
+LH10.
+Noe95.
+pap.
+Pnu77.
+PSC+ 06.
+RBS00.
+U. Hustadt and B. Konev.
+TRP++ 2.0: A temporal resolution prover.
+In F. Baader, editor, CADE, volume 2741 of Lecture Notes in Computer Science, pages 274-278.
+Springer, 2003.
+U. Hustadt and B. Konev.
+TRP++: A temporal resolution prover.
+In M. Baaz, J. Makowsky, and A. Voronkov, editors, Collegium Logicum, volume 8, pages 65-79.
+Kurt Godel Society, 2004.
+T. Henzinger, O. Kupferman, and S. Qadeer.
+From pre-historic to postmodern symbolic model checking.
+Formal Methods in System Design, 23(3):303-327, 2003.
+R. Hardin, R. Kurshan, S. Shukla, and M. Vardi.
+A new heuristic for bad cycle detection using bdds.
+Formal Methods in System Design, 18(2):131- 140, 2001.
+U. Hustadt and R. A. Schmidt.
+Scientific benchmarking with temporal logic decision procedures.
+In D. Fensel, F. Giunchiglia, D. McGuinness, and M. Williams, editors, KR, pages 533-546.
+Morgan Kaufmann, 2002.
+R. Hojati, H. Touati, R. Kurshan, and R. Brayton.
+Efficient o-regular language containment.
+In G v. Bochmann and D. Probst, editors, CAV, volume 663 of Lecture Notes in Computer Science, pages 396-409.
+Springer, 1992.
+B. Jobstmann and R. Bloem.
+Optimizations for LTL synthesis.
+In FMCAD, pages 117-124.
+IEEE Computer Society, 2006.
+T. Jussila, C. Sinz, and A. Biere.
+Extended resolution proofs for symbolic sat solving with quantification.
+In A. Biere and C. Gomes, editors, SAT, volume 4121 of Lecture Notes in Computer Science, pages 54-60.
+Springer, 2006.
+R. Konighofer, G. Hofferek, and R. Bloem.
+Debugging formal specifications using simple counterstrategies.
+In FMCAD, pages 152-159.
+IEEE, 2009.
+R. Konighofer, G. Hofferek, and R. Bloem.
+Debugging unrealizable specifications with model-based diagnosis.
+In S. Barner, I. Harris, D. Kroening, and O. Raz, editors, HVC, volume 6504 of Lecture Notes in Computer Science, pages 29-45.
+Springer, 2010.
+O. Kupferman.
+Sanity checks in formal verification.
+In C. Baier and H. Hermanns, editors, CONCUR, volume 4137 of Lecture Notes in Computer Science, pages 37-51.
+Springer, 2006.
+O. Kupferman and M. Vardi.
+Vacuity detection in temporal model checking.
+STTT, 4(2):224-233, 2003.
+M. Ludwig and U. Hustadt.
+Implementing a fair monodic temporal logic prover.
+AI Commun., 23(2-3):69-96, 2010.
+P. Noel.
+A transformation-based synthesis of temporal specifications.
+Formal Asp.
+Comput., 7(6):587-619, 1995. http://www.schuppan.de/viktor/nfm13/.
+A. Pnueli.
+The temporal logic of programs.
+In FOCS, pages 46-57.
+IEEE, 1977.
+I.
+Pill, S. Semprini, R. Cavada, M. Roveri, R. Bloem, and A. Cimatti.
+Formal analysis of hardware requirements.
+In E. Sentovich, editor, DAC, pages 821-826.
+ACM, 2006.
+K. Ravi, R. Bloem, and F. Somenzi.
+A comparative study of symbolic algorithms for the computation of fair cycles.
+In W. Hunt and S. Johnson, editors, FMCAD, volume 1954 of Lecture Notes in Computer Science, pages 143-160.
+Springer, 2000.
+17  RKG11.
+V. Raman and H. Kress-Gazit.
+Analyzing unsynthesizable specifications for high-level robot behavior using LTLMoP.
+In G. Gopalakrishnan and S. Qadeer, editors, CAV, volume 6806 of Lecture Notes in Computer Science, pages 663-668.
+Springer, 2011.
+Rob65.
+J. Robinson.
+A machine-oriented logic based on the resolution principle.
+J. ACM, 12(1):23-41, 1965.
+RV10.
+K. Rozier and M. Vardi.
+LTL satisfiability checking.
+STTT, 12(2):123-137, 2010.
+Sch12a.
+V. Schuppan.
+Extracting unsatisfiable cores for LTL via temporal resolution (full version), 2012. http://www.schuppan.de/viktor/nfm13/ VSchuppan-NFM-2013-full.pdf.
+Sch12b.
+V. Schuppan.
+Towards a notion of unsatisfiable and unrealizable cores for LTL.
+Sci.
+Comput.
+Program., 77(7-8):908-939, 2012.
+SD11.
+V. Schuppan and L. Darmawan.
+Evaluating LTL satisfiability solvers.
+In T. Bultan and P. Hsiung, editors, ATVA, volume 6996 of Lecture Notes in Computer Science, pages 397-413.
+Springer, 2011.
+Sil10.
+J. Marques Silva.
+Minimal unsatisfiability: Models, algorithms and applications (invited paper).
+In ISMVL, pages 9-14.
+IEEE Computer Society, 2010. trp.
+http://www.csc.liv.ac.uk/~konev/software/trp++/.
+WDMR08.
+M. De Wulf, L. Doyen, N. Maquet, and J. Raskin.
+Antichains: Alternative algorithms for LTL satisfiability and model-checking.
+In C. Ramakrishnan and J. Rehof, editors, TACAS, volume 4963 of Lecture Notes in Computer Science, pages 63-77.
+Springer, 2008.
+ZM03a.
+L. Zhang and S. Malik.
+Validating SAT solvers using an independent resolution-based checker: Practical implementations and other applications.
+In DATE, pages 10880-10885.
+IEEE Computer Society, 2003.
+ZM03b.
+L. Zhang and S. Malik.
+Extracting small unsatisfiable cores from unsatisfiable Boolean formula.
+Presented at Theory and Applications of Satisfiability Testing, 6th International Conference, SAT 2003.
+Santa Margherita Ligure, Italy, May 5-8, 2003.
+18  A  TR -- A High Level View  In Alg.
+2 we turn the discussion in Sec.
+3.3 into a high level view of TR in TRP++.
+At the right hand side of Alg.
+2 we show the corresponding line(s) in Alg.
+1.
+When we write "Restrict G to the set of vertices V 0 ", we mean that V is intersected with V 0 , E with V 0 x V 0 , and I with V 0 .
+Algorithm 2:  High level view of LTL satisfiability checking via TR in TRP++.
+Input: A set of SNF clauses C. Output: Unsat if C is unsatisfiable; sat otherwise.
+if C contains the empty clause then return unsat; Let G = (V, E, I) be the transition system induced by C; Restrict G to the set of vertices that are the start of an infinite path; if I is empty then return unsat; for c [?]
+C .
+c = (G((P) [?]
+(F(l)))) is an eventuality clause in C do Restrict G to the set of vertices that fulfill (P [?]
+l [?]
+wl); Restrict E to the set of edges that fulfill ((!wl) [?]
+X(l [?]
+wl));  // // // // // // //  19  Restrict G to the set of vertices that are the start of an infinite path; if I is empty then return unsat; G0 - ([?
+], [?
+], [?
+]); while G0 6= G do G0 - G; for c [?]
+C .
+c = (G((P) [?]
+(F(l)))) is an eventuality clause in C do V 00 - {v [?]
+V | a successor of v can reach a vertex v 0 in which l holds}; if V 00 6= 2AP then Restrict G to the set of vertices that fulfill (P [?]
+l [?]
+V 00 ); Restrict E to the set of edges that fulfill ((!wl) [?]
+X(l [?]
+V 00 )); Restrict G to the set of vertices that are the start of an infinite path; if I is empty then return unsat;  // 4 // 4 // 5 // 6 // 7 // 8 // 9-16 // 17 // 18 // 18 // 19 // 19  20  return sat;  //  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18  1 2 2 3 3 3  20  In model checking a number of works investigated cycle detection algorithms (e.g., [FFK+ 01, RBS00, HKSV01, HTKB92, EL86]).
+While the high level algorithm above is not identical to any of those, it is somewhat similar to the variant of the One-Way-Catch-Them-Young (OWCTY) algorithm mentioned in footnote 4 of [FFK+ 01].
+In particular, it proceeds in backward direction (e.g., [HKQ03]), it uses CTY style pruning (lines 3, 8, 18; [HKSV01]), and the pruning happens in each iteration over the eventuality clauses (resp.
+fair sets).
+However, the initial pruning (line 3 or 8) is not present in that algorithm in [FFK+ 01].
+B  Proofs: 4 UC Extraction  Lemma 1.
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, let G be the resolution graph, and let G0 the subgraph according to Def.
+2.
+Let v be a vertex in G0 labeled with a clause c = (G((!wl ) [?]
+(X(l [?]
+wl )))) created by augmentation aug2 from some eventuality clause (G((p1 [?]
+.
+.
+.
+[?]
+pn ) [?]
+(F(l )))) [?]
+C with eventuality literal l .
+Then there is a 19  vertex v 0 in G0 labeled with an eventuality clause c0 = (G((q1 [?]
+.
+.
+.
+[?]
+qn0 ) [?]
+(F(l )))) [?]
+C with eventuality literal l .
+Proof.
+There exists a path p of non-zero length in G0 from v to the unique vertex v2 in the main partition M labeled with the empty clause 2.
+On the path p there exist two vertices v 00 , v 000 such that v 00 is labeled with a clause c00 that contains !wl or X!wl , while v 000 and all of its successors on p are labeled with clauses that contain neither !wl nor X!wl .
+Let c000 be the clause labeling v 000 .
+Case 1. c000 is generated by initial or step resolution init-ii , init-in , step-nn , 00 0000 0000 step-nx , or step-xx from c and some other clause c .
+c must contain wl 0 or Xwl .
+Moreover, there must be a path p (possibly of zero length) that starts from a vertex v 00000 labeled with a clause c00000 and that ends in the vertex v 0000 labeled with c0000 , such that each vertex on the path p 0 is labeled with a clause that contains wl or Xwl .
+Finally, wl or Xwl must be present in c00000 either because c00000 is contained in the set of input clauses in SNF, C, or because c00000 is generated by some production rule that introduces wl or Xwl in the conclusion.
+Case 1.1. c00000 is contained in the set of input clauses in SNF, C. Impossible: wl is a fresh proposition in aug1 and aug2 .
+Case 1.2. c00000 is generated by initial or step resolution init-ii , init-in , step-nn , step-nx , or step-xx .
+Impossible: initial and step resolution do not generate literals that are not contained (modulo time-shifting) in at least one of the premises.
+Case 1.3. c00000 is generated by augmentation 1 aug1 .
+By construction of the resolution graph G and the subgraph G0 there is an edge in G0 from a vertex v 0 in G0 labeled with an eventuality clause c0 = (G((q1 [?]
+.
+.
+.
+[?]
+qn0 ) [?]
+(F(l )))) [?]
+C with eventuality literal l to v 00000 .
+Case 1.4. c00000 is generated by augmentation 2 aug2 , i.e., c00000 = c. This introduces another occurrence of !wl to be "resolved away".
+Note that in the main partition only new clauses are generated from existing ones with edges leading from existing vertices labeled with existing clauses to new vertices labeled with new clauses.
+Therefore, the main partition of G0 is a finite directed acyclic graph, and this case cannot happen infinitely often.
+Case 1.5. c00000 is generated by BFS loop search initialization BFS-loop-it-init-x .
+Impossible: the production rule BFS-loop-it-init-x copies a clause verbatim.
+I.e., it cannot be the case that c00000 contains wl or Xwl , while the premise does not.
+Case 1.6. c00000 is generated by BFS loop search initialization BFS-loop-it-init-n .
+Impossible: the production rule BFS-loop-it-init-n copies and time-shifts a clause.
+I.e., it cannot be the case that c00000 contains Xwl , while the premise does not contain wl .
+Case 1.7. c00000 is generated by BFS loop search initialization BFS-loop-it-init-c .
+Impossible: the production rule BFS-loop-it-init-c copies and time-shifts a clause from a previous BFS loop search 20  iteration (or initializes with the empty clause 2) and disjoins with an eventuality literal Xl 0 .
+I.e., it cannot be the case that c00000 contains Xwl , while the premise does not contain wl .
+Case 1.8. v 00000 is linked to via BFS loop search subsumption BFS-loop-it-sub .
+This case can be ignored as BFS loop search subsumption BFS-loop-it-sub does not actually generate a clause but merely links existing ones.
+Case 1.9. c00000 is generated by BFS loop search conclusion 1 BFS-loop-conclusion1 .
+Impossible: production rule BFS-loop-conclusion1 copies all literals verbatim from a clause derived in loop search, copies all literals verbatim from an eventuality clause except for the eventuality literal l 0 prefixed by F, and disjoins with the eventuality literal l 0 .
+I.e., it cannot be the case that c00000 contains wl , while the premises do not.
+Case 1.10. c00000 is generated by BFS loop search conclusion 2 BFS-loop-conclusion2 .
+Impossible: production rule BFS-loop-conclusion2 000000 copies and time-shifts all literals from a clause c derived in loop search and disjoins with !wl 0 and Xl 0 for some eventuality literal l 0 .
+I.e., it cannot be the case that c00000 contains Xwl , while the premise c000000 does not contain wl .
+Case 2. c000 is generated by augmentation aug1 or aug2 .
+Impossible: the premise of the production rules aug1 and aug2 cannot contain either !wl or X!wl as wl is assumed to be a fresh proposition in aug1 and aug2 .
+Case 3. c000 is generated by BFS loop search initialization BFS-loop-it-init-x .
+Impossible: the production rule BFS-loop-it-init-x copies a clause verbatim.
+I.e., it cannot be the case that c00 contains !wl or X!wl , while c000 does not.
+Case 4. c000 is generated by BFS loop search initialization BFS-loop-it-init-n .
+Impossible: the production rule BFS-loop-it-init-n copies and time-shifts a clause.
+I.e., it cannot be the case that c00 contains !wl , while c000 does not contain X!wl .
+Case 5. c000 is generated by BFS loop search initialization BFS-loop-it-init-c .
+Impossible: the production rule BFS-loop-it-init-c copies and time-shifts a clause from a previous BFS loop search iteration (or initializes with the empty clause 2) and disjoins with an eventuality literal Xl 0 .
+I.e., it cannot be the case that c00 contains !wl , while c000 does not contain X!wl .
+Case 6. v 00 and v 000 are linked via BFS loop search subsumption BFS-loop-it-sub , i.e., a time-shifted version of c00 subsumes c000 .
+Impossible: BFS-loop-it-sub links from a clause with fewer literals to a clause with (modulo time-shifting) the same and more literals.
+I.e., it cannot be the case that c00 contains !wl , while c000 does not contain X!wl .
+Case 7. c000 is generated by BFS loop search conclusion 1 BFS-loop-conclusion1 .
+Impossible: production rule BFS-loop-conclusion1 copies all literals verbatim from a clause derived in loop search, copies all literals verbatim from an eventuality clause except for the eventuality literal l 0 prefixed by F, and disjoins with the eventuality literal l 0 .
+I.e., it cannot be the case that c00 contains !wl , while c000 does not.
+21  Case 8. c000 is generated by BFS loop search conclusion 2 BFS-loop-conclusion2 .
+Impossible: production rule BFS-loop-conclusion2 copies and time-shifts all literals from a clause derived in loop search and disjoins with !wl 0 and Xl 0 for some eventuality literal l 0 .
+I.e., it cannot be the case that c00 contains !wl , while c000 does not contain X!wl .
+Notice that the only possible cases are case 1.3 and 1.4.
+Of those, case 1.4 can only happen a finite number of times and must be followed by an occurrence of case 1.3.
+This concludes the proof.
+Lemma 2.
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, let G be the resolution graph constructed, and let G0 be the subgraph according to Def.
+2.
+Let v be a vertex in G0 labeled with a clause c = (G((!wl ) [?]
+(X((q1 [?]
+.
+.
+.
+[?]
+qn0 ) [?]
+l )))) generated by BFS loop search conclusion 2 BFS-loop-conclusion2 from some eventuality clause (G((p1 [?]
+.
+.
+.
+[?]
+pn ) [?]
+(F(l )))) [?]
+C with eventuality literal l (and some other clause).
+Then there is a vertex v 00 in G0 labeled with an eventuality clause c00 = (G((r1 [?]
+.
+.
+.
+[?]
+rn00 ) [?]
+(F(l )))) [?]
+C with eventuality literal l .
+Proof.
+Analogous to the proof of Lemma 1.
+Lemma 3.
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, let G be the resolution graph, and let G0 be the subgraph according to Def.
+2.
+Let v be a vertex in G0 labeled with a clause c = (G((0) [?]
+(X(q1 [?]
+.
+.
+.
+[?]
+qn0 [?]
+l )))) generated by production rule BFS-loop-it-init-c from some eventuality clause (G((p1 [?]
+.
+.
+.
+[?]
+pn ) [?]
+(F(l )))) [?]
+C with eventuality literal l (and some other clause).
+Then there is a vertex v 00 in G0 labeled with an eventuality clause c00 = (G((r1 [?]
+.
+.
+.
+[?]
+rn00 ) [?]
+(F(l )))) [?]
+C with eventuality literal l .
+Proof.
+By construction of the resolution graph G (Def.
+1) and its subgraph G0 (Def.
+2) v is included in G0 only if G0 also includes some vertex v 0 labeled with some clause c0 such that c0 was generated by BFS loop search conclusion BFS-loop-conclusion1 or BFS-loop-conclusion2 from the BFS loop search iteration of which c is part.
+Case 1. c0 is generated by BFS loop search conclusion 1 BFS-loop-conclusion1 .
+The claim follows from the construction of the resolution graph G and its subgraph G0 .
+By Def.
+1 v 0 has an incoming edge from a vertex v 00 labeled with an eventuality clause c00 = (G((r1 [?]
+.
+.
+.
+[?]
+rn00 ) [?]
+(F(l )))) [?]
+C with eventuality literal l and by Def.
+2 v 00 is included in G0 if v 0 is included.
+Case 2. c0 is generated by BFS loop search conclusion 2 BFS-loop-conclusion2 .
+In that case the claim follows directly from Lemma 2.
+Theorem 1 (Unsatisfiability of UC in SNF).
+Let C be a set of SNF clauses to which Alg.
+1 has been applied and shown unsatisfiability, and let C uc be the UC of C in SNF.
+Then C uc is unsat.
+22  Proof.
+Assume for a moment that in columns 8 (p.1 - c) and 9 (p.2 - c) of Tab.
+1 all 6 are replaced with 4, i.e., that each conclusion in the resolution graph is connected by an edge to each of its premises rather than only to a subset of them.
+In that case the UC in SNF according to Def.
+2 would contain all clauses of the set of starting clauses C that contributed to deriving the empty clause and, hence, to establishing unsatisfiability of C. In that case it would follow directly from the correctness of TR that C uc is unsatisfiable.
+It remains to show that 1. not including an edge from premise 1 to the conclusion for rule aug2 , 2. not including an edge from premise 2 to the conclusion for rule BFS-loop-conclusion2 , 3. not including an edge from premise 2 to the conclusion for rule BFS-loop-it-init-c , and 4. not including an edge from premise 1 to the conclusion for rule BFS-loop-it-init-c in the resolution graph G maintains the fact that the resulting C uc is unsatisfiable.
+Items 1.
+- 3. are addressed by Lemmas 1, 2, and 3.
+We now address item 4.
+Notice that this case essentially corresponds to considering only the last iteration of a successful loop search to obtain the UC C uc .
+After initialization of a loop search iteration in line 11 of Alg.
+1 L contains three sets of clauses according to the three production rules for initializing a loop search iteration.
+Clauses generated by BFS-loop-it-init-x and BFS-loop-it-init-n are (partly time-shifted) duplicates of clauses derived so far in the main partition.
+BFS-loop-it-init-c generates a set of clauses (G((0) [?]
+(X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l )))).
+From these three sets saturation restricted to rule step-xx in line 12 derives another set of clauses (G(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 i0 )).
+Taking the restriction of saturation to rule step-xx into account, that loop search iteration has established that, assuming C, the following fact is provable: G((  ^  ^  (X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l ))) - (  (qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 i0 )))  (10)  1<=i0 <=n0  1<=i<=n  Moreover, if subsumption in line 15 succeeds, the following fact is also provable: ^  (  _  (G((qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 i0 ) - (pi,1 [?]
+.
+.
+.
+[?]
+pi,ni ))))  (11)  1<=i<=n 1<=i0 <=n0  We rewrite (10) and (11) as follows: ^  G((  ^  ((  1<=i0 <=n0  =  ^ 1<=i0 <=n0  =  ^ 1<=i0 <=n0  =  ^ 1<=i0 <=n0  =  ^ 1<=i0 <=n0  =  ^ 1<=i0 <=n0  (qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 ))) i  1<=i0 <=n0  1<=i<=n  = G(  ^  (X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l))) - (  (G((  ^  (X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l))) - (qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 ))) i  1<=i<=n  ^  (X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l))) - (qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 ))) i  1<=i<=n  (G((!
+(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 )) - (!
+( i  _  (X(!
+(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l))))))  1<=i<=n  (G((!
+(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 )) - ( i  (X(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni [?]
+l))))))  1<=i<=n  (G((!
+(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 )) - ( i  ^  _  (X((!
+(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni )) [?]
+(!l))))))  1<=i<=n  (G((!
+(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 0 )) - ((X!l) [?]
+( i  _  (X(!
+(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni ))))))) (12)  1<=i<=n  23  ^  (  _  (G((qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 i0 ) - (pi,1 [?]
+.
+.
+.
+[?]
+pi,ni ))))  1<=i<=n 1<=i0 <=n0  =  ^  (  _  (G((!
+(pi,1 [?]
+.
+.
+.
+[?]
+pi,ni )) - (!
+(qi0 ,1 [?]
+.
+.
+.
+[?]
+qi0 ,n0 i0 )))))  (13)  1<=i<=n 1<=i0 <=n0  Putting (12) and (13) together, we obtain (14), which is exactly the premise required to perform eventuality resolution with an eventuality clause with eventuality literal l [FDP01]: (G((q1,1 [?]
+.
+.
+.
+[?]
+q1,n0 1 ) [?]
+(XG!l ))) *** (G((qn0 ,1 [?]
+.
+.
+.
+[?]
+qn0 ,n0 n0 ) [?]
+(XG!l )))  (14)  This concludes the proof.
+Proposition 1 (Complexity of UC Extraction).
+Let C be a set of SNF clauses to which Alg.
+1 is applied and shows unsatisfiability.
+Construction and backward traversal of the resolution graph and, hence, construction of C uc according to Def.
+2 can be performed in time O(|V |) in addition to the time required to run Alg.
+1.
+|V | is at most exponential in |AP | + log(|C|).
+Proof.
+Notice that each vertex in G has at most 2 incoming edges.
+Hence, construction of G and backward traversal of G from the unique vertex in the main partition labeled with the empty clause, v2 , can be performed in time O(|V |).
+For a proof of |AP | + log(|C|) see the following reasoning: 1.
+In an initial clause a proposition can be not present, present, or present negated.
+Hence, the number of different initial clauses is O(3|AP| ).
+2.
+In a global clause a proposition can be one of not present, present, or present negated; and prefixed by X not present, present, or present negated.
+Hence, the number of different global clauses is O(9|AP| ).
+3.
+The number of clauses in the main partition is bounded by |C| + O(3|AP| ) + O(9|AP| ) = O(|C| + 9|AP| ).
+4.
+The number of clauses in a partition for a BFS loop search iteration is bounded by O(9|AP| ).
+5.
+The number of partitions is bounded by 1 plus the number of BFS loop search iterations.
+6.
+The number of iterations in a BFS loop search is bounded by the length of the longest monotonically increasing sequence of Boolean formulas over AP , which is O(2|AP| ).
+See also [Dix98].
+7.
+The number of BFS loop searches is bounded by the number of different clauses that can be the result of a BFS loop search.
+The number of different clauses that can be the consequence of BFS loop search conclusion 1 BFS-loop-conclusion1 is bounded by the number of different global clauses with empty next part, which is O(3|AP| ).
+The number of different clauses that can be the consequence of BFS loop search conclusion 2 BFS-loop-conclusion2 is 24  bounded by the number of different eventuality literals times the number of different global clauses with empty next part, which is O(|C| * 3|AP| ).
+Hence, the number of BFS loop searches is bounded by O(|C| * 3|AP| ).
+8.
+Taking all of the above into account, the number of clauses is bounded by O(|C| + 9|AP| + |C| * 3|AP| * 2|AP| * 9|AP| ) = O(|C| * 54|AP| ).
+This concludes the proof.
+C  Proofs: 5 From LTL to SNF and Back  Theorem 2 (Unsatisfiability of UC in LTL).
+Let ph be an unsatisfiable LTL formula, and let phuc be the UC of ph in LTL.
+Then phuc is unsat.
+Proof.
+Let SNF (ph) be the SNF of ph, and let C uc be the UC of SNF (ph) in SNF.
+First, consider the trivial case that ph is 0.
+Here, Def.
+4 results in the UC of ph in LTL being phuc [?]
+0 as desired.
+Now assume that ph is not 0, i.e., the size of the syntax tree of ph is greater than 1.
+Let SNF (phuc ) be the SNF of phuc .
+In order to prove that phuc is unsat we show that the clauses of C uc (which is unsat) are a subset of the SNF of phuc : C uc [?]
+SNF (phuc ).
+By comparing the clauses of SNF (ph) with those of SNF (phuc ) we can partition the clauses of SNF (ph) into 3 sets:2 1.
+Some clauses are present in both SNF (ph) and SNF (phuc ): C 0 1 [?]
+SNF (ph) [?]
+SNF (phuc ).
+2.
+Some clauses are present in SNF (ph) and are present in SNF (phuc ) with one or more occurrences of some propositions x, x0 , .
+.
+.
+that are marked blue boxed in Tab.
+2 replaced with 1 or 0.
+Call that set C 0 2 .
+3.
+Some clauses are present in SNF (ph) but not in SNF (phuc ): C 0 3 [?]
+SNF (ph) \ (SNF (phuc ) [?]
+C 0 2 ).
+By Def.
+2 C uc is a subset of SNF (ph): C uc [?]
+SNF (ph).
+By Def.
+4 C uc contains no member of C 0 2 ; otherwise, there could not be one or more occurrences of some propositions x, x0 , .
+.
+.
+that are marked blue boxed in Tab.
+2 replaced with 1 or 0 in the clauses of C 0 2 : C uc [?]
+C 0 2 = [?].
+Now we argue that C uc also contains no member of C 0 3 .
+First, let c [?]
+C 0 3 be an initial or a global clause.
+c cannot be a member of C uc as, in order to be part of a proof that derives the empty clause, all literals of c need to be "resolved away".
+However, this is not possible for c as for the literal (!
+)xps on the left side of the implication in Tab.
+2 there is no clause with an opposite literal in C uc .
+This follows by induction on the nesting depth of the subformula ps to which (!
+)xps belongs from the occurrence of the superformula of ps that has been replaced with 1 or 0 in phuc .
+Now let c [?]
+C 0 3 be an eventuality clause.
+By Def.
+1, 2 for such c to be part of C uc there would have to be a clause c0 in the resolution graph G according to Def.
+1 that was generated by production rules aug1 or BFS-loop-conclusion1 and that is backward reachable in G from the vertex labeled with the empty clause 2 in the main partition M , v2 .
+Again, for the latter to happen, all literals of c0 would have to be "resolved away", which is impossible by a similar inductive argument as 2  We disregard the issue of the indices of the variables x, x0 , .
+.
+..  25  before.
+Hence, we have shown that all clauses in C uc come from C 0 1 , which is a subset of SNF (phuc ).
+This concludes the proof.
+26  D  Additional Plots  mo to 600  mo to 600  100  100  100  10  1  10  1  0.1  0.1  0  0 0  0.1  1  10  100  UC extraction  mo to 600  UC extraction  UC extraction  run time [seconds]  Figures 3 and 4 show the overhead that is incurred and the size reduction that is obtained by extracting UCs split by category.
+600 to mo  0 0  0.1  1  10  100  600 to mo  0  mo to 6  1  1  1  0.1  0.01  UC extraction  mo to 6  0.1  0.01  0 0.1 1 no UC extraction  6 to mo  10  100  600 to mo  0.1  0.01  0 0.01  1  no UC extraction  mo to 6  0  0.1  no UC extraction  UC extraction  UC extraction  1  0.1  no UC extraction  memory [GB]  10  0 0  application  0.01  0.1 1 no UC extraction  6 to mo  0  crafted  0.01  0.1 1 no UC extraction  6 to mo  random  5000  5000  1000  1000  1000  100  10  1  unsatisfiable core [# nodes]  5000  unsatisfiable core [# nodes]  unsatisfiable core [# nodes]  size [# nodes]  Fig.
+3.
+Overhead incurred by UC extraction in terms of run time (in seconds) and memory (in GB) separated by categories application, crafted, and random.
+In each graph extraction of UCs is on the y-axis and no UC extraction on the x-axis.
+The off-center diagonal shows where y = 2x.
+100  10  1 1  10 100 1000 input formula [# nodes]  application  5000  100  10  1 1  10 100 1000 input formula [# nodes]  crafted  5000  1  10 100 1000 input formula [# nodes]  5000  random  Fig.
+4.
+Size reduction obtained by UC extraction separated by categories application, crafted, and random.
+The y-axes show the sizes of the UCs, the x-axes show the sizes of the input formulas.
+Size is measured as the number of nodes in the syntax trees.
+27

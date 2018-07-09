@@ -1,0 +1,316 @@
+p-Automata and Obligation Games (Invited Paper) Nir Piterman Department of Computer Science University of Leicester Leicester, UK nir.piterman@le.ac.uk  Abstract--We present our automata-based approach to probabilistic verification.
+This new approach adapts notions and techniques from alternating tree automata to the realm of Markov chains.
+The resulting p-automata determine languages of Markov chains.
+In order to determine acceptance of Markov chains by p-automata we develop a new notion of games, which we call obligation games.
+Intuitively, one player commits to achieving a certain probability of winning in the interaction.
+We survey the initial results regarding obligation games and p-automata.
+These include algorithms for solving obligation parity games, initial results about the expressive power of pautomata, and the relation between p-automata and pCTL model checking.
+In particular, these initial foundations show that p-automata enable abstraction-based probabilistic model checking for probabilistic specifications that subsume Markov chains, and LTL and CTL* like logics.
+Many interesting questions remain open.
+For example, further algorithmic studies of obligation games, the theory of p-automata, and the usage in practice of p-automata as an abstraction framework for Markov chains.
+Keywords-Markov chains, model checking, pCTL, automata, games  I. I NTRODUCTION Markov chains are a central concept in many aspects of engineering and science.
+Recent years have seen an increase in the interest in applications of model checking to Markov chains and other probabilistic systems (cf.
+[1], [2]).
+Unfortunately, these applications are severely hindered by the inability to apply abstraction (cf.
+[3]), the technique that enabled model checking to scale to realistic application in the non-probabilistic world.
+Reasoning abstractly about Markov chains (and probabilistic systems in general), is a very active field of research.
+Recent years have seen various suggestion of more elaborate forms of probabilistic systems whose aim is to enable abstraction in the probabilistic context (cf.
+[4], [5], [6], [7]).
+In the non-probabilistic setting, the automata-theoretic approach to verification provides a unifying framework for reasoning about systems.
+In particular, the underlying concepts of abstraction can be formulated in the context of automata (see, e.g., [8]).
+The automata framework that supports branching-time temporal reasoning is that of alternating tree automata [9].
+Recently, Dams and Namjoshi showed that alternating tree automata are a complete framework for  abstraction with respect to branching-time logic [10], [11].
+Motivated by their work, we introduced p-automata as a corresponding unifying automata framework for reasoning about Markov chains [12].
+Much like tree automata read trees, p-automata read entire Markov chains.
+They combine pCTL [13] and alternating tree automata, namely, they have a rich combinational structure and the ability to quantify the probabilities of sets of paths.
+Acceptance of tree automata is determined by solving two-player games (cf.
+[9]).
+We would like to reduce acceptance by p-automata to some form of stochastic games.
+However, existing game formalisms are too weak to enable a similar reduction for p-automata.
+We extend the winning conditions of two-player games by a new structural restriction, which we call obligations [14].
+Intuitively, one of the players adds commitments as to the value of the game as she goes along playing.
+Interestingly, the resulting games are not covered by the classical determinacy results of two-player games [15], [16].
+We show that the resulting games are indeed determined and that the definition of p-automata acceptance based on these games is well structured.
+Building upon this determinacy result we show the following: * The values of obligation games can be determined in NEXPTIME.
+The values of uniform obligation games, which satisfy some structural restrictions, can be computed in EXPTIME.
+These complexity results apply also to the appropriate kinds of p-automata.
+* Languages of p-automata are closed under bisimulation.
+The set of languages accepted by p-automata is closed under Boolean operations.
+p-Automata can express bisimulation classes of Markov chains and pCTL formulas.
+Complexity of acceptance for p-automata that result from pCTL formulas matches that of pCTL model checking.
+* Simulation of p-automata approximates language containment.
+* p-automata are the first complete abstraction framework for PCTL model checking on Markov chains.
+The latter means that if an infinite-state Markov chain satisfies a PCTL formula, there is a finite p-automaton  that abstracts (i.e.
+simulates) this Markov chain and whose language is contained in that of the formula.
+We mention a few interesting open problems that arise.
+First, our algorithms for solving obligation games summarize a first attempt at such algorithms.
+They show that these games can be analyzed algorithmically.
+We believe that the complexity of solving these games can be considerably improved and algorithms made more practical.
+Furthermore, questions that have been answered regarding existing notions of games will have to be repeated and answered anew for obligation games.
+Second, we have merely touched upon the well definedness of the automata theory of p-automata.
+Major issues such as what are nondeterministic p-automata and how to convert alternating p-automata to nondeterministic p-automata are left open.
+Algorithmic aspects of p-automata, such as solving emptiness, could lead to a solution of the satisfiability problem of pCTL, which has been open since the early 80s.
+Finally, as mentioned, p-automata are the first complete abstraction framework for model checking pCTL over Markov chains.
+This crucially depends on the ability to combine probabilistic quantifications on regular sets of paths, which is completely lacking from other approaches towards abstraction of Markov chains.
+We need to study the usage of p-automata in a model checking and abstraction framework.
+In this paper we give the basic definitions and results relating to p-automata.
+Definitions are very terse and are intended only to give the flavor of these formalisms.
+The interested reader is referred to [12] and [14].
+II.
+O BLIGATION PARITY G AMES Obligation parity games introduce a new "structural" winning paradigm to infinite duration two-player games [14].
+A win can no longer be decided based only on linear plays.
+It is evaluated over the entire Markov chain resulting from unwinding the strategies of the players.
+This is done by adding obligations, promises by one of the players to achieve a certain value in some configurations.
+Intuitively, in order to win, Player 0 has to make sure that all plays are in the target set (as usual) and, in addition, that all obligations are met.
+The value for Player 0 at an obligation configuration, where the obligation is met, is 1.
+Otherwise, it is 0.
+In particular, it is independent of the strategy and probability choices made following the visit to that configuration.
+An obligation parity game (OPG) is G = ((V, E), (V0 , V1 , Vp ), k, (a, O)), where (V, E) is a finite directed graph with a finite set of configurations V , (V0 , V1 , Vp ) is a partition of V to Player 0, Player 1, and probabilistic configurations, respectively, k : Vp - D(V ) associates with every probabilistic configuration a distribution with finite support over V such that k(v)(u) > 0 iff (v, u) [?]
+E, a is a parity condition over V , and O : V - ({>=, >} x [0, 1]) [?]
+{[?]}.
+The obligation function O associates with some configurations the value [?]
+saying  that there is no special obligation associated with this configuration.
+With other configurations O associates an obligation >v or >=v stating that Player 0 can use this configuration (and it is going to have the value 1 for her) only if she can ensure that the value she can get from this configuration meets the obligation.
+It follows that, recursively, Player 0 has to adjust her strategy after every obligation configuration so that the values in all obligations are met using plays in ph.
+For configuration v, if O(v) 6= [?]
+we call v an obligation configuration and if O(v) = [?]
+we call v a non-obligation configuration.
+We call a sequence of configurations a play prefix or just a prefix.
+We define the notion of value of an obligation parity game using the well known notions of value in stochastic games for obligations of the form reach(S), safe(S), and parity, for a set S of configurations.
+Obligations are handled through the notion of a choice set, the set of obligations that can be met, which we introduce now.
+Consider an OPG G = ((V, E), .
+.
+.
+, (a, O)).
+Let O denote the set of configurations v [?]
+V such that O(v) 6= [?]
+and O prefixes w * v [?]
+V + such that v [?]
+O.
+We denote by O(w) the obligation O(v), where w = w0 * v. That is, O is the set of configurations with a non-empty obligation and the set O is the set of prefixes that end in a configuration in O.
+Let N = S - O denote the set of configurations that have no obligation and N denote the set of prefixes S - O.
+For a prefix w a choice set is Cw [?]
+O [?]
+({w} * V * V * ).
+That is, it is a set of extensions of w that have obligations.
+Given a prefix w [?]
+V + and a choice set Cw , an infinite path w * y is good if either (a) y = x * z, x [?]
+N * * O, and w * x [?]
+C, or (b) y [?]
+N o and w * y [?]
+a.
+That is, either the first visit to O after w is in C or O is never visited and the infinite path is in a.
+A choice set is good for strategy s if the following two conditions hold: * Every infinite path p = s0 , s1 , .
+.
+.
+in M such that p has infinitely many prefixes in C is in a.
+* For every prefix w [?]
+C we have val(reach(C) [?]
+(a [?]
+safe(N ))) ./ r, where O(w) = ./r.
+That is, if infinitely many obligations on the same path are chosen by a choice set then that path needs to be winning.
+In addition, from every obligation configuration met along the way Player 0 must be able to ensure that the value of either (a) reaching the choice set or (b) completely avoiding new obligations and satisfying the parity condition is high enough to meet the obligation.
+Let Cs denote the set of good choice sets for s. For a prefix w the pre-value of w is v(G, w) = sup val(reach(C) [?]
+(a [?]
+safe(!O))) C[?
+]Cw  Finally, we define the value of w. For a prefix w such that O(w) 6= [?]
+we define v(G, w) to be 1 if v(G, w) ./ r, where O(w) = ./r, and v(G, w) is 0 otherwise.
+For a prefix w such that O(w) = [?]
+we define v(G, w) to be v(G, w).
+Lemma 1.
+([14]) For every obligation parity game G and every prefix w such that O(w) 6= [?]
+we have val0 (G, w) [?]
+{0, 1}.
+We define the value of Player 1 through a definition of the dual game.
+Dualization of a game consists of changing the roles of the two players and switching the goal to the complement.
+Here, the complementation of the goal includes complementation of both the parity condition and the obligations.
+Consider a game G = ((V, E), (V0 , V1 , Vp ), (a, O)).
+The dual game is dual(G) = ((V, E), (V1 , V0 , Vp ), (dual(a), dual(O))), where dual(a) is defined as usual and dual(O) is defined below.
+If O(v) = [?]
+[?]
+>1 - r If O(v) = >=r dual(O)(v) =  >=1 - r If O(v) = >r Intuitively, if in G Player 0 has the obligation to achieve more than r with the set ph, then the dual player (Player 0 in dual(G)) has the obligation to achieve at least 1 - r with the complementary parity goal.
+Syntactically, dual(dual(G)) = G. We define the value of Player 1 in G to be the value of Player 0 in dual(G).
+Theorem 2.
+([14]) Forall prefixes w in an OPG G we have val0 (G, w) + val1 (G, w) = 1.
+Theorem 3.
+([14]) The value of an obligation parity game G can be computed in NEXPTIME.
+Consider an obligation parity game G = ((V, E), .
+.
+.
+, (a, O)).
+We say that a configuration v is pure if v [?]
+Vp and there is a unique configuration v 0 such that (v, v 0 ) [?]
+E. We say that the game is uniform if the following holds.
+There is a partition {Vi }i[?
+]N of V such that for every i we have, either (a) for every v [?]
+Vi we have O(v) = [?]
+or (b) for every v [?]
+Vi we have O(v) 6= [?]
+or v is pure.
+We say that Vi <= Vi0 if there are some v [?]
+Vi , v 0 [?]
+Vi0 such that (v, v 0 ) [?]
+E. The partition also satisfies that every chain according to <= is finite.
+Intuitively, a state q [?]
+Q of a p-automaton and its transition structure model a probabilistic path set.
+So [[q]]./p holds in location s if the measure of paths that begin in s and satisfy q is ./ p. An element of Q [?]
+[[Q]]> is therefore either a state of the p-automaton, or a term of the form [[q]]./p .
+Given ph [?]
+B + (Q[?
+][[Q]]> ), its closure cl(ph) is the set of all subformulas of ph according to (1).
+For a set Ph of formulas, let cl(Ph) = S ph[?
+]Ph cl(ph).
+A p-automaton A is a tuple hS, Q, d, phin , ai, where S is a finite input alphabet, Q a set of states (not necessarily finite), d: Q x S - B + (Q [?]
+[[Q]]> ) the transition function, phin [?]
+B + ([[Q]]> ) the initial condition, and a a parity acceptance condition.
+For every set of atomic propositions AP, p-automata A = h2AP , Q, d, phin , ai have MCAP , the set of Markov chains labeled by proposition in AP, as set of inputs.
+For M = (S, P, L, sin ) [?]
+MCAP , we define whether A accepts M by a reduction to an obligation parity game.
+The language of A is L(A) = {M [?]
+MCAP | A accepts M }.
+We construct a game GM,A = ((V, E), (V0 , V1 , Vp ), k, (a, O)).
+Configurations of GM,A correspond to a subformula appearing in the transition of A and a location in M .
+Configurations with a term of the form [[q]]./p correspond to obligations.
+All other configurations have no obligations.
+The Markov chain is accepted if the configuration (phin , sin ) has value 1 in GM,A .
+Formally, let GM,A = ((V, E), (V0 , V1 ), k, G), where the components of GM,A are as follows.
+* V = S x cl(d(Q, S)).
+* V0 = {(s, ps1 [?]
+ps2 ) | s [?]
+S and ps1 [?]
+ps2 [?]
+cl(d(Q, S))}.
+* V1 = {(s, ps1 [?]
+ps2 ) | s [?]
+S and ps2 [?]
+ps2 [?]
+cl(d(Q, S))}.
+* Vp = S x (Q [?]
+[[Q]]> ).
+* The set of edges E is defined as follows.
+E = {((s, ph1 [?]
+ph2 ), (s, phi )) | i [?]
+{1, 2}}[?]
+{((s, ph1 [?]
+ph2 ), (s, phi )) | i [?]
+{1, 2}}[?]
+{((s, q), (s0 , d(q, L(s))) | s0 [?]
+succ(s)}[?]
+{((s, [[q]]./p ), (s0 , d(q, L(s))) | s0 [?]
+succ(s)}  Theorem 4.
+([12], [14]) The value of a uniform obligation parity game G can be computed in EXPTIME.
+*  III.
+P -AUTOMATA  *  We define a specialized version of p-automata for the purposes of this paper based on [12].
+We assume familiarity with basic notions of trees and (alternating) tree automata.
+For set T , let B + (T ) be the set of positive Boolean formulas generated from elements t [?]
+T , constants tt and ff, and disjunctions and conjunctions:  *  k((s, q), (s0 , d(q, L(s)))) = k((s, [[q]]./p ), (s0 , d(q, L(s)))) = P (s, s0 ).
+For q [?]
+Q and p [?]
+[0, 1] we have a(s, q) = a(q), a(s, [[q]]./p ) = a(q).
+For every other configuration c we set a(c) to the maximal possible priority.
+For q [?]
+Q and p [?]
+[0, 1] we have O(s, [[q]]./p ) = ./p.
+For every other configuration c, we have O(c) = [?].
+(1)  Theorem 5.
+([12], [14]) Given a p-automaton A = h2AP , .
+.
+.i, its language L(A) is well defined.
+Formulas in B + (T ) are finite even if T is not.
+For set Q, the set of states of a p-automaton, we define term sets [[Q]]> as follows.
+Theorem 6.
+([12], [14]) Given a p-automaton A and a finite Markov chain M , we can decide whether M [?]
+L(A) in NEXPTIME.
+ph, ps ::= t | tt | ff | ph [?]
+ps | ph [?]
+ps  [[Q]]> = {[[q]]./p | q [?]
+Q, ./ [?]
+{>=, >}, p [?]
+[0, 1]}  In [12] we introduce also a simulation relation between  p-automata that over approximates language inclusion.
+Decision of this simulation can be also reduced to obligation games.
+We do not include this definition or reduction here.
+For two automata A and B, we write A  B for B simulates A. Theorem 7.
+([12]) Given p-automata A and B we have A  B implies L(A) [?]
+L(B).
+IV.
+P CTL M ODEL C HECKING We mention several results concerning p-automata.
+The combination of these results shows that p-automata are a complete abstraction framework for infinite Markov chains with respect to pCTL model checking.
+In this context, a complete abstraction framework is such that if some infinite state Markov chain M satisfies a pCTL formula ph there is a finite state p-automaton A such that M [?]
+L(A) and A is simulated by the automaton for the language for ph.
+[2] F. Ciesinski and C. Baier, "Liquor: A tool for qualitative and quantitative linear time analysis of reactive systems," in 3rd QEST.
+IEEE Computer Society, 2006, pp.
+131-132.
+[3] E. Clarke, O. Grumberg, and D. Long, "Verification tools for finite-state concurrent systems," in Decade of Concurrency - Reflections and Perspectives, ser.
+Lecture Notes in Computer Science, vol.
+803.
+Springer, 1993, pp.
+124-175.
+[4] B. Jonsson and K. Larsen, "Specification and refinement of probabilistic processes," in 6th LICS.
+IEEE Computer Society, 1991, pp.
+266-277.
+[5] H. Fecher, M. Leucker, and V. Wolf, "Don't Know in probabilistic systems," in 13th SPIN, ser.
+Lecture Notes in Computer Science, vol.
+3925.
+Springer, 2006, pp.
+71-88.
+[6] B. Caillaud, B. Delahaye, K. Larsen, A. Legay, M. Pedersen, and A. Wasowski, "Compositional design methodology with constraint markov chains," in 7th QEST.
+IEEE Computer Society, 2010, pp.
+123-132.
+Theorem 8.
+([12]) For every Markov chain M [?]
+MCAP , there is a p-automaton AM such that the language L(AM ) is the bisimulation equivalence class of M .
+[7] B. Delahaye, J.-P. Katoen, K. Larsen, A. Legay, M. Pedersen, F. Sher, and A. Wasowski, "Abstract probabilistic automata," in 12th VMCAI, ser.
+Lecture Notes in Computer Science, vol.
+6538.
+Springer, 2011, pp.
+324-339.
+Lemma 9.
+([12]) For every pCTL formula ph over AP, there is a p-automaton Aph such that M |= ph iff M [?]
+L(Aph ).
+[8] T. Henzinger, O. Kupferman, and S. Rajamani, "Fair simulation," Inf.
+and Comp., vol.
+173, no.
+1, pp.
+64-81, 2002.
+Theorem 10.
+([12]) For M [?]
+MCAP and PCTL formula ph over AP, M |= ph iff M [?]
+L(Aph ).
+Deciding M [?]
+L(Aph ) is polynomial in the size of M and linear in the size of ph.
+[9] E. Gradel, W. Thomas, and T. Wilke, Automata, Logics, and Infinite Games: A Guide to Current Research, ser.
+Lecture Notes in Computer Science.
+Springer, 2002, vol.
+2500.
+Finally, from all these results, completeness of abstraction for pCTL model checking follows.
+[10] D. Dams and K. Namjoshi, "The existence of finite abstractions for branching time model checking," in 19th LICS, 2004, pp.
+335-344.
+Corollary 11.
+([12]) For every infinite Markov chain M and pCTL formula ph, we have M |= ph iff there is a finite p-automaton A with M [?]
+L(A) and A  Aph .
+ACKNOWLEDGMENT The contents of this short paper is based on [12] and [14].
+I am grateful to Michael Huth, Daniel Wagner, and Krishnendu Chatterjee for the great pleasure in working with them on these results.
+R EFERENCES [1] A. Hinton, M. Kwiatkowska, G. Norman, and D. Parker, "Prism: A tool for automatic verification of probabilistic systems," in 12th TACAS, ser.
+Lecture Notes in Computer Science, vol.
+3920.
+Springer, 2006, pp.
+441-444.
+[11] ----, "Automata as abstractions," in 6th VMCAI, ser.
+Lecture Notes in Computer Science, vol.
+3385.
+Springer, 2005, pp.
+216-232.
+[12] M. Huth, N. Piterman, and D. Wagner, "Weak p-automata: Acceptors of Markov chains," in 7th QEST.
+IEEE Computer Society Press, 2010.
+[13] H. Hansson and B. Jonsson, "A logic for reasoning about time and reliability," Formal Aspects of Computing, vol.
+6, no.
+5, pp.
+512-535, 1994.
+[14] K. Chatterjee and N. Piterman, "Obligation blackwell games and p-automata," 2011, in preparation.
+[15] D. Martin, "Borel determinacy," Annals of Mathematics, vol.
+65, pp.
+363-371, 1975.
+[16] ----, "The determinacy of Blackwell games," The Journal of Symbolic Logic, vol.
+63, no.
+4, pp.
+1565-1581, 1998.

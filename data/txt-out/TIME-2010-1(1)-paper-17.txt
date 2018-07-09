@@ -1,0 +1,426 @@
+2010 17th International Symposium on Temporal Representation and Reasoning  Counting LTL FrancESSois Laroussinie1 Antoine Meyer2 1 Eudes Petonnet 1  LIAFA, UniversiteE Paris Diderot a Paris 7 & CNRS UMR 7089, France {Francois.Laroussinie,Eudes.Petonnet}@liafa.jussieu.fr 2  LIGM, UniversiteE Paris Est a Marne-la-ValleEe & CNRS UMR 8049, France Antoine.Meyer@univ-mlv.fr  Abstract  defined with grammars as in [17].
+In this paper, we present a counting extension of LTL in the line of [12], called CLTL, where Until modalities are equipped with constraints on the number of true occurrences of certain subformulas.
+For instance, in a mutual exclusion protocol where two processes try to access the same  critical section, the formula G req1 a F[]cs2 a$?5] cs1 ) expresses the fact that whenever process 1 requests access to the critical section it is eventually granted access, and until then process 2 can be granted access at most 5 times.
+More generally, we allow constraints to be arbitrary PBoolean combinations of atomic statements of the form i Iai AV ]Di az c, where c and each Iai are positive integers, az is a comparison operator and each ]Di represents the number of states from which some arbitrary CLTL formula Di holds along a certain prefix of the run.
+We show that, even though CLTL formulas can be translated into LTL, this might yield an exponential blow-up in formula size.
+We then turn to the satisfiability and model-checking problems for CLTL, for which we provide automata-based algorithms running in exponential space.
+This complexity is asymptotically optimal, since both problems turn out to be EXPSPACE-complete.
+We conclude this algorithmic study by presenting a fragment of CLTL whose satisfiability and model-checking problems are PSPACEcomplete, and show that any generalization of constraints with subtraction makes both problems undecidable.
+Finally, we show that for a similar counting extension of CTLa , the model-checking problem remains solvable in EXPSPACE.
+This paper presents a quantitative extension for the linear-time temporal logic LTL allowing to specify the number of states satisfying certain sub-formulas along paths.
+We give decision procedures for the satisfiability and model checking of this new temporal logic and study the complexity of the corresponding problems.
+Furthermore we show that the problems become undecidable when more expressive constraints are considered.
+1.
+Introduction Temporal logic (TL) is a well-known and well-studied formalism for specifying and verifying properties of automated systems [13].
+Classical temporal logics, such as LTL or CTL, express properties on the temporal ordering of events along the executions (see [6] for a survey).
+Many extensions of these formalisms have been studied, whose aim is usually to improve expressivity in order to capture more complex specifications, or to make properties shorter and easier to write.
+Of course there is an important trade-off between the expressivity of the logic and the efficiency of decision procedures, the ultimate goal being to algorithmically decide satisfiability or model-checking problems.
+Among the well-known extensions of classical temporal logics, we can mention real-time TLs (see for example [2, 3, 7]) where it is possible to add timing constraints in properties (for example, one can specify that an event A follows an event B in at most 5 time units) or probabilistic TLs (see [10] for such an extension of CTL) where it is possible to express properties like aevent A will occur with probability 0.99 or greatera.
+These two extensions are called quantitative extensions.
+Another classical variant consists in adding some form of regular expressions [8] or operators 1530-1311/10 $26.00 AS 2010 IEEE DOI 10.1109/TIME.2010.20  This work is related to our previous effort on counting extensions of CTL [12], where we use the same counting constraints as described above.
+By varying the allowed syntax of constraints, we presented a thorough account of the expressiveness and succinctness of the logic with respect to CTL, and proposed an algorithmic study of the modelchecking problem, which ranges from P-complete when 51  only atomic constraints are considered to aP2 -complete for the full logic.
+Contrary to CLTL, we also managed to characterize decidable fragments with subtractive constraints.
+There exist several other works on extensions of LTL to handle quantitative aspects of systems.
+In [8], the authors extend linear-time logic with some simple regular expressions along with quantitative constraints on the number of occurrences of sub-expressions.
+They present model-checking algorithms (satisfiability is not considered) whose time complexity is exponential in the size of formulas and the value of integer constants (and thus doublyexponential), which is comparable to the complexity we obtain for CLTL.
+In terms of expressiveness, our logic can easily be used to express complicated quantitative constraints, but is less well-suited to specifying the order of events.
+Another interesting specification language is Sugar/PSL [14], which defines many additional operators above LTL.
+These include in particular some counting constraints which are used together with regular expressions, subsuming CLTL with atomic constraints.
+To our knowledge, there is no accurate study of lower complexity bounds for these extensions [4].
+Counting LTL.
+We define a quantitative extension of LTL able to express constraints over the number of times certain sub-formulas are satisfied along a run: Definition 2.
+Given a set of atomic propositions AP, we define: CLTL 3 D, D ::= P | D aSS D | AZD | DU[C] D where P a AP and C is a counting constraint defined as: P C 3 C, C 0 ::= > | C aSS C 0 | AZC | i Iai AV ]Di az k where k, Iai a Na , aza {<, a$?, =, aL, >} and Di a CLTL.
+In CLTL formulas, we make use of the standard abbreviations a", a, a, aL, >, as well as the additional modality def def F[C] D = >U[C] D, and its dual G[C] D = AZF[C] AZD.
+Moreover the classical Next operator X is defined as F[]>=1] , the standard Until U is U[>] (F is F[>] and G is G[>] ).
+Any formula occurring in a constraint C associated with a modality in IS is considered as a sub-formula of IS.
+The size |IS| of IS takes the size of these constraints and their sub-formulas into account, assuming that integer constants are encoded in binary (unless explicitly stated otherwise).
+The DAGsize of IS is the total number of distinct sub-formulas of IS.
+As model-checking algorithms compute only once the truth value of a sub-formula, this is generally more relevant to the complexity of model-checking.
+The semantics of CLTL formulas is defined over infinite words in (2AP )D :  The paper is organized as follows.
+Section 2 defines the logic CLTL, whose expressivity and succinctness are studied in Section 3.
+Section 4 presents an EXPSPACE satisfiability algorithm based on alternating BuEchi automata, as well as the EXPSPACE-hardness proof and a PSPACE algorithm for a fragment of CLTL.
+Section 5 deals with an undecidable extension of the constraint language.
+Finally Section 6 presents a counting extension of CTLa .
+Definition 3.
+The following clauses define the conditions for an infinite word w a (2AP )D to satisfy a CLTL formula D a written w |= D a by induction over the structure of D:  2.
+Definitions Models.
+Let AP be a set of atomic propositions.
+In lineartime temporal logics, formulas are interpreted over infinite words in (2AP )D .
+Given such a word w, wi denotes the i-th letter and wi is the i-th non-empty suffix of w with i aL 0.
+As we will be considering the model-checking problem, we also recall the classical notion of Kripke structure:  w |= P  iff P a w0  w |= D aSS D  iff w |= D and w |= D  w |= AZD  iff w 6|= D  w |= DU[C] D  iff ai aL 0, wi |= D, w, ia1 |= C and a0 a$?
+j < i, wj |= D  Definition 1.
+A Kripke structure (or KS) S is a tuple hQ, qinit , R, `i where Q is a finite set of states, qinit a Q is the initial state, R a Q A Q is a total accessibility relation and ` : Q a 2AP is a labeling of states with atomic propositions.
+The semantics of w, i |= C is based on the interpretation of ]D over the suffixes wj for 0 a$?
+j a$?
+i, denoted by |w, i|D def and defined as: |w, i|D = |{j | 0 a$?
+j a$?
+i aSS wj |= D}|.
+Given these values, C is interpreted in a natural way (and > is true over every word).
+A run (or path) D of S is an infinite sequence of states q0 q1 q2 .
+.
+.
+such that (qi , qi+1 ) a R for every i.
+We use D(i) to denote the state qi and Di to denote the suffix qi AV qi+1 AV AV AV of D. Runs(q) denotes the set of runs starting from some state q a Q and Runs(S) stands for Runs(qinit ).
+In the following, we will be referring to both infinite words in (2AP )D and paths of some KS as runs.
+Given a KS S = hQ, qinit , R, `i, we write S |= IS when every execution D a Runs(S) satisfies IS (i.e.
+`(D(0)) AV `(D(1)) AV AV AV |= IS).
+We use aA to denote the standard equivalence between formulas.
+Remark 1.
+Let us denote by C the constraint dual to C obtained by propagating the negation operator in AZC towards 52  (DU[C 0 ] D v DU[C] D if C 0 v C).
+It can be shown that @ is a well-founded strict partial ordering over CLTL formulas.
+atomic constraints (using De Morganas laws and inverting comparison operators as required).
+Negation and disjunction operators can be eliminated from constraints using the fact that DU[AZC] D aA DU[C] D and DU[Ca"C 0 ] D aA DU[C] D a" DU[C 0 ] D. However, even though DU[CaSSC 0 ] D a DU[C] D aSS DU[C 0 ] D, the converse does not hold, as can be seen on the simple example F[]P1 =1aSS]P2 =1] > (indeed this formula requires that at some point both P1 and P2 must have been seen exactly once, while F[]P1 =1] > aSS F[]P2 =1] > does not: for instance P1 may occur twice before P2 first occurs).
+This implies that any CLTL formula can be translated into an Vequivalent formula where all constraints are of the form i Iai AV ]Di az k. However, this may yield an exponentially longer formula, since it essentially requires constraints to be put into disjunctive normal form.
+3.
+Expressivity Unfolding.
+In classical LTL, a crucial observation is that formula D1 UD2 can be aunfoldeda by distinguishing the possible cases in the first state of a run, yielding the following equivalence:   D1 UD2 aA D2 a" D1 aSS X(D1 UD2 ) In order to obtain a similar equivalence for a formula D1 U[C] D2 in counting LTL we need to take into account all the counting expressions occurring in C, and to update the relevant atomic constraints accordingly.
+To this end we make use of the two elementary update operations on constraints defined in the previous section.
+Manipulating constraints.
+We now define two operations on constraints, which will play an important technical role in the remainder of the paper.
+Let C be a counting constraint P containing m atomic constraints (m > 0) of the form ja[1,ni ] Iaji AV ]Dij az ki for i a [1, m].
+We define SC as the set {Dij | i a [1, m], j a [1, ni ]}.
+For any a a SC , we inductively define the subtractive update C a a of C by a by:  Lemma 1.
+For all word w in (2AP )D and index i aL 0, w, i |= C aa w1 , i a 1 |= (C a a) a, where a = {D a SC | w |= D}.
+P Proof.
+any atomic P Let i Iai .
+]D0 i az k be P constraint in C, and i Iai .
+]Di az k with k 0 = k a Dj aa Iaj the corresponding constraint in C 0 = C a a.
+By definition of a, for every D a a we have  def  AZC a a = AZ(C a a)  |w, i|D = |{j | 0 a$?
+j a$?
+i aSS wj |= D}|  (C aSS C 0 ) a a = (C a a) aSS (C 0 a a) P def P ( i Iai AV ]Di az k) a a = i Iai AV ]Di az k 0 P def with k 0 = k a Dj aa Iaj .
+def  = 1 + |{j | 0 < j a$?
+i aSS wj |= D}| = 1 + |{j | 0 a$?
+j a$?
+ia1 aSS w1+j |= D}| = 1 + |w1 , ia1|D .
+Notice that even though constants in C are defined to be positive integers, C a a may contain negative constants as right-hand sides of comparison operators.
+However, it can easily be seen that atomic constraints where negative constants (or possibly 0) occur are either trivially true or trivially false.
+We thus define a second update operation, called simplification.
+We define the constraint Ca obtained from C by replacing any (trivially true) atomic constraint of the form S > k with k < 0 or S aL k with k a$?
+0 by > (where S stands for an arbitrary sum of counting expressions), and any (trivially false) atomic constraint of the form S < k with k a$?
+0 or S a$?
+k with k < 0 by aL, and simplifying the obtained constraint in the usual way (as one would simplify a propositional logic formula).
+Note that Ca is either reduced to > or aL, or does not contain > or aL as a sub-formula.
+Also note that C and Ca are equivalent.
+We will write C 0 v C whenever there exists a set a a SC such that C 0 = (C a a) a, and C 0 @ C if a 6= a.
+This notation is extended to CLTL formulas in a natural way  Similarly for every D 6a a, |w, i|D = |w1 , ia1|D .
+Thus P P P k a i Iai .|w, i|D = k a Dj aa Iaj a i Iai .|w1 , ia1|Di P = k 0 a i Iai .|w1 , ia1|Di .
+Since every atomic constraint of C is satisfied over w at position i if and only if the corresponding constraint in C 0 is satisfied over w1 at position i a 1, and C and C 0 have otherwise identical structures in terms of Boolean combinations, we get that w, i |= C aa w1 , i a 1 |= C a a, which entails the result since the simplification operation does not change the validity of a constraint.
+This enables us to express the effect of the first step in a run on a formulaas constraints.
+We can now come up with an unfolding property similar to LTL.
+The intuitive idea is to guess the subset I a SC of formulas accounted for in constraint C which hold over the word at position 0, check that this guess is correct and update C accordingly as described in the previous lemma.
+53  Next, if C 6a {>, aL}, it is easy to show that  V W IS aA ( DaSC AZD)U ( DaSC D) aSS (D1 U[C] D2 )  V W aA ( DaSC AZD)U ( DaSC D) aSS IS0 )  Proposition 2 (Unfolding).
+Let IS = D1 U[C] D2 and I"=  W  IaSC  V  DaI  DaSS  V  DaSC \I  AZD   aSS D1 aSS X(D1 U[(CaI)a] D2 ) .
+where IS0 is I"0 a" D2 if w, a1 |= C and I"0 otherwise, and I"0 is identical to formula I" in Prop.
+2 above, omitting the disjunct for I = a.
+Now the top-most constraints C 0 occurring in I"0 are equal to (C a I)a with some non-empty I, and thus I"0 @ IS.
+By induction hypothesis, I"0 can be translated into LTL, which concludes the proof.
+The following equivalence holds: ( I" a" D2 if w, a1 |= C, ISaA I" otherwise.
+Proof.
+IS a I"/I" a" D2 : If IS is satisfied over some word w a (2AP )D , then by definition ai aL 0, wi |= D2 , w, ia1 |= C and a0 a$?
+j < i, wj |= D. If i = 0, i.e.
+w, a1 |= C and w |= D2 , then I"a"D2 holds.
+Otherwise (i > 0) it must be that w |= D1 and w, ia1 |= C. Let a be the set of formulas of SC which hold over w, by Lemma 1 we have w1 , i a 2 |= (C a a) a.
+Furthermore there V existsVa disjunct in I" (namely when I = a) such that DaI D aSS DaSC \I AZD holds.
+Finally, we can deduce from all of the above that (w1 )ia1 |= D2 , w1 , ia2 |= (C a a)a and a0 a$?
+j < i a 1, (w1 )j |= D, in other words w1 |= D1 U[(Caa)a] D2 .
+Together with the above observations, this implies that w |= I".
+However, this translation may yield an exponential increase in dag-size, since the number of distinct constraints C 0 @ C is of the order of M m (with M the largest constant and m the number of atomic constraints occurring in 2 C), hence also in 2O(|IS| ) .
+We are as of yet not able to show that this bound is tight, but there exist CLTL formulas whose shortest equivalent LTL formula is provably of dagsize at least in O(M ).
+Proposition 4 (Succinctness).
+Any LTL formula equivalent to the CLTL formula ISk = F(AZbU[]a=k] >) has temporal depth at least k a 1 (i.e.
+exponential in |ISk |).
+V I" a IS:VLet w |= I", there must exist I such that w |= DaI D aSS DaSC \I AZD aSS D1 aSS X(D1 U[(CaI)a] D2 ).
+From this, we can deduce that (1) ai > 0, w, i + 1 |= D2 and a0 a$?
+j a$?
+i, w, j |= D1 , (2) w1 , i |= (C a I) a and (3) I = {D a SC | w |= D} which by Lemma 1 entails that w, i + 1 |= C. Together with item (1) above, we get that w |= IS.
+Proof.
+Consider the set AP = {a, b, c}, and the property S TAIRSk ([9]), which states that there exists a portion of the path in which proposition a occurs at least k times but proposition b does not occur.
+In [9], it is shown that this property can only be expressed by a LTL formula with at least k a 1 nested Until modalities.
+However, this formula is equivalent to the CLTL formula ISk .
+Remark 2.
+Note that even a single unfolding step as described by the previous proposition may entail an exponential increase in the dag-size of the formula, since the set I needs to be guessed explicitly.
+This blow-up can be kept polynomial by ascanninga formulas in SC one at a time and in a fixed order instead of considering all possible I a SC .
+This technique was used in [12] to study the translation of a fragment of CCTL into CTL.
+4.
+Decision procedures We consider two standard decision problems for CLTL, namely satisfiability (given IS a CLTL, does there exists a model for IS?)
+and model checking (given IS a CLTL and some KS S, do all runs of S satisfy IS, i.e.
+S |= IS?).
+Classical decision procedures for LTL satisfiability are based on automata constructions.
+Given some LTL formula IS, one can either build an (exponential) non-deterministic BuEchi automaton or a (polynomial) alternating BuEchi automaton accepting exactly the models of IS.
+Satisfiability then consists in checking whether the language of the automaton is empty [15].
+We begin this section by recalling the definition of alternating BuEchi automata, then extend the usual automata-based decision procedures for satisfiability and model-checking to our logic CLTL.
+Expressivity and succinctness.
+Similarly to the corresponding counting CTL logic [12], CLTL is not more expressive than classical LTL.
+Proposition 3 (Expressivity).
+Any CLTL formula can be translated into LTL.
+Proof.
+We reason by induction on the structure of IS.
+The case of Boolean connectives is trivial.
+We treat the case IS = DU[C] D by induction on the well-founded partial ordering @ defined in the previous section.
+If IS is minimal for @ (i.e.
+C a {>, aL}), we can directly use the inductive LTL translations of D and D, since DU[aL] D aA aL and DU[>] D aA DUD.
+4.1.
+Alternating BuEchi Automata over D -words An alternating BuEchi automaton on infinite words is a tuple A = (IL, S, s0 , I', F ) where IL is a finite alphabet, S 54  The number of states is in O(|IS| AV M m ) : every D1 U[C] D2 subformula may provide (M + 2)m states.
+Also note that the transition formula I, above can be expressed in a more concise way using a more refined unfolding technique (Cf.
+Rem.
+2), at the cost of roughly duplicating |SC | times the states corresponding to each U[C] -subformula.
+This automaton recognizes exactly the models of IS.
+is a finite set of states, s0 a S is the initial state, I' : S A IL a B + (S) is the transition function assigning a positive Boolean formula over S (including aL and >) to every pair (s, D), and F a S is the BuEchi acceptance condition.
+A run over an infinite word w = a0 a1 AV AV AV a ILD is an infinite S-labeled tree T = (T, l) where T is a tree and l : Nodes(T ) a S assigns an element in S to every node in T .
+The root  of T has to be labeled by s0 (i.e.
+l() = s0 ) and every node x at depth i (written |x| = i) has k (k aL 0) children x1 ,.
+.
+.
+,xk such that the formula I'(l(x), ai ) is interpreted to true when one assigns > to every state in {l(x1 ), .
+.
+.
+, l(xk )} and aL to other states.
+The run is accepted when every infinite branch of T contains infinitely often nodes labeled by states in F and every finite branch ends in a node x such that I'(l(x), a|x| ) = >.
+We use L(A) to denote the set of words accepted by A.
+The complexity of this algorithm is in fact asymptotically optimal: Theorem 6.
+CLTL satisfiability is EXPSPACE-complete.
+Proof.
+Membership in EXPSPACE is based on Prop.
+5: 2 the size of the automaton AIS is in 2O(|IS| ) and checking emptiness of an alternating BuEchi automaton is PSPACEcomplete [5].
+This provides an EXPSPACE algorithm.
+First note that EXPSPACE-hardness is a consequence of the complexity of TLTL (i.e.
+Timed LTL) over discrete time domains [11].
+Nevertheless we give a proof based on the encoding in CLTL of the execution of a Turing Machine running in exponential space over some input word (such an encoding is classical, see for example [3]).
+Consider a deterministic 2n -space-bounded Turing machine M = hIL, QM , q0 , qF , RM i, with an initial tape content X = x1 .
+.
+.
+xn .
+We assume w.l.o.g.
+IL = {a, b}.
+q0 is the initial state and qF is the final state.
+And as usual RM a QM A IL A IL A {a1, 1} A QM .
+Now we construct a polynomial-size formula describing the accepting computation of M on X.
+The set of atomic propositions AP is defined as follows: AP contains Pa and Pb to represent the corresponding symbol on the tape, an additional proposition Ps to separate two consecutive configurations, and propositions Pa,q and Pb,q for every q a QM to mark the position of the tape head on a cell containing a symbol a or b respectively.
+A configuration of M is encoded as a sequence of 2n states labeled with propositions in AP to represent the content of the cells.
+One of these cell is labeled with some Pa,q or Pb,q , and the sequence is preceded and followed by a state labeled with Ps .
+V In the following we use the abbreviation Pa to represent P aAP AZP .
+This formula is used to represent empty cells.
+To specify that the run is the correct and accepting one, we need a formula of the form (ISi aSS ISm ) a ISa (where i, m and a stand for init, move and accept respectively), meaning that if the run starts with the initial configuration and follows the transitions of M, then it is accepting.
+These three formulas can be expressed in CLTL:  4.2.
+Satisfiability By using the standard techniques for LTL, one obtains the following results: Proposition 5.
+Given a CLTL formula IS, one can build an alternating BuEchi automaton AIS such that (1) |AIS | is in O(|IS| AV M |IS| ) where M is the maximal constant occurring in constraints inside IS, and (2) LD (AIS ) is exactly the set of runs satisfying IS.
+Proof.
+Let IS be a CLTL formula.
+Let M be the maximal constant occurring in the counting constraints P in IS and m the maximal number of atomic constraints i Iai AV ]Di az k occurring in the same constraint in IS.
+We define AIS = (IL, SIS , s0 , I', F ), where IL is 2AP , SIS is the set of all subformulas of IS (including those appearing in constraints), D1 U[(Caa)a] D2 for every subformula D1 U[C] D2 and a a SC , and their negations, s0 is IS, I' : SIS A IL a B + (SIS ) is the transition function defined below and F contains every state in S of the form AZ(D1 UD2 ) or AZ(D1 U[C] D2 ).
+In the following we use I, to denote the negation normal form of the formula I, a B+ (SIS ): every conjunction (resp.
+disjunction) becomes a disjunction (resp.
+conjunction), > (resp.
+aL) becomes aL (resp.
+>), and I, is just I,.
+Negated states are fine since D a SIS a AZD a SIS .
+For convenience, we define the transition function recursively.
+Occurrences of I'(D, D) in right-hand sides should be replaced by their definition until a formula in B + (SIS ) is obtained.
+We have I'(P, D) = > if P a D and aL otherwise, I'(D aSS D, D) = I'(D, D) aSS I'(D, D), and I'(AZD, D) = I'(D, D).
+The rule for U is based on the unfolding rule (see Prop.
+2): I'(D1 U[C] D2 , D) = I'(D2 , D) a" I, if D, a1 |= C and I, otherwise, with W V V I, = IaSC DaI I'(D, D) aSS DaSC \I I'(AZD, D)  aSS I'(D1 , D) aSS (D1 U[(CaI)a] D2 ) .
+ISi = Ps aSS X(Px1 ,q0 aSS  V  2a$?ka$?n  F[]>=k] Pxk  aSS F[]>=n+1] (Pa U[]>=2n an] Ps )  55   ISm = G Ps a X(AZPs )U[]>=2n ] Ps V aSS (P1 ,P2 ,P3 )aAP3 G (P1 aSS XP2 aSS XXP3 )  a F[]>=2n +2] fM (P1 , P2 , P3 )  4.4.
+A PSPACE fragment of CLTL The EXPSPACE-hardness proof of CLTL satisfiability only uses counting constraints of the form a]> = ka: there is no need for nested formulas in constraints, no Boolean combinations and no sums.
+Here we introduce the fragment CLTLa defined as the set of CLTL formulas where counting constraints are purely conjunctive terms, and comparison symbols are not mixed inside aVconstraint.
+In other P terms, constraints are of the form a Ia AV ]D i < ka, i i VP a Ia AV ]D > ka or their non-strict variants.
+Note that i i i this restriction also applies over subformulas in constraints.
+We use D1 U[Cas] D2 (resp.
+D1 U[C] D2 ) to denote an Until-subformula tagged with a constraint of the form aless thana i.e.
+with a$?
+or < (resp.
+agreater thana with aL or >).
+In the following theorem, we claim that CLTLa formulas admit PSPACE decision procedures:  ISa = F(Pa,qF a" Pb,qF ), where the function fM (P1 , P2 , P3 ) refers to the transition rules of M: fM (P1 , P2 , P3 ) gives the value of the cell containing P2 in the next configuration given the definition of the left cell (P1 ) and the right cell (P3 ).
+For instance, for every rule (q, a, b, +1, q 0 ) in RM we will have: fM (P1 , Pa,q , P2 ) = Pb for any P1 a AP and any P2 6= Ps .
+Moreover we have for any P1 a AP, the two values: fM (Pa,q , Pa , P1 ) = Pa,q0 and fM (Pa,q , Pb , P1 ) = Pb,q0 .
+And we also define fM (P1 , P2 , P3 ) = P2 if neither P1 or P3 are of the form Pa,q or Pb,q for some q.
+The lengths of formulas ISi , ISm and ISa are polynomial, since constants are encoded in binary, which implies the EXPSPACE-hardness of CLTL satisfiability.
+Theorem 7.
+The satisfiability and model-checking problems for CLTLa are PSPACE-complete.
+Note that if constraints are atomic (i.e.
+without Boolean combinations in subscripts), then m is equal to 1 and the size of AIS is in O(|IS| AV M ).
+If in addition, constants are assumed to be encoded in unary, the satisfiability algorithm becomes PSPACE.
+Proof.
+PSPACE-hardness comes from LTL satisfiability.
+PSPACE membership is based on the fact that given a CLTLa formula IS and AIS the corresponding automaton as built in Proposition 5, for any accepting run over some model w of IS, there exists a asmalla accepting run over w. By small, we mean a tree with a width (i.e.
+the maximal number of nodes at the same level) bounded by |IS|.
+Let IS be a CLTLa formula.
+First we can assume that IS only contains atomic constraints (with no conjunction): indeed every CLTLa formula D1 U[CaSSC 0 ] D2 is equivalent to D1 U[C] D2 aSS D1 U[C 0 ] D2 .
+This translation can be done efficiently and the dag-size of the resulting formula is linear in the size of the original one.
+Let Subf(IS) be the set of subformulas of IS.
+Now consider AIS as defined in Proposition 5.
+The number of states of AIS is in O(|IS| AV M ) where M is the size of the maximal constant occurring in IS.
+Thus this number is exponential in |IS| (this blow-up is due to the rewriting of D1 U[C] D2 subformulas into D1 U[CaI] D2 subformulas in the function I').
+Now consider an accepting run T = (T, l) of AIS over an infinite word w that is a model of IS.
+At every level i of the tree T , the nodes {x1 , .
+.
+.
+, xk } are labeled with the set of formulas {l(x1 ), .
+.
+.
+, l(xk )} a SIS (see the definition of SIS in Prop.
+5) and every formula l(xj ) holds over the word wi .
+For every D a Subf(IS) of the form D1 U[C] D2 , it is possible to have several formulas D1 U[CaI] D2 for different subsets I of SC .
+But we clearly only need to verify one formula of this set: if D is a aless thana (resp.
+a agreater thana) formula, we consider the one containing the minimal (resp.
+maximal) constant k in the constraint.
+Indeed we clearly have D1 U[C<k] D2 a D1 U[C<k0 ] D2 for any k a$?
+k 0 and D1 U[C>k] D2 a D1 U[C>k0 ] D2 for any k aL k 0 .
+4.3.
+Model-checking Corollary 1.
+The model-checking problem for CLTL is EXPSPACE-complete.
+Proof.
+Hardness for EXPSPACE comes from that of satisfiability, which can be reduced to a model-checking problem using some kind of universal Kripke structure Su able to generate any possible word in (2AP )D : IS is satisfiable iff Su 6|= AZIS.
+Let AP be {P1 , .
+.
+.
+, Pn }.
+Instead of considering a complete KS whose states are labeled with every possible subset of AP (which would yield an exponential structure), we use a succinct KS Su0 that encodes every valuation of a state in Su as a sequence of n states labeled respectively by a or Pi .
+.
+.
+It then remains to sligthtly modify IS to take into account this encoding.
+Let IS0 be the modified formula, we can reduce Su |= IS to Su0 |= IS0 .
+Membership in EXPSPACE is obtained following the idea for classical LTL model-checking.
+Given a Kripke Structure S and a CLTL formula IS, one builds as previously an alternating BuEchi automaton A for the formula AZIS.
+It is then straightforward to compute the product of A with the structure S in such a way that the obtained automaton has an accepting infinite run if and only if there exists a path in S violating IS.
+Note that the program complexity of model-checking for CLTL (i.e.
+the complexity of model-checking a fixed formula) is (like for LTL) NL-complete [16].
+56  by replacing the constraint language C with the language C 0 of constraints of the form ]D1 a ]D2 az k (i.e.
+with no Boolean combination), which we call diagonal constraints.
+It turns out that, unlike CCTL where model-checking remains polynomial for this restricted case, this constraint language yields undecidability in the case of CLTL.
+Then at every level of the tree, we only need to keep one formula among this subset of formulas {D1 U[CaI] D2 | I a SC }.
+Thus we can ensure the number of formulas labeling states at some level to be bounded by |IS|.
+This remark leads to an NSPACE algorithm for satisfiability (and model checking).
+It works as follows.
+Let Si be the set of SIS formulas labeling states of level i: we have |Si | a$?
+|IS| and this set can be encoded in polynomial space (w.r.t.
+|IS|).
+Now the procedure guesses nondeterministically a letter wi and a subset Si+1 and verifies that it may correspond to the level i + 1.
+For this, the algorithm has to check Si+1 |= I'(D, wi ) for every D a Si : this is done again with a non-deterministic choice of subsets I in the function I' and by interpreting D1 U[Cas] D2 (resp.
+D1 U[C] D2 ) as true if there is some formula D1 U[CaI] D2 in Si+1 (resp.
+D1 U[C 0 ] D2 in Si+1 with C = C 0 a I).
+Moreover as usual for this kind of algorithms, the procedure will guess non-deterministically that some level ` is the first state of a cycle and will verify that there is a future level labeled with the same set of formulas S` : to do this we simply need to memorize S` .
+Finally we need to verify that the acceptance condition is satisfied by the final cycle from level `.
+This is done by checking that every formula D1 U[C] D2 a S` is satisfied somewhere along the cycle (there must be no branch along which the label D1 U[C] D2 ultimately appears forever).
+For this, we need to store (and update) the Until-subformulas that have not yet been satisfied along the cycle, and mark each of them as soon as the corresponding D2 holds, which can be done step by step by analyzing the function I'.
+Once the set of formulas S` is repeated, we need to have succesfully asserted this fact for every formula (or one of its descendants with constraint C aI).
+Note that every D1 U[C] D2 that does not occur at level ` but appears inside the cycle will be either satisfied before the next occurrence of S` , or will yield a subformula D1 U[C 0 ] D2 in S` and then will be treated as in the previous case.
+This yields an NSPACE procedure and by Savitchas theorem one can deduce the existence of a PSPACE algorithm.
+The model-checking algorithm is based on the same technique for analyzing the alternating automaton.
+Theorem 8.
+The model-checking and satisfiability problems for CLTL with atomic diagonal constraints are undecidable.
+Proof.
+This is done by reduction from the halting problem of a two-counter machine M with counters C and D, and n instructions I1 , .
+.
+.
+, In .
+Each Ii is either a decrement hif X=0 then j else X--, ki where X stands for C or D, an increment hX++, ji, or the halting instruction hhalti.
+We define a Kripke structure SM = (Q, R, `), where Q = {q1 , .
+.
+.
+, qn } aS {ri , ti | Ii = hif ...i}.
+The transition relation is defined as follows: aV if Ii = hX++, ji, then (qi , qj ) a R ; and aV if Ii = hif X=0 then j else X--,ki, then (qi , ri ), (ri , qk ), (qi , ti ) and (ti , qj ) in R. The labeling ` is defined over the set {halt, C + , C a , C 0 , D+ , Da , D0 } as `(qi ) = {X + } if Ii is an increment of X, `(ri ) = {X a } and `(ti ) = {X 0 } if Ii is a decrement for X, and `(qi ) = {halt} if Ii is the halting instruction.
+A run going through ti for some i will simulate the positive test aX = 0a: we use the proposition X 0 to observe this fact.
+Indeed along any run in SM , a state satisfies X 0 if and only if that state is some ti state, which witnesses the fact that the counteras value was deemed equal to zero.
+The propositions on the other states are self-explanatory, witnessing increments and decrements of counters.
+Checking CLTL with atomic diagonal constraints on this structure solves the halting problem, since M halts if and only if SM |= IS with: IS = F[(]haltaL1)] >  W a" Xa{C,D} F[(]X + a]X a <0)] > a" F[(]X + a]X a >0)] X 0 The formula IS is satisfied by a run because either SM halts, or the run does not simulate correctly M because the number of decrements is at some point larger than the number of increments, or because some counter was incorrectly assumed to be zero while simulating a test.
+Thus, if IS is true for every run, it is in particular the case of the path simulating the behavior of M.  This result is another illustration of the potential complexity cost of equality in quantitative constraints as in the timed case [1].
+5.
+Extension with diagonal constraints In [12], we presented several decidable fragments of CCTL in which atomic constraints with subtraction were allowed.
+In this section, we show that even a simple extension of LTL with such constraints leads to undecidability.
+More formally, we consider the logic obtained from CLTL  6.
+CCTLa Using similar modalities in a branching framework, one can define a counting extension of the logic CTLa .
+57  Definition 4.
+Let AP be a set of atomic propositions, we distinguish:  we are working on different (cumulative) semantics for constraints, which evaluate counting expressions over the full history of runs.
+CCTLa 3 Ds , Ds ::= P | Ds aSS Ds | AZDs | EDp CCTLap 3 Dp , Dp ::= Ds | Dp aSS Dp | AZDp | Dp U[C] Dp  References  where C denotes a counting constraint as in Def.
+2 with subformulas in CCTLa aS CCTLap .
+[1] R. Alur, T. Feder, and T. A. Henzinger.
+The benefits of relaxing punctuality.
+J. ACM, 43(1):116a146, 1996.
+[2] R. Alur and T. A. Henzinger.
+Logics and models of real time: A survey.
+In Proc.
+REX Workshop, volume 600 of LNCS, pages 74a106.
+Springer, 1992.
+[3] R. Alur and T. A. Henzinger.
+A really temporal logic.
+J. ACM, 41(1):181a203, 1994.
+[4] D. Bustan, D. Fisman, and J. Havlicek.
+Automata construction for psl.
+Technical report, The Weizmann Institute of Science, 2005.
+Available as Tech.
+Report MCS05- 04.
+[5] A. K. Chandra, D. C. Kozen, and L. J. Stockmeyer.
+Alternation.
+J. ACM, 28(1):114a133, 1981.
+[6] E. A. Emerson.
+Temporal and modal logic.
+In Handbook of Theoretical Computer Science, volume B, chapter 16, pages 995a1072.
+Elsevier Science, 1990.
+[7] E. A. Emerson, A. K. Mok, A. P. Sistla, and J. Srinivasan.
+Quantitative temporal reasoning.
+Real-Time Systems, 4(4):331a352, 1992.
+[8] E. A. Emerson and R. J. Trefler.
+Generalized quantitative temporal reasoning: An automata-theoretic approach.
+In Proc.
+7th TAPSOFT, volume 1214 of LNCS, pages 189a200.
+Springer, 1997.
+[9] K. Etessami and T. Wilke.
+An until hierarchy and other applications of an Ehrenfeucht-FraAaEsseE game for temporal logic.
+Inf.
+Comput., 160(1-2):88a108, 2000.
+[10] H. Hansson and B. Jonsson.
+A logic for reasoning about time and reliability.
+Formal Asp.
+Comput., 6(5):512a535, 1994.
+[11] F. Laroussinie, N. Markey, and Ph.
+Schnoebelen.
+Efficient timed model checking for discrete-time systems.
+Theor.
+Comput.
+Sci., 353(1-3):249a271, 2006.
+[12] F. Laroussinie, A. Meyer, and E. Petonnet.
+Counting CTL.
+In Proc.
+13th FoSSaCS, volume 6014 of LNCS, pages 206a 220.
+Springer, 2010.
+[13] A. Pnueli.
+The temporal logic of programs.
+In Proc.
+18th FOCS, pages 46a57.
+IEEE Comp.
+Soc.
+Press, 1977.
+[14] Property Specification Language Reference Manual, Version 1.1, 2003. http://www.eda-stds.org/vfv/ docs/PSL-v1.1.pdf.
+[15] M. Y. Vardi.
+An automata-theoretic approach to linear temporal logic.
+In Logics for Concurrency: Structure Versus Automata, volume 1043 of LNCS, pages 238a266.
+Springer, 1996.
+[16] M. Y. Vardi and P. Wolper.
+An automata-theoretic approach to automatic program verification.
+In Proc.
+1st LICS, pages 332a344.
+IEEE Comp.
+Soc.
+Press, 1986.
+[17] P. Wolper.
+Temporal logic can be more expressive.
+Inf.
+and Control, 56(1/2):72a99, 1983.
+The semantics of CCTLa formulas is defined over states of Kripke structures as follows: Definition 5.
+The following clauses (Boolean cases are omitted) define the conditions for a state q (resp.
+a run D) of some KS S = hQ, qinit , R, `i to satisfy a CCTLa formula Ds (resp.
+a CCTLap formula Dp ) by induction over the structure of Ds (resp.
+Dp ): q |=S P  iff P a `(q)  q |=S EDp  iff aD a Runs(q), D |=S Dp  D |=S Ds  iff D(0) |=S Ds  D |=S DU[C] D  iff ai aL 0, Di |=S D, D, ia1 |=S C and a0 a$?
+j < i, Dj |=S D  We use A to denote the dual of E. The model-checking problem consists in deciding whether a given CCTLa formula holds for a given state in a KS S. Theorem 9.
+The model-checking problem for CCTLa is EXPSPACE-complete.
+Proof.
+EXPSPACE-hardness comes from the corresponding problems for CLTL.
+EXPSPACE membership is obtained thanks to the EXPSPACE procedure for CLTL formulas.
+One can design a polynomial-time algorithm that calls an oracle for CLTL subformulas, which provides a PEXPSPACE procedure (hence also in EXPSPACE).
+7.
+Conclusion We have proposed new extensions for LTL and CTLa which, together with our related results for CTL [12], provide a general overview of expressivity and complexity for a natural class of quantitative temporal logics.
+There are several possible continuations to this work, some of which we are currently exploring.
+It would be interesting to evaluate the succinctness and algorithmic properties of the unary fragment of CLTL (i.e.
+CLTL with unaryencoded constants), for which we believe better algorithms may exist despite the fact that it is not clear how to avoid an exponential blow-up in the dag-size of the LTL translation.
+It would also be natural to consider the addition of past modalities, which bring exponential succinctness improvements to LTL with no significant complexity cost.
+Finally, 58

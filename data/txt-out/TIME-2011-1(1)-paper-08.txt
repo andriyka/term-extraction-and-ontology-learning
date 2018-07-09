@@ -1,0 +1,859 @@
+O N R ELAXING M ETRIC I NFORMATION IN L INEAR T EMPORAL L OGIC  arXiv:0906.4711v4 [cs.LO] 17 Jun 2011  Carlo A. Furia* and Paola Spoletini+ December 24, 2013  Abstract Metric LTL formulas rely on the next operator to encode time distances, whereas qualitative LTL formulas use only the until operator.
+This paper shows how to transform any metric LTL formula M into a qualitative formula Q, such that Q is satisfiable if and only if M is satisfiable over words with variability bounded with respect to the largest distances used in M (i.e., occurrences of next), but the size of Q is independent of such distances.
+Besides the theoretical interest, this result can help simplify the verification of systems with time-granularity heterogeneity, where large distances are required to express the coarse-grain dynamics in terms of fine-grain time units.
+1 Introduction and motivation Linear temporal logic (LTL) supports a simple model of metric time through the next operator X .
+Under the assumption of a one-to-one correspondence between consecutive states and discrete instants of time, nested occurrences of X "count" instants to express time distances.
+LTL formulas without X -- using only the until operator -- are instead purely qualitative: they constrain the ordering of events, not their absolute distance.
+Therefore, qualitative LTL formulas express models that are insensitive to additions or removals of stuttering steps: consecutive repetitions of the same state.
+The fundamental properties of LTL with respect to its qualitative subset are well known from classic work: quantitative (metric) LTL is strictly more expressive [24, 27, 15, 23], but reasoning has the same worst-case complexity [32, 12].
+The present paper investigates when the metric information, encoded by nested occurrences of X , is redundant and can be relaxed.
+The relaxation transforms a quantitative formula into an equi-satisfiable qualitative one that is independent of the number of X in the original formula; reasoning on the transformed formula is thus simpler by a factor proportional to the amount of metric information stripped.
+The motivation behind this study refers to an informal notion of redundancy, which stuttering steps seem to encode.
+Consider a metric LTL formula ph describing models characterized by many stuttering steps distributed over large time distances; for example, the formalization of an event for elections that occur every four years in November, in a variable day of the month, with the day as time unit.
+Formula ph is large because it encodes large time distances in unary form with many occurrences of the X operator; * Chair  of Software Engineering, ETH Zurich, Switzerland.
+E-mail: caf@inf.ethz.ch.
+degli Studi dell'Insubria, Italy.
+E-mail: paola.spoletini@uninsubria.it.
++ Universita  1  for example, a four-year distance requires at least 1460 "next", one for each day.
+However, the information carried by ph is prominently redundant as every stuttering step is a duplication that only pads uneventful time instants.
+Is it possible, under a rigorous assumption of "sparse events", to simplify ph into an equi-satisfiable formula ph' which does not encode explicitly the redundant information?
+The notion of bounded variability, adapted from dense-time models, provides a suitable formalization of the intuitive notion of "sparse events": models with bounded variability have, over every interval of fixed length, only a limited number v of steps that are not stuttering (i.e., redundant repetitions).
+The main result of the paper (in Section 5) shows how to transform efficiently any LTL formula ph into a qualitative formula ph' such that ph is satisfiable over models with bounded variability iff ph' is satisfiable over models of any variability.
+The size of ph' does not depend on the distances (i.e., the number of nested occurrences of X ) in ph but only on the maximum number of non-stuttering steps v. In other words, ph' drops some information encoded in ph; this information is not needed to decide satisfiability over models with bounded variability.
+On the technical level, the construction that eliminates metric information relies on a normal form for LTL formulas and on discrete-time generalized versions of the dense-time Pnueli operators [20].
+The correctness proof follows the idea of adding and removing stuttering steps to re-introduce the metric information dropped in models satisfying only qualitative constraints; it is reminiscent of the notion of stretching, also originally introduced for dense-time models [21, 5].
+Section 4 first demonstrates this technique by showing how to transform any metric LTL formula into a qualitative one which is equi-satisfiable (for generic models) and of polynomial size.
+The feasibility of such a construction is unsurprising in hindsight, given the complexity results about qualitative LTL [32] and Etessami's construction [15].
+However, it is the necessary basis of the techniques used to derive the main result for models with bounded variability.
+Besides the theoretical interest, the results of the present paper may be practically useful to simplify the temporal-logic analysis of systems characterized by heterogeneous components evolving over wildly different time scales, such as minutes, weeks, and years.
+Assuming incommensurable distances are not a concern, such heterogeneity of time granularities [17] can, in principle, be modeled in terms of the finest-grain time units; but this solution comes with a significant price to pay to accommodate the largest time units in terms of the smallest, resulting in huge formulas.
+If, however, the dynamics of the components with faster time scales are "sparse" enough, there is a redundancy in the global behavior of the system that the notion of bounded variability captures.
+Hence, the analysis can be carried out more efficiently by leveraging the results of the present paper.
+Outline.
+The paper is organized as follows.
+The rest of the present section recalls related work.
+Section 2 introduces notation and basic definitions.
+Section 3 presents normal forms for LTL formulas.
+Section 4 proves the equi-satisfiability of LTL and its qualitative subset.
+Section 5 shows how the metric information can be relaxed while preserving satisfiability, for models with bounded variability.
+Section 6 concludes and outlines future work.
+2  1.1 Related work The expressiveness and complexity of LTL and of its qualitative subset have been thoroughly investigated in the classic framework of temporal logic [19, 13, 22].
+With respect to expressiveness, Lamport introduced the notion of stuttering to characterize qualitative LTL [24]; the characterization was completed by Peled and Wilke [27], perfected by Etessami and others [14, 15, 30, 11], and generalized by Kucera and Strejcek [23].
+With respect to complexity, the seminal work of Sistla and Clarke established the PSPACE-completeness of both LTL and qualitative LTL [32], and other authors have generalized or specialized the result [12, 26, 2].
+To our knowledge, the present paper is the first investigating satisfiability-preserving relaxations of metric information in temporal logic formulas.
+More generally, the problem of formalizing systems with heterogeneous time granularities using temporal logic [17] has been studied by only a few authors [9, 10, 8, 6]; [8], in particular, presents an encoding of temporal granularities in LTL, but it does not discuss efficiency of the encoding.
+Some of the techniques used in the the paper borrow from existing approaches in the literature.
+The normal forms for LTL introduced in Section 3 are related to a construction used in temporal testers [28].
+The definition of bounded variability in Section 2 translates to discrete time a notion introduced for dense (or continuous) time models [33, 16, 18, 7].
+Hirshfeld and Rabinovich studied the expressiveness and decidability of Pnueli operators over dense time [20]; the operators themselves were first mentioned in a conjecture attributed to Pnueli [1, 33].
+Section 5 introduces discrete-time qualitative variants of such operators.
+Counting operators [25] are somehow similar to discrete-time Pnueli operators in that they both facilitate the expression of concise counting requirements; both extensions do not increase the expressive power of LTL, nor its complexity under a unary encoding.
+[4] introduce a much more expressive counting extension of LTL, which is decidable only in special cases.
+The proofs of Lemmas 11 and 20 use a technique that removes and adds stuttering steps in words to match some metric requirements; the notion of stretching -- introduced in [21] and further used in [5] -- is similar but for dense-time models.
+2 Definitions This section introduces the syntax and semantics of LTL and other basic definitions.
+N denotes the set of natural numbers {0, 1, 2, .
+.
+.}
+and N>0 denotes the positive naturals {n [?]
+N | n > 0}.
+For any two natural numbers a <= b, [a..b] denotes the interval of naturals a, a + 1, .
+.
+.
+, b.
+2.1 LTL formulas LTL syntax.
+The following grammar defines the set of LTL formulas: LTL [?]
+ph ::= x | !ph | ph1 [?]
+ph2 | ph1 U ph2 | X ph where x ranges over a set P = {p, q, r, .
+.
+.}
+of propositional letters.
+Assume the standard abbreviations for [?
+], [?
+], [?
+], =, = and for the derived temporal operators: * eventually: Fph , [?]
+U ph; 3  * always: Gph , !F!ph; * release: ph1 R ph2 , !
+(!ph1 U !ph2 ); * distance X k ph = |X X {z * * * X} ph for k >= 0. k  Size and height.
+Let ph be an LTL formula.
+P(ph) [?]
+P denotes the (finite) set of propositional letters occurring in ph.
+|ph| denotes the size of ph.
+Three features determine the size of ph: the size |ph|p of its propositional structure; the size |ph|U of its until subformulas; and the size |ph|X of its next subformulas.
+They are defined inductively as follows.
+h1, 0, 0i ph=x    ' ' '   h1 + |ph | , |ph | , |ph | i ph = !ph' p U X  h|ph|p , |ph|U , |ph|X i = h1 + |ph1 |p + |ph2 |p , |ph1 |U + |ph2 |U , |ph1 |X + |ph2 |X i ph = ph1 [?]
+ph2   h|ph1 |p + |ph2 |p , 1 + |ph1 |U + |ph2 |U , |ph1 |X + |ph2 |X i ph = ph1 U ph2    h|ph' | , |ph' | , 1 + |ph' | i ph = X ph' p U X  Correspondingly, |ph| is |ph|p + |ph|U + |ph|X .
+For a temporal operator H [?]
+{U, X}, the temporal height (or nesting depth) H(ph, H) of H in ph is the maximum number of nested occurrences of H in ph.
+For example, H(ph, X ) = 0 iff X is not used in ph.
+d(ph) denotes instead the maximum number of consecutive nested occurrences of the next operator, that is the largest n such that X n occurs in ph; clearly, d(ph) <= H(ph, X ).
+Finally, s(ph) is the number of distinct subformulas of the form X m ph with m >= 1.
+Notice that |ph|X is bounded by d(ph) * s(ph), hence |ph| is in O (|ph|p+ |ph|U + d(ph) * s(ph)).
+L Uh1 , Xh2 denotes the fragment of LTL whose formulas ps are such that H(ps, U) <= h1 and H(ps, X) <= h2 .
+Omit the superscript to mean that there is no bound on the tem0 poral height of an operator.
+Hence, L(U, X) is the same as all LTL; L U,  X = L(U) 0 0 denotes qualitative LTL, where no next operator is used; and L U , X = P(P) denotes propositional formulas without any temporal operator.
+Example 1.
+Consider the two formulas: G2 , X p [?]
+X 2 (p U q) [?]
+X 3 q .
+G1 , X (p [?]
+X ((p U q) [?]
+X q))  G1 and G2 are semantically equivalent (see Example 3) but syntactically different; fact, some size parameters differ in the two formulas: |G1 |p = |G2 |p = 5; |G1 |U |G2 |U = 1; |G1 |X = 3, |G2 |X = 6; |G1 | = 12, |G2 | = 9; H(G1 , U ) = H(G2 , U ) = H(G1 , X ) = H(G2 , X ) = 3; d(G1 ) = 1, d(G2 ) = 3; s(G1 ) = s(G2 ) = 3.  in = 1;   o-words.
+An o-word (or simply word) over a set S of propositional letters is a mapping w : N - 2S or, equivalently, a denumerable sequence w(0)w(1) * * * of elements w(i) [?]
+S. The set of all o-words over S is denoted by W[S].
+For T [?]
+S, w|T is the projection of w over T , defined as w(0)|T w(1)|T * * * , where w(i)|T = w(i) [?]
+T for all i [?]
+N. The projection is extended to sets of words as expected.
+For i, j [?]
+N, wi denotes the suffix w(i)w(i + 1) * * * of w; w(i, j) denotes the subword of w of length j starting at w(i) (with w(i, 0) = o for all i); and w(i : j) denotes the subword w(i)w(i + 1) * * * w(j) (with w(i, j) = o for all j < i).
+4  LTL semantics.
+The satisfaction relation |= is defined as usual, for an LTL formula ph, interpreted over an o-word w over P, at position i [?]
+N. w, i |= p iff p [?]
+w(i) w, i |= !ph iff w, i 6|= ph w, i |= ph1 [?]
+ph2 iff w, i |= ph1 and w, i |= ph2 w, i |= ph1 U ph2 iff there exists j >= i such that w, j |= ph2 and for all i <= k < j it is w, k |= ph1 w, i |= X ph iff w, i + 1 |= ph w |= ph iff w, 0 |= ph Satisfiability and validity.
+[[ph]] denotes the set {w [?]
+W[P] | w |= ph} of all models of ph.
+ph is satisfiable iff [[ph]] 6= [?]
+and is valid iff [[ph]] = W[P].
+Two formulas ph1 , ph2 are equivalent iff [[ph1 ]] = [[ph2 ]]; they are equi-satisfiable iff they are either both satisfiable or both unsatisfiable.
+Proposition 2 ([32]).
+Checking the satisfiability of an LTL or qualitative LTL formula is complete for PSPACE; it can be done in time exponential in the size of the formula.
+Example 3.
+Consider again G1 , G2 in Example 1.
+If S denotes the set of words w such that p [?]
+w(1), q [?]
+w(2) or p [?]
+w(2), and q [?]
+w(3), then [[G1 ]] = [[G2 ]] = S.   2.2 Stuttering A position i [?]
+N is redundant in a word w iff w(i + 1) = w(i) and there exists a j > i such that w(j) 6= w(i); a redundant position is also called stuttering step.
+Conversely, a non-stuttering step (nss) is any position i such that w(i + 1) 6= w(i) or w(i + j) = w(i) for all j [?]
+N. A stutter-free word is one without stuttering steps.
+Two words w1 , w2 are stutterequivalent (or equivalent under stuttering) iff they are reducible to the same stutter-free word by removing an arbitrary number of stuttering steps.
+A set of words W is closed under stuttering (or stutter-invariant) iff for every word w [?]
+W , for all words w' such that w and w' are stutter-equivalent, w' [?]
+W too.
+Recall the following fundamental results about stuttering and LTL.
+Proposition 4.
+Closure under stutter equivalence is a necessary and sufficient condition for qualitative LTL languages; that is: * [24] ph [?]
+L(U) implies that [[ph]] is closed under stutter equivalence; * [27] W closed under stutter equivalence and expressible in LTL implies there exists ph [?]
+L(U) such that [[ph]] = W .
+2.3 Variability Let W be a set of words and v, k two positive integers.
+A set of propositional letters P [?]
+P has variability bounded by v/k in W iff: for every w [?]
+W , the projection w(i, k)|P over P of every subword w(i, k) of length k has at most v nss.
+var(P, v/k) denotes the set of all words where P has variability bounded by v/k.
+Note that var(P, v/k) is not closed under stuttering for any v < k.  5  Example 5 (The elections).
+Consider elections that occur every four years, in one of two consecutive days.
+The example is deliberately kept simple to be able to demonstrate it with the various constructions of the paper.
+Proposition q marks the first day of every quadrennial, hence it holds initially and then precisely every d4 = 365 * 4 = 1460 days.
+The elections e occur once within every quadrennial; precisely they occur d2 = 40 or d3 = 41 days before the end of the quadrennial.
+Assuming models with variability bounded by 5/1460, the behavior is completely described by the following formula.
+q [?]
+G q = X (!q [?]
+!q U q) [?]
+X [?]
+G (q = X !
+(!e U q)) [?]
+G (e = !q [?]
+X (!e U q))  [?]
+G e = X d2 q [?]
+X d3 q  d4  q    (1) (2) (3) (4) (5)  The proposition q marks the beginning of every quadrennial: q holds initially (1) and then always at least every d4 steps (2).
+The elections, marked by proposition e, must occur once before the next quadrennial starts (3).
+They must also occur not at the beginning of a new quadrennial and at most once during the quadrennial (4); precisely, they occur d2 or d3 days before the end of the current quadrennial (5).
+A variability of 5/1460 makes such model tight, as it allows at most 5 nss over a windows of length 1460: 2 of them accounts for q becoming true and then false again once, and the other 3 nss mark a similar double transition of e.   3 Normal forms for LTL This section presents two normal forms for LTL where the nesting of temporal operators is limited; the results in the following sections will use these normal forms.
+3.1 Flat-next form An LTL formula is in flat-next form (FNF) when it is written as:   ^ k [?
+]G (xi = X pi )  (6)  i=1,...,N   where k [?]
+L(U), xi [?]
+P, pi [?]
+P(P).
+Clearly, (6) [?]
+L U, X1 .
+The nesting depth of the X operators can always be reduced to one without affecting satisfiability or complexity.
+Lemma 6.
+For any ph [?]
+LTL it is possible to build, in polynomial time, an equisatisfiable formula e in FNF such that |e| and |P(e)| are polynomial in |ph|.
+Proof.
+Initially, let Q = P(ph) and ph' = ph.
+Repeat the following two steps until ph' [?]
+L(U), with step 1 having higher precedence than step 2: 1.
+Replace a sub-formula of ph' in the form X p, with p [?]
+P(Q), by a fresh propositional letter pX p , and add pX p to Q.
+6  2.
+Replace a maximal qualitative sub-formula ps [?]
+L(U) of ph' that is within the scope of some X operator by a fresh propositional letter pps , and add pps to Q. V V Define k as ph' [?]
+G( pps [?
+]Q (pps = ps)); and e as k [?]
+G( pX p [?
+]Q (pX p = X p)).
+e is ps[?
+]L(U)  in FNF and equi-satisfiable to ph.
+Moreover, steps 1-2 are repeated at most a number of times proportional to |ph|, hence |e| and |Q(e)| are polynomial in |ph|.
+Example 7.
+The following is the formula in the elections Example 5 in flat-next form.
+(u = !e U q)   [?]
+(v = !q [?]
+!q U q)       (xu = X u) [?]
+(xv = X v)   [?]
+(q = xv [?]
+xd4 )  q [?]
+G   [?
+]G  [?
+](x1 = X q)  (7)   [?]
+(q = !xu )  V    (x = X x ) k k-1 2<=k<=d4   [?]
+(e = !q [?]
+xu )  [?]
+(e = xd2 [?]
+xd3 ) {z } | k  The first conjunct is the qualitative part k, and xk encodes X k q for k >= 1.
+3.2 Separated-next form An LTL formula is in separated-next form (SNF) when it is written as:   ^ k [?]
+G (xi = X D(i) pi )  (8)  i=1,...,M  where k [?]
+L(U), xi [?]
+P, pi [?]
+P(P), and D is a monotonically non-decreasing mapping [1..M ] - N>0 .
+Given that the FNF is a special case of the SNF, it is obvious that any LTL formula can be transformed into an equi-satisfiable SNF one in polynomial time.
+The SNF, however, becomes interesting when it isolates subformulas with a nesting depth of X as high as possible, as stated in the following.
+Lemma 8.
+For any ph [?]
+LTL it is possible to build, in polynomial time, an equisatisfiable formula e in SNF (8) such that |k|, maxi |pi |, and |P(e)| are in O(|ph|p + |ph|U + s(ph)), M = s(ph), and d(e) = maxi D(i) = D(M ) = d(ph).
+Proof.
+The construction mirrors the proof of Lemma 6, with step 1 replaced by: 1'.
+Replace a sub-formula of ph' in the form X n p for a maximal n >= 1. .
+.
+k introduces at most a proposition for each of the s(ph) maximal next-subformulas of ph and does not otherwise increase the propositional or until structure of ph up to constant factors.
+A similar reasoning applies to the maximum size of the pi 's, which is independent of d(ph).
+Finally, notice that |ph|p bounds |P(ph)|, and |P(e)| is no larger than 2s(ph) + |P(ph)|.
+7  Example 9.
+The following formula  is the formula of Example 5 in separated-next form, with d1 = d2 = 1, d3 = 40, d4 = 41, d5 = 1460.
+(x1 = X d1 u) (u = !e U q)  [?]
+(x2 = X d2 v)       [?]
+(v = !q [?]
+!q U q) d3        , q [?]
+G   [?
+]G  [?]
+(x3 = X d q)  [?]
+(q = x2 [?]
+x5 ) [?]
+(q = !x1 )  [?]
+(x4 = X 4 q)  [?]
+(e = !q [?]
+x1 ) [?]
+(e = x3 [?]
+x4 ) [?]
+(x5 = X d5 q) | {z } k  (9) Notice that k [?]
+L(U) is the first conjunct, |P()| = 9, M = 5, d() = d5 ; the last one dominates over the other size parameters.
+The following is a model of .
+1 q !e u !v !x1 x2 !x3 !x4 x5  2 !q !e !u v !x1 x2 !x3 !x4 !x5  3 !q !e !u v !x1 x2 !x3 !x4 !x5  4 !q !e !u v !x1 x2 !x3 !x4 !x5  *** *** *** *** *** *** *** *** *** ***  1420 1421 1422 1423 * * * !q !q !q !q * * * !e e !e !e * * * !u !u u u *** v v v v *** !x1 x1 x1 x1 *** x2 x2 x2 x2 *** !x3 x3 !x3 !x3 * * * x4 !x4 !x4 !x4 * * * !x5 !x5 !x5 !x5 * * *  1460 1461 !q q !e !e u u !v v x1 !x1 x2 !x2 !x3 !x3 !x4 !x4 x5 !x5  In any model of  corresponding to a model of (1-5) with variability 5/1460 there are at most 6 nss over [1..1460]: 1, 1419, 1420, 1421, 1459, 1460, corresponding to a variability of 6/1460.
+4 Reducing LTL to qualitative LTL This section shows how to transform any LTL formula into an equi-satisfiable L(U) formula of polynomially correlated size.
+The following theorem summarizes the result.
+Theorem 10.
+Given an LTL formula ph, it is possible to build, in polynomial time, a qualitative LTL formula x [?]
+L(U) such that ph and x are equi-satisfiable and have polynomially correlated size.
+Let e be ph in FNF; the remainder of this section shows the construction of x from e and proves its correctness in Lemma 11.
+Theorem 10 then follows from Lemma 6.
+Informal presentation.
+Informally, the construction to turn an LTL formula into an equi-satisfiable qualitative one works as follows.
+Introduce a fresh propositional letter s. Constrain s to change truth value with any propositional letter in P; in other words, any nss coincides with a nss of s. Then, replace any occurrence of a subformula X p with a suitable until formula that defines the value of p at the next nss of s. In practice, this means that a formula such as X p forces p to hold in the next state (with a new state of s) only if this is necessary, i.e., if this requires a nss.
+This changes the quantitative X p formula into a qualitative formula where the precise metric information is relaxed.
+8   Formal presentation.
+Formally, for an LTL formula in FNF e [?]
+L U, X1 over P = P(e), we build another formula x [?]
+L(U) that is equi-satisfiable to e. To this end, let s 6[?]
+P be a fresh propositional letter.
+For every propositional formula p [?]
+P(P), and every ph [?]
+LTL define:   s U (!p [?]
+!s)   [?]
+!s U (!p [?]
+s)     [?]
+f(p) , p [?]
+F!p =  W   q[?
+]P\{p} (q [?]
+p) U (!q [?]
+p)      [?]
+W q[?
+]P\{p} (!q [?]
+p) U (q [?]
+p)   ^ g(P) ,  Gp [?]
+G!p = Gs p[?
+]P  U(ph)  ,  s U ph [?]
+!s U ph  R(ph)  ,  (ph [?]
+s = !s R ph) [?]
+(ph [?]
+!s = s R ph)  X (ph)  ,  U(ph) [?]
+R(ph)  f(p) links any transition of the truth value of p to occur simultaneously with a transition of s. g(P) deals with the special case where no proposition ever changes truth value.
+X (p) is instead essentially a qualitative relaxations of the next operator: w, i |= X (p) holds iff the next nss of s is j >= i and w, j + 1 |= p holds.
+In particular, if s never changes truth value from position i on, w, i |= X (ph) iff w, i |= Fph[?
+](ph = Gph), for every ph.
+Finally, build a qualitative formula x from e as:   xi = X (pi ) ^ ^  [?]
+x , g(P) [?]
+G (f(p) [?]
+f(!p)) [?]
+k [?]
+G p[?
+]P i=1,...,N !xi = X (!pi ) It should be clear that |x| is in O(|e|2 ).
+Then, the following lemma justifies the correctness of the construction given.
+Lemma 11. e and x are equi-satisfiable formulas.
+Proof.
+Remind that P(e) = P and P(x) = P [?]
+{s}.
+The proof is in two parts.
+SAT(e) = SAT(x).
+In the first part show that x is satisfiable if e is satisfiable.
+Hence, assume w |= e for some w [?]
+W[P(e)].
+Build an x [?]
+W[P(x)] such that x |= x as follows.
+x coincides with w over P(e), hence x |= k because s 6[?]
+P(k).
+In addition, s is added to x according to the following recursive definition: s [?]
+x(0) and, for i > 0, if w(i-1) = w(i) then s [?]
+x(i) = s [?]
+x(i-1), whereas if w(i-1) 6= w(i) then s [?]
+x(i) = s 6[?]
+x(i - 1).
+In other words, s switches its truth value at nss -- except possibly for an infinite tail of constant states.
+For any p [?]
+P(e) let us show that x |= g(P) [?]
+G (f(p) [?]
+f(!p)).
+The proof of x |= g(P) is routine.
+Then, let i [?]
+N be such that x, i |= p. If x, i |= Gp then trivially x, i |= f(p), because the p [?]
+F!p is false at i.
+Otherwise, let j > i be the least integer such that x, j |= !p.
+If no other proposition changes truth value over x(i:j), that is if x(i:j - 1)|P(e) is a sequence of stuttering steps, then s switches its truth value precisely 9  at j.
+Hence, one of x, i |= s U (!p [?]
+!s) and x, i |= !s U (!p [?]
+s) holds.
+Otherwise, there exist q 6= p and k < j such that either x, i |= q and x, k |= !q or x, i |= !q and x, k |= q.
+In the former case (q [?]
+p) U (!q [?]
+p) holds at i, whereas in the latter case (!q[?
+]p)U (q[?
+]p) holds at i.
+Hence, if x, i |= p then x, i |= f(p)[?
+]f(!p) is established.
+If x, i |= !p instead, a similar reasoning also proves that x, i |= f(p) [?]
+f(!p).
+In all, x |= G(f(p) [?]
+f(!p)) holds.
+Finally, let us prove the last conjunct of x, for a generic h [?]
+[1..N ].
+Let i [?]
+N such that x, i |= xh : we prove that x, i |= X (ph ).
+Since we are assuming e, x, i+1 |= ph holds.
+If x, i |= s then clearly x, i |= sU ph .
+Now, assume that x, i |= ph : we have to show that !s R ph .
+That is, for a generic j >= i, either x, j |= ph or there exists i <= k < j such that x, k |= !s.
+The goal is trivial for j = i, as x, i |= ph by assumption.
+It is also trivial for j = i + 1, as x, i + 1 |= ph also holds.
+For j > i + 1, assume adversarially that x, j |= !ph .
+Notice that this implies that x, j - 1 |= !xh , hence xh changes its truth value from true to false at some i <= m < j - 1.
+Then, x(m) 6= x(m + 1) is not a stuttering step, which implies that s also changes its truth value at m. Since s is true at i, s must be false at some i < k <= m + 1 <= j - 1 < j.
+So x, k |= !s which closes the current branch of the proof.
+Let us now consider the case x, i |= !s hence x, i |= !s U ph .
+Similarly as we did in the previous case, we can establish also that if x, i |= ph then s R ph .
+In all, we have shown that x, i |= X (ph ).
+For i [?]
+N such that x, i |= !xh , a very similar reasoning shows that x, i |= X (!ph ).
+i is generic, which entails the last conjuncts of x: x |= G(xh = X (ph )) and x |= G(!xh = X (!ph )).
+SAT(x) = SAT(e).
+In the second part, show that e is satisfiable if x is satisfiable.
+Hence, assume that w |= x for some w [?]
+W[P(e) [?]
+{s}].
+Build an x [?]
+W[P(e)] such that x |= e as follows.
+First, let y be w with all stuttering steps removed.
+Then, let i [?]
+N be a generic position and h [?]
+[1..N ]; since y |= x then in particular y, i |= xh = X (ph ) and y, i |= !xh = X (!ph ).
+Let us show that y, i |= xh = X ph .
+1.
+Assume y, i |= xh [?]
+X (ph ).
+Ad absurdum, let y, i + 1 |= !ph .
+We now discuss two cases, whether y, i |= ph or y, i |= !ph , and we show that in both cases we reach a contradiction, hence y, i + 1 |= ph .
+(a) Assume y, i |= ph .
+Also, assume that y, i |= s; this is without loss of generality because X (ph ) is symmetric with respect to the truth value of s. Since ph switches from true to false at i, some proposition r 6= s changes its truth value at i.
+Hence, f(r) [?]
+f(!r) forces s to also change its truth value at i.
+In all we have the following situation: ***  xh ph s i  !ph !s i+1  ***  But then R(ph ) requires in particular !s R ph to hold at i; this is however false because neither y, i+1 |= ph nor y, i |= !s.
+Hence, the contradiction.
+(b) Assume y, i |= !ph .
+Also, assume that y, i |= s; this is without loss of generality because X (ph ) is symmetric with respect to the truth value of 10  s. Note that U(ph ) implies that ph must eventually hold; let j > i + 1 be the least instant such that y, j |= ph .
+So, ph does not hold at all positions in [i..j - 1] and becomes true at j.
+From the assumption that y has no stuttering steps it must be y(i + 1) 6= y(i).
+Hence there exists some atomic proposition r that changes its truth value at i.
+Correspondingly, f(r) [?]
+f(!r) forces s to also change its truth value at i.
+In all we have the following situation: ***  xh !ph r s i  !ph !r !s i+1  ***  ph  ***  j  But then U(ph ) cannot hold at i, because neither s U ph nor !s U ph holds at i.
+Hence, the contradiction.
+2.
+The proof of the other case y, i |= !xh [?]
+X (!ph ) can be obtained by symmetry from the previous case.
+V Since i and h are generic, we have established y |= i=1,...,N G(xi = X pi ).
+In addition w |= k implies y |= k as well, because y is obtained from w only by removing stuttering steps and k [?]
+L(U) is closed under stuttering.
+Hence x = y|P(e) is a model that satisfies e. Example 12.
+Let x(7) be formula (7) modified according to the construction of the current section.
+The proof of Lemma 11 shows that the qualitative formula x(7) preserves the stutter-free models of the equi-satisfiable LTL formula (7).
+On the other hand, consider a model of (7) with a sequence of d5 - 2 stuttering steps !q * * * !qq, such as the one in Example 7; it corresponds to the following stutter-free model of x(7): !q !x1 !x2 !x3 .. .
+!q !x1 !x2 !x3 .. .
+*** *** *** *** .. .
+!q !x1 !x2 x3 .. .
+!q !x1 x2 *** .. .
+!q x1 *** *** .. .
+q *** *** *** .. .
+!xd5 -3  xd5 -3  ***  ***  ***  ***  ***  This shows that the transformation of (7) into x(7) -- and more generally of e into x -- does not represent the redundancy of words with bounded variability more succinctly, but merely encodes it in a different form.
+5 LTL with bounded variability This section specializes the results of Section 4 by showing how to more succinctly encode the redundancy of stuttering steps in words with bounded variability.
+The following results require LTL(U, exqPn): an extension of L(U) with a qualitative variant of the Pnueli operators.
+Section 5.1 recalls "standard" Pnueli operators, introduces LTL(U, exqPn), and shows that LTL(U, exqPn) has the same complexity as LTL.
+Then, Section 5.2 shows 11  how to transform any LTL formula ph and a positive integer parameter V into an LTL(U, exqPn) formula ph' which is satisfiable (over unconstrained words) iff ph is satisfiable over words with variability bounded by V/d(ph) -- recall that d(ph) is the largest distance used in ph.
+The size of ph' is polynomial in V, the number s(ph) of distance sub-formulas, and the size of qualitative sub-formulas appearing ph; however, the size of ph' does not depend on d(ph) -- the values of distances in ph.
+As a consequence, checking the satisfiability of ph' -- which can be done with standard LTL algorithms -- is significantly less complex than checking the original ph whenever the distances used in ph are very large and dominate over the other size parameters.
+5.1 Pnueli operators Pnueli operators have been introduced for dense-time models [20]; this section considers their discrete-time counterparts and variations thereof.
+5.1.1 Pnueli operators For k, n [?]
+N, the Pnueli operator Pnnk is a k-ary temporal operator with the following semantics: w, i |= Pnnk (ph1 , .
+.
+.
+, phk ) holds iff there exist k positions i + 1 <= k1 < k2 < * * * < kk <= i + n such that w, kj |= phj for all 1 <= j <= k. It is not difficult to show that extending LTL with Pnueli operators does not affect its expressiveness or complexity (this is not the case over dense time [20]), under the assumption of a unary enconding of the integer constants.
+Example 13.
+Consider the following word w (nss are in bold and underlined).
+1 s !v q !e  2 !s v !q !e  3 !s v !q !e  4 !s v !q !e  5 !s v !q !e  6 !s v !q !e  8 !s v !q e  7 s !v !q !e  9 !s v !q e  10 11 !s s v v !q !q e !e  12 13 s !s v !v !q !q !e !e  14 s v q !e  3 Then, w, 1 |= Pn13 4 (v, s, e, s) and w, 8 |= Pn2 (!s, X s) hold.
+On the contrary, w, 8 |6 = 3 Pn3 (!s, !s, !s) because in particular w, 8 + 3 6|= !s.
+The results of the present paper are based on a qualitative version of the Pnueli n;hn ,...,nk i operators: the qualitative extended Pnueli operators exqPnk 1 for k, n [?]
+N and n1 , .
+.
+.
+, nk [?]
+N [?]
+{*}.
+Their semantics is defined as follows: n;hn1 ,...,nk i  w, i |= exqPnk  (ph1 , .
+.
+.
+, phk )  holds iff there exist k positions i <= k1 < * * * < kk such that all the following hold, for all 1 <= j <= k: 1. kj is a nss; 2. w, kj + 1 |= phj ; 3. for j > 1, if nj 6= * then there are no more than nj nss between kj-1 and kj - 1 (both included);  12  4. if n1 6= * then there are no more than n1 nss between i and k1 (both included); 5. there are no more than n nss between i and kk (both included).
+Intuitively, the qualitative extended Pnueli operators are qualitative counterparts to the standard Pnueli operators, which are further generalized by imposing an additional requirement on the relative distance of k nss.
+For example, if n1 = 1, ph1 must hold right after the first nss that follows or is at i, independently of the other following k - 1 nss.
+Example 14.
+Consider again word w from Example 13, where nss are in bold and 6;h3,2,*,3i underlined.
+For the positions 1, 6, 7, 13, w, 1 |= exqPn4 (v, !q, e, q) holds.
+On 6;h3,2,*,1i the contrary, w, 1 6|= exqPn4 (v, !q, e, q); in fact, let k1 , .
+.
+.
+, k4 be the positions that match the semantics of the operator.
+Then, k4 = 13 as q only holds at 14, so that the last component of the constraint h3, 2, *, 1i forces k3 to be 12, the nss immediately before 13; but w, 12 + 1 6|= e.  5.1.2 LTL with Pnueli operators LTL(U, exqPn) is the extension of qualitative LTL with qualitative extended Pnueli operators.
+Any LTL(U, exqPn) formula has an equi-satisfiable L(U) formula of polynomially correlated size that can be built in polynomial time, when the integer constants used in the Pnueli operators use a unary encoding.
+Precisely, to encode a formula n;hn ,...,nk i exqPnk 1 (ph1 , .
+.
+.
+, phk ) introduce n2 letters {qij | 1 <= i, j <= n}.
+Every qij holds j;hn1 ,...,ni i (ph1 , .
+.
+.
+, phi ) does; formally, a formula of size O(n * maxi |phi |) iff exqPni defines qij as follows, where X j abbreviates X * * * X}.
+| X{z j   [?]
+X (ph1 )    X (ph1 [?]
+X (ph1 [?]
+* * * ))   {z } |    j nested X     (ph1 [?]
+X (ph1 [?]
+* * * ))  X {z } | j qi =  min(j,n1 ) nestedX  j-1  j-1 j    qi-1 [?]
+X (phi ) [?]
+qi       j-1     qi-1 [?]
+X j (phi ) [?]
+j-ni  j-1   (phi-1 [?]
+X (phi-1 [?]
+* * * ))  [?]
+qi  X   | {z }   i > j [?]
+ni = 0 1 = i = j [?]
+ni 6= 0 1 = i < j <= n [?]
+ni = * 1=i<j<=n [?]
+0 < ni 6= * 1<i<=j<=n[?]
+(ni = * [?]
+ni >= j) 1<i<=j<=n [?]
+0 < ni < j  ni nested X  (10)  Informally, the recursive definition (10) works as follows (from top to bottom): * If ni = 0 or i > j, qij is unsatisfiable.
+* If there is a positive numeric constraint n1 6= * on when ph1 must occur, then q11 is equivalent to X (ph1 ): ph1 holds exactly after the next nss.
+* If n1 = * and any j > 1, q1j requires that ph1 holds for some of the following j nss.
+13  * If n1 6= * but n1 6= 0, and j > 1, q1j also requires that ph1 holds correspondingly to some of the following n1 nss; if, however, j < n1 , then the requirement on the following next j nss prevails over the constraint n1 .
+* If i > 1 and ni = * or ni >= j, the constraint ni is subsumed by the constraint j; then, qij holds iff: (a) the more constraining qij-1 holds (that is, ph1 , .
+.
+.
+, phi hold j-1 over the following j - 1 nss), or (b) phi holds exactly after the j-th nss, and qi-1 holds as well (that is, ph1 , .
+.
+.
+, phi-1 hold over the following j - 1 nss).
+* If i > 1 and ni < j then qij is reducible to two cases; either the more constraining j-1 holds (which takes care of the qij-1 holds, or all of the following hold: (a) qi-1 first i - 1 arguments ph1 , .
+.
+.
+, phi-1 ), (b) phi holds exactly after the j-th nss, and (c) there are no more than ni nss between an occurrence of phi-1 and the occurrence of phi .
+6;h3,2,*,3i  Example 15.
+Continuing Example 14, w, 1 |= exqPn4 (v, !q, e, q) is rewritten as w, 1 |= q46 .
+This in turns reduces to checking the following sequence of formulas at position 1: q35 [?]
+X 6 (q) [?]
+X 3 (X 3 (q)); q34 ; q33 ; q22 [?]
+X 3 (e); q11 [?]
+X 2 (!q); X (v).
+We can transform LTL(U, exqPn) formulas into equi-satisfiable qualitative formulas using definition (10).
+The construction is general, but the remainder will use an LTL(U, exqPn) formula L over Q = P [?]
+{s} in the form:    ^ f(p)[?
+] ^ J(i);hK(i)i i L , g(P)[?]
+G ps1i , .
+.
+.
+, psI(i) [?
+]k [?]
+G xi = exqPnI(i) f(!p) p[?
+]P  i=1,...,M  (11) where J, I are two mappings [1..M ] - N>0 ; K is a mapping [1..M ] - (N [?]
+{*})I(i) ; k, psi [?]
+L(U) for all 1 <= i <= M ; xi [?]
+P(P); and s does not occur in k or in any psij .
+Lemma 16.
+[[L]] is closed under stuttering.
+Proof.
+A consequence of the semantics of the extended qualitative Pnueli operators -- which introduce no metric constraint -- and of the particular form of L -- where only qualitative subformulas appear.
+Lemma 17.
+It is possible to build, in polynomial time, a formula L' such that: 1.
+L' [?]
+L(U); 2.
+|L' | is polynomially bounded by |L|; 3.
+L' and L are equi-satisfiable.
+Proof.
+Let t hq, i, j, n, n1 , .
+.
+.
+, ph1 , .
+.
+.i denote (10) with q, i, j, n, n1 , .
+.
+.
+, ph1 , .
+.
+.
+respectively replacing q, i, j, n, n1 , .
+.
+.
+, ph1 , .
+.
+.. Introduce fresh propositional letters q[i]jk for 1 <= i <= M , 1 <= j, k <= J(i) and construct L' from L as:   V g(P) [?]
+p[?
+]P G(f(p) [?]
+f(!p))   [?]
+k [?]
+L' ,  V  J(i) ) G(x = q[i] i i=1,...,M I(i) E D ^ k (12) Gt q[k], i, j, J(k), K(k), ps1k , .
+.
+.
+, psI(k) [?]
+1<=k<=M 1<=i,j<=J(k)  Then, facts 1-3 are straightforward to prove: 14  1: is clear by construction.
+2: The size |L| of L is polynomial in |Q|, I, J, K, M , where J, I, K denote maxi J(i), maxi I(i), and maxi max K(i), respectively.
+The first subformula of L' : ^ ^ J(i) g (P) [?]
+G(f(p) [?]
+f(!p)) [?]
+k [?]
+G(xi = q[i]I(i) ) (13) p[?
+]P  i=1,...,M  clearly has size bounded by |L|.
+The second subformula of L' : E D ^ k Gt q[k], i, j, J(k), K(k), ps1k , .
+.
+.
+, psI(k)  (14)  1<=k<=M 1<=i,j<=J(k)  has size bounded by M * J 2 * O(J maxi,j |psij |), hence also polynomial in |L|.
+3: follows from the definition in (10) and the semantics of the X operator, along the lines of Lemma 11.
+5.2 Relaxing distance formulas This section proves the following.
+Theorem 18.
+Given an LTL formula ph and an integer parameter V > 0, it is possible to build, in polynomial time, a qualitative LTL formula ph'' such that: * |ph'' | is polynomial in V, |ph|p , |ph|U , s(ph) but is independent of d(ph); * ph is satisfiable over words in var(Q, V/d(ph)) iff ph'' is satisfiable over unconstrained words.
+Let e be ph in SNF; the following construction builds a ph' [?]
+LTL(U, exqPn) from e such that Lemmas 20 and 21 hold.
+Theorem 18 follows after transforming ph' into ph'' by eliminating the qualitative extended Pnueli operators according to Lemma 17.
+Informal presentation.
+Let us first informally sketch the ideas behind the transformation from e to ph' , with the aid of a few examples referring to word w in Example 13 and formula  in Example 9.
+The basic idea consists of relaxing every distance formula X d a into a qualitative ' formula X d (a) with d' <= V, so that consecutive nss take the role of consecutive positions.
+The elimination or addition of stuttering steps reconciles words in the quantitative and qualitative transformed formulas.
+For example, w, 1 |= X 6 (q) holds because q holds at position 14; adding 41 - 14 = 27 repetitions of position 2 transforms w into a word w' where the quantitative requirement w' , 1 |= X 41 q holds as well.
+The transformation must also preserve the ordering among events: if X d a and X e b ' ' both hold for some d < e, then X d (a) and X e (b) should hold for suitable d' < e' .
+Another constraint requires that e' - d' <= e - d; otherwise, the transformed formula admits words with e' -d' > e-d non-stuttering steps between consecutive occurrences of a and b, which may not be removable to put a and b at an absolute distance of e - d. For example, X (s) [?]
+X 2 (q) is a suitable relaxation of X 30 s [?]
+X 31 q, whereas X (s) [?]
+X 3 (q) is not: w, 10 |= X (s) [?]
+X 3 (q) but the nss 13 makes it impossible to pad w with stuttering steps such that s and q hold at positions 10 + 30 and 10 + 31.
+15  Using these ideas, a formula e in SNF (8) is transformed by replacing the distance formulas with qualitative "snapshots" using the qualitative extended Pnueli operators: the predicates p1 , p2 , .
+.
+.
+, pM hold orderly over some of the the following V nss, with the additional constraint that, between any two consecutive pi , pi+1 , no more nss than the difference of the corresponding distances occur.
+For example, if !x1 [?]
+x2 [?]
+!x3 [?]
+!x4 [?]
+x5 (corresponding to predicates !u, v, !q, !q, q) then formula 6;h1,*,1,*i (!u [?]
+v, !q, !q, q) must hold, where !u [?]
+v occurs after the next nss exqPn4 and !q, !q occupy consecutive nss.
+This approach can be made rigorous, but introduces an exponential blow-up because it considers each of the 2M subset of propositions x1 , .
+.
+.
+, xM .
+The following construction avoids this blow-up by introducing auxiliary propositions yi 's and zij 's that mark nss and decouple them from the propositions that must hold therein.
+Each yi holds precisely from the i-th nss until the next 1 + (i mod V) nss.
+Then, h for each given h, the propositions z1h , z2h , .
+.
+.
+, zm (where m is the number of different distances used in e) hold sequentially and cyclically from when y h holds.
+Each zkh marks a position in the sequence that satisfies the qualitative extended Pnueli operator under consideration; correspondingly, for each index k ' corresponding to a distance with index k, pk' holds with zkh iff xk' holds with yh .
+For example, if !x1 [?]
+x2 [?]
+!x3 [?]
+!x4 [?
+]x5 holds when some yk holds, then the corresponding predicates !u[?
+]v, !q, !q, q hold orderly with the next occurrences of z1k , z2k , z3k , z4k .
+The following construction formalizes these ideas.
+Detailed construction.
+Consider a generic LTL formula e in SNF: ^ e , k [?]
+G(xi = X D(i) pi )  (15)  i=1,...,M  where k [?]
+L(U), xi [?]
+M = {xi | 1 <= i <= M }, Q = P [?]
+M, pi [?]
+P(Q), and D is a monotonically non-decreasing mapping [1..M ] - N>0 .
+Introduce V letters {yi | 1 <= i <= V}.
+Formula khyi constrains yi to occur synchronously with every i-th nss:    X (y1+(i mod V) ) ^ V  khyi , y1 [?]
+G yi =  j6=i !yj [?]
+(16) 1<=i<=V yi U y1+(i mod V)  Let D1 , D2 , .
+.
+.
+, Dm be the sequence of sets that partition [1..M ] in such a way that indices involving the same number of consecutive nested X 's are in the same set, and the sets appear in the sequence in increasing order of nested X 's; formally: i, j [?]
+Dk with k , D(i) = D(j) for some k iff D(i) = D(j) , dk (and d0 is defined as 0); and i [?]
+Dk1 and j [?]
+Dk2 with k1 < k2 implies D(i) < D(j).
+Then, introduce another m * V letters {zij | 1 <= i <= m, 1 <= j <= V}.
+At every j must hold over m of the following i-th nss, marked by yi , the sequence z1j , .
+.
+.
+, zm i i V nss; moreover, between each zj and its preceding zj-1 there must be no more than di - di-1 nss, unless di - di-1 > V - i + 1.
+After defining, for 1 <= i <= m: ( di - di-1 if di - di-1 <= V - i + 1 di , * otherwise  16  the qualitative extended Pnueli operators capture this behavior of the zij 's.
+ ^  V;hd1 ,...,dm i i i z1 , .
+.
+.
+, zm khz, Pni , G yi = exqPnm  (17)  1<=i<=V  Additionally, constrain the zij 's to hold sequentially, according to the following.
+!
+!
+1+(j mod V) ^ ^ !z1+(i mod m) j j j 1  khz, Ui , !zh U z1 [?]
+G zi = U z1+(i mod m) V [?]
+h6=i !zhj h,j6=1 1<=j<=V 1<=i<=m  (18) Once the zij 's and the yi 's are constrained, link the xi 's to the values of the pi 's in the distance formulas.
+If some xi holds, after or at the j-th nss and before the j + 1-th, j then pi has to hold at the k-th position in the sequence z1j , .
+.
+.
+, zm , with k = D(i).
+j j xi [?]
+yj = !zD(i) U zD(i) [?]
+pi ^   [?]
+khx, pi , G (19)  j j 1<=i<=M !xi [?]
+yj = !zD(i) U zD(i) [?]
+!pi 1<=j<=V  Finally, combine the various k formulas to transform e into ph' : ^  f(p)[?]
+ ph' , k[?]g(Q)[?]
+G [?]khyi[?
+]khz, Pni[?
+]khz, Ui[?
+]khx, pi (20) f(!p) p[?
+]Q  Example 19.
+In the elections example, V = 6, m = 4 instantiate khyi, khz, Ui, and khx, pi.
+Then, d1 = d3 = 1 and d2 = d4 = * instantiate khz, Pni.
+The correctness of the above construction and the proof of Theorem 18 rely on the following two lemmas.
+Lemma 20. e is satisfiable over words in var(Q, V/d(ph)) iff ph' is satisfiable over unconstrained words.
+Proof.
+Let D be d(e), which equals d(ph) by Lemma 8.
+The proof consists of two parts.
+SAT(e) = SAT(ph' ).
+Let w [?]
+var(Q, V/D) such that w |= e. w' adds propositions s, yi , zij , constrained as follows.
+s switches its truth value at every nss, except for possibly an infinite tail of constant values over w. Exactly one of the yi 's holds at every instant, and they rotate at every nss signaled by s. Whenever a given yj holds, a sequence of zij 's hold over the following V nss, in a sequential fashion.
+Namely, let k be the first step where a certain yj holds, let hi be the last non-stuttering before position k + di , and let li be the di -th nss after hi-1 (included, with h0 = k); then, zij starts to j hold at min(hi , li , V - k + 1) + 1, and holds until the next zi+i . '
+Once w is built, the rest of the proof follows the lines of Lemma 11.
+It is clear that V w' |= p[?
+]Q g(P) [?]
+G(f(p) [?]
+f(!p)) and w' |= k. In addition, w' |= khyi [?]
+khz, Ui is a consequence of the set up of the yj 's and the zij 's.
+Then, Vthe current generic V let i be instant and b [?]
+[1..M ] be a generic subset such that i[?
+]b xi [?]
+i6[?
+]b !xi holds at i.
+Hence, w, i |= X D(j) pj holds for all j [?]
+b and w, i |= X D(k) !pk holds for all k 6[?]
+b.
+The variability of w -- and that of w' -- is bounded by V/D; hence, there are at most V 17  nss of item s over positions i to i+D.
+Let i <= t1 < * * * < tV <= i+D be these transition instants.
+There are only stuttering steps between any such two consecutive ti 's, hence there exists a subset u1 < * * * < um of the ti 's such that zij holds at ui for all i's and some unique j.
+Now, for all g such that D(g) = i, pg holds at k + di and (at least) since the previous and until the next nss.
+Because of how each zij 's mark the stuttering positions before k+di , for every g such that D(g) = i, pi must in particular hold where zij first holds; because i is generic, w' |= khx, pi holds.
+Also, if di - di-1 <= V - i + 1, there are no more than di - di-1 nss between ui-1 and ui , for all 1 <= i <= m(and V;hd1 ,...,dm i j assuming u0 = d0 = 0); this establishes w' , i |= exqPnm z1j , .
+.
+.
+, zm .
+In ' ' all, w |= ph holds.
+SAT(ph' ) = SAT(e).
+Let w' be an unconstrained word in  W[Q [?]
+{s} [?]
+{yi | 1 <= i <= V} [?]
+{zij | 1 <= i <= m, 1 <= j <= V}] such that w' |= ph' .
+Initially, let w be w' with all stuttering steps removed; w |= ph' as well from Lemma 16.
+Modify w as follows, until w |= e is the case.
+V Let i beVthe current generic instant and b [?]
+[1..M ] be a generic subset such that i6[?
+]b !xi holds at i on w. The rest of the proof works inductively on 1 <= i[?
+]b xi [?]
+h <= M ; let us focus on the more interesting inductive step.
+Let i <= t1 < * * * < tV be the following V V nss of s -- and hence of any proposition in Q as well, according to g(Q) [?]
+p[?
+]Q G(f(p) [?]
+f(!p)).
+khyi implies that a unique yj holds at i; correspondingly, khz, Pni entails that there exists a subset of the u1 < * * * < um of the sequence t1 < * * * < tV such that zkj holds at uk + 1 for all 1 <= k <= m. Assume xh holds at i (the case of !xh is clearly symmetrical and is omitted), with g = D(h); then, khx, pi requires that ph holds with zgj at ug + 1.
+The inductive hypothesis implies that ug-1 + 1 <= i + dg-1 <= ug , and khz, Pni and the definition of dg guarantee that ug < i + dg .
+Correspondingly, add th , i + dg - ug - 1 stuttering steps at position ug in w. This "shifts" the previous position ug + 1 to the new position i + dg ; hence w, i + dg |= ph and i + dg <= dg+1 because we added only stuttering steps.
+Also, w |= ph' is still the case, because Lemma 16 guarantees that the removal or addition of stuttering steps to w do not affect the satisfiability of ph' .
+Finally, observe that we introduced no more than m nss over every subword of w of length V, and m <= M <= D because of the pigeonhole principle, hence the variability of propositions Q in w is bounded by V/D.
+In all, induction proves that the finally modified w is such that w |= e and w [?]
+var(Q, V/D).
+Lemma 21.
+|ph' | is polynomial in V, |ph|p , |ph|U , s(ph).
+Proof.
+The size of ph' is |k| + |Q|2 + |khyi| + |khz, Pni| + |khz, Ui| + |khx, pi|, up to constant multiplicative factors.
+Then, k is unchanged from e; |khyi| is O(V3 ); |khz, Pni| is O(m2 * V2 ), which is O(M 2 * V2 ); |khz, Ui| is O(m3 * V2 ) which is O(M 3 * V2 ); and |khx, pi| is O(M * V * (M + V + maxi pi )).
+The statement follows by Lemma 8.
+Example 22.
+Consider the running elections example and transform  (Example 9) into ' according to the above construction.
+The following is a partial model for ' , where all propositions not appearing at some position are assumed to be false there, nss  18  are in bold and underlined, while a hat marks successors of nss.
+1 s y1  x2 [?]
+x5 !v q !e u  b 2 !s y2 z11  3 !s y2 z11  4 !s y2 z11  5 !s y2 z11  6 !s y2 z21  v !q !e !u  v !q !e !u  v !q !e !u  v !q !e !u  v !q !e !u  b 7 s y3 z31 z12  b 8 !s y4 z31 z22 z13  x4 v !q !e !u  x3 x3 v v !q !q e e !u !u  9 !s y4 z31 z22 z13  10 !s y4 z31 z22 z13  b 11 s y5 z31 z22 z13 z14  12 s y5 z31 z22 z13 z14  b 13 !s y6 z31 z22 z23 z14 z15  x1 [?]
+x3 v !q e !u  x1 v !q !e u  x1 v !q !e u  x1 v !q !e u  b 14 s y1 z41 z32 z23 z24 z15 z16 x1 !v q !e u  It should be clear that the model can be transformed into one satisfying , such as the one in Example 9.
+For example, the metric requirement that e occur once at 1460 + 1 - 40 = 1421 can be accommodated by removing all the stuttering steps at position 8 and by adding 1421 - 8 = 1413 additional stuttering steps at position 2.
+6 Conclusion and future work This paper investigated satisfiability-preserving transformations of LTL into its qualitative subset.
+For generic models, every LTL formula admits an equi-satisfiable qualitative formula of polynomially correlated size.
+For models with bounded variability, every LTL formula admits an equi-satisfiable qualitative formula whose size does not depend on the distances used in the original formula, where distances are defined by nested occurrences of next operators.
+Models with bounded variability can describe the behavior of systems with time granularity heterogeneity, where components evolving with wildly different time scales coexist.
+Under this assumption, the result of the present paper can be leveraged to simplify the automated reasoning of temporal logic specifications.
+Future work will investigate possible generalizations and consider implementations.
+Concerning theoretical aspects, we will consider extensions of the results of the present paper to: * subword stuttering [23], where a subword is repeated multiple times, such as in the word abc abc abc * * * ; * Buchi automata and the classical linear-time model-checking problem.
+On the practical side, we will assess the practical usefulness of the results of the present paper.
+To this end, we plan to: * implement a translator from LTL to formulas equi-satisfiable over words with bounded variability and combine it with off-the-shelf LTL satisfiability checking tools [34, 3, 29, 31]; * formalize systems characterized by time granularity heterogeneity, in order to determine how often the assumption of "sparse" events is compatible with accurate models thereof.
+19  Acknowledgements.
+A preliminary version of this work has been presented at the 11th Italian Conference on Theoretical Computer Science (Cremona, Italy, 28-30 September 2009).
+The authors thank the conference attendees for their comments and for interesting discussions.
+References [1] Rajeev Alur and Thomas A. Henzinger.
+Logics and models of real time: A survey.
+In J. W. de Bakker, Cornelis Huizing, and Willem P. de Roever, editors, Proceedings of the Real-Time: Theory in Practice, REX Workshop, volume 600 of Lecture Notes in Computer Science, pages 74-106.
+Springer-Verlag, 1992.
+[2] Michael Bauland, Thomas Schneider, Henning Schnoor, Ilka Schnoor, and Heribert Vollmer.
+The complexity of generalized satisfiability for linear temporal logic.
+Logical Methods in Computer Science, 5(1), 2008.
+[3] Domenico Bianculli, Angelo Morzenti, Matteo Pradella, Pierluigi San Pietro, and Paola Spoletini.
+Trio2Promela: A model checker for temporal metric specifications.
+In ICSE Companion, pages 61-62.
+IEEE Computer Society, 2007.
+[4] Ahmed Bouajjani, Rachid Echahed, and Peter Habermehl.
+On the verification problem of nonregular properties for nonregular processes.
+In Proceedings, Tenth Annual IEEE Symposium on Logic in Computer Science, San Diego, California, USA, 26-29 June 1995, pages 123-133.
+IEEE Computer Society, 1995.
+[5] Patricia Bouyer, Nicolas Markey, Joel Ouaknine, and James Worrell.
+On expressiveness and complexity in real-time model checking.
+In Proceedings of the 35th International Colloquium on Automata, Languages and Programming (ICALP'08), volume 5126 of Lecture Notes in Computer Science, pages 124-135.
+Springer, 2008.
+[6] Alan Burns and Ian J. Hayes.
+A timeband framework for modelling real-time systems.
+Real-Time Systems, Accepted for publication, 2010.
+[7] Christian Colombo, Gordon J.
+Pace, and Gerardo Schneider.
+Safe runtime verification of real-time properties.
+In Joel Ouaknine and Frits W. Vaandrager, editors, Formal Modeling and Analysis of Timed Systems, 7th International Conference, volume 5813 of Lecture Notes in Computer Science, pages 103-117, 2009.
+[8] Carlo Combi, Massimo Franceschet, and Adriano Peron.
+Representing and reasoning about temporal granularities.
+Journal of Logic and Computation, 14(1):51-77, 2004.
+[9] Edoardo Corsetti, Ernani Crivelli, Dino Mandrioli, Angelo Morzenti, Angelo Montanari, Pierluigi San Pietro, and Elena Ratto.
+Dealing with different time scales in formal specifications.
+In In Proceedings of the 6th International Workshop on Software Specification and Design, pages 92-101, 1991.
+[10] Ugo Dal Lago and Angelo Montanari.
+Calendars, time granularities, and automata.
+In Advances in Spatial and Temporal Databases, 7th International Symposium, SSTD 2001, Redondo Beach, CA, USA, July 12-15, 2001, Proceedings, volume 2121 of Lecture Notes in Computer Science, pages 279-298, 2001.
+20  [11] Christian Dax, Felix Klaedtke, and Stefan Leue.
+Specification languages for stutter-invariant regular properties.
+In Zhiming Liu and Anders P. Ravn, editors, Automated Technology for Verification and Analysis, 7th International Symposium, ATVA 2009, Macao, China, October 14-16, 2009.
+Proceedings, volume 5799 of Lecture Notes in Computer Science, pages 244-254.
+Springer, 2009.
+[12] Stephane Demri and Philippe Schnoebelen.
+The complexity of propositional linear temporal logics in simple cases.
+Information and Computation, 174(1):84- 103, 2002.
+[13] E. Allen Emerson.
+Temporal and modal logic.
+In Jan van Leeuwen, editor, Handbook of Theoretical Computer Science, volume B, pages 996-1072.
+Elsevier Science, 1990.
+[14] Kousha Etessami.
+Stutter-invariant languages, omega-automata, and temporal logic.
+In Nicolas Halbwachs and Doron Peled, editors, Computer Aided Verification, 11th International Conference, CAV '99, Trento, Italy, July 6-10, 1999, Proceedings, volume 1633 of Lecture Notes in Computer Science, pages 236- 248.
+Springer, 1999.
+[15] Kousha Etessami.
+A note on a question of Peled and Wilke regarding stutterinvariant LTL.
+Information Processing Letters, 75(6):261-263, 2000.
+[16] Martin Franzle.
+Decidability of duration calculi on restricted model classes.
+Technical Report Kiel MF 21/1, Institut fur Informatik und Praktische Mathematik, Christian-Albrechts Universitat Kiel, July 1996.
+[17] Carlo A. Furia, Dino Mandrioli, Angelo Morzenti, and Matteo Rossi.
+Modeling time in computing: a taxonomy and a comparative survey.
+ACM Computing Surveys, 42(2):1-59, February 2010.
+Article 6.
+Also available as http://arxiv.org/abs/0807.4132.
+[18] Carlo A. Furia and Matteo Rossi.
+MTL with bounded variability: Decidability and complexity.
+In Franck Cassez and Claude Jard, editors, Proceedings of the 6th International Conference on Formal Modelling and Analysis of Timed Systems (FORMATS'08), volume 5215 of Lecture Notes in Computer Science, pages 109- 123.
+Springer-Verlag, September 2008.
+[19] Dov M. Gabbay, Ian Hodkinson, and Mark Reynolds.
+Temporal Logic (vol.
+1): mathematical foundations and computational aspects, volume 28 of Oxford Logic Guides.
+Oxford University Press, 1994.
+[20] Yoram Hirshfeld and Alexander Moshe Rabinovich.
+Logics for real time: Decidability and complexity.
+Fundamenta Informaticae, 62(1):1-28, 2004.
+[21] Yoram Hirshfeld and Alexander Moshe Rabinovich.
+Timer formulas and decidable metric temporal logic.
+Information and Computation, 198(2):148-178, 2005.
+[22] Yonit Kesten, Zohar Manna, and Amir Pnueli.
+Temporal verification of simulation and refinement.
+In J. W. de Bakker, Willem P. de Roever, and Grzegorz Rozenberg, editors, A Decade of Concurrency, Reflections and Perspectives, REX School/Symposium, volume 803 of Lecture Notes in Computer Science.
+Springer, 1994.
+21  [23] Antonin Kucera and Jan Strejcek.
+The stuttering principle revisited.
+Acta Informatica, 41(7/8):415-434, 2005.
+[24] Leslie Lamport.
+What good is temporal logic?
+In R. E. A. Mason, editor, Proceedings of the IFIP 9th World Computer Congress on Information Processing (IFIP'83), pages 657-668.
+North Holland/IFIP, 1983.
+[25] Francois Laroussinie, Antoine Meyer, and Eudes Petonnet.
+Counting LTL.
+In Proceedings of the 17th International Symposium on Temporal Representation and Reasoning (TIME'10).
+IEEE Computer Society Press, 2010.
+[26] Nicolas Markey.
+Past is for free: on the complexity of verifying linear temporal properties with past.
+Acta Informatica, 40(6-7):431-458, 2004.
+[27] Doron Peled and Thomas Wilke.
+Stutter-invariant temporal properties are expressible without the next-time operator.
+Information Processing Letters, 63(5):243-246, 1997.
+[28] Amir Pnueli and Aleksandr Zaks.
+On the merits of temporal testers.
+In 25 Years of Model Checking, volume 5000 of Lecture Notes in Computer Science, pages 172-195.
+Springer, 2008.
+[29] Matteo Pradella, Angelo Morzenti, and Pierluigi San Pietro.
+A metric encoding for bounded model checking.
+In FM 2009: Formal Methods, volume 5850 of Lecture Notes in Computer Science, pages 741-756.
+Springer, 2009.
+[30] Alexander Moshe Rabinovich.
+Expressive completeness of temporal logic of action.
+In Lubos Brim, Jozef Gruska, and Jiri Zlatuska, editors, Mathematical Foundations of Computer Science 1998, 23rd International Symposium, MFCS'98, Brno, Czech Republic, August 24-28, 1998, Proceedings, volume 1450 of Lecture Notes in Computer Science, pages 229-238.
+Springer, 1998.
+[31] Kristin Y. Rozier and Moshe Y. Vardi.
+LTL satisfiability checking.
+In Dragan Bosnacki and Stefan Edelkamp, editors, Proceedings of the 14th International SPIN Workshop on Model Checking Software (SPIN'07), volume 4595 of Lecture Notes in Computer Science, pages 149-167.
+Springer, 2007.
+[32] A. Prasad Sistla and Edmund M. Clarke.
+The complexity of propositional linear temporal logics.
+Journal of the ACM, 32(3):733-749, 1985.
+[33] Thomas Wilke.
+Specifying timed state sequences in powerful decidable logics and timed automata.
+In Hans Langmaack, Willem P. de Roever, and Jan Vytopil, editors, Proceedings of the 3rd International Symposium on Formal Techniques in Real-Time and Fault-Tolerant Systems (FTRTFT'94), volume 863 of Lecture Notes in Computer Science, pages 694-715.
+Springer-Verlag, 1994.
+[34] Martin De Wulf, Laurent Doyen, Nicolas Maquet, and Jean-Francois Raskin.
+Alaska.
+In Sung Deok Cha, Jin-Young Choi, Moonzoo Kim, Insup Lee, and Mahesh Viswanathan, editors, 6th International Symposium on Automated Technology for Verification and Analysis (ATVA'08), volume 5311 of Lecture Notes in Computer Science, pages 240-245.
+Springer, 2008.
+22

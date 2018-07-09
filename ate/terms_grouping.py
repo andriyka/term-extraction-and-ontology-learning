@@ -5,7 +5,7 @@ import itertools
 import numpy as np
 
 config = ConfigParser.ConfigParser()
-config.readfp(open(os.path.join('configuration', 'config.ini')))
+config.readfp(open(os.path.join('ate/configuration', 'config.ini')))
 
 source_terms='../data/terms/temp/c_val_raw_terms.txt'
 
@@ -17,7 +17,7 @@ class Seeder:
         self.cache = dict()
 
     def get_seed(self, word):
-        LIMIT = 8
+        LIMIT = 4
         seed = self.cache.get(word,None)
         if seed is not None:
             return seed
@@ -43,6 +43,7 @@ class Seeder:
 
 from pyjarowinkler import distance
 
+
 def jaro_winkler(terms):
     def get_similarity(el):
         first, second = el
@@ -57,6 +58,7 @@ def group_similar(terms):
     terms = sorted(terms, key=seeder.get_seed)
     groups = itertools.groupby(terms, key=seeder.get_seed)
     return [list(v) for k,v in groups]
+
 
 if __name__ == '__main__':
     with open(source_terms, 'r') as tfile:

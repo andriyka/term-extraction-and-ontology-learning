@@ -1,0 +1,486 @@
+Bounded Reachability for Temporal Logic over Constraint Systems  arXiv:1004.1077v3 [cs.LO] 20 Apr 2010  Marcello M. Bersani1 , Achille Frigeri1 , Angelo Morzenti1 , Matteo Pradella2 , Matteo Rossi1 , and Pierluigi San Pietro1 1  Politecnico di Milano, Milano, Italy, {bersani,frigeri,morzenti,rossi,sanpietro}@elet.polimi.it 2 CNR IEIIT-MI, Milano, Italy, pradella@elet.polimi.it  Abstract This paper defines CLTLB(D), an extension of PLTLB (PLTL with both past and future operators) augmented with atomic formulae built over a constraint system D. The paper introduces suitable restrictions and assumptions that make the satisfiability problem decidable in many cases, although the problem is undecidable in the general case.
+Decidability is shown for a large class of constraint systems, and an encoding into Boolean logic is defined.
+This paves the way for applying existing SMT-solvers for checking the Bounded Reachability problem, as shown by various experimental results.
+1 Introduction Many extensions of temporal logic or automata have been proposed with the goal of verifying infinite-state systems.
+Among the many extensions of Propositional Linear Temporal Logic (PLTL), there have been proposals of allowing formulae which may include arithmetic constraints belonging to a specific constraint system [6, 10] .
+These logics are well-suited to define properties of infinite-state systems, but, unfortunately for the aim of automatic verification, previous results have also shown the undecidability of the satisfiability problem, at least in the general case [12].
+Here we define a more general logic, called CLTLB(D), which is an extension of PLTLB (PLTL with Both future and past operators), allowing arithmetic constraints belonging to a generic constraint system.
+To cope with undecidability, already known for the less general case above, we introduce suitable assumptions concerning the structure of models, but without any syntactic restriction on formulae.
+Models only consider partial valuations of arithmetic vari-  ables: the satisfiability of CLTLB(D) then turns to be decidable, provided that the constraint system D has a decidable decision procedure.
+We then define the Bounded Reachability Problem (BRP) for CLTLB(D), which can be decided by showing its equivalence to the satisfiability of CLTLB(D) over partial valuations.
+We realized a Bounded Reachability Checker by using SMT-solvers natively implementing decision procedures for Quantifier-Free Integer Difference Logic with Uninterpreted Functions (QF-UFIDL) and Quantifier-Free Linear Integer Arithmetic with Uninterpreted Functions (QF-UFLIA).
+Experimental results using the Zot toolkit [18, 20] show that, the greater expressiveness of CLTLB(D) notwithstanding, the encoding of the propositional part is considerably faster and with smaller memory footprint than existing encodings of PLTL based on SAT.
+The paper is structured as follows.
+Section 2 relates on the state of the art in extending PLTL with constraint systems.
+Section 3 introduces CLTLB(D), while Section 4 presents various decidability and undecidability results.
+Section 5 introduces and solves the BRP.
+Section 6 defines an encoding of CLTLB(D) into logics suitable for SMTbased verification.
+Section 7 relates on the performance of experimental results of the original SAT-based plugins of Zot with the SMT-based ones on a number of examples taken from different application domains.
+Finally, Section 8 draws a few conclusions and outlines future research.
+2 State of the art Among the various proposals of extension of LTL, CLTL (Counter LTL) has been defined in [6].
+CLTL is, essentially, Propositional LTL with future operators (PLTL), with in addition terms that are arithmetic constraints in Integer Difference Logic (DL).
+However, by reducing the recurrence problem for Minsky machines to the satisfiability of a CLTL  formula, it is shown that the logic is undecidable, hence unsuitable for automatic verification.
+A generalization of CLTL is CLTL(D) [10], where the arithmetic constraints belong to a general constraint system D. If D has an intrinsic counting mechanism, i.e., it contains equality and a binary injective relation R such that its graph is a DAG, then CLTL(D) is undecidable.
+Indeed, a relation satisfying the hypothesis of the theorem generalizes the "successor" function and can be used to define constraints of the form y = z+1.
+[12] proves the undecidability of the satisfiability problem of CLTLlm (DL), which is the restriction of CLTL(DL) to formulae with at most m variables and of depth less or equal to l. CLTLlm (DL) is shown to be S11 -hard for m > 1 and l > 1, while CLTL11 (DL) is shown to be PSPACE-complete.
+For practical model-checking, a large variety of infinitestate systems can be effectively represented by counters systems.
+In this case, interesting results on verifying safety and reachability properties can be obtained by constraining the control graph of the counters system to be flat [7, 5], i.e., no control state occours in more than one simple cycle.
+Properties are defined by means of Presburger arithmetic constraints but they are not considered in the framework of any temporal logic, for instance, like CLTL or CLTL(D) described above.
+In [11], authors extend some results about flat systems to more general classes of infinite-state systems in which some first-order extensions of CTL[?]
+have decidable model-checking.
+To cope with undecidability, [8] describes a reduction of infinite BMC to a satisfiability problem of Boolean constraints formulae.
+By translating LTL formulae into a corresponding Buchi automaton, a BMC problem is reduced to the satisfiability of a mixed arithmetic-Boolean formula.
+The authors also give a proof of soundness and completeness for the U-free fragment of the logic.
+In this case, the BMC problem is solved by means of a loop-free encoding, since U-free formulae can always be translated into an automaton over finite words accepting a prefix of all infinite paths which satisfy it.
+In all other cases, generic LTL formulae are translated into a corresponding Buchi automaton with acceptance conditions involving an implicit periodicity constraint over counters.
+However, this translation does not work when counters do not behave periodically.
+For instance, consider a transition system defining a nonperiodic, strictly-increasing counter x starting at 0.
+Property [?
+]U(x < 0) does not hold for this system, but the Buchi automaton corresponding to its negation imposes a periodic constraint over the sequence of values of x, which cannot be satisfied.
+Hence, using the translation outlined above, verification of formula [?
+]U(x < 0) for the strictly-increasing counter improperly yields true.
+We define a complementary, purely descriptive, approach which solves this problem.
+It is also aimed at solv-  ing reachability problems for infinite-state systems whose propositional, possibly periodic, behaviors induce a finite prefix of values of variables and satisfying a CLTLB(D) specification, instead of LTL properties just over arithmetic constraints.
+3 A Temporal Logic over Constraint Systems This section presents an extension to Kamp's [16] PLTLB, by allowing formulae over a constraint system.
+As suggested in [6], and unlike the approach of [9], the propositional variables of this logic are Boolean terms or atomic arithmetic constraints.
+Let V be a set of variables; a constraint system is a pair D = hD, Pi where D is a specific domain of interpretation for variables and constants and P is a family of relations on elements of D. An atomic D-constraint is a term of the form Rn (x1 , .
+.
+.
+, xn ), where Rn is an n-ary relation on D and x1 , .
+.
+.
+, xn are variables.
+A D-valuation is a mapping v : V - D, i.e., an assignment of a value in D to each variable.
+A constraint is satisfied by a D-valuation v, written v |= R(x1 , .
+.
+.
+, xn ), if (v(x1 ), .
+.
+.
+, v(xn )) [?]
+R. Let AP be a set of atomic propositions and D = hD, Pi a constraint system.
+CLTLB(D) is defined as an extension of PLTLB, by combining Boolean atoms with arithmetic temporal terms defined in D. The resulting logic is actually equivalent to the quantifier-free fragment of FOLTL [13] over signature {P, AP }.
+The syntax of CLTLB(D) is defined as follows: ( p | R(ph1 , .
+.
+.
+, phn ) | ph [?]
+ph | !ph | ph := Xph | Yph | phUph | phSph ph := x | Xph | Yph where p [?]
+AP , x [?]
+V , X and Y are the usual "next" and "previous" operators, U and S are the usual "until" and "since" operators, R [?]
+P, Xj and Yj are shorthands for j applications of X and Y (e.g., X2 [?]
+XX).
+Each formula ph is called an arithmetic temporal term (a.t.t.).
+Its depth |ph| is the total amount of temporal shift needed in evaluating ph: |x| = 0, |X(ph)| = |ph| + 1, |Y (ph)| = |ph| - 1.
+Let ph be a CLTLB(D) formula, x a variable and Gx the set of all a.t.t.
+'s occurring in ph in which x appears.
+We define the "look-forwards" [?]ph[?
+]x and "look-backwards" [?]ph[?
+]x of ph relatively to x as: [?]ph[?
+]x = max {0, |phi |} phi [?
+]Gx  [?]ph[?
+]x = min {0, |phi |} phi [?
+]Gx  The above definitions may naturally be extended to the set V of all variables (by letting [?]ph[?]
+= maxx[?
+]V {[?]ph[?
+]x }, [?]ph[?
+]x = minx[?
+]V {[?]ph[?
+]x }).
+Hence, [?]ph[?]
+([?]ph[?])
+is the largest (smallest) depth of all the a.t.t.
+'s of ph, representing the length of the future (past) segment needed to evaluate ph in the current instant.
+The semantics of a formula ph of CLTLB(D) is defined w.r.t.
+a linear time structure ps = (S, s0 , I, p, s, L), where S is a set of states, s0 is the initial state, I : {j | [?]ph[?]
+<= j <= -1} x V - D is an assignment, p [?]
+s0 S o is an infinite path, s : N x V - D is a sequence of D-valuations and L : S - 2AP is a labeling function.
+From now on, the set of all sequences of D-valuations is denoted by S. Function I defines the valuation of variables for each time instant in {j | [?]ph[?]
+<= j <= -1}, i.e., for time instants before 0; this way s can be extended to a.t.t.'s.
+Indeed, if ph is an a.t.t., x is the variable in ph, i [?]
+N and s i (x) is a shorthand for s(i, x), then:  i+|ph| s (x), if i + |ph| >= 0; s i (ph) = I(i + |ph|, x), if i + |ph| < 0.
+The semantics of a CLTLB(D) formula ph at instant i [?]
+N over a linear structure ps is recursively defined by means of a satisfaction relation |= as follows, for every formulae ph, ps and for every a.t.t.
+ph: psi |= p = p [?]
+L(si ) for p [?]
+AP psi |= R(ph1 , .
+.
+.
+, phn ) = (s i+|ph1 | (xph1 ), .
+.
+.
+, s i+|phn | (xphn )) [?]
+R psi |= !p = psi 6|= p psi |= ph [?]
+ps = psi |= ph and psi |= ps psi |= Xph = psi+1 |= ph psi |= Yph = psi-1 |= ph [?]
+i > 0 ( [?]
+j >= i : psj |= ps [?]
+i ps |= phUps = psn |= ph [?]
+i <= n < j ( [?]
+0 <= j <= i : psj |= ps [?]
+psi |= phSps = psn |= ph [?]
+j < n <= i where xphi is the variable that appears in phi .
+The semantics of ph is well defined, as any valuation s i is defined for all i >= [?]ph[?
+], because of assignment I.
+A formula ph [?]
+CLTLB(D) is satisfiable if there exists a linear time structure ps = (S, s0 , I, p, s, L) such that ps0 |= ph (in which case ps is a model of ph).
+Without loss of generality, one may assume that all formulae are in positive normal form, where negation may only occur in front of atomic constraints.
+In fact, by introducing as primitive the connective [?
+], the dual operators "release" R, "trigger" T and "previous" Z defined as: phRps [?]
+!
+(!phU!ps), phTps [?]
+!
+(!phS!ps) and Zph [?]
+!Y!ph, and by applying De  Morgan's rules, every CLTLB formula can be rewritten into positive normal form.
+4 (Un)decidability of CLTLB(D) As a first result, by exploiting well-know properties of PLTLB, we prove the equivalence of CLTLB(D) to CLTL(D) for a quantifier-free constraint system D, w.r.t.
+initial equivalence.
+Then, as a corollary of results described in Section 2, we obtain the undecidability of CLTLB(D) for a large class of constraint systems.
+In the following, as customary, we denote with p a structure for a PLTLB formula.
+Definition 1.
+Two PLTLB formulae ph, ps are globally equivalent, written ph [?
+]g ps, if for all linear-time structures p it is p i |= ph = p i |= ps for all i [?]
+N. Two PLTLB formulae ph, ps are initially equivalent, written ph [?
+]i ps, when p 0 |= ph = p 0 |= ps for all linear-time structures p. In [15] it is shown that any PLTLB formula is initially equivalent to a PLTL formula, while the two logics are not globally equivalent (see [22] for details).
+In order to extend this result to the constrained case, we need to introduce new temporal operators.
+CLTLB(D), as defined in Section 3, includes the "non-strict" until (resp.
+since) operator, in which formula phUps (resp.
+phSps) holds in an instant i when ps holds in i, and only if ph holds starting from i.
+The "strict" version of until U> , instead, does not require this: ( [?]
+j > i : psj |= ps [?]
+i > ps |= ph U ps = psn |= ph [?]
+i < n < j and similarly for the strict since S> .
+It is well known that the following global equivalences hold for any ph,ps: Xph [?
+]g [?]
+U> ph, Yph [?
+]g [?]
+S> ph,  phUps [?
+]g ps [?]
+(ph [?]
+phU> ps); phSps [?
+]g ps [?]
+(ph [?]
+phS> ps).
+Using the previous equivalences, Gabbay [14] proved that any PLTLB formula is globally equivalent to a separated PLTLB formula, i.e.
+a Boolean combination of formulae containing either U> (U> -formulae) or S> (S> -formulae), but not both.
+Since this theorem preserves all semantic properties, i.e., it is actually a rewriting syntactic procedure over formulae, it extends also to the case of CLTLB(D), provided that each arithmetic constraint is accounted as a propositional letter.
+In particular, a.t.t.
+'s Xx/Yx are not rewritten using strict-until/-since operators, but are considered as is, since their semantics depends on the underlying sequence s as defined before.
+Then, we need to show that S> -formulae can be translated into initially equivalent U> formulae.
+More precisely, we prove the following:  Theorem 2.
+Any CLTLB(D) formula is initially equivalent to a CLTL(D) formula, while the two logics are not globally equivalent.
+Proof sketch.
+We first prove that CLTL(D) is not globally equivalent to CLTLB(D) by providing a counterexample.
+Formula [?
+]SA, where A [?]
+AP , was shown in [13] to have no globally equivalent PLTL formula.
+Now, suppose ph is a CLTL(D) formula globally equivalent to CLTLB(D) formula [?]SA.
+Then, for the above reason, it should constrain at least one of its arithmetic variables, by a non trivial arithmetic formula.
+Since [?
+]SA does not constrain any arithmetic variables, some of its models cannot be models of ph.
+To prove the initial equivalence we suppose each formula is written using only U> and S> operators, using the equivalences above.
+From Gabbay's Separation Theorem such a formula can be rewritten to a separated CLTLB(D) formula which is a Boolean combination of S> - and U> -formulae.
+The proof is concluded by noticing that any S> -formula is trivially initially equivalent to false.
+Corollary 3.
+Let D = hD, Pi be a constraint system where P contains equality and a binary relation R such that (D, R) is a DAG; then, satisfiability of CLTLB(D) is undecidable.
+In the following, in the case of a decidable constraint system D, we prove the decidability of the satisfiability and the model checking problems for CLTLB(D) formulae for partial D-valuations, in which that for all computations the value of counters will be considered only for a fixed number of steps.
+The counting mechanism of D is not altered along finite paths by means of constraints imposing periodicity of values of variables and all relations are still considered over infinite, possibly periodic, paths.
+This allows us to define a complementary approach to the one of [8], aimed at bounded satisfiability checking [19] and BMC of infinite-state systems.
+With this assumption, any periodic behavior which induces a finite, even periodic, prefix of values of variables ruled by the counting mechanism and satisfying a CLTLB(D) formula, can be represented.
+An arithmetic variable varying over a bounded set may still be represented by its Boolean representation and be part of the propositional infinite paths.
+It is worth noticing that, since we limit the counting mechanism along finite paths, the partial model is an under-approximation, due to the intrinsic undecidability of the general problem.
+Definition 4.
+Let ph be a CLTLB(D) formula and k [?]
+N, then a k-partial D-valuation sk for ph is a relation in {i [?]
+Z | i >= [?]ph[?]}
+x V x D with the condition that for each variable x occurring in ph, its restriction over {i [?]
+Z | [?]ph[?
+]x <= i <= k + [?]ph[?
+]x } x {x} x D is a function from {i [?]
+Z | [?]ph[?
+]x <= i <= k + [?]ph[?
+]x } x {x} to D. Then, Sk is the set of all k-partial D-valuations for ph.
+Informally, sk defines a unique value for each counter x from 0 up to the bound k by means of boundaries conditions in the intervals {i [?]
+Z | [?]ph[?
+]x <= i < 0} and {i [?]
+Z | k < i <= k + [?]ph[?
+]x }, and it accounts for relations over infinite, even periodic, paths, after k. For the case of k-partial D-valuation one can define a semantics of CLTLB(D) formulae.
+It coincides with the semantics of the (full) D-valuations except for the case of arithmetic relations R; namely: psi k |= R(ph1 , .
+.
+.
+, phn ) = [?
+]y1 , .
+.
+.
+, yn [?]
+D s.t.
+[?
+]1 <= j <= n, (i + |phj |, xphj , yj ) [?]
+sk then (y1 , .
+.
+.
+, yn ) [?]
+R, (1) where xphj is the variable that appears in phj .
+If sk is a function, this semantics reduces exactly to the previous one.
+The satisfiability problem for a CLTLB(D) formula ph over k-partial D-valuations is that of looking for a (partial) linear time structure psk = (S, s0 , p, sk , L) such that ps0k |= ph.
+It is worth noticing that the initialization function I is implicit in the definition of sk .
+Theorem 5.
+The satisfiability of a CLTLB(D) formula ph over k-partial D-valuations is decidable when D is decidable.
+Proof sketch.
+Thanks to the initial equivalence of CLTLB(D) and CLTLF(D) formulae (Theorem 2), we assume without loss of generality that ph [?]
+CLTLF(D); moreover, we assume that a.t.t.
+'s do not appear negated (i.e., negated a.t.t.
+'s are transformed into the positive form of the complement relation) and that constraints in ph are in disjunctive normal form (i.e., disjunction of conjunction of propositions and a.t.t.'s).
+Let C be the set containing all conjunctions of such terms, and let Aph be the corresponding Buchi automaton whose alphabet is A = P(C).
+The satisfiability of ph is reduced to the emptiness of L(Aph ).
+In fact, if L(Aph ) is empty, then ph is unsatisfiable.
+If L(Aph ) is not empty, then Aph has one or more strongly connected components that are reachable from an initial state and contain a final state.
+Hence, it is enough to check if there exists a path of length k from the initial state (which also considers the initial values of the variables) that can be extended to one of the above components and which satisfies each constraint.
+This is decidable, because the consistency problem of D is decidable.
+Finally, it can be shown that the finite sequence of variable assignments appearing in such a path of length k can be extended to a k-partial D-valuation on which ph is satisfied, for example by using the empty relation outside those instants in which the valuation is required to be a function.
+Section 6 computes an estimation of the complexity of problem for a large class of constraint system.
+{p}, {r}, {p, r} {p, q}, {r, q} 1  A  2  {q}, {p, r, q}  Figure 1.
+Buchi automaton for (p [?]
+r)Uq, with p := x = Yy + 1, r := y = x + 2 and q := y <= X2 x [?]
+x < Xx.
+{p, r, q}  {p} <  0  time -1  4 +2  <=  1  1 +  1 +  y  <  3  +2  4  +2  1  +  x  {r, q} <  5  <=  <=  3  5  5  0  1  2  3  4  Figure 2.
+Constraint graph of {p, r, q}{p}{r, q}.
+be a CLTLB(D) formula and let s bk : {i [?]
+Z | [?]ph[?
+]x <= i <= k + [?]ph[?
+]x } x {x} - D, for each x [?]
+V , called a local sequence, be a finite sequence of assignements to variables in V .
+Informally, sequence s bk is not only defined between instants 0 and k, but it is bordered by two segments defining variable values before 0 and after k, as shown also in Fig.
+2.
+This is necessary to correctly define the value of all a.t.t's in the interval from 0 to k; in fact, the evaluation of an a.t.t.
+may involve also a bounded number of instants before instant 0 or after instant k. Let p [?]
+S + , called a finite path.
+A finite path is cyclic if it is of the form usvs, for some s [?]
+S, u, v [?]
+S * .
+A cyclic finite path can be considered a finite representation of an infinite one, e.g., u(sv)o .
+If p is a cyclic path usvs, then a bounded semantics for ph over p and local assignment s bk is defined as in the case of a k-partial D-valuation of Section 4, by replacing sk with s bk and p with u(sv)o in (1).
+If p is not cyclic, instead, the semantics of each relation R is, for 0 <= i <= k: psbi k |=k R(ph1 , .
+.
+.
+, phn ) = i+|ph1 |  (b sk As an illustrative example, consider the satisfiability of the formula ph := (p [?]
+r)Uq where p := x = Yy + 1, r := y = x + 2 and q := y <= X2 x [?]
+x < Xx and let be k = 3.
+The emptiness problem reduces to finding a consistent assignment to x and y along a path of length 3 over the Buchi automaton Aph on the alphabet A = {[?
+], {p}, {q}, {r}, {p, r}, {p, q}, {r, q}, {p, q, r}} shown in Fig.
+1.
+Actually, we need to check the consistency for at least one prefix of length 3 of L(Aph ).
+In Fig.
+2 we show the corresponding graph of the constraints to be solved for the word {p, r, q}{p}{p, q}.
+A dashed line means that the constraint in the label does not hold, numbers in the circles are possible assignments to the variables, while a blank means that the corresponding value is irrelevant, and can be left undefined.
+So far, we neglected any initialization condition, solving a general satisfiability problem.
+If a formula is shown to be unsatisfiable, then there is no prefix of an infinite model ps , of length equal to k, satisfying the formula.
+5 Bounded Reachability Problem This section studies the bounded satisfiability of CLTLB(D) formulae by using a finite representation of infinite models.
+It is then shown that this entails the satisfiability of the same formula with respect to k-partial Dvaluations.
+Finally, the section introduces the Bounded (existential) Reachability Problem (BRP) for Kripke structures, showing that BRP also admits a complete procedure.
+First, we need to define a bounded semantics, i.e., a semantics of a formula on finite structures.
+Let k > 0, let ph  i+|phn |  bk (xph1 ), .
+.
+.
+, s  (xphn )) [?]
+R  The bounded semantics of temporal operators is the same as the one in [3], e.g.
+: ( [?]
+i <= j <= k : psbj k |= ps [?]
+i psbk |=k phUps = psbnk |= ph [?]
+i <= n < j ( [?]
+i <= j <= k : psbj k |=k ph [?]
+i psbk |=k phRps = psbnk |=k ps [?]
+i <= n <= j |= ph psbi k |=k Xph = 0 <= i + 1 <= k [?]
+psbi+1 k By using the bounded semantics, the following theorem holds: Theorem 6.
+For every CLTLB(D) formula ph, if, there exist k > 0, a finite path p of length k and a local assignment s bk such that psbk |=k ph then ph is satisfiable over k-partial D-valuations.
+Proof sketch.
+The statement is proven by means of a completion of the sequence s bk satisfying property (1).
+A legal completion may also involve undefined values: constraints encompassed in the loop of psbk can be suitably bordered.
+In particular, if p = uv o and l is the length of v, for each variable x such that [?]ph[?
+]x > 0, [?
+]c [?]
+D, then [?
+]h >= 0, (k + 1 + hl, x, c) 6[?]
+s bk .
+By exploiting the results in [3] and a syntactic rewriting of each D constraint with a propositional letter, which results in a formula ph' , from ph, satisfied by a propositional model p ' , then p ' |=k ph' implies p ' |= ph' .
+The above concepts can be generalized and extended in the case of D-Kripke structures, as suggested in [10].
+Definition 7.
+A D-Kripke structure is a tuple M = hS, T, C, li with a finite set of states S, a transition relation T [?]
+S x S between states, a set C of D relations on a.t.t.
+'s and a labeling function l : S - 2AP x C.  partial D-valuations.
+In the general case an estimation of the complexity of the satisfiability problem (for quantifierfree formulae) can be performed via the Nelson-Oppen Theorem [17] as shown in Corollary 9.
+Given a D-Kripke structure M , a CLTLB(D) formula ph and an initial state s0 , the existential model checking (MC) problem amounts to checking if there exists a linear structure ps such that ps |= ph.
+Because of the undecidability results of Section 2, the existential MC problem must be redefined for k-partial D-valuations in order to have a decidable under-approximation.
+Thanks to the well-known representation of Kripke structures through LTL formulae, and by considering a.t.t.
+'s in C as atomic elements, it is possible to obtain a CLTLB(D) formula khM defining the "propositional" description of the language of D-Kripke structure M .
+The k-partial D-evaluation model checking problem is defined as the satisfiability of khM [?]
+ph over k-partial Devaluations.
+Theorem 6 may be strengthened for D-Kripke structures when ph is a reachability formula.
+Formula ph is a reachability formula when it is of the form Fps, where ps is a CLTLB(D) formula without temporal operators (which are allowed only in a.t.t.).
+Then, the Bounded Reachability Problem (BRP) for M and ph is defined as the existence of k > 0, a finite path p of length k and a local assignment s bk such that psbk |=k khM [?]
+ph.
+As discussed before, the BMC problem amounts to looking for a finite representation of infinite (possibly periodic) paths.
+The Boolean approach [3] encodes finite paths by means of 2k+3 propositional variables, while the same temporal behavior can be defined by means of one QF-UFD formula involving only one loop-selecting variable loop [?]
+D:  Corollary 8.
+For every reachability formula ph in CLTLB(D) and for every D-Kripke structure M , the BRP is equivalent to the k-partial D-evaluation MC problem.
+6 Encoding of the Bounded Reachability Problem In this section the BRP is encoded as the satisfiability of a quantifier-free formula in the theory EUF [?]
+D (QFUFD), where EUF is the theory of Equality and Uninterpreted Functions, provided that the set D includes a copy of N and that EUF [?]
+D is consistent.
+The last condition is easily verified in the case of a union of two consistent, disjoint, stably infinite theories (as is the case for EUF and arithmetic).
+In [1] a similar encoding is described for the case of Integer Difference Logic (DL) constraints: in that case it results to be more succinct and expressive than the Boolean one: lengthy propositional constraints are substituted by more concise DL constraints and arithmetic (infinite) domains do not require an explicit finite representation.
+These facts, considering also that the satisfiability problem for the quantifier-free fragment of EUF [?]
+DL (QF-UFIDL) has the same complexity of SAT, make this approach particularly efficient, as demonstrated by the tests outlined in Section 7.
+Under the above assumption, the proposed encoding is an effective proof of the decidability of the BRP over k-  k ^  ((loop = i) = L(si-1 ) = L(sk )) .
+i=1  If the value i of variable loop is between 1 and k, then there exists a loop, and it starts at i; notice that the formula loop = i is well defined since D contains a copy of N. To encode a.t.t.
+'s, an arithmetic formula function, i.e., an uninterpreted function t : D - D, is associated with each arithmetic temporal subterm of Ph.
+Let t be such a subterm, then the arithmetic formula function associated with it (denoted by the same name but written in boldface), is recursively defined w.r.t.
+the sequence of valuations s as: t x Xa Ya  0<=i<=k x(i) = s i (x) t (i) = a(i + 1) t (i) = a(i - 1)  If D includes a copy of Z, this semantics is well-defined between 0 and k thanks to the initialization function I, otherwise we need to consider a shifted function s such that s(i, *) = s(i - [?]ph[?
+], *).
+The propositional encoding is based on the one presented in [4], which is modified to take also into account relations over a.t.t.'s.
+In the case of the Boolean encoding, the truth value of a PLTLB formula Ph is defined w.r.t.
+the truth value of its subformulae.
+For each subformula t, a set of Boolean variables {ti }0<=i<=k+1 is associated with it: if ti holds, then subformula t holds at instant i.
+Instant k + 1 is introduced to more easily represent the instant in which the periodic behavior starts.
+The truth value of a CLTLB(D) formula Ph is defined in a similar way.
+The QF-UFD encoding, however, associates with each subformula th a formula predicate that is a unary uninterpreted predicate (denoted by the same name but written in boldface) th [?]
+P(D).
+When the subformula th holds at instant i then th(i) holds.
+As the length of paths is fixed to k + 1 and all paths start from 0, formula predicates are actually subsets of {0, .
+.
+.
+, k + 1}.
+Let th be a subformula of Ph, a1 , .
+.
+.
+an be a.t.t.
+'s and R be an n-ary  relation in D; formula predicate th is recursively defined as: th p R(a1 , .
+.
+.
+, an ) !ph ph[?
+]ps  0<=i<=k+1 th(i) = p [?]
+L(si ) th(i) = R(a1 (i), .
+.
+.
+, an (i)) th(i) = !ph(i) th(i) = ph(i) [?]
+ps(i)  Temporal subformulae constraints define the basic temporal behavior of future and past operators, by using their traditional fixpoint characterizations: th Xph phUps phRps  0<=i<=k th(i) = ph(i + 1) th(i) = (ps(i) [?]
+(ph(i) [?]
+th(i + 1))) th(i) = (ps(i) [?]
+(ph(i) [?]
+th(i + 1)))  The encoding for the past operators is analogous to that for future operators except for the instant 0, which must be treated separately (see [1]).
+Last state constraints define an equivalence between truth at point k + 1 and that at the point indicated by the loop variable, since the instant k + 1 is representative of the instant loop along periodic paths.
+Otherwise, for nonperiodic paths, truth values in k +1 are trivially false.
+These constraints have a similar structure to the corresponding Boolean ones, but here they are defined by only one constraint, for each subformula th of Ph, w.r.t.
+the variable loop: V  k (loop = i) = (th(k + 1) = th(i))) [?]
+i=1 V   k i=1 !
+(loop = i) = (!th(k + 1)) .
+Note that if a loop does not exist then the fixpoint semantics of R is exactly the one defined over finite acyclic paths in Section 5.
+To correctly define the semantics of U and R, their eventualities have to be accounted for.
+Briefly, if phUps holds at i, then ps eventually holds in some j >= i; if phRps does not hold at i, then ps eventually does not hold in some j >= i.
+Along finite paths of length k, eventualities must hold between 0 and k. If a loop exists, an eventuality may hold within the loop.
+The original Boolean encoding introduces k propositional variables for each subformula th of Ph of the form phUps or phRps (one for each 1 <= i <= k), which represent the eventuality of ps implicit in the formula, as first defined in [4].
+Instead, in the QF-UFD encoding, only one variable jps [?]
+D is introduced for each ps occurring in a subformula phUps or phRps.
+th phUps phRps   Base loop = i = i=1 (th(k) = W  loop <= jps <= k [?]
+ps(jps )) k i=1 loop = i = (!th(k) = loop <= jps <= k [?]
+!ps(jps ))  W k  The complete encoding of Ph consists of the logical conjunction of all constraints above, together with Ph evaluated at the first instant along the time structure.
+If m is the total number of subformulae and n is the total number of temporal operators U and R occurring in Ph, then the Boolean encoding requires (2k + 3) + (k + 2)m + (k + 1)n = O(k(m + n)) fresh propositional variables.
+The QFUFD encoding requires only n + 1 integer variables (loop and jps ) and m unary predicates (one for each subformula).
+As previously anticipated, if D is a consistent, stably infinite theory, ph is a formula of length n and T (n) is the complexity of the satisfiability problem in D then, by the Nelson-Oppen Theorem, the satisfiability of a CLTLB(D) formula ph over k-partial D-valuations can be solved in 2 O(2n (nk log (nk) + T (nk))); moreover, if D is convex it can be solved in O(n3 (nk log (nk) + T (nk))).
+Corollary 9.
+The satisfiability of a CLTLB(D) formula over k-partial D-valuations is NP-complete when D is DL, P when D is RDL (Real DL) and 4-EXPTIME when D is LIA (Linear Integer Arithmetic).
+7 Experimental Results The encoding presented in Section 6 for CLTLB(DL) has been implemented as a plugin of the Zot tool1 .
+This implementation exploits SMT solvers as verification engines, and in particular it is based on the SMT-LIB [21] to achieve independence from the particular SMT solver used2 .
+The Zot plugin has been used to carry out a number of experiments on a variety of examples, old and new.
+For the sake of brevity, we do not report here the full experimental data3 , and we only briefly summarize them in an informal way.
+We carried out two kinds of experiments.
+First, we used the new encoding to perform BMC on a set of previously defined PLTLB specifications, to compare the performances of the new Zot plugin w.r.t.
+the existing SAT-based one presented in [20].
+The SMT-based encoding showed considerable improvements in the vast majority of experiments, for both of the SMT solvers used.
+The recorded speedup (computed as the ratio TSAT /TSMT ) was always substantial, and in many cases it was more than tenfold (often considerably more than that).
+For example, we repeated the experiments of [2] with the new encoding, and the average speedup in the overall verification time was around 2.4 with Z3, and 21.4 with Yices; we point out that the gains in performance were particularly significant for the most complex specifications.
+In the second set of experiments we exploited also the new features of CLTLB(DL) w.r.t.
+PLTLTB, and we used 1 Zot  is available at home.dei.polimi.it/pradella.
+SMT solvers we used both Yices (yices.csl.sri.com) and Z3 (research.microsoft.com/en-us/um/redmond/projects/z3).
+3 The data are available at home.dei.polimi.it/bersani.
+2 As  the bounded reachability results presented in Section 5 to analyze some relevant aspects of non-trivial applications based on the Service-Oriented paradigm [1].
+On examples that fall in the range of properties expressible through both CLTLB(DL) and PLTLB (e.g., those that involve only bounded domains), the performances of the SMT-based verification are, again, an order of magnitude better than the SAT-based one (the average performance speedup over such properties was 55 with Z3 and 7.4 with Yices).
+8 Conclusions and Future Work In this paper, we introduced the logic CLTLB(D), an extension of PLTLB allowing as subformulae arithmetic constraints belonging to a generic constraint system D. We introduced suitable assumptions concerning the structure of models, to make satisfiability of CLTLB(D) decidable, provided that D has, in turn, a decidable decision procedure.
+In this case, the Bounded Reachability Problem (BRP) for CLTLB(D) formulae can be solved by means of automatic software verification tools.
+We built a Bounded Reachability Checker by using SMT-solvers which natively implement decision procedures for QF-UFD when D is DL or LIA, with very encouraging experimental results.
+Future work will compare the new arithmetic-based encoding with existing Boolean ones by means of a comprehensive set of tests; we also intend to define new extensions representing infinite behaviors of variables and search for suitable classes of formulae inducing actual o-periodic models.
+Acknowledgments Many thanks to Luca Cavallaro for providing stimulating case studies.
+This research has been partially funded by the European Commission, Programme IDEAS-ERC, Project 227977-SMScom, and by the Italian Government under the project PRIN 2007 D-ASAP (2007XKEHFA).
+References [1] M. M. Bersani, L. Cavallaro, A. Frigeri, M. Pradella, and M. Rossi.
+SMT-based Verification of LTL Specifications with Integer Constraints and its Applications to Runtime Checking of Service Substitutability.
+Technical report, arXiv:1004.2873v1, 2010.
+[2] M. M. Bersani, C. A. Furia, M. Pradella, and M. Rossi.
+Integrated modeling and verification of real-time systems through multiple paradigms.
+In Proc.
+of SEFM, pages 13- 22, 2009.
+[3] A. Biere, A. Cimatti, E. M. Clarke, and Y. Zhu.
+Symbolic model checking without BDDs.
+In Proc.
+of TACAS, pages 193-207, 1999.
+[4] A. Biere, K. Heljanko, T. A. Junttila, T. Latvala, and V. Schuppan.
+Linear Encodings of Bounded LTL Model Checking.
+Log.
+Meth.
+in Comp.
+Sci., 2(5), 2006.
+[5] B. Boigelot.
+Symbolic Methods for Exploring Infinite State Spaces.
+PhD thesis, Universite de Liege, 1998.
+[6] H. Comon and V. Cortier.
+Flatness Is Not a Weakness.
+In CSL, pages 262-276, 2000.
+[7] H. Comon and Y. Jurski.
+Multiple Counters Automata, Safety Analysis and Presburger Arithmetic.
+In CAV, pages 268-279, 1998.
+[8] L. M. de Moura, H. Ruess, and M. Sorea.
+Lazy theorem proving for bounded model checking over infinite domains.
+In CADE, pages 438-455, 2002.
+[9] S. Demri.
+LTL over Integer Periodicity Constraints: (Extended Abstract).
+In FoSSaCS, pages 121-135, 2004.
+[10] S. Demri and D. D'Souza.
+An automata-theoretic approach to constraint LTL.
+In FSTTCS, pages 121-132, 2002.
+[11] S. Demri, A. Finkel, V. Goranko, and G. van Drimmelen.
+Towards a Model-Checker for Counter Systems.
+In ATVA, pages 493-507, 2006.
+[12] S. Demri and R. Gascon.
+The Effects of Bounding Syntactic Resources on Presburger LTL.
+Technical Report LSV-06-5, LSV, 2006.
+[13] E. A. Emerson.
+Temporal and modal logic.
+In Handbook of Theoretical Computer Science, Volume B: Formal Models and Sematics (B), pages 995-1072.
+1990.
+[14] D. M. Gabbay.
+The declarative past and imperative future: Executable temporal logic for interactive systems.
+In Temporal Logic in Specification, pages 409-448, 1987.
+[15] D. M. Gabbay, A. Pnueli, S. Shelah, and J. Stavi.
+On the temporal basis of fairness.
+In POPL, pages 163-173, 1980.
+[16] J.
+A. W. Kamp.
+Tense Logic and the Theory of Linear Order.
+PhD thesis, University of California at Los Angeles, 1968.
+[17] D. C. Oppen.
+Complexity, convexity and combinations of theories.
+Theor.
+Comput.
+Sci., 12:291-302, 1980.
+[18] M. Pradella, A. Morzenti, and P. San Pietro.
+The symmetry of the past and of the future: bi-infinite time in the verification of temporal properties.
+In ESEC/SIGSOFT FSE, pages 312-320, 2007.
+[19] M. Pradella, A. Morzenti, and P. San Pietro.
+Refining real-time system specifications through bounded model- and satisfiability-checking.
+In ASE, pages 119-127, 2008.
+[20] M. Pradella, A. Morzenti, and P. San Pietro.
+A metric encoding for bounded model checking.
+In A. Cavalcanti and D. Dams, editors, FM 2009: Formal Methods, volume 5850 of LNCS, pages 741-756.
+Springer, 2009.
+[21] S. Ranise and C. Tinelli.
+The SMT-LIB standard: Version 1.2.
+Technical report, 2006. http://combination.cs.uiowa.edu/smtlib/.
+[22] P. Schnoebelen.
+The complexity of temporal logic model checking.
+In Adv.
+in Modal Logic, pages 393-436, 2002.

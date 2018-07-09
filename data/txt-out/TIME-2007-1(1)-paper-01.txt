@@ -1,0 +1,678 @@
+WestminsterResearch http://www.wmin.ac.uk/westminsterresearch  Automating natural deduction for linear-time temporal logic.
+Alexander Bolotov1 Oleg Grigoriev2 Vasilyi Shangin2 1 2  Harrow School of Computer Science, University of Westminster Department of Logic, Faculty of Philosophy, Moscow State University  Copyright (c) [2007] IEEE.
+Reprinted from 14th International Symposium on Temporal Representation and Reasoning (TIME'07)), 28-30 June 2007, Alicante, Spain.
+IEEE, Los Alamitos, USA, pp.
+47-58.
+ISBN 9780769528366.
+This material is posted here with permission of the IEEE.
+Such permission of the IEEE does not in any way imply IEEE endorsement of any of the University of Westminster's products or services.
+Internal or personal use of this material is permitted.
+However, permission to reprint/republish this material for advertising or promotional purposes or for creating new collective works for resale or redistribution must be obtained from the IEEE by writing to pubs-permissions@ieee.org.
+By choosing to view this document, you agree to all provisions of the copyright laws protecting it.
+The WestminsterResearch online digital archive at the University of Westminster aims to make the research output of the University available to a wider audience.
+Copyright and Moral Rights remain with the authors and/or copyright owners.
+Users are permitted to download and/or print one copy for non-commercial private study or research.
+Further distribution and any use of material from within this archive for profit-making enterprises or for commercial gain is strictly forbidden.
+Whilst further distribution of specific materials from within this archive is forbidden, you may freely distribute the URL of the University of Westminster Eprints (http://www.wmin.ac.uk/westminsterresearch).
+In case of abuse or copyright appearing without permission e-mail wattsn@wmin.ac.uk.
+Automated Natural Deduction for Propositional Linear-time Temporal Logic* Alexander Bolotov Harrow School of Computer Science University of Westminster Watford Road, Harrow HA1 3TP, UK.
+A.Bolotov@wmin.ac.uk  Oleg Grigoriev, Vasilyi Shangin Department of Logic, Faculty of Philosophy Moscow State University, Moscow, 119899, Russia.
+{shangin,grig}@philos.msu.ru  Abstract We present a proof searching technique for the natural deduction calculus for the propositional linear-time temporal logic and prove its correctness.
+This opens the prospect to apply our technique as an automated reasoning tool in a number of emerging computer science applications and in a deliberative decision making framework across various AI applications.
+1  Introduction  In this paper we present a proof searching technique for the natural deduction proof system for the propositional linear-time temporal logic PLTL [9] and establish its correctness.
+The particular approach to build a natural deduction calculus we are interested in is a modification of Quine's representation of subordinate proof [15] developed for classical propositional and first-order logic.
+Recall that natural deduction calculi (abbreviated in this paper by 'ND') of this type were originally developed by Jaskowski [11], improved by Fitch [8] and simplified by Quine [15].
+The ND technique initially defined for classical propositional logic was extended to first-order logic [3, 4] and subsequently to the non-classical framework of propositional intuitionistic logic [13].
+In [2] it was further extended to capture propositional linear-time temporal logic PLTL and in [5] the ND system was proposed for the computation tree logic CTL.
+The computer science community has recently become more interested in ND systems [1, 14] mostly due to its potential to represent the goal-directed nature of the proof.
+This makes the ND method applicable in many AI areas, most notably, in agent engineering [18].
+Among other interesting and even surprising applications of ND systems is for example their use in the verification of security protocols [6].
+Obviously, the extension of ND to the temporal * This research was partially supported by Russian Foundation for Humanities, grant No 06-03-00020a.
+framework, widely used in agent engineering and verification, opens broader prospectives for research in ND constructions.
+However, from the practical point of view, its success depends on the automation of the proof searching procedure.
+The latter is the subject of the current paper.
+We are extending the proof searching technique which was initially developed for the classical case [3, 4], and also extended to intuitionistic logic [13].
+We are not aware of any other proof search algorithm for temporal ND systems.
+For example, the only other ND constructions for lineartime logic [10] and branching-time logic [16] which we are aware of have not been followed by any presentation of the relevant proof searching techniques.
+Note that while working on the mechanisation of the ND system for PLTL, known as PLTLND , and its correctness we also found a simpler formulation of the underlying ND system.
+The paper is organized as follows.
+In SS2 we describe PLTLND reviewing the PLTL syntax and semantics in SS2.1 and formulating the natural deduction calculus in SS2.2.
+Subsequently, in SS3, we introduce the main proof-searching procedures (SS3.1), the proof-searching algorithm (SS3.2), give an example of the algorithmic construction of the proof (SS3.3) and provide the correctness argument (SS3.4).
+Finally, in SS4, we provide concluding remarks and identify future work.
+2  Natural Deduction System PLTLND  In this section we review the logic PLTL and the calculus PLTLND .
+2.1  Syntax and Semantics of PLTL  In the syntax of PLTL we identify a set, P rop, of atomic propositions: p, q, r, .
+.
+.
+, p1 , q1 , r1 , .
+.
+.
+, pn , qn , rn , .
+.
+.
+; classical operators: !, [?
+], =, [?
+], and temporal operators: ('always in the future'),  ('at sometime in the future'), g ('at the next moment in time'), and U ('until').
+The set of well-formed formulae of PLTL, wffP LT L is defined as follows.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  Definition 1 (PLTL syntax) 1.
+All atomic propositions (members of Prop) are in wffP LT L .
+2.
+If A and B are in wffP LT L , then so are A [?]
+B, !A, A [?]
+B, and A = B.
+3.
+If A and B are in wffP LT L , then so are gA, and A U B.
+A,  A,  For the semantics of PLTL we utilise the notation of [7].
+A model for PLTL formulae, is a discrete, linear sequence of states s = s0 , s1 , s2 , .
+.
+.
+which is isomorphic to the natural numbers, N , and where each state, si , 0 <= i, consists of the propositions that are true in it at the i-th moment of time.
+If a well-formed formula A is satisfied in the model s at the moment i then we abbreviate it by s, i	 |= A.
+Below, in Figure 1, we define the relation |=, where indices i, j, k [?]
+N .
+s, i	 s, i	 s, i	 s, i	 s, i	 s, i	  |= p |= !A |= A [?]
+B |= A [?]
+B |= A = B |= A  s, i	  |= A  s, i	 s, i	  |= gA |= A U B  iff p [?]
+si , for p [?]
+P rop iff s, i	 |= A iff s, i	 |= A and s, i	 |= B iff s, i	 |= A or s, i	 |= B iff s, i	 |= A or s, i	 |= B iff for each j if i <= j then s, j	 |= A iff there exists j such that i <= j and s, j	 |= A iff s, i + 1	 |= A iff there exists j such that i <= j and s, j	 |= B and for each k, if i <= k < j then s, k	 |= A  Figure 1.
+Semantics for PLTL Definition 2 (PLTL Satisfiability) A well-formed formula, A, is satisfiable if, and only if, there exists a model s such that s, 0	 |= A.
+Definition 3 (PLTL Validity) A well-formed formula, A, is valid if, and only if, A is satisfied in every possible model, i.e.for each s, s, 0	 |= A.
+2.2  The Calculus PLTLND  Here we present the formulation of PLTLND with a slightly different set of rules in comparison with its original formulation in [2].
+Namely, now we have two new rules, application of negation to U and  operators, but fewer introduction rules for U (see details below).
+The core idea of a natural deduction proof technique for a logic L is to establish rules of the following two classes: elimination rules which decompose formulae and introduction rules aimed at constructing formulae, introducing new  logical constants.
+Given a task to prove some formula A of L, we aim at synthesising A.
+Every proof commences with an assumption and, in general, we are allowed to introduce assumptions at any step of the proof.
+In the type of natural deduction that we are interested in, assumptions have conditional interpretation.
+Namely, given that a formula A is preceded in a proof by assumptions C1 , C2 , .
+.
+.
+Cn we interpret this situation as follows: if C1 , C2 , .
+.
+.
+Cn are satisfiable in L then A is satisfiable in L. Thus, if A is a theorem (a valid formula in L) and we want to obtain its proof then we must interpret A 'unconditionally', i.e.
+it should not depend on any assumptions.
+In our system, the corresponding process is called discarding of assumptions, which accompanies the application of several introduction rules.
+As we will see below, in a proof of a theorem in our system the set of non-discarded assumptions should be empty.
+Another feature of our construction of PLTLND is the use of the labeling technique.
+In the language of PLTLND we use labeled PLTL formulae and a specific type of expressions that use labels themselves, called relational judgements.
+Thus, additionally to elimination and introduction rules, we also establish rules to manipulate with relational judgements.
+Extended PLTL Syntax and Semantics.
+We extend the PLTL language by introducing labels.
+Labels are terms, elements of the set, Lab = {x, y, z, x1 , x2 , x3 , .
+.
+.
+}, where x, y, z .
+.
+.
+are variables.
+When constructing a PLTLND proof, we associate formulae appearing in the proof with a model s described in SS2.1 such that labels in the proof are interpreted over the states of s. Since s is isomorphic to natural numbers, we can introduce the operations on labels: , which stands for the equality between labels,  and [?
+], which are syntactic analogues of the <= and < relation in s. Thus,  satisfies the following properties: (2.1) For any i [?]
+Lab : i  i (reflexivity), (2.2) For any i, j, k [?]
+Lab if i  j and j  k then i  k (transitivity).
+(2.3) For any i, j, k [?]
+Lab if i  j and i  k then j [?]
+k or k [?]
+j or j  k (linearity).
+(2.4) For any i [?]
+Lab, there exists j [?]
+Lab such that i  j (seriality).
+Now, we define a relation N ext [?]
+Lab2 : N ext(x, y) = x [?]
+y and there is no z [?]
+Lab such that x [?]
+z and z [?]
+y. N ext is the 'predecessor-successor' relation which satisfies the seriality property: for any i [?]
+Lab, there exists j [?]
+Lab such that N ext(i, j).
+Let  abbreviate the operation which being applied to i [?]
+Lab gives us i [?]
+Lab such that N ext(i, i ).
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  Elimination Rules :  As we have already mentioned above, now we are able to introduce the expressions representing the properties of relations '', '[?
+]', '' and 'Next', and the operation  which, following [17], we call relational judgements.
+i:A [?]
+B i:A  [?]
+el1  Definition 4 (PLTLND Syntax)  i : A = B, i:B  = el  * If A is a PLTL formula and i [?]
+Lab then i : A is a PLTLND formula.
+[?]
+in1  (2.5) For any i, j [?]
+Lab if N ext(i, j) then i  j.
+[?]
+in  PLTLND Semantics.
+For the interpretation of PLTLND formulae we adapt the semantical constructions defined in SS2.1 for the logic PLTL.
+In the rest of the paper we will use capital letters A, B, C, D, .
+.
+.
+as metasymbols for PLTL formulae, and calligraphic letters A, B, C, D .
+.
+.
+to abbreviate formulae of PLTLND , i.e.
+either labelled formulae or relational judgements.
+The intuitive meaning of i : A is that A is satisfied at the world i.
+Let G be a set of PLTLND formulae, let DG = {x|x : A [?]
+G}, let s be a model as defined in SS2.1 and let f be a function which maps elements of DG into N (recall that a PLTL model s is isomorphic to natural numbers).
+Definition 5 (Realisation of PLTLND formulae in a model) Model s realises a set, G, if there is a mapping, f , which satisfies the following conditions.
+(1) For any x [?]
+DG , and for any A, if x : A [?]
+G then s, f (x)	 |= A, (2) For any x, y, if x  y [?]
+G, and f (x) = i, and f (y) = j then i <= j, (3) For any x, y, if N ext(x, y) [?]
+G, and f (x) = i, and f (y) = j then j = i + 1.
+The set G in this case is called realisable.
+Definition 6 (PLTLND Validity) A well-formed PLTLND formula, A = i : B, is valid (abbreviated as |=N D A) if, and only if, the set {A} is realisable in every possible model, for any function f .
+Rules of Natural Deduction System.
+In Figure 2 we define these sets of elimination and introduction rules, where prefixes 'el' and 'in' abbreviate an elimination and an introduction rule, respectively.
+!
+el  i : !
+!A i:A  i:A  Introduction Rules :  Some useful and rather straightforward properties relating operations on labels are given below.
+(2.6) For any i, j [?]
+Lab if i [?]
+j then i  j.  i:A [?]
+B i:B  i : A [?]
+B, i : !A i:B  [?]
+el  * Any relational judgement of the type N ext(i, j), i  j, i [?]
+j and i  j is a PLTLND formula.
+[?]
+el2  i:A i:A [?]
+B  [?]
+in2  i : A, i : B i:A [?]
+B  = in  !
+in  [j : C],  i : B, j : !C  i:B i:A [?]
+B [i : C], i : B i:C = B i : !B  Figure 2.
+PLTLND -rules for Booleans * In the formulation of the rules '= in' and '!
+in' formulae [i : C] and [j : C] respectively must be the most recent non discarded [4] assumption occurring in the proof.
+When we apply one of these rules on step n and discard an assumption on step m, we also discard all formulae from m to n - 1.
+We will write [m - (n-1)] to indicate this situation.
+Now, we add an additional rule which is deeply involved into our searching procedure.
+![?]
+i : !
+(A [?]
+B) i : !A [?]
+!B  This rule simply represents one of De Morgan laws and is derivable from the set of classical rules mentioned above.
+Hence, it is a technical addition, connected with the searching procedure.
+We keep the notions of flagged and relatively flagged label with the meaning similar to the notions of flagged and relatively flagged variable in first order logic [4].
+By saying that the label, j, is flagged, abbreviated as - j, we mean that it is bound to a state and, hence, cannot be rebound to some other state.
+By saying that a variable i is relatively flagged (bound) by j, abbreviated as j - i we mean that a bounded variable, j, restricts the set of runs for i that is linked to it in the relational judgment, for example i  j.
+Now in Figure 3 we introduce the following rules to manipulate with relational judgements which correspond to the  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  properties (2.1)-(2.6).
+gseriality  ref lexivity  i[?
+]j ij  transitivity  linearity  g/   N ext(i, i ) i  i  i : gA i : A  gel  i  j, j  k ik  [?
+]C(j : C [?]
+M 1) - j, j - i i : A [?]
+M 1  i : A U B, i : !B i : A, j : B, i [?]
+j  U el1  i  j, i  k (j  k) [?]
+(j  k) [?]
+(k  j)  A, i  j j :A i : A i  j, j : A  el  N ext(i, i )  ii [?
+]/  i:  el  [?
+]C(j : C [?]
+M 1) - j, j - i  i[AB]  j [AB] , i[AB]  k, k [?]
+j [AB] k:A  U  el2  Figure 4.
+Elimination rules for temporal operators  Figure 3.
+PLTLND -rules for relational judgements  in  The linearity rule needs some additional comments.
+Strictly speaking, in the PLTLND language, to avoid unnecessary complications, we do not allow either Boolean combination of relational judgements or their negations.
+Obviously, the conclusion of the  linearity rule violates this constraint.
+However, it expresses an obvious property of the linear time model structure and to make our presentation more transparent we explicitly formulate a corresponding rule.
+Our justification here is very simple: the only way in which the conclusion of this rule is involved into the construction of the proof is reasoning by cases - see more details in the discussion of the relevant searching rule (5.2) in SS3.1.
+Next, in Figures 4 and Figures 5 we define elimination and introduction rules for the temporal logic operators and the induction rule.
+j : A, [i  j] i: A  in  i:A i : A  U in  i:B i:A U B  gin  j : A [?]
+M 1 - j, j - i i : A,  N ext(i, i ) i : gA  Induction i : A [i  j] i:  j : A = gA A  j : A [?]
+M 1 - j, j - i  Figure 5.
+Introduction rules for temporal operators   When applying gel the conclusion i : A becomes marked by M1 .
+This affects other rules: - the condition [?
+]C(j : C [?]
+M 1) in the rules el , U el1 means that the label j should not occur in the proof in any formula, j : C, that is marked by M 1, - the condition j : A [?]
+M 1 in the rule in means that j : A is not marked by M 1.
+ In U el2 the expression i[AB] is used with the following meaning: a variable i in the proof can be marked with [AB] if it has been introduced in the proof as a result of the application of the rule U el1 to i : A U B.
+   In in and the induction rules formula i  j must be the most recent assumption and a variable j is new in a derivation; applying the rule on the step n of the proof, we discard i  j and all subsequent formulae until the step n.  While the first rule, !
+U is not derivable from the set of rules for temporal operators given above, the second rule, !
+can be easily derived from them.
+However, the addition of these rules as part of the main rules of the system significantly simplifies our searching procedure.
+Note also that together with the use of fewer introduction rules for U , it also leads us to a new ND formulation of PLTL.
+Finally, we add two more rules which are also deeply involved into our searching procedure.
+Definition 7 (PLTLND proof) An N D proof of a PLTL formula B is a finite sequence of PLTLND formulae  !U i: !
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  i : !
+(A U B) !B [?]
+!B U (!A [?]
+!B)  i : !A i: !A  A1 , A2 , .
+.
+.
+, An which satisfies the following conditions: * every Ai (1 <= i <= n) is either an assumption, in which case it should have been discarded, or the conclusion of one of the N D rules, applied to some foregoing formulae,  Definition 8 (Reachability of a current goal) A current goal, Gn , 0 <= n, occurring in list goals= G1 , G2 , .
+.
+.
+, Gn 	, is reached if the following conditions are satisfied: * If Gn = [?]
+then Gn is reached if there is a formula A in list proof such that A is not discarded and A = Gn , else  * the last formula, An , is x : B, for some label x,  * Gn is [?]
+and it is reached if  * no variable - world label is flagged twice or relatively binds itself.
+- there are two non-discarded contradictory formulae i : A and i : !A (for some i) in list proof.
+When B has a PLTLND proof we will abbreviate it as N D B indicating that B is a theorem.
+Theorem 1 [PLTLND Soundness] PROOF : The new rule, !
+U , introduced into the system, !B [?]
+is based on the similar equivalence, !A U B [?]
+!B U (!A [?]
+!B).
+Similarly, the second rule, !, is based and  on the following famous equivalence relating the operators !A [?]
+!A.
+It is an easy exercise to show that both of these new rules preserve satisfiability.
+This, together with the soundness theorem of the original formulation of the ND system in [2], gives us the soundness of the new formulation.
+(END)  Theorem 2 [PLTLND Completeness] PROOF : We can also show that with the addition of the new rules, !
+and !
+U , we are able to prove all the theorems of the logic PLTL.
+This completeness proof would be very similar to that contained in [2] being different only in establishing the fact that all the axioms of PLTL are derivable in a new system with these new rules.
+(END)  3  ND-proof Searching Technique  The proof searching strategy is goal-directed.
+The core idea behind it is the creation of the two sequences of formulae: list proof and list goals.
+The first sequence represents formulae which form a proof.
+In the second sequence we keep track of the list of goals.
+Here, each goal is either a formula or two arbitrary contradictory formulae.
+We will abbreviate this designated type of goal by [?].
+An algo-proof is a pair (list proof, list goals) whose construction is determined by the searching procedure described below.
+At each step of constructing an algo-proof, a specific goal is chosen, which we aim to reach at the current stage.
+Thus, the appropriate name for such a goal would be a current goal.
+The first goal of list goals is extracted from the given task, we will refer to this goal as to the initial goal.
+- [?]
+is derived in each of three tasks following Procedure (2.2.6), reasoning by cases (see SS3.1).
+In general, when we construct a proof, we check whether the current goal has been reached.
+If it has been reached then we apply the appropriate introduction rule, and this is the only reason for the application of introduction rules.
+As we will see later, such an application of an introduction rule is absolutely determined by the structure of the previous goal and by the formulation of introduction rules.
+Alternatively, (if the current goal has not been reached), we continue searching for a possible update of list proof and list goals.
+Note that the construction of these sequences is determined either by the structure of the current goal, or by the structure of complex formulae occurring within list proof.
+Additionally, we introduce a mechanism of marking formulae within list proof and list goals to prevent an infinite application of searching rules.
+Now we describe a set of procedures which guide the construction of an algo-proof.
+3.1  Proof-Searching Procedures  Procedure 1.
+Here we update a sequence list proof by searching (in a breadth-first manner) for an applicable elimination rule, !, !
+U or ![?]
+rules.
+If we find a formula, or two formulae, which can serve as premises of one of these rules, the rule is enforced and the sequence list proof is updated by the conclusion of the rule.
+We apply these rules in the following order: rules to eliminate a Boolean operation, !, !
+U , ![?
+], U el , el , and, finally, el .
+Note that el applies to some formula i : A any time when the new label j appears in the list proof such that i <= j.
+Procedure 2.
+Here a new goal is synthesized in a backward chaining style following one of the subprocedures described below.
+They apply when Procedure 1 terminates, i.e.
+when no elimination rule can be applied, and the current goal, Gn , is not reached.
+The type of Gn determines how the sequences list proof and list goals must be updated.
+Procedure 2.1.
+This procedure is invoked when Gn is not [?].
+Here we update sequences list proof and list goals  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  analysing the structure of Gn .
+Let list proof = G and list goals = G1 , .
+.
+.
+, Gn , where Gn is the current goal.
+Given that Gn is not reachable, then looking at its structure, we derive a new goal Gn+1 and set the latter as the current goal.
+Below we identify various cases of applying Procedure 2.1, where Gn = i : A|i : !A|i : A [?]
+B|i : A [?]
+B|i : A = A|i : A|i : gA|i : A U B, here i is some label B|i : and A, B are any PLTL formulae.
+Let G1 , .
+.
+.
+, Gn-1 = D. The '--' in the rules below indicates that some given task G  D, .
+.
+.
+on its left hand side generates a new task on its right hand side.
+(2.1.1) (2.1.2) (2.1.3)  G  D, i : A  --G, i : !A  D, i : A, [?]
+G  D, i : !A  --G, i : A  D, i : !A, [?]
+G  D, i : A [?]
+B --G  D, i : A [?]
+B, i : B, i : A  (2.1.4.1) G  D, i : A [?]
+B --G  D, i : A [?]
+B, i : A (2.1.4.2) G  D, i : A [?]
+B --G  D, i : A [?]
+B, i : B (2.1.5)  G  D, i : A = B --G, i : A  D, i : A = B, i : B  (2.1.6) G  D, i :  A  (2.1.7) G  D, i : A (2.1.8)  --G, i  j  D, j : A --G  D, i : A  G  D, i : gA --G, N ext(i, i )  D, i : A  (2.1.9) G  D, i : A U B --G  D, i : B  Procedure (2.1.1) applies when A is either a propositional variable or has a form B [?]
+C, B or B U C and Procedures (2.1.4), (2.1.7) and (2.1.9) have been already applied; additionally, A itself should not have been previously set up as a goal appearing due to Procedure 2.2 (see below).
+   In Procedures (2.1.7) and (2.1.9) if we cannot derive goals i : A and i : B straightforwardly using the elimination rules, then we delete these goals.
+As we mentioned above, if applying Procedure (2.1.4) we could not reach goals i : A, i : B then we delete these goals, leaving the current goal, i : A[?]B.
+Similarly, when applying Procedures (2.1.7) and (2.1.9), if we could not reach i : A or i : B, respectively, we delete these goal and are left with the current goals i : A in case of (2.1.7) and A U B in case of (2.1.9).
+Since in each of these cases current goals are not reached, applying Procedure (2.1.1), we would put !
+(A [?]
+B), !A or !
+(A U B) as a new assumption and [?]
+as a new goal with the subsequent application of ![?
+], !
+or !
+U rule as part of Procedure 1.
+Procedure 2.2.
+This procedure is invoked when Gn is [?].
+It searches for those formulae in list proof which can serve as sources for new goals.
+If such a formula is found then its structure will determine the new goal to be generated.
+Below by G, Ps we understand a list of formulae in list proof with the designated formula Ps which is considered as a source for new goals.
+The idea behind this procedure is to search for "missing" premises to apply a relevant elimination rule to Ps.
+(2.2.1) G, i : !A  D, [?]
+--G, i : !A  D, [?
+], i : A    (2.2.2) G, i : A [?]
+B  D, [?]
+--G, i : A [?]
+B  D, [?
+], i : !A (2.2.3) G, i : A = B  D, [?]
+--G, i : A = B  D, [?
+], i : A (2.2.4) G, i : A U B  D, [?]
+--G, i : A U B  D, [?
+], i : !B (2.2.5) G, i : A  D, [?]
+-- G, i : A, i  j  D, [?
+], i : A, j : A = gA (2.2.6) G, Lin(i, j)  D, [?]
+--G, Lin(i, j), i  j  D, [?]
+G, Lin(i, j), i  j  D, [?]
+G, Lin(i, j), j  i  D, [?]
+ Applying the Procedure (2.2.1) we have !A in the proof and are aiming to derive, A itself.
+If we are successful then this would give us a contradiction.
+ Searching rule (2.1.4.2) applies when rule (2.1.4.1) fails, i.e.
+when applying Procedure (2.1.4.1), we have not managed to reach A (the left disjunct of the goal A [?]
+B) in which case the subroutine invoked into this attempt is deleted and Procedure (2.1.4.2) is fired.
+In both cases we require to terminate the subroutine if it fails to derive a goal A or B straightforwardly using the elimination rules.
+ When we apply Procedures (2.2.2-2.2.4), our target is to derive formulae that being in the proof would enable us to apply a relevant elimination rule, [?
+]el , =el or U el1 .
+   In the Procedure (2.1.6) j is a new variable and it is absolutely flagged and i is relatively flagged.
+   Procedure (2.2.5) applies after (2.2.1)-(2.2.4) and only when there is at least one formula with the outer  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  in list proof.
+Applying this procedure, we aim at finding the conditions which would enable us to apply the induction rule.
+Thus, the side conditions here require as its main operator that A in i : A does not have and - j, j - i.
+   Lin(i, j) abbreviates the linearity constraint (i  j) [?]
+(i  j) [?]
+(j  i).
+This searching rule represents reasoning by cases.
+If a linearity constraint is introduced into the proof and the current goal is [?]
+then the rule requires to derive [?]
+making each of the disjuncts of the linearity constraints in turn as a new assumption.
+See also comments to Procedure (5.2) below.
+Procedure 3.
+This procedure checks reachability of the current goal in the sequence list goals.
+If, according to Definition 8, the current goal Gn is reached then the sequence list goals is updated by deleting Gn and setting Gn-1 as the current goal.
+Procedure 4.
+Procedure 4 indicates that one of the introduction ND-rules, i.e.a rule which introduces a logical connective or a temporal operator, must be applied.
+We will see below that any application of the introduction rule is completely determined by the current goal of the sequence of goals.
+This property of our proof searching technique protects us from inferring by introduction rules an infinite number of formulae in list proof.
+Procedure 5.
+This procedure regulates our business with relational judgements.
+(5.1) Relational judgements, i  i, are introduced into list proof immediately after the introduction of any new label i.
+(5.2) Any time when list proof contains two statements i  j and i  k, we derive the linearity constraint (j  k) [?]
+(j  k) [?]
+(k  j).
+(5.3) Any time when list proof contains two statements i  j and j  k, we derive the transitivity constraint i  k. (5.4) Any time when list proof contains two statements N ext(i, i ) and i [?]
+j, we apply the g seriality and [?]
+/  rules deriving i  i and i  j.
+Note that the g seriality constraints are introduced into list proof by Procedure (2.1.8).
+Procedure (5.2) needs additional comments.
+As we mentioned, in the PLTLND language we do not allow either Boolean combination of relational judgements or their negations.
+However, to express an obvious property of the linear time model structure and to make our presentation more transparent, we explicitly formulated a corresponding, linearity, rule in SS2.
+Procedure (5.2) introduces the corresponding linearity constraint (j  k) [?]
+(j  k) [?]
+(k  j).
+However, the only way, in which this constraint is involved into the proof is the subsequent application of reasoning by cases, Procedure (2.2.6) where, informally speaking, we split the current task to derive [?]
+making each of the components of the linearity constraint as a new assumption.
+If we successful in doing this then, by reasoning by cases, [?]
+is derivable from the linearity constraint itself.
+Hence, since the linearity is the property of any linear model, corresponding to our interpretation of the formulae in list proof, we will mark [?]
+as reached.
+An obvious reasoning rule used here would be to derive j : A from i : A and i = j for any i, j [?]
+Lab.
+Now we are ready to describe a searching algorithm, specifying the application of the procedures above.
+3.2  Proof-Searching Algorithm PLTLalg ND  Let us explain, schematically, the performance of the proof-searching algorithm by describing its major components.
+These components correspond to the searching procedures presented in SS3.1.
+Given a task  G, we commence the algorithm by setting the initial goal, G0 = G. Then for any goal Gi (0 <= i), apply Procedure 3, to check if Gi is reached.
+If Gi is not reached we apply Procedure 1 and Procedure 5, obtaining all possible conclusions of the elimination rules to obtain Gi .
+If we fail, then Procedure 2 is invoked, and, dependent on the structure of the goal Gi the sequence list proof is updated by adding new assumptions and the sequence list goals by adding new goals.
+If the current goal is reached, then we determine which introduction rules are to be applied.
+Otherwise, which could only be in the case, when current goal is set as [?]
+and we do not have contradictory formulae in list proof, we update list goals looking for possible sources of new goals in list proof.
+We continue searching until either we reach the initial goal, G0 , in which case we terminate having found the desired proof, or until list proof and list goals cannot be updated any further.
+In the latter case we terminate, and no proof has been found and a (finite) counterexample can be extracted.
+Before formulating the main stages of the proofsearching algorithm we have to describe our marking technique which introduces and eliminates special marks for formulae in list proof and list goals.
+Most of these marks are devoted to prevent looping either in application of elimination rules or in searching.
+Thus, we mark:  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  * formulae that were used as premisses of the rules invoked in Procedures 1 and 5; * goals A [?]
+B, A and A U B in Procedures (2.1.4), (2.1.7) and (2.1.9) respectively to allow deletion of the subsequent goals, see comments  and    to these rules;  * those formulae in list proof which were considered as sources of new goals in Procedure 2.2 and these new goals themselves to prevent looping in Procedure (2.1.1) - see comments  to this procedure; note that if a formula A has generated a goal B in this way, but later B has been reached, hence discarded, from the proof, we get rid of the mark for A allowing to consider this formula again as a source of new goals; * the label of the conclusion of the gel rule to preserve satisfiability in rules el , in and the induction rule.
+Formulation of the algorithm.
+(1) Given a task  G, we consider G as the initial goal of the proof and write G into list goals.
+If the set of given assumptions in G is not empty then these assumptions are written in a list proof.
+Set current goal = G, go to (2).
+(2) Apply Procedure 3 (analysis of the reachability of the current goal, Gn ).
+(2a) If Gn is reached then go to (3) else (2b) if elimination rules are applicable go to (4) else (if no more elimination rules are applicable) go to (5) else (if no more rules from Procedure 5 applied to relational judgements are applicable) go to 6.
+(3) Based on the structure of the goal reached (3a) If Gn (reached) is the initial goal then go to (7a) else (3b) (Gn is reached and it is not the initial goal).
+Apply Procedure 4 (which invokes introduction rules), go to 2.
+(4) Apply Procedure 1 , go to (2).
+(5) Apply Procedure 5, go to (2).
+(6) Apply Procedure 2.
+(6a) If Gn = [?]
+then apply Procedure 2.1 (analysis of the structure of Gn ), go to (2) else (6b) Apply Procedure 2.2 (searching for the sources of new goals in list proof), go to (2) else (6c) (if all formulae in list proof are marked, i.e.
+have been considered as sources for new goals), go to (7b).
+(7) Termination (7a) The desired ND proof has been found.
+EXIT, (7b) No ND proof has been found.
+EXIT.
+3.3  Example Proof  Now we give an example of the PLTLND algo-proof establishing that the following formula is a theorem.
+(p = gp) = (p =  p)  (1)  We will provide sufficient comments explaining how the main parts of the searching procedure, list proof and list goals are constructed.
+We will also split the construction of the PLTLalg ND into stages to ease the understanding of the techniques applied.
+The proof starts with setting a formula x : (p = gp) = (p = p) as the main goal, G0 , in the list goals.
+Consecutive applications of Procedure (2.1.5) to this for(p = gp) mula result in adding new assumptions x : and x : p in the list proof.
+On the second step the current goal is x : p, so we apply Procedure (2.1.6) to obtain the current goal y : p where y must be flagged and x must be relatively flagged.
+At the same time a new assumption x  y is added to the list proof at step 3.
+Here we apply Procedure 1 inferring y : p = gp at step 4.
+However, the current goal, y : p, is still non reachable, hence, by Procedure (2.1.1), the current goal is [?]
+with adding at step 5 a new assumption y : !p.
+Thus, we have list proof  analysis  1. x : (p = gp) assum.
+assum.
+2. x : p 3. x  y 4. y : p = gp 5. y : !p  assum.
+el , 1, 3 assum.
+list goals G0 G0 , G1 = (x : p = p) G0 , G 1 , x : p G0 , G1 , x : p, y : p - y, y - x G0 , G 1 , x :  p, y : p, [?]
+The current goal, [?
+], is non-reachable.
+Here the algorithm applies Procedure (2.2) searching for non-discarded formulae in the list proof.
+Note, that x : (p = gp) has been marked since the el rule was applied to it.
+The first formula to apply Procedure (2.2) is y : p = gp (step 4) giving us the new goal, y : p. It is not reachable, hence by Procedure (2.1.1), the new assumption is y : !p (step 6) and the new goal is [?].
+At this moment all complex formu-formula is in the list proof and lae are marked, but an the algorithm is looking for a prospective application of the induction rule by Procedure (2.2.5).
+Thus, we update the p, z : p = gp, where z is flagged list goals with x : and x is relatively flagged in list goals.
+Additionally, a new assumption, x  z, is added at step 7 allowing us to infer z : p = gp at step 8.
+Therefore, z : p = gp is reached and is discharged from the list goals.
+The current goal now p which is reachable via the induction rule (step is x : 9) requiring to discard formulae 7-8 from list proof and flag variables.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  list proof  analysis  6. y : !p  assum.
+list goals G0 , G1 , x : p, y : p, [?
+], y : p, G0 , G1 , x : p, y : p, [?
+], y : p, [?]
+G0 , G1 , x : p, y : p, [?
+], y : p, [?
+], x : p, z : p = gp - z, z - x G0 , G1 , x : p, y : p, [?
+], y : p, [?
+], x : p  assum.
+7. x  z 8. z : p = gp el 1, 7 9. x :  p  induction 2, 7, 8, [7 - 8] - z z - x  G0 , G 1 , x : [?]
+p, y : p, [?
+], y : p,  The current goal is now [?]
+which is easily reached: apply the el rule to formulae 3 and 9 deriving 10 which is contradiction with 6.
+Hence we reached the goal [?
+], and apply the !in rule to 6 and 10 deriving step 11 and discarding formulae 6-10 from list proof.
+The current goal, y : p, is reached at step 12 by eliminating double negation from 11.
+The current goal now is [?
+], and we apply the !in rule to steps 5 and 12, deriving 13 and discarding formulae 5-12 from list proof.
+The current goal y : p is reachable by !el from 13.
+Now x : p is reachable by applying the in rule to 3 and 14 deriving 15 and discarding formulae 3-14. list proof analysis 10. y : p el , 3, 9 11. y : !
+!p !in , 6, 10, [6 - 10] !el , 11 12. y : p 13. y : !
+!p !in , 5, 12, [5 - 12] !el , 13 14. y : p 15. x : p in , 3, 14, [3 - 14], - y, y - x  list goals G0 , G 1 , x :  p, y : p, [?
+], y : p, [?]
+G0 , G 1 , x : G0 , G 1 , x :  p, y : p, [?
+], y : p p, y : p, [?]
+G0 , G 1 , x : G0 , G 1 , x :  p, y : p p  G0 , G1 = (x : p =  p)  The last steps are obvious applications of the =in rule at steps 16 and 17.
+Note that at step 16 we discard formulae 214 while on step 17 we discard in list proof all the remaining formulae, 1-16. list proof 16. x : p =  p  analysis list goals =in , 15, [2 - 15] G0  17. x : (p = gp) = (p = p) =in , 16, [1 - 16]  G0 reached  The set of non-discarded assumptions is empty, the initial goal is reached, hence we have a desired proof of for-  mula (1).
+Note that in the presentation of this proof, due to the space limit, we omitted a few steps, such as =el applied to 10 and 4 and a few subsequent steps as they do not contribute to the proof.
+Observe also that all of our introduction rules were guided by alive goals in the list goals.
+For example, given that we have reached the goal, y : p, at step 14, the structure of the previous goal, x : p, determines the subsequent application of the in rule.
+An interested reader may wish to compare this algorithmic proof of formula (1) with the manual proof of the same formula in [2]: this would illustrate nicely the necessary complications and even obvious redundancy (at this stage of developing a searching method) introduced by a proof searching routine comparing it with a 'hand-made' proof.
+3.4  Correctness  There are three necessary conditions that a proof search procedure for a decidable system should have: termination, soundness and completeness.
+Being decidable, PLTL encourages researchers at presenting algorithms that effectively tell us if any given input formula is a theorem building up a desired proof or there is an assignment falsifying it, providing a counter-model.
+Below we will sketch proofs of all these properties of PLTLalg ND .
+Theorem 3 PLTLalg ND terminates for any input PLTL formula.
+PROOF : For the termination we need to establish that both main sequences, list proof and list goals, that constitute PLTLalg ND , are finite, and also that there are no loops in the searching procedure.
+Two observations are important here.
+Firstly, the marking technique guarantees the finite number of application of rules in Procedures 1 and 5, and the finite number of formulae that are introduced into list proof and list goals by Procedure 2.
+Note that our special procedures to deal with the most difficult for the natural deduction cases related to disjunctive goals, namely, with the goals of the type i : A [?]
+B, i : A and i : A U B reflected in the Procedures (2.1.4), (2.1.7) and (2.1.9), prevent us of being involved into loops.
+Secondly, any application of an introduction rule is completely determined by the algorithm.
+Namely, if the current goal is reached and it is a contradiction, [?
+], then we apply the !in rule to the contradictory formulae introducing into the proof the negation of the most recent non-discarded assumption.
+Any other type of the current goal which is reached required us to consider the previous goal and the corresponding introduction rule is fired.
+Thus, for example, if the current goal (reached) is i : A or i : B and the previous goal is i : A [?]
+B, see Procedure (2.1.4), then we apply the [?
+]in rule to either i : A or i : B reaching the previous goal, i : [?]
+[?]
+B by simply adding the missing component of  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  disjunction.
+Similarly, if the current goal (reached) is j : A A, see Procedure (2.1.6), and the previous goal is i : then we would have introduced into the proof an assumption i  j, and thus, the in rule is applied.
+(END) Theorem 4 PLTLalg ND is sound.
+Soundness of PLTLalg ND follows immediately from the fact that list proof obtained following the steps of the algorithm is a proof in the calculus PLTLND .
+Hence, if there is an algo-proof of A then a list proof of this algo-proof is a proof of A in the system PLTLND .
+By Theorem 1, PLTLND is sound.
+Therefore, PLTLalg ND is sound, too.
+( END )  formula at step 1 obtaining steps 2 and 3 and setting up required restrictions on the labels x and y.
+The current goal, G1 is not reachable, therefore, by Procedure (2.1.1) we continue by refutation updating list proof by the new assumption G1 = x : !
+(p U q) and the new goal [?].
+At this stage we apply Procedure 1, namely, the !
+U rule to derive step 5 from step 4.
+PROOF :  Lemma 1 From an exhausted non successful algo-proof for a PLTLND formula A we can extract a model which falsifies A.
+PROOF :  We adopt a technique developed in many sources, see for example [12].
+In an exhausted non successful algoproof for A the algorithm terminates without finding a proof, having applied all its procedures and with the final goal [?]
+which is not reached.
+We can show that in this case list proof contains a set of indexed literals, i : l, (l is a propositional variable or its negations) sufficient to construct a model, say s, which falsifies A: if l is a propositional variable than there is a mapping, f , such that s, f (i)	 |= l otherwise, s, f (i)	 |= !l.
+Procedure 2 plays the main role here: we construct s from a collection of saturated sets, atoms, along with an accesibility relation.
+In our case this relation is encoded by a set of relational judgements, while the assignment to the literals as shown above provides us with a set of atoms.
+(END) Theorem 5 PLTLalg ND is complete.
+PROOF : We must show that for every PLTLND valid formula, A, PLTLalg ND finds a PLTLND proof.
+This is a simple consequence (by contraposition) of Lemma 1.
+(END)  Termination, soundness and completeness results imply the fundamental property of our algorithm reflected in the following theorem.
+Theorem 6 For any input formula A, the PLTLND terminates either building up a PLTLND -proof for A or providing a counter-model.
+Constructing a counter-model.
+Let us now illustrate how the algorithm works with a non-provable formula, q = p U q.
+We commence this proof by setting up the main goal G0 = q = p U q.
+Applying Procedure (2.1.5), we update list proof by x : q at step 1 and list goals by the new goal G1 = x : p U q.
+Next, we apply el rule to  list proof  analysis  1. x : q 2. x  y  assump.
+el , 1, - y y - x 3. y : q el , 1 4. x : !
+(p U q) assump.
+5. x : !q [?]
+(!q U (!p [?]
+!q)) !
+U , 4  list goals G0 G0 , G 1  G0 , G 1 , [?]
+The current goal, [?
+], is not reachable, hence, by Procedure (2.2.2) we set up the new goal, x : !
+!q.
+Again, this is not reachable, therefore, by Procedure (2.1.2) we update !q and list goals by the new goal, [?].
+list proof by x : Next, we apply Procedure 1, namely, el rule to steps 2 and 6, deriving step 7.
+This gives us the desired contradiction - steps 3 and 7.
+Hence, we apply the !in rule to these formulae obtaining step 8 and discarding formulae 6-7 from list proof.
+list proof  analysis  6. x : !q 7. y : !q 8. x : !
+!q  assump.
+el , 2, 6 !in , 3, 7 [6 - 7]  list goals G0 , G1 , [?
+], x : !
+!q G0 , G1 , [?
+], x : !
+!q, [?]
+G0 , G 1 , [?]
+Applying Procedure 1, namely, the [?
+]el rule to 5 and 8, we derive step 9. list proof analysis list goals 9. x : !q U (!p [?]
+!q) [?
+]el , 5, 8 G0 , G1 , [?
+], x :  !q  The current goal is x : !q, Therefore, by Procedure (2.1.6), we update list proof by the new assumption, x  z and set up the new goal, z : !q.
+Note that at this stage, z must be a new flagged variable, and x becomes relatively flagged, which is reflected in our comments in the algoproof, - z, z - x.
+Since we have a new relational judgement added into list proof, we apply Procedure 5 to derive the linearity constraint.
+Namely, by Procedure (5.2) from 2 and 10 we derive step 11, where Lin(y, z) = y  z [?]
+y  z [?]
+z  y.
+The current goal, z : !q, is not reachable, hence, we apply Procedure (2.1.2) and update list proof by formula 10 setting up the new goal, [?].
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  list proof 10. x  z  analysis assum.
+list goals G0 , G1 , [?
+], x : - z, z - x  11.
+Lin(y, z) linearity, 2, 10 12. z : q assum.
+G0 , G1 , [?
+], x :  !q, z : !q  !q, z : !q, [?]
+The current goal, [?]
+is not reachable, therefore, we apply Procedure 2 looking for the sources for new goals.
+The first formula which should be considered as the source for new goals, is formula 9, x : !q U (!p [?]
+!q).
+Thus, by Procedure (2.2.4), we update list goals by x : !
+(!p [?]
+!q).
+Now list goals is G0 , G1 , [?
+], x : !q, z : !q, [?
+], x : !
+(!p [?]
+!q).
+The current goal is not reachable, therefore, by Procedure 2.1.2, we update list proof by formula 13 and list goals by the new goal, [?].
+Procedure 1 ([?
+]el ) will give us steps 14 and 15. list proof 13. x : !p [?]
+!q 14. x : !p 15. x : !q  analysis list goals assum.
+G0 , G1 , [?
+], x : !q, z : !q, [?
+], !
+(!p [?]
+!q), [?]
+[?
+]el , 13 [?
+]el , 13  Our current goal is [?
+], no more elimination rules are applicable hence, we apply Procedure 2 looking for the sources for new goals.
+Procedure 2 finds the linearity constraint at step 11 and apply Procedure (2.2.6) to update list proof with the new assumption, y  z at step 16. list proof 16. y  z  input formula is a theorem, hence valid; otherwise, in case of its termination without a proof, a counter-model can be extracted.
+Our approach extends the proof searching technique for classical propositional logic which has been implemented and is available on-line [3].
+Most of searching procedures involved into PLTLalg ND , as well as the algorithm itself, are structurally similar to those used in the classical logic setting.
+We believe that this fact reflects the uniform nature of our approach to natural deduction constructions for various logics.
+Following the extension of natural deduction to branching-time logic CTL [5], one of the topics for future research would be a corresponding extension of PLTLalg ND to automate the natural deduction representation of this useful logic.
+Another important part of our future work will be study of complexity of the method and the refinement of the searching technique with the subsequent implementation.
+We hope that the structural similarity of proof searching algorithms for classical and temporal settings will play here a significant role.
+Note also, that during the implementation we are planning to embed one of the existing constraint solvers to deal with the algebra of relational judgements.
+References  analysis list goals assumption  Note that at step 16 we take the first disjunct of the linearity constraint as a new assumption but already here failed to reach [?
+], hence, the algorithm terminates having not found the desired proof.
+This means that the input formula is not valid and we can extract the following counter-model considering the set of literals and relational judgements in list proof.
+Indeed, consider a model, s, and a mapping, f , such that s, f (y)	 |= q, which along with f (x) <= f (y) gives s, f (x)	 |= q.
+At the same time s, f (x)	 |= p and s, f (x)	 |= q, hence s, f (x)	 |= p U q.
+Therefore, q = p U q is not realisable in the obtained model s and hence is not valid.
+4  Discussion  We have presented PLTLND , a proof searching algorithm for the natural deduction formulation of the logic PLTL and established its correctness.
+To the best of our knowledge, the only other ND construction for linear-time logic [10] does not have a proof searching technique behind it.
+PLTLalg ND not only enables a full mechanisation of the underlying ND calculus but also allows us to use it as a decision procedure.
+As we have shown, for any input PLTL formula, PLTLalg ND terminates either finding a proof indicating that the  14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007  [1] D. Basin, S. Matthews, and L. Vigano.
+Natural deduction for non-classical logics.
+Studia Logica, 60(1):119-160, 1998.
+[2] A. Bolotov, A. Basukoski, O. Grigoriev, and V. Shangin.
+Natural deduction calculus for linear-time temporal logic.
+In Joint European Conference on Artificial Intelligence (JELIA-2006), pages 56-68, 2006.
+[3] A. Bolotov, V. Bocharov, A. Gorchakov, V. Makarov, and V. Shangin.
+Let Computer Prove It.
+Logic and Computer.
+Nauka, Moscow, 2004.
+(In Russian), Implementation of the proof search technique for classical propositional logic available on-line at http://prover.philos.msu.ru.
+[4] A. Bolotov, V. Bocharov, A. Gorchakov, and V. Shangin.
+Automated first order natural deduction.
+In Proceedings of IICAI, pages 1292-1311, 2005.
+[5] A. Bolotov, O. Grigoriev, and V. Shangin.
+Natural deduction calculus for computation tree logic.
+In IEEE John Vincent Atanasoff Symposium on Modern Computing, pages 175-183, 2006.
+[6] E. Clarke, S. Jha, and W. R. Marrero.
+Using state space exploration and a natural deduction style message derivation engine to verify security protocols.
+In Proceedings of the IFIP TC2/WG2.2,2.3 International Conference on Programming Concepts and Methods, pages 87-96, June 1998.
+[7] M. Fisher, C. Dixon, and M. Peim.
+Clausal temporal resolution.
+ACM Transactions on Computational Logic (TOCL), 1(2):12-56, 2001.
+[8] F. Fitch.
+Symbolic Logic.
+NY: Roland Press, 1952.
+[9] D. Gabbay, A. Phueli, S. Shelah, and J. Stavi.
+On the temporal analysis of fairness.
+In Proceedings of 7th ACM Symposium on Principles of Programming Languages, pages 163-173, Las Vegas, Nevada, 1980.
+[10] A. Indrzejczak.
+A labelled natural deduction system for linear temporal logic.
+Studia Logica, 75(3):345- 376, 2004.
+[11] S. Jaskowski.
+On the rules of suppositions in formal logic.
+In Polish Logic 1920-1939, pages 232-258.
+Oxford Univ.
+Press, 1967.
+[12] O. Lichtenstein and A. Pnueli.
+Propositional temporal logics: Decidability and completeness.
+Logic Journal of the IGPL, 8(1), 2000.
+[13] V. Makarov.
+Automatic theorem-proving in intuitionistic propositional logic.
+In Modern Logic: Theory, History and Applications.
+Proceedings of the 5th Russian Conference, StPetersburg, 1998.
+(In Russian).
+[14] F. Pfenning.
+Logical frameworks.
+In J.
+A. Robinson and A. Voronkov, editors, Handbook of Automated Reasoning, chapter XXI, pages 1063-1147.
+Elsevier, 2001.
+[15] W. Quine.
+On natural deduction.
+Journal of Symbolic Logic, 15:93-102, 1950.
+[16] C. Renteria and E. Haeusler.
+Natural deduction for CTL.
+Bulletin of the Section of Logic, Polish Acad.
+of Sci., 31(4):231-240, 2002.
+[17] A. Simpson.
+The Proof Theory and Semantics of Intuitionistic Modal Logic.
+PhD thesis, College of Science and Engineering, School of Informatics, University of Edinburgh, 1994.
+[18] M. Wooldridge.
+Reasoning about Rational Agents.
+MIT Press, 2000.
+14th International Symposium on Temporal Representation and Reasoning (TIME'07 0-7695-2836-8/07 $20.00 (c) 2007

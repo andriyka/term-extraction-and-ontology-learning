@@ -1,0 +1,1536 @@
+Monitoring Usage-control Policies in Distributed Systems David Basin, Matus Harvan, Felix Klaedtke, and Eugen Zalinescu ETH Zurich, Computer Science Department, Switzerland  Abstract--We have previously presented a monitoring algorithm for compliance checking of policies formalized in an expressive metric first-order temporal logic.
+We explain here the steps required to go from the original algorithm to a working infrastructure capable of monitoring an existing distributed application producing millions of log entries per day.
+The main challenge is to correctly and efficiently monitor the trace interleavings obtained by totally ordering actions that happen at the same time.
+We provide solutions based on formula transformations and monitoring representative traces.
+We also report, for the first time, on statistics on the performance of our monitor on real-world data, providing evidence of its suitability for nontrivial applications.
+I.
+Introduction Determining whether the usage of sensitive data complies with regulations and policies is a growing concern for companies, administrations, and end users alike.
+In the context of IT systems, this question amounts to whether one can implement processes that monitor other processes.
+In previous work [1], [2], we have demonstrated that metric first-order temporal logic (MFOTL) is a good candidate for monitoring data usage to determine policy compliance.
+In particular, the metric temporal operators allow one to formalize both qualitative and quantitative temporal relationships between actions and, as the logic is first-order, we can also formulate dependencies between the finite but unbounded number of agents and data elements in IT systems.
+We have given a monitoring algorithm for MFOTL [1] and many usagecontrol policies can be naturally formulated in the fragment that the monitor handles efficiently [2].
+In this paper, we extend our previous work by deploying and evaluating our monitoring approach in a real-world concurrent and distributed setting.
+This is in contrast to our previous analysis [2], which we carried out in a nondistributed setting where we used log files filled with synthetically generated actions.
+In the following, we describe our monitoring setup and the challenges we faced.
+We begin with an abstract description of the systems that we handle.
+System Model.
+The types of entities in our systems are data, (data) stores, agents, and actions.
+Data is stored in distributed data stores such as databases and repositories and created, read, modified, propagated, combined, and deleted by actions initiated by agents.
+Agents are either humans or applications, including database triggers.
+Agents always access the data directly from a store and never indirectly from another agent.
+Whenever an agent  Figure 1.
+System Extension  wants to use some data, it accesses the appropriate store, uses the data, and discards it afterwards.
+For subsequent usage, it must access the store again.
+Before discarding the data, the agent may write it, possibly after processing it in some way, into the same or a different store.
+In this way, data can propagate between stores.
+A consequence of this restriction on the interaction between system entities is that the use of data is always observable at the data stores.
+Systems are governed by (usage-control) policies, which state requirements on the usage of the data.
+For example, only agents with particular credentials may modify data, or data must be deleted after two years from a given store.
+Agents may or may not comply with policies.
+Logging and Monitoring.
+Given a system that is an instance of the above system model, we must extend it to support logging and monitoring.
+To determine whether a policy is violated we usually need to relate actions that are carried out in different parts of the system.
+Moreover, the ordering of actions and the time elapsed between them is important.
+To relate actions and the times when they happen, we log them locally, annotating each action with a timestamp, and merge these logs after some pre-processing.
+We then monitor this merged stream of logged actions.
+These system extensions are depicted in Figure 1.
+Challenges and Contributions.
+Individual logs are totally ordered and timestamped using local clocks.
+However, even assuming clock synchronization [3], we have only a partial order on system actions [4] as multiple actions with the same timestamp may occur in different logs.
+Our main theoretical challenge is to monitor such a partially ordered set of actions, which is, in general, an intractable problem.
+In Section III, we identify a subclass of formulas that describe properties that are insensitive to the ordering of actions labeled by the same timestamp and for which it suffices to monitor a particular merging of the logs, namely, the merging that assumes that actions with equal timestamps happen simultaneously.
+Furthermore, in case  the given formula is outside this class we provide means to meaningfully monitor this merge by approximating the described property.
+A practical challenge is to deploy adequate logging mechanisms.
+The mechanisms should be complete in that they log all occurrences of policy-relevant system actions.
+They should also be accurate in that if an action is logged then it has happened in the system and the corresponding log entry accurately describes the action, e.g, it describes the involved data and the associated timestamp is the actual time when the action happened.
+Incomplete or inaccurate logging may lead to false positives and false negatives when monitoring the system.
+In Section IV, we explain how we handle these practical challenges in our case study.
+Where possible, we use existing logging mechanisms and extract policy-relevant information from the produced log entries.
+For system components where no logging was available, we either added logging directly to the components or we extended the components with proxy mechanisms that logged actions.
+However, proxies have limitations: agents do not necessarily access a store over a proxy and proxies see requested actions but not necessarily all the effects on the involved data.
+In our case, the interactions could be accurately observed but not for all agents, which led to accurate but incomplete logs.
+Summarizing, we see our contributions as follows.
+We provide solutions for efficiently monitoring partially ordered logs, which is a central problem in monitoring real-time concurrent distributed systems.
+Moreover, we evaluate the performance of our monitoring approach and demonstrate its effectiveness on a real-world application.
+Organization.
+The remainder of this paper is structured as follows.
+In Section II, we give background on MFOTL and our monitor.
+In Section III, we show how we handle the interleavings of multiple streams of logged actions from different log producers.
+In Section IV, we report on our case study.
+In Section V, we discuss related work and in Section VI, we draw conclusions.
+The Appendices A-D contain additional proof details.
+Additional details on the case study are given in Appendix E. II.
+Preliminaries We briefly review metric first-order temporal logic (MFOTL) and describe how we use it to monitor systems.
+Syntax and Semantics.
+Let I be the set of nonempty intervals over N. We will write an interval I [?]
+I as [b, b0 ) := {a [?]
+N | b <= a < b0 }, where b [?]
+N, b0 [?]
+N [?]
+{[?
+]}, and b < b0 .
+A signature S is a tuple (C, R, i), where C is a finite set of constant symbols, R is a finite set of predicates disjoint from C, and the function i : R - N associates each predicate r [?]
+R with an arity i(r) [?]
+N. In the following, let S = (C, R, i) be a signature and V a countably infinite set of variables, assuming V [?]
+(C [?]
+R) = [?].
+(D, t, v, i) |= t[?]
+t0 (D, t, v, i) |= t[?]
+t0 (D, t, v, i) |= r(t1 , .
+.
+.
+, ti(r) ) (D, t, v, i) |= (!ph) (D, t, v, i) |= (ph [?]
+ps) (D, t, v, i) |= ([?]x.
+ph) (D, t, v, i) |= ( I ph) (D, t, v, i) |= (#I ph) (D, t, v, i) |= (ph SI ps) (D, t, v, i) |= (ph UI ps)  v(t) = v(t0 ) v(t) < v(t0 )  v(t1 ), .
+.
+.
+, v(ti(r) ) [?]
+rDi (D, t, v, i) 6|= ph (D, t, v, i) |= ph or (D, t, v, i) |= ps (D, t, v[x/d], i) |= ph, for some d [?]
+|D| i > 0, ti - ti-1 [?]
+I, and (D, t, v, i - 1) |= ph ti+1 - ti [?]
+I and (D, t, v, i + 1) |= ph for some j <= i, ti - t j [?]
+I, (D, t, v, j) |= ps, and (D, t, v, k) |= ph, for all k [?]
+[ j + 1, i + 1) iff for some j >= i, t j - ti [?]
+I, (D, t, v, j) |= ps, and (D, t, v, k) |= ph, for all k [?]
+[i, j)  iff iff iff iff iff iff iff iff iff  Figure 2.
+Semantics of MFOTL  Formulas over the signature S are given by the grammar       ph ::= t1[?]
+t2  t1[?]
+t2  r(t1 , .
+.
+.
+, ti(r) )  (!ph)  (ph [?]
+ph)  ([?]x.
+ph)     ( I ph)  (#I ph)  (ph SI ph)  (ph UI ph) , where t1 , t2 , .
+.
+.
+range over the elements in V [?]
+C, and r, x, and I range over the elements in R, V, and I, respectively.
+To define MFOTL's semantics, we need the following notions.
+A structure D over S consists of a domain |D| , [?]
+and interpretations cD [?]
+|D| and rD [?]
+|D|i(r) , for each c [?]
+C and r [?]
+R. A temporal structure over S is a pair (D, t), where D = (D0 , D1 , .
+.
+. )
+is a sequence of structures over S and t = (t0 , t1 , .
+.
+. )
+is a sequence of natural numbers (i.e., timestamps), where: (1) The sequence t is monotonically increasing (i.e., ti <= ti+1 , for all i >= 0) and makes progress (i.e., for every i >= 0, there is some j > i such that t j > ti ).
+(2) D has constant domains, i.e., |Di | = |Di+1 |, for all i >= 0.
+We denote the domain by |D| and require that |D| is strict linearly ordered by a relation <.
+(3) Each constant symbol c [?]
+C has a rigid interpretation, i.e., cDi = cDi+1 , for all i >= 0.
+We denote c's interpretation by cD .
+A valuation is a mapping v : V - |D|.
+We abuse notation by applying a valuation v also to constant symbols c [?]
+C, with v(c) = cD .
+For a valuation v, a variable x, and d [?]
+|D|, v[x/d] is the valuation mapping x to d and not altering the other variables' valuation.
+The semantics of MFOTL, (D, t, v, i) |= ph, is given in Figure 2, where (D, t) is a temporal structure over the signature S , with D = (D0 , D1 , .
+.
+.
+), t = (t0 , t1 , .
+.
+.
+), v a valuation, i [?]
+N, and ph a formula over S .
+Note that the temporal operators are labeled with intervals I and a formula of the form ( I ph), (#I ph), (phSI ps), or (phUI ps) is only satisfied in (D, t) at the time point i, if it is satisfied within the bounds given by the interval I of the respective temporal operator, which are relative to the current timestamp ti .
+Terminology and Notation.
+We use standard syntactic sugar such as fiI ph := !
+(trueSI !ph) and I ph := !
+(trueUI !ph), where true := [?]x.
+x [?]
+x.
+We also use non-metric operators like  ph := [0,[?])
+ph.
+We omit parentheses where possible,  III.
+Monitoring Concurrently Logged Actions In this section, we first prove the intractability of monitoring where logs are produced in a concurrent setting.
+We then show how to partially overcome this obstacle by monitoring a single log where all actions with equal timestamps are assumed to have happened at the same point in time.
+Proof details are given in the Appendices A-D.
+Definition 1.
+Let (D1 , t1 ), (D2 , t2 ), and (D, t) be temporal structures.
+(D, t) is an interleaving of (D1 , t1 ) and (D2 , t2 ) if there are strictly monotonic functions f1 , f2 : N - N with (1) img( f1 ) [?]
+img( f2 ) = N, (2) img( f1 ) [?]
+img( f2 ) = [?
+], and k (3) tki = t fk (i) and rDi = rD fk (i) , for all k [?]
+{1, 2}, i [?]
+N, r [?]
+R. We denote by (D1 , t1 ) (D2 , t2 ) the set of all interleavings of the temporal structures (D1 , t1 ) and (D2 , t2 ).
+Since there are usually multiple interleavings of two temporal structures, we formulate policy violations in terms of a set of temporal structures.
+Definition 2.
+Let T be a set of temporal structures.
+(1) T weakly violates the formula ph at time point i [?]
+N if for some (D, t) [?]
+T and some valuation v, it holds that (D, t, v, i) 6|= ph.
+(2) T strongly violates the formula ph at time point i [?]
+N if for all (D, t) [?]
+T, there is some valuation v such that (D, t, v, i) 6|= ph.
+Unfortunately, even in a propositional setting, determining whether the set of interleavings weakly or strongly violates a formula is intractable.
+Theorem 3.
+Let (D1 , t1 ) and (D2 , t2 ) be temporal structures, i [?]
+N, and ph a quantifier-free sentence with only Boolean and non-metric past operators that neither contains the equality symbol [?]
+nor the ordering symbol [?].
+1.
+Determining whether the set of interleavings (D1 , t1 ) (D2 , t2 ) weakly violates ph at i is NP-complete.
+2.
+Determining whether the set of interleavings (D1 , t1 ) (D2 , t2 ) strongly violates ph at i is coNP-complete.
+./  We assume that the actions for publishing and approving reports are logged in relations.
+Specifically, for each time point i [?]
+N, we have the unary relations PUBLISH i and APPROVEi such that (1) x [?]
+PUBLISH i iff report f is published at time point i and (2) x [?]
+APPROVEi iff report x is approved at time point i.
+Observe that there can be multiple approvals at the same time point for different reports.
+Furthermore, every time point i has a timestamp ti [?]
+N. The corresponding temporal structure (D, t) with D = (D0 , D1 , .
+.
+. )
+and t = (t0 , t1 , .
+.
+. )
+of a sequence of logged publishing and approval actions is as follows.
+The only relational symbols in D's signature are publish and approve, both of arity 1.
+The domain of D consists of all reports.
+The ith structure in D is timestamped with ti and contains the relations PUBLISH i and APPROVEi .
+To detect policy violations, our monitor [1] iteratively processes the temporal structure (D, t) representing the stream of logged actions.
+This can be done offline or online.
+At each time point i, it outputs the valuations satisfying the negation of the formula publish(x) - [0,11) approve(x).
+Note that we drop the outermost quantifier since we are not only interested in whether the policy is violated but also which data is responsible for the reported violations.
+In general, we assume that policies formalized in MFOTL are of the form  ps, where ps is bounded.
+Since ps is bounded, the monitor need only take into account a finite prefix of (D, t) when determining the satisfying valuations of !ps at a time point i.
+To effectively determine all these valuations, we also assume here that predicates have finite interpretations in (D, t), i.e., the relation rD j is finite, for every predicate r and every j [?]
+N. Furthermore, we require that !ps can be rewritten to a temporal-subformula-domainindependent formula, a generalization of the standard notion of domain-independent database queries [5].
+./   [?]x.
+publish(x) - [0,11) approve(x) .
+Log Interleavings.
+Intuitively, an interleaving of logs preserves the ordering of the logged actions with respect to their timestamps, but allows for all possible orderings of actions with equal timestamps that are recorded by different log producers.
+To define this, let img( f ) denote the set {y [?]
+Y | f (x) = y, for some x [?]
+X}, for a function f : X - Y.
+Furthermore, we assume in this section that all temporal structures have the same signature (C, R, i), equal domains, and that constant symbols are equally interpreted.
+Note that any two temporal structures in which the common constant symbols are equally interpreted can easily be extended so that their extensions fulfill this requirement.
+./  e.g., unary operators (temporal and Boolean) bind stronger than binary ones.
+A formula ph is bounded if the interval I of every temporal operator UI occurring in ph is finite.
+We use standard terminology like atomic formula and subformula.
+System Monitoring.
+We illustrate our use of MFOTL and our monitoring algorithm [1] for compliance checking by the simple policy stating that reports must be approved within at most 10 time units before they are published:  Note that both decision problems are well defined as ph does not contain future operators.
+We therefore only need to examine the finite prefixes with length i + 1 of the interleavings to determine whether ph is weakly or strongly violated at the given time point i.
+Collapsing Interleaved Logs.
+We first give conditions with respect to an arbitrary set of temporal structures for when it suffices to monitor a single temporal structure.
+We then identify a natural temporal structure for the set of interleavings of two temporal structures, which we use for  In the following, the set T in the above definition will be the set of interleavings of two temporal structures.
+For the temporal structure (C, k), we will use the so-called collapse: Definition 5.
+Let (D, t) and (C, k) be temporal structures.
+(C, k) is a collapse of (D, t) if there is a monotonic surjective function f : N - N such that (1) if ti = t j then f (i) = f ( j), for all i, j [?]
+N, (2) k f (i) = ti , for all i [?]
+N, and S (3) rC j = i[?]
+f -1 ( j) rDi , for all j [?]
+N and r [?]
+R. Intuitively, the structures of the temporal structure (D, t) with equal timestamps are collapsed into a single structure.
+The collapse is uniquely defined and we denote it by col(D, t).
+Furthermore, the collapses of temporal structures in the set of interleavings of two given temporal structures are all isomorphic.
+Before we identify formulas for which the collapse of an interleaving of given temporal structures can be correctly used for monitoring, we give practical reasons that justify its use for monitoring.
+First, observe that the collapse can be incrementally obtained from an arbitrary interleaving of two given temporal structures.
+Hence, monitoring the collapse can be done efficiently.
+Second, note that the actual ordering of actions logged with equal timestamps in a concurrent system cannot be known.
+Hence, it does not make sense to consider just one arbitrary interleaving.
+Assuming that equally timestamped actions have happened at the same point in time naturally "hides" the differences between interleavings.
+Moreover, reasonable policies for a concurrent system should not care about the ordering of equally timestamped actions in case of accurate and precise clocks.
+In other words, if the collapsed temporal structure is not sufficient for the policy on the set of interleavings, then the policy might not be the intended one for the system.
+Finally, monitoring the collapsed temporal structure is practically more efficient than monitoring an interleaving.
+This is because the monitor is invoked less often since time points with equal timestamps are merged to a single one.
+Hence, the monitor processes the logged actions with equal timestamp in a single invocation.
+Monitoring the Collapse.
+Intuitively, collapse-sufficient formulas are formulas that do not yield false positives and false negatives when monitoring the collapse of an interleaving: Definition 6.
+Let ph be a formula.
+For k [?]
+{1, 2}, we say that ph has the property (Ck) if (C, k) fulfills the condition (Ck) in  ./  Monitoring the collapse of a collapse-sufficient formula is correct with respect to strong violations.
+Since the formula has property (C2), violations found in (C, k) imply that the set of interleavings strongly violates the formula.
+The converse is ensured by the property (C1): if no violation is found in (C, k) then all interleavings are policy compliant.
+Furthermore, by monitoring (C, k) we also detect when the set of interleavings weakly violates the given formula.
+The reason is that if a formula is strongly violated by the set of interleavings then it also weakly violated, since the set of interleavings is always nonempty.
+Example 7.
+The formula [?
+]x.publish(x) - [0,11) approve(x) is not collapse-sufficient.
+Suppose that a report x is pub1 lished in (D1 , t1 ) at time point i, i.e., x [?]
+publishDi and only approved in (D2 , t2 ) at the equally timestamped time 2 point j, i.e., x [?]
+approveD j with t2j = t1i .
+Then there is an interleaving (D, t) [?]
+(D1 , t1 ) (D2 , t2 ) where the approval action comes (pointwise) strictly after the publish action.
+As a result, we cannot handle this formula correctly by monitoring the collapsed temporal structure (C, k) of an interleaving of the given temporal structures (D1 , t1 ) and (D2 , t2 ).
+A slightly stronger policy can be efficiently monitored.
+Namely, the policy that requires that an approval action must happen timewise strictly before the publish action, i.e.,  [?]x.
+publish(x) - [1,11) approve(x).
+This formula is collapse-sufficient.
+Similarly,  [?]x.
+publish(x) - [0,1) [0,11) approve(x) is also collapse-sufficient.
+It formalizes the slightly weaker policy where publish actions must be timewise but not pointwise previously approved.
+Note that stutter-invariance [6] is a necessary condition for collapse-sufficiency.
+However, it is not a sufficient condition.
+For example, the formula  [?]x.
+p(x) [?]
+q(x) is stutteringinvariant but not collapse-sufficient.
+A Collapse-sufficient Fragment.
+In the following, we present a fragment of collapse-sufficient formulas.
+Our fragment is defined in terms of an algorithm that identifies formulas that have property (C1) or property (C2).
+The algorithm labels the atomic subformulas of the given formula and propagates these labels bottom-up to the formula's root using a fixed set of inference rules.
+The labels represent invariants, which capture the relation between violations found in a collapsed temporal structure (C, k) at some time point and violations found in its pre-images (D, t) [?]
+col-1 (C, k) at a time point with an equal timestamp, where col-1 (C, k) denotes the set of temporal structures (D0 , t0 ) with col(D0 , t0 ) = (C, k).
+Note that (D, t) (D0 , t0 ) ( col-1 (C, k), where (C, k) is the collapse of an interleaving of ./  Definition 4.
+The temporal structure (C, k) is sufficient for the formula ph on the set T of temporal structures if for all valuations v, the following conditions are fulfilled: (C1) If (C, k, v, 0) |= ph then (D, t, v, 0) |= ph, for all (D, t) [?]
+T. (C2) If (C, k, v, 0) 6|= ph then (D, t, v, 0) 6|= ph, for all (D, t) [?]
+T.  Definition 4 with respect to ph and (D, t) (D0 , t0 ), for every (D, t), (D0 , t0 ), and (C, k), where (C, k) is the collapse of an interleaving of (D, t) and (D0 , t0 ).
+Moreover, ph is collapsesufficient if it has the properties (C1) and (C2).
+./  monitoring.
+t [?]
+t0 : (|= [?])
+r(t1 , .
+.
+.
+, ti(r) ) : (|= [?])
+ps : (|= [?])
+ps : (|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+t [?]
+t0 : (6|= [?])
+r(t1 , .
+.
+.
+, ti(r) ) : (6|= [?])
+ps : (6|= [?])
+ps : (6|= [?])
+ps : (|= [?])
+0<I I ps : (|= [?])
+ps : (6|= [?])
+I ps : (6|= [?])
+ps : (|= [?])
+0[?]I[?
+]J I  J ps : (|= [?])
+Figure 3.
+Selection of Inference Rules  the temporal structures (D, t) and (D0 , t0 ).
+The labels and their corresponding invariants are as follows for a formula ph: (|= [?
+]): For all valuations v and all i [?]
+N, if (C, k, v, i) |= ph then for every (D, t) [?]
+col-1 (C, k) and every j [?]
+N with ki = t j , it holds that (D, t, v, j) |= ph.
+(|= [?
+]): For all valuations v and all i [?]
+N, if (C, k, v, i) |= ph then for every (D, t) [?]
+col-1 (C, k), there is some j [?]
+N with ki = t j such that (D, t, v, j) |= ph.
+(6|= [?
+]): For all valuations v and all i [?]
+N, if (C, k, v, i) 6|= ph then for every (D, t) [?]
+col-1 (C, k) and every j [?]
+N with ki = t j , it holds that (D, t, v, j) 6|= ph.
+(6|= [?
+]): For all valuations v and all i [?]
+N, if (C, k, v, i) 6|= ph then for every (D, t) [?]
+col-1 (C, k), there is some j [?]
+N with ki = t j such that (D, t, v, j) 6|= ph.
+The first symbol (|= or 6|=) in a label states whether the formula is satisfied in the collapsed temporal structure (C, k).
+The second symbol ([?]
+or [?])
+states whether the formula is satisfied at some equally timestamped time point or at all equally timestamped time points in all temporal structures (D, t) [?]
+col-1 (C, k).
+Due to space limitations, Figure 3 shows only some of our inference rules.
+All rules can be found in Appendix C, where we also prove their soundness.
+First, consider the rules in Figure 3 for atomic formulas.
+An atomic formula t [?]
+t0 depends only on the valuation and therefore can be labeled (|= [?])
+and (6|= [?]).
+An atomic formula of the form r(t1 , .
+.
+.
+, ti(r) ) can be labeled (|= [?])
+and (6|= [?]).
+We only explain the labeling (|= [?]).
+The explanation for the label (6|= [?])
+is analogous.
+The interpretation of a predicate in a collapsed temporal structure (C, k) at a time point i is the union of the predicate's interpretations at all time points j in a temporal structure (D, t) [?]
+col-1 (C, k) for which t j equals ki .
+Therefore, if a [?]
+rCi then a [?]
+rD j , for some j [?]
+N with t j = ki .
+Note that a [?]
+rD j does not necessarily hold for all these js; hence, we cannot label r(t1 , .
+.
+.
+, ti(r) ) with (6|= [?]).
+The next two rules in Figure 3 express that the invariants corresponding to the labels (|= [?])
+and (6|= [?])
+imply the invariants corresponding to (|= [?])
+and (6|= [?
+]), respectively.
+Next, we consider the inference rules for the temporal operator I .
+We first justify the inference rule that allows  us to propagate the label (|= [?])
+from ps to I ps.
+If I ps is satisfied in the collapsed temporal structure (C, k) at time point i then ps is satisfied at some previous time point j <= i in (C, k) with ki - k j [?]
+I.
+Because ps is labeled with (|= [?
+]), all time points with timestamp k j in the temporal structure (D, t) [?]
+col-1 (C, k) also satisfy ps, and hence, all time points with timestamp ki satisfy I ps in (D, t).
+When ps is labeled with (|= [?
+]), possibly only a single time point k in (D, t) with tk = k j satisfies ps.
+If 0 [?]
+I then I ps might not be satisfied at time points before k, even if these time points have the timestamp ki .
+So, we can label I with (|= [?])
+but not with (|= [?]).
+However, if 0 < I then ps is satisfied in (C, k) at a time point j with the timestamp k j < ki .
+Hence I ps is satisfied in (D, t) at all time points with the timestamp ki .
+This allows us to label I ps with (|= [?]).
+Finally, consider the rule where ps is labeled (6|= [?]).
+If I ps is violated in the collapsed temporal structure (C, k) at timestamp ki then ps is violated at all previous points in the temporal structure (D, t) [?]
+col-1 (C, k) that satisfy the metric constraints given by I.
+But then I ps is also violated in (D, t) at all time points with the timestamp ki .
+Hence we can label I ps with (6|= [?]).
+We can try to label a formula solely based on inference rules that involve only a single Boolean or temporal operator.
+However, with more specialized inference rules like the one for I  J ps given in Figure 3, we are more likely to succeed in propagating labels to the root of the formula.
+Intuitively, with the nesting of the operators I and  J , and when 0 [?]
+I [?]
+J, the ordering of equally timestamped time points becomes irrelevant since from a given time point, we can freely choose any of these time points that satisfy the metric constraints given by the intervals I and J.
+Hence, a labeling (|= [?])
+for ps allows us to label I  J ps with (|= [?]).
+Finally, we remark that there are no inference rules for the temporal operators I and #I because these operators inherently rely on the relative ordering of the structures in a temporal structure.
+Based on the labels at the root of the formula, we can determine if the formula has the property (C1) or the property (C2).
+The conclusions we can draw are stated in the following lemma, which follows from the soundness of the inference rules.
+Lemma 8.
+1.
+If ph can 2.
+If ph can 3.
+If ph can 4.
+If ph can  Let ph be a formula.
+be labeled by (|= [?])
+then ph has property (C1).
+be labeled by (6|= [?])
+then ph has property (C2).
+be labeled by (|= [?])
+then  ph has property (C1).
+be labeled by (6|= [?])
+then  ph has property (C2).
+Based on this lemma, we obtain the following theorem.
+Theorem 9.
+If the formula ph can be labeled by (|= [?])
+and (6|= [?])
+then it is collapse-sufficient.
+Moreover, we can determine in linear time in the formula's length whether ph can be labeled by (|= [?
+]), (|= [?
+]), (6|= [?
+]), and (6|= [?]).
+Note that formulas of the form  ps are already collapse-  sufficient if ps can be labeled by (6|= [?])
+and  ps can be labeled by (|= [?]).
+Even if only one of these labellings can be derived, monitoring  ps on the collapsed temporal structure of an interleaving is still useful.
+For example, if ps is labeled by (6|= [?])
+then violations that are found on the collapsed temporal structure relate to strong violations on the set of interleavings.
+However, we might miss some violations.
+Example 10.
+We illustrate our algorithm and its inference rules by applying it to the formula  [?]x.
+publish(x) - [0,11) approve(x).
+We first remove some syntactic sugar and obtain the formula  [?]x.
+!publish(x) [?]
+[0,11) approve(x).
+We start by labeling the atomic subformulas.
+Both publish(x) and approve(x) are labeled with (|= [?])
+and (6|= [?]).
+According to the inference rules for the temporal operator I we label [0,11) approve(x) with (|= [?])
+and (6|= [?]).
+We cannot label it with (|= [?])
+since the interval contains 0.
+Moreover, the subformula !publish(x) is labeled with (6|= [?])
+and (|= [?]).
+The subformulas !publish(x) [?]
+[0,11) approve(x) and [?]x.
+!publish(x) [?]
+[0,11) approve(x) are labeled (|= [?])
+and (6|= [?]).
+We conclude that the formula  [?]x.
+!publish(x) [?]
+[0,11) approve(x) has the property (C2).
+It does not have the property (C1), as shown in Example 7.
+The formula  [?]x.
+publish(x) - [1,11) approve(x) has both properties (C1) and (C2).
+The labeling starts similarly but [1,11) approve(x) is additionally labeled with (|= [?])
+since the interval of the temporal operator does not contain 0.
+This label propagates to the root of the formula.
+We conclude that  [?]x.
+!publish(x)[?
+][1,11) approve(x) also has property (C1).
+Policy Approximation.
+In Example 7, we have seen that we can obtain collapse-sufficient policies by strengthening or weakening the original policy.
+In the following, we present a systematic approach along these lines by overapproximating and under-approximating policies.
+Let ph be a formula in positive normal form.
+We obtain the weakened formula phw by replacing each atomic subformula r(t1 , .
+.
+.
+, ti(r) ) that occurs positively in ph by I I 0 r(t1 , .
+.
+.
+, ti(r) ), for some intervals I and I 0 with 0 [?]
+I [?]
+I 0 .
+Analogously, in the strengthened formula ph s , we replace each negative occurrence of an atomic subformula r(t1 , .
+.
+.
+, ti(r) ) by I I 0 r(t1 , .
+.
+.
+, ti(r) ).
+Theorem 11.
+Let phw and ph s be weakened and strengthened formulas of the formula ph in positive normal form.
+The formulas ph - phw and ph s - ph are valid.
+Moreover, 1. if ph s is collapse-sufficient then ph has property (C1), and 2. if phw is collapse-sufficient then ph has property (C2).
+Weakened and strengthened formulas are more likely to be collapse-sufficient, since their subformulas of the form I I 0 r(t1 , .
+.
+.
+, ti(r) ) can be labeled with (|= [?
+]), while r(t1 , .
+.
+.
+, ti(r) ) can only be labeled with the weaker label (|= [?]).
+Simultaneously weakening and strengthening always results in a collapse-sufficient formula.
+However, the resulting formula does not necessarily relate to the original formula.
+Figure 4.
+Nokia's Data-collection Campaign  Finally, note that by inserting the temporal operators [0,1) and [0,1) around positively occurring atomic subformulas, the ordering of equally timestamped actions becomes irrelevant.
+This is desirable in systems where the clocks used to timestamp the actions are synchronized but too coarse-grained.
+Taking this idea further, by putting temporal operators [0,b) and [0,b) around these subformulas with b >= 1, we take into account that the timestamps in a temporal structure are inaccurate and might differ from their actual value by the threshold b--a situation that occurs in practice.
+IV.
+Practical Experience In this section, we describe the implementation of our monitoring approach within Nokia's Data-collection Campaign [7], which is a real-world application with realistic usage-control policies.
+Furthermore, we report on the monitor's performance and our findings.
+Scenario.
+The campaign,1 which was launched in 2009, collects contextual information from cell phones of about 180 participants.
+This sensitive data includes phone locations, call and SMS information, and the like.
+The data collected by a participant's phone is propagated into the databases db1, db2, and db3.
+The phones use WLAN to periodically upload their data to database db1.
+Every night, the synchronization script script1 copies the data from db1 to db2.
+Furthermore, triggers running on db2 anonymize and copy the data to db3, where researchers can access and analyze the anonymized data.
+The participants can access and delete their own data using a web interface to db1.
+Deletions are propagated to all databases: from db1 to db2 by the synchronization script script2, which also runs every night, and from db2 to db3 by database triggers.
+Figure 4 summarizes the various usages of data in the campaign.
+Within the campaign, data is organized by records and can easily be identified.
+When uploading data from a phone into db1, a unique identifier is generated for each record.
+This identifier together with an identifier of the participant who contributed the data is attached to the record.
+Policies.
+The collected data is subject to various policies in order to protect the participants' privacy.
+For example, there are access control rules and policies governing 1 See  http://research.nokia.com/page/11367 for details.
+Table I. policy delete ins-1-2 ins-2-3  del-1-2  Policy Formalizations in MFOTL  MFOTL formalization  [?]user.
+[?]data.
+delete(user, db2, data) - user [?]
+script2  [?]user.
+[?]data.
+insert(user, db1, data) [?]
+data 0 unknown - [0,1s) [0,30h] [?
+]user0 .
+insert(user0 , db2, data) [?]
+delete(user0 , db1, data)  [?]user.
+[?]data.
+insert(user, db2, data) [?]
+data 0 unknown - [0,1s) [0,60s) [?
+]user0 .
+insert(user0 , db3, data)  [?]user.
+[?]data.
+delete(user, db1, data) [?]
+data 0 unknown -  [0,1s) [0,30h) [?
+]user0 .
+delete(user0 , db2, data) [?]
+([0,1s) [0,30h) [?
+]user0 .
+insert(user0 , db1, data))[?]
+ (fi[0,30h) [0,30h) ![?
+]user0 .
+insert(user0 , db2, data))  the process of propagating the data between databases.
+In particular, any insertion or deletion of data in db1 must be propagated to db2 within 30 hours, and from db2 to db3 within 1 minute.
+Furthermore, only the latest version of the synchronization scripts may be used and the scripts may not run longer than 6 hours.
+Finally, access to the databases is restricted to selected user accounts and the account script1 may be used only while the script script1 is running.
+We present here just a few representative policies in Table I.
+Details about all the 14 policies are given in Appendix E. The predicates insert and delete correspond to the equally-named database commands.
+The arguments of these predicates are the agent that initiated the action, the name of the database where the action was carried out, and an identifier of the involved data.
+Note that all policy formalizations in Table I are collapse-sufficient.
+However, some policies have slightly weaker or stronger variants that are not collapsesufficient.
+For example, we obtained ins-2-3 from the policy "all data inserted into db2 must also be inserted into db3 within 60 seconds" by weakening the formula  [?]users.
+[?]data.
+insert(user, db2, data)[?
+]data 0 unknown - [0,60s) [?
+]user0 .
+insert(user0 , db3, data).
+Intuitively, ins-2-3 is the policy formalization that we actually intended: we do not want to distinguish the relative ordering of the insertions into db2 and db3 when they are logged with the same timestamp.
+This is because the 1 second timestamp granularity that is used may not be fine-granular enough: the database triggers may be activated within milliseconds.
+Logging Mechanisms.
+We extended the data-collection setup with mechanisms to log policy-relevant actions.
+We installed logging mechanisms for the three databases, the script script1, and the SVN repository, assuming synchronized clocks for timestamping.
+We now discuss details of these logging mechanisms.
+As logs for the database db1 were not available, we implemented a proxy to inspect interactions of participants and phones with db1.
+The proxy logs what data is inserted and deleted.
+To observe the insertion of new data, we monitor the network traffic when the phone uploads data.
+For deletions, we use a custom front-end that logs the requests for deleting data.
+For practical reasons, we could deploy these mechanisms only for 2 out of the 180 participants.
+Hence, we have only partial logging for db1, which only  Table II.
+log 1 2 3 4 5 6 7 8 9  # time points 29,672 10,870 6,601 20,330 8,114 9,218 7,327 86,892 86,764  total # actions 1,462,700 969,520 1,019,428 962,766 687,402 630,287 554,733 936,249 986,249  Log Statistics  # insert actions db2 db3 82,486 678,840 678,840 23,828 472,369 472,369 33,229 492,411 492,411 12,918 468,844 468,844 7,067 339,674 339,647 4,207 311,882 311,835 3,251 275,208 275,199 47,786 400,490 400,475 30,118 434,268 434,259 db1  # other actions 22,534 954 1377 11,298 12,160 1,366 1,014 87,498 87,604  affects 2 out of the 14 policies.
+The databases db2 and db3 reside physically on a single PostgreSQL server, which logs the SQL queries.
+We extract relevant actions from these PostgreSQL logs.
+The main challenge is to determine what data is processed in a query since only the query itself is logged.
+Fortunately, most relevant queries are made by automated scripts or database triggers and contain enough information to determine what data is used.
+For example, an insert or delete query initiated by a synchronization script includes the identifier of the used data record.
+Hence, a simple syntactic analysis of these queries suffices to log the relevant actions in sufficient detail.
+When the analysis failed to extract the data, we identified the data with the constant unknown.
+Evaluation.
+To evaluate the performance of our monitor on different data sets, we split the logs into smaller files, where each file corresponds to roughly 24 hours of log entries.
+Table II provides details about the collapsed temporal structures corresponding to these logs.
+Observe that the number of insert actions is significantly larger than the number of other actions.
+None of the log files used contains more than 100 delete actions.
+Table III shows the monitor's running times and memory usage for each policy and log file.
+For the experiments, we used a desktop computer with a 1150 MHz AMD Phenom 9600B Quad-Core CPU.
+Monitoring invariants like the policy delete is fast: the monitor needed no more than 10 seconds for a 24-hours log file.
+More complex policies involving temporal operators with large time windows, take more time to monitor.
+For example, for the policy ins-1-2, the monitor took more than 4 hours in some cases.
+The policy del-1-2 with an even larger time window, however, could be quickly monitored.
+The reason here is that the log files used contain only few delete actions.
+Although we monitored the logs offline, the running times indicate that an online monitoring approach is possible, since the running times are less than the time period covered by the logs.
+The memory requirements are also modest.
+For the policies delete and ins-2-3, the monitor does not require more than 10 MB of RAM.
+For ins-1-2 and del-1-2, the monitor used under 200 MB of RAM, which is also acceptable due to the large time windows.
+Findings.
+The monitor reported the following policy violations.
+First, some static access control policies like delete were violated.
+These violations were due to testing,  Table III.
+policy delete ins-1-2 ins-2-3 del-1-2  log 1 10 s / 4 MB 231 m / 161 MB 9 m / 8 MB 24 s / 176 MB  log 2 7 s / 4 MB 44 m / 103 MB 3 m / 7 MB 16 s / 139 MB  Monitor Performance -- Running Times / Memory Usage  log 3 7 s / 4 MB 67 m / 107 MB 5 m / 8 MB 13 s / 87 MB  log 4 6 s / 4 MB 24 m / 102 MB 4 m / 8 MB 11 s / 79 MB  debugging, and other improvement activities going on while the system was running.
+Second, an earlier version of one of the synchronization scripts contained a bug, which was not detected in previous tests.
+Only a subset of the insertions were propagated between the databases.
+Third, while the campaign was running, the infrastructure was migrated to another server.
+After the migration, the deployment of the scripts was delayed, which caused policy violations.
+Overall, the main reason for these violations is that we monitored an experimental system still under development.
+In this case study the monitor proved to be a powerful debugging tool.
+For commercial systems, it can detect policy violations thereby protecting the users' privacy and increasing users' trust in using the systems.
+Our findings also show that policy monitoring makes sense even in systems where users are honest and interested in honoring the policies.
+V. Related Work The usage-control architecture described by Pretschner et al.
+[8] and the UCONABC architecture of Park and Sandhu [9] both utilize monitoring techniques.
+However, the two architectures are only conceptual and have neither been deployed nor evaluated in a real-word setting.
+Goodloe and Pike [10] recently surveyed the state of the art for monitoring distributed systems.
+We restrict ourselves here to the most related work.
+Bauer et al.
+[11] examine a setting where actions are totally ordered and system requirements are given in a propositional linear-time temporal logic.
+Both assumptions are too restrictive in our setting.
+However, their monitoring architecture additionally includes a component that analyzes the cause of a failure, which is fed back into the system.
+Genon et al.
+[12] present a monitoring algorithm for propositional LTL, where events are partially ordered.
+They use symbolic exploration methods to cope with the interleavings of events.
+It is unclear how their algorithm extends to a first-order setting.
+Moreover, in our approach, we consider formulas in a richer logic for which monitoring a single trace is sufficient.
+In contrast to these works and ours, Sen et al.
+[13] present a distributed monitoring approach, where multiple monitors are implemented locally and communicate with each other.
+These monitors are generated from a propositional past-time linear-time distributed temporal logic.
+A potential bottleneck is the monitors' communication overhead.
+Finally, research on checking temporal integrity constrains [14], [15] of stored data and temporal triggers [16] in databases is related to our monitoring algorithm [1].
+In fact,  log 5 5 s / 4 MB 9 m / 71 MB 2 m / 8 MB 8 s / 58 MB  log 6 4 s / 4 MB 5 m / 65 MB 2 m / 7 MB 7 s / 53 MB  4 s 3 m 1 m 12 s  log 7 / 4 MB / 57 MB / 7 MB / 111 MB  log 8 6 s / 4 MB 73 m / 115 MB 2 m / 8 MB 21 s / 184 MB  log 9 6 s / 4 MB 48 m / 111 MB 1 m / 6 MB 11 s / 102 MB  our monitoring algorithm extends Chomicki's monitor [14] by handling bounded future operators.
+These temporal operators are extremely useful for formalizing usage-control policies, which usually contain obligations.
+We are not aware of any implementation and experimental evaluation of Chomicki's monitoring algorithm.
+VI.
+Conclusion We theoretically and practically tackled the problem of monitoring the usage of data in concurrent distributed systems.
+We provided means to efficiently monitor concurrently generated logs.
+We also deployed and evaluated a monitoring architecture in a real-world application, Nokia's Data-collection Campaign.
+Our case study demonstrates the feasibility and benefits of monitoring the usage of sensitive data.
+As future work we plan to develop monitoring techniques for more complex systems with more agents, actions, and databases.
+The challenges will be to handle less accurate and less complete logging, and to provide monitoring algorithms that scale up from millions to billions of log entries per day.
+Our future work also includes developing monitoring techniques that can also be used for policy enforcement, i.e., preventing policy violations.
+Acknowledgments.
+This work was supported by the Nokia Research Center, Switzerland.
+The authors thank Imad Aad, Debmalya Biswas, Olivier Bornet, Olivier Dousse, Juha Laurila, and Valtteri Niemi for valuable input.
+References [1] D. Basin, F. Klaedtke, S. Muller, and B. Pfitzmann, "Runtime monitoring of metric first-order temporal properties," in Proceedings of the 28th IARCS Annual Conference on Foundations of Software Technology and Theoretical Computer Science (FSTTCS), ser.
+Leibniz International Proceedings in Informatics (LIPIcs), vol.
+2.
+Schloss Dagstuhl - Leibniz Center for Informatics, 2008, pp.
+49-60.
+[2] D. Basin, F. Klaedtke, and S. Muller, "Monitoring security policies with metric first-order temporal logic," in Proceeding of the 15th ACM Symposium on Access Control Models and Technologies (SACMAT).
+ACM Press, 2010, pp.
+23-34.
+[3] A. S. Tanenbaum and M. van Steen, Distributed Systems: Principles and Paradigms.
+Prentice Hall, 2002.
+[4] L. Lamport, "Time, clocks, and the ordering of events in a distributed system," Commun.
+ACM, vol.
+21, no.
+7, pp.
+558- 565, 1978.
+[5] S. Abiteboul, R. Hull, and V. Vianu, Foundations of Databases: The Logical Level.
+Addison Wesley, 1994.
+[6] L. Lamport, "What good is temporal logic?"
+in Proceedings of the IFIP 9th World Computer Congress, ser.
+Information Processing, vol.
+83.
+North-Holland, 1983, pp.
+657-668.
+Appendix A.
+Additional Proof Details: Intractability Results We remark that related intractability results for LTL on so-called partially ordered traces are given in [17].
+However, the setting is different from ours.
+In particular, it is unclear how to describe the set of interleavings of two timestamped traces using partially ordered traces as defined in [17].
+Moreover, we reduce SAT and TAUT, respectively, to the respective decision problem for proving its hardness.
+In [17], the global-predicate-detection decision problem is used.
+The decision problem in Theorem 3(1) is in NP as a nondeterministic Turing machine can first guess the violating interleaving up to the given time point and then verify its guess in polynomial time [18].
+Note that the Turing machine does not need to guess a valuation, as the input formula is a quantifier-free sentence and this contains no variables.
+Hardness is established by polynomially reducing SAT to the decision problem in Theorem 3(1) as shown below.
+Analogously, the coNP-hardness of the decision problem in Theorem 3(2) is shown by polynomially reducing TAUT to it, also explained below.
+This problem is in coNP since its complement is in NP.
+Reduction from SAT.
+We show NP-hardness of the decision problem in Theorem 3(1) by reduction from SAT.
+To fix notation, we recall that a propositional formula a over a set of atomic propositions P is satisfiable if there is an assignment th of propositions to truth values [?]
+(denoting false) and > (denoting true), i.e.
+th : P - {[?
+], >}, such that th(a) = >, where th is extended from atomic propositions to formulas as expected.
+The SAT problem asks whether a given propositional formula is satisfiable.
+SAT is NP-hard.
+Suppose P = {p0 , .
+.
+.
+, pn-1 }, with n >= 0, is a set of atomic propositions.
+Let S be the signature (C, R, i) with C = {c}, R = {q0 , r0 , .
+.
+.
+, qn-1 , rn-1 }, and i(qi ) = i(ri ) = 1, for any 0 <= i < n. The two temporal structures (D1 , t1 ) and (D2 , t2 ) over S are given by: |D| = {c}, cD = c, t1i = t2i = i for any i [?]
+N, and for any k [?]
+{1, 2} and i, j [?]
+N with 0 <= i < n, ( Dkj {c} if k = 1 and i = j, qi = [?]
+otherwise, ( k D {c} if k = 2 and i = j, ri j = [?]
+otherwise.
+Given a propositional formula a over P, the MFOTL formula paq is obtained by replacing each occurrence of  a proposition pi in a with  ri (c) [?]
+ qi (c) .
+Thus, given a propositional formula a, the reduction constructs the two prefixes of length n of (D1 , t1 ) and (D2 , t2 ) and the MFOTL formula paq.
+This reduction is linear in the size of a.
+Its correctness is shown by Lemma 13.
+The following remarks and lemma will be needed.
+Remark.
+For any interleaving (D, t) [?]
+(D1 , t1 ) (D2 , t2 ), the functions f1 and f2 in Definition 1 satisfy fk (i) [?]
+{2i, 2i + 1} where k [?]
+{1, 2}.
+Moreover, these functions are unique, ./  [7] I. Aad and V. Niemi, "NRC data collection campaign and the privacy by design principles," in Proceedings of the International Workshop on Sensing for App Phones (PhoneSense), 2010.
+[8] A. Pretschner, M. Hilty, and D. Basin, "Distributed usage control," Commun.
+ACM, vol.
+49, no.
+9, pp.
+39-44, 2006.
+[9] J.
+Park and R. Sandhu, "The UCONABC usage control model," ACM Trans.
+Inform.
+Syst.
+Secur., vol.
+7, no.
+1, pp.
+128-174, 2004.
+[10] A. Goodloe and L. Pike, "Monitoring distributed real-time systems: A survey and future directions," NASA Langley Research Center, Tech.
+Rep. NASA/CR-2010-216724, July 2010.
+[11] A. Bauer, M. Leucker, and C. Schallhart, "Model-based runtime analysis of distributed reactive systems," in Proceedings of the 2006 Australian Software Engineering Conference (ASWEC).
+IEEE Computer Society, 2006.
+[12] A. Genon, T. Massart, and C. Meuter, "Monitoring distributed controllers: When an efficient LTL algorithm on sequences is needed to model-check traces," in Proceedings of the 14th International Symposium on Formal Methods (FM), ser.
+Lect.
+Notes Comput.
+Sci., vol.
+4085.
+Springer, 2006, pp.
+557-572.
+[13] K. Sen, A. Vardhan, G. Agha, and G. Rosu, "Efficient decentralized monitoring of safety in distributed systems," in Proceedings of the 26th International Conference on Software Engineering (ICSE).
+IEEE Computer Society, 2004, pp.
+418- 427.
+[14] J. Chomicki, "Efficient checking of temporal integrity constraints using bounded history encoding," ACM Trans.
+Database Syst., vol.
+20, no.
+2, pp.
+149-186, 1995.
+[15] U. W. Lipeck and G. Saake, "Monitoring dynamic integrity constraints based on temporal logic," Inform.
+Syst., vol.
+12, no.
+3, pp.
+255-269, 1987.
+[16] A. P. Sistla and O. Wolfson, "Temporal triggers in active databases," IEEE Trans.
+Knowl.
+Data Eng., vol.
+7, no.
+3, pp.
+471-486, 1995.
+[17] T. Massart, C. Meuter, and L. Van Begin, "On the complexity of partial order trace model checking," Inform.
+Process.
+Lett., vol.
+106, no.
+3, pp.
+120-126, 2008.
+[18] N. Markey and P. Schnoebelen, "Model checking a path," in Proceedings of the 14th International Conference on Concurrency Theory (CONCUR), ser.
+Lect.
+Notes Comput.
+Sci., vol.
+2761.
+Springer, 2003, pp.
+248-262.
+./  Lemma 13.
+Let a be a propositional formula.
+It holds that a is satisfiable if and only if (D1 , t1 ) (D2 , t2 ) weakly violates !paq at time point 2n.
+Proof: Suppose first that a is satisfiable.
+Then there is a truth value assignment th such that th(a) = >.
+Let (D, t) be the interleaving determined by the functions f1 and f2 given by ( 2i if th(pi ) = >, f1 (i) = 2i + 1 otherwise, and  ( f2 (i) =  2i 2i + 1  if th(pi ) = [?
+], otherwise.
+./  Let v be an arbitrary valuation.
+From Lemma 12, we obtain that (D, t, v, 2n) |= paq, that is, (D, t, v, 2n) 6|= !paq.
+Suppose now that (D1 , t1 ) (D2 , t2 ) weakly violates !paq at time point 2n.
+Then there is an interleaving (D, t) and a valuation v such (D, t, v, 2n) 6|= !paq.
+Let f1 and f2 the be functions determined by (D, t) as in Definition 1.
+Let th be a truth value assignment such that th(pi ) = > if and only if f1 (i) = 2i.
+Using again Lemma 12, we get that th is a satisfying assignment for a.
+./  Proof: Suppose first that a is a tautology.
+Let (D, t) be an arbitrary interleaving in (D1 , t1 ) (D2 , t2 ) and f1 , f2 be functions as in Definition 1.
+Let th be a truth value assignment such that th(pi ) = > if and only if f1 (i) = 2i.
+Let v be an arbitrary valuation.
+Using Lemma 12, we obtain that (D, t, v, 2n) 6|= !paq.
+Hence (D1 , t1 ) (D2 , t2 ) strongly violates !paq at time point 2n.
+Suppose now that (D1 , t1 ) (D2 , t2 ) strongly violates !paq at time point 2n.
+Let th be an arbitrary truth value assignment.
+Let (D, t) be the interleaving determined by the functions f1 and f2 given by ( 2i if th(pi ) = >, f1 (i) = 2i + 1 otherwise, ./  Proof: We use structural induction on the form of a.
+The only interesting case is the base case, the other cases follow directly from the induction hypotheses.
+Thus let a = pi [?]
+P. Suppose that (D, t, v, 2n) |= (ri (c)[?
+] qi (c)).
+That is, there is a time point j <= 2n such that (D, t, v, j) |= ri (c) and such that there is a time point j0 <= j for which (D, t, v, j0 ) |= D0 D qi (c).
+Then c [?]
+ri j and c [?]
+qi j .
+From the definition of an interleaving and the definitions of the interpretations of the predicates qi and ri , it follows that j = f2 (i) and j0 = f1 (i).
+Then, as f1 (i), f2 (i) [?]
+{2i, 2i + 1}, f1 (i) , f2 (i), and j0 <= j, we get that f1 (i) = 2i and f2 (i) = 2i + 1.
+Thus th(pi ) = >.
+Suppose that th(a) = >.
+Then f1 (i) = 2i and f2 (i) = 2i + 1.
+We have (D, t, v, 2i) |= qi (c) and (D, t, v, 2i+1) |= ri (c).
+Thus (D, t, v, 2i + 1) |= ri (c) [?]
+ qi (c) and clearly (D, t, v, 2n) |=   ri (c) [?]
+ qi (c) .
+Lemma 14.
+Let a be a propositional formula.
+It holds that a is a tautology if and only if (D1 , t1 ) (D2 , t2 ) strongly violates !paq at time point 2n.
+./  ./  Lemma 12.
+Let a be a propositional formula, th a truth value assignment, v a valuation, and (D, t) an interleaving of (D1 , t1 ) (D2 , t2 ) given by the functions f1 and f2 such that th(pi ) = > iff f1 (i) = 2i, for any i with 0 <= i < n. It holds that th(a) = > if and only if (D, t, v, 2n) |= paq.
+Reduction from TAUT.
+We show coNP-hardness of the decision problem in Theorem 3(2) by reduction from TAUT.
+We recall that a propositional formula a over a set of atomic propositions P is a tautology if th(a) = > for any assignment th of propositions to truth values.
+The TAUT problem asks whether a given propositional formula is a tautology.
+TAUT is coNP-hard.
+We use the same reduction as for the decision problem in Theorem 3(1).
+The correctness of the reduction follows from the following lemma.
+./  that is, if g1 , g2 : N - N are strictly monotonic functions satisfying conditions (1)-(3) in Definition 1 then either g1 = f1 and g2 = f2 , or g1 = f2 and g2 = f1 .
+Furthermore, for any strictly monotonic functions f1 and f2 satisfying conditions (1) and (2) in Definition 1 and with f1 (i), f2 (i) [?]
+{2i, 2i + 1} for 0 <= i < n, there is a unique temporal structure (D, t) such that f1 and f2 also satisfy condition (3).
+In other words, the functions f1 , f2 determine an interleaving of (D1 , t1 ) and (D2 , t2 )  and ( f2 (i) =  2i 2i + 1  if th(pi ) = [?
+], otherwise.
+There is a valuation v such (D, t, v, 2n) 6|= !paq.
+Using again Lemma 12, we get that th is a satisfying assignment for a.
+Hence a is a tautology.
+B.
+Additional Proof Details: Derivation Rules Figure 5 lists all the inference rules for label propagation.
+Lemma 15 (see below) shows the soundness of these rules.
+When considering formulas in positive normal form, as required in Theorem 11, the Boolean operator [?]
+and the temporal operators release RI and trigger TI are seen as primitives, instead of being defined as syntactic sugar.
+We recall that ps RI kh abbreviates !
+(!ps SI !kh) and ps TI kh abbreviates !
+(!ps UI !kh).
+Figure 6 lists propagation rules for formulas that use these operators.
+Their soundness follows from the soundness of rules in Figure 5 and the mentioned equivalences.
+For instance, the correctness of the rule ps : (|= [?])
+kh : (|= [?])
+0 < I, 0 [?]
+J (ps RI kh) [?]
+( J ps) : (|= [?])
+follows from unfolding the abbreviation (ps RI kh) [?]
+( J ps),  which is !
+(!ps SI !kh) [?]
+( J !ps) , and the following deriva-  tion:  *  ps : (|= [?])
+kh : (|= [?])
+!ps : (6|= [?])
+!kh : (6|= [?])
+0 < I, 0 [?]
+J (!ps SI !kh) [?]
+( J !ps) : (6|= [?])
+ !
+(!ps SI !kh) [?]
+( J !ps) : (|= [?])
+*  Finally, for convenience, Figure 7 lists some inference rules for formulas for which the main operator is one of the temporal operators I , I , fiI , and I .
+These rules can be derived from the rules in Figure 5 by simply applying the definition of syntactic sugar.
+For instance, the rule ps : (|= [?])
+I ps : (|= [?])
+*  can be derived from x [?]
+x : (|= [?])
+[?]x.
+x [?]
+x : (|= [?])
+ps : (|= [?])
+([?]x.
+x [?]
+x) SI ps : (|= [?])
+Note that I ps is syntactic sugar for ([?]x.
+x [?]
+x) SI ps.
+We now show the soundness of the inference rules in Figure 5.
+*  Lemma 15.
+Let ph be a formula.
+If ph can be labeled with `, then ph satisfies the invariant `, where ` [?]
+ 	 (|= [?
+]), (6|= [?
+]), (6|= [?
+]), (|= [?])
+.
+Proof: Let (C, k) be the collapse of an interleaving of two given temporal structures.
+We proceed by induction on size of the derivation tree assigning label ` to ph.
+We make a case distinction based on the rule applied to label the formula, that is, the rule at the root of the tree.
+However, for clarity, we generally group cases by the formula's form.
+For readability, and without loss of generality, we already fix an arbitrary valuation v, an arbitrary time point i, and an arbitrary temporal structure (D, t) [?]
+col-1 (C, k).
+* We first consider the weakening rules.
+- ph is labeled with (|= [?])
+and (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+By the induction hypothesis, ph satisfies the invariant (|= [?
+]), thus (D, t, v, j) |= ph for any j with t j = ki .
+By the definition of (C, k), there is at least one j with t j = ki .
+Hence ph satisfies the invariant (|= [?]).
+- ph is labeled with (6|= [?])
+and with (6|= [?]).
+This case is analogous to the previous one.
+0 0 * ph = t [?]
+t , where t and t are variables or constants.
+In this case ph is labeled with (|= [?])
+and (6|= [?]).
+- ph is labeled with (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+Then v(t) = v(t0 ).
+Clearly, (D, t, v, j) |= ph for any time point j, as ph only depends on the valuation.
+The invariant (|= [?])
+is hence satisfied.
+- ph is labeled with (6|= [?]).
+This case is analogous to the previous one.
+*  *  ph = t [?]
+t0 , where t and t0 are variables or constants.
+This case is analogous to the previous one.
+ph = r(t1 , .
+.
+.
+, ti(r) ), where t1 , .
+.
+.
+, ti(r) are variables or constants.
+In this case ph is labeled with (|= [?])
+and (6|= [?]).
+- ph is labeled with (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+S Then (v(t1 ), .
+.
+.
+, v(ti(r) )) [?]
+rCi .
+As rCi = { j|t j =ki } rD j , there is a j with t j = ki such that (v(t1 ), .
+.
+.
+, v(ti(r) )) [?]
+rD j .
+Therefore (D, t, v, j) |= ph.
+Thus ph satisfies the invariant (|= [?]).
+- ph is labeled with (6|= [?]).
+Suppose that (C, k, v, i) 6|= ph.
+Then for any j with t j = ki we have that (v(t1 ), .
+.
+.
+, v(ti(r) )) < rD j , that is, (D, t, v, j) |= ph.
+Thus ph satisfies the invariant (6|= [?]).
+ph = !ps.
+If ps is labeled with `, then ph is labeled with !`, where !` is (|= [?
+]), (6|= [?
+]), (6|= [?
+]), or (|= [?])
+when ` is (6|= [?
+]), (|= [?
+]), (|= [?
+]), or (6|= [?])
+respectively.
+- ph is labeled with (|= [?]).
+Suppose that (C, k, v, i) |= !ps.
+By the induction hypothesis, ps satisfies the invariant (6|= [?]).
+As (C, k, v, i) 6|= ps, we have that (D, t, v, k) 6|= ps, that is, (D, t, v, k) |= ph, for all k with tk = ki .
+Thus ph satisfies the invariant (|= [?]).
+- The other cases are similar.
+ph = ps [?]
+kh.
+There are four rules to be analyzed.
+- ph, ps, and kh are labeled with (|= [?]).
+Suppose that (C, k, v, i) |= ps [?]
+kh.
+Then (C, k, v, i) |= ps and (C, k, v, i) |= kh.
+By the induction hypothesis, ps and kh satisfy the invariant (|= [?]).
+Hence, for all j with t j = ki , we have (D, t, v, j) |= ps and (D, t, v, j) |= kh.
+Thus (D, t, v, j) |= ph and (D, t, v, j) |= kh for all j with t j = ki .
+Hence, ph satisfies the invariant (|= [?]).
+- The other cases are similar.
+ph = [?]x.ps.
+There are four rules, one for each label: if ps is labeled with `, then ph is labeled with `.
+- ` is (|= [?]).
+Suppose that (C, k, v, i) |= [?]x.ps.
+Then there is a d [?]
+|D| such that (C, k, v[x/d], i) |= ps.
+As ps satisfies the invariant (|= [?
+]), we have (D, t, v[x/d], j) |= ps for all j with t j = ki .
+That is, (D, t, v, j) |= [?
+]x.ps for all j with t j = ki .
+Hence ph satisfies the invariant (|= [?]).
+- The other cases are similar.
+ph = ps SI kh.
+We have three rules to analyze.
+- ph, ps, and kh are each labeled with (|= [?]).
+By the induction hypothesis, ps and kh satisfy the invariant (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+Then, for some j <= i with ki - k j [?]
+I, we have (C, k, v, j) |= kh and (C, k, v, k) |= ps for all k [?]
+[ j + 1, i + 1).
+Let i0 be an arbitrary time point such that ti0 = ki .
+As kh satisfies the invariant (|= [?
+]), for the largest j0 with t j0 = k j we have (D, t, v, j0 ) |= kh.
+Clearly, ti0 - t j0 [?]
+I.
+From the definition of (C, k), for any k0 [?]
+[ j0 + 1, i0 + 1), there is a k [?]
+[ j + 1, i + 1) such that tk0 = kk .
+Then, as ps satisfies the invariant (|= [?
+]), for any k0 [?]
+[ j0 +1, i0 +1), we have (D, t, v, k0 ) |= ps.
+As ps satisfies the invariant (|= [?
+]), for all k [?]
+[ j + 1, i + 1) and all k0 with tk0 = kk ,  ph : (|= [?])
+ph : (|= [?])
+t [?]
+t0 : (|= [?])
+t [?]
+t0 : (6|= [?])
+r(t1 , .
+.
+.
+, ti(r) ) : (|= [?])
+ps : (|= [?])
+!ps : (6|= [?])
+ps : (|= [?])
+!ps : (6|= [?])
+ph : (6|= [?])
+ph : (6|= [?])
+t [?]
+t0 : (|= [?])
+t [?]
+t0 : (6|= [?])
+r(t1 , .
+.
+.
+, ti(r) ) : (6|= [?])
+ps : (6|= [?])
+!ps : (|= [?])
+ps : (6|= [?])
+!ps : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps [?]
+kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps [?]
+kh : (|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps [?]
+kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps [?]
+kh : (6|= [?])
+ps : (|= [?])
+[?]x.
+ps : (|= [?])
+ps : (|= [?])
+[?]x.
+ps : (|= [?])
+ps : (6|= [?])
+[?]x.
+ps : (6|= [?])
+ps : (6|= [?])
+[?]x.
+ps : (6|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps SI kh : (|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps SI kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps SI kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+0 < I, 0 [?]
+J (ps SI kh) [?]
+( J ps) : (6|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps UI kh : (|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps UI kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps UI kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+0 < I, 0 [?]
+J (ps UI kh) [?]
+(fi J ps) : (6|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+ps : (|= [?])
+0<I I ps : (|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+ps : (|= [?])
+0<I I ps : (|= [?])
+ps : (|= [?])
+0[?]I[?
+]J I  J ps : (|= [?])
+Figure 5.
+Inference Rules  ps : (6|= [?])
+kh : (6|= [?])
+ps [?]
+kh : (6|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps [?]
+kh : (6|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps [?]
+kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps [?]
+kh : (|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps RI kh : (6|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps RI kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps RI kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+0 < I, 0 [?]
+J (ps RI kh) [?]
+( J ps) : (|= [?])
+ps : (6|= [?])
+kh : (6|= [?])
+ps TI kh : (6|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps TI kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+ps TI kh : (|= [?])
+ps : (|= [?])
+kh : (|= [?])
+0 < I, 0 [?]
+J (ps TI kh) [?]
+( J ps) : (|= [?])
+Figure 6.
+Inference Rules for Formulas in Positive Normal Form  ps : (|= [?])
+I ps : (|= [?])
+ps : (6|= [?])
+I ps : (6|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+ps : (6|= [?])
+I ps : (6|= [?])
+ps : (|= [?])
+fiI ps : (|= [?])
+ps : (6|= [?])
+fiI ps : (6|= [?])
+ps : (6|= [?])
+fiI ps : (6|= [?])
+ps : (6|= [?])
+0<I fiI ps : (6|= [?])
+ps : (|= [?])
+I ps : (|= [?])
+ps : (6|= [?])
+I ps : (6|= [?])
+ps : (6|= [?])
+I ps : (6|= [?])
+ps : (6|= [?])
+0<I I ps : (6|= [?])
+ps : (6|= [?])
+0[?]I[?
+]J fiI  J ps : (6|= [?])
+Figure 7.
+* *  Derived Inference Rules  we have (D, t, v, k0 ) |= ps.
+Hence (D, t, v, i0 ) |= ps SI kh, and thus ph satisfies the invariant (|= [?]).
+- ph, ps, and kh are each labeled with (6|= [?]).
+By the induction hypothesis, ps and kh satisfy the invariant (6|= [?]).
+Suppose that (C, k, v, i) 6|= ph and that, by absurdity, ph does not satisfy the invariant (6|= [?]).
+That is, there is an i0 with ti0 = ki such that (D, t, v, i0 ) |= ph.
+Then there is a j0 <= i0 with ti0 - t j0 [?]
+I such that (D, t, v, j0 ) |= kh and for all k0 [?]
+[ j0 +1, i0 +1) we have (D, t, v, k) |= ps.
+By the definition of (C, k), there is a j with k j = t j0 .
+As kh satisfies the invariant (6|= [?
+]), we have that (C, k, v, j) |= kh.
+Similarly, we have that (C, k, v, k) |= ps for all k [?]
+[ j + 1, i + 1).
+That is, (C, k, v, i) |= ph, which is a contradiction.
+- ph and ps are labeled with (6|= [?
+]), and kh is labeled by (6|= [?]).
+By the induction hypothesis, ps and kh satisfy the invariants (6|= [?])
+and (6|= [?])
+respectively.
+As before, suppose that (C, k, v, i) 6|= ph and that, by absurdity, ph does not satisfy the invariant (6|= [?]).
+That is, for all i0 with ti0 = ki we have (D, t, v, i0 ) |= ph.
+Consider the largest such i0 .
+Then there is a j0 <= i0 with ti0 -t j0 [?]
+I such that (D, t, v, j0 ) |= kh and for all k0 [?]
+[ j0 + 1, i0 + 1) we have (D, t, v, k0 ) |= ps.
+By the definition of (C, k), there is a j with k j = t j0 .
+As kh satisfies the invariant (6|= [?
+]), we have that (C, k, v, j) |= kh.
+Take k [?]
+[ j + 1, i + 1) arbitrarily.
+If (C, k, v, k) 6|= ps, as ps satisfies the invariant (6|= [?
+]), then there is a k0 with tk0 = kk such that (D, t, v, k0 ) 6|= ps.
+This contradicts our assumption that (D, t, v, i0 ) |= ph, since such k0 must be in the interval [ j0 + 1, i0 + 1).
+We thus have that (C, k, v, k) |= ps for all k [?]
+[ j + 1, i + 1).
+Hence (C, k, v, i) |= ph, which is a contradiction.
+ph = ps UI kh.
+This case is analogous to the previous one.
+ph = (ps SI kh) [?]
+( J ps) with 0 < I and 0 [?]
+J. ph and kh are labeled with (6|= [?
+]), and ps is labeled by (6|= [?]).
+By the induction hypothesis, ps and kh satisfy the invariants  *  *  (6|= [?])
+and (6|= [?])
+respectively.
+Suppose that (C, k, v, i) 6|= ph and that, by absurdity, ph does not satisfy the invariant (6|= [?]).
+That is, there is an i0 with ti0 = ki such that (D, t, v, i0 ) |= ph.
+Then there is a j0 <= i0 with ti0 - t j0 [?]
+I such that (D, t, v, j0 ) |= kh and for all k0 [?]
+[ j0 + 1, i0 + 1) we have (D, t, v, k0 ) |= ps; and for all j00 >= i0 with t j00 - ti0 [?]
+J we have (D, t, v, j00 ) |= ps.
+By the definition of (C, k), there is a j with k j = t j0 .
+As kh satisfies the invariant (6|= [?
+]), we have that (C, k, v, j) |= kh.
+Take k [?]
+[ j + 1, i) arbitrarily.
+If (C, k, v, k) 6|= ps, as ps satisfies the invariant (6|= [?
+]), then there is a k0 with tk0 = kk such that (D, t, v, k0 ) 6|= ps.
+This contradicts our assumption that (D, t, v, i0 ) |= ph.
+Indeed, such a k0 must be in the interval [ j0 + 1, i00 + 1) where i00 is the largest such that ti00 = ki .
+If k0 <= i0 then (D, t, v, i0 ) 6|= ps SI kh.
+If k0 > i0 then (D, t, v, i0 ) 6|=  J ps, as 0 [?]
+J.
+We thus have that (C, k, v, k) |= ps for all k [?]
+[ j + 1, i + 1).
+Hence (C, k, v, i) |= ps SI kh.
+As (D, t, v, i0 ) |=  J ps and 0 [?]
+J, it follows that for all k0 >= i0 with tk0 = ti0 we have (D, t, v, k0 ) |= ps.
+We have seen that (D, t, v, k0 ) |= ps for all k0 [?]
+[ j0 + 1, i0 + 1).
+Because t j0 < ti0 (as 0 < I), it also follows that for all k0 <= i0 with tk0 = ti0 we have (D, t, v, k0 ) |= ps.
+Hence (D, t, v, k0 ) |= ps for all k0 with tk0 = ti0 .
+As ps satisfies the invariant (6|= [?
+]), we obtain that (C, k, v, i) |= ps.
+Similarly, we obtain that (C, k, v, k) |= ps for all k > i such that kk - ki [?]
+J.
+Hence (C, k, v, i) |=  J ps.
+We showed that (C, k, v, i) |= ph, which is a contradiction.
+Thus ph satisfies the invariant (6|= [?]).
+ph = (ps UI kh) [?]
+(fi J ps) with 0 < I and 0 [?]
+J.
+This case is analogous to the previous one.
+ph = I ps.
+There are two rules to analyze.
+For both rules, ps is labeled with (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+Then there is a j <= i with ki - k j [?]
+I such that (C, k, v, j) |= ps.
+As, by the induction hypothesis, ps satisfies the invariant (|= [?
+]), there is a j0 with t j0 = k j  * *  such that (D, t, v, j0 ) |= ps.
+- ph is labeled with (|= [?]).
+Take i0 to be the largest k such that tk = ki .
+Clearly, ti0 - t j0 [?]
+I and j0 <= i0 .
+Hence (D, t, v, i0 ) |= I ps and ph satisfies the invariant (|= [?]).
+- 0 < I and ph is labeled with (|= [?]).
+Take i0 arbitrarily such that ti0 = ki .
+Clearly, ti0 - t j0 [?]
+I and, as 0 < I, ti0 - t j0 > 0, thus j0 < i0 .
+Hence (D, t, v, i0 ) |= I ps.
+Thus ph satisfies the invariant (|= [?]).
+ph = I ps.
+This case is analogous to the previous one.
+ph = I  J ps with 0 [?]
+I [?]
+J.
+There is only one rule to consider: ps is labeled with (|= [?])
+and ph is labeled by (|= [?]).
+Suppose that (C, k, v, i) |= ph.
+Then there is a j <= i with ki - k j [?]
+I and there is a k >= j with kk - k j [?]
+I such that (C, k, v, k) |= ps.
+As, by the induction hypothesis ps satisfies the invariant (|= [?
+]), there is a k0 with tk0 = kk such that (D, t, v, k0 ) |= ps.
+Take i0 arbitrarily such that ti0 = ki .
+If k0 >= i0 then 0 <= tk0 -ti0 = kk -ki <= kk -k j [?]
+J.
+As 0 [?]
+J, we have tk0 - ti0 [?]
+J.
+Thus (D, t, v, i0 ) |=  J ps and, as 0 [?]
+I, (D, t, v, i0 ) |= I  J ps.
+The case when k0 < i0 is similar.
+Hence ph satisfies the invariant (|= [?]).
+C. Additional Proof Details: Theorem 9 The implication in Theorem 9 follows directly from Lemma 8, which in turn follows the correctness of the derivation rules (Lemma 15) and from the following lemma.
+Lemma 16.
+Let ph be a formula.
+1.
+If ph satisfies the invariant (|= [?
+]), then ph has property (C1).
+2.
+If ph satisfies the invariant (6|= [?
+]), then ph has property (C2).
+3.
+If ph satisfies the invariant (|= [?
+]), then  ph has property (C1).
+4.
+If ph satisfies the invariant (6|= [?
+]), then  ph has property (C2).
+1.
+2.
+3.
+4.
+Proof: We fix a temporal structure (C, k).
+Suppose ph satisfies the invariant (|= [?])
+and that (C, k, v, 0) |= ph for some valuation v. Then, for any (D, t) [?]
+col-1 (C, k) and every j [?]
+N with k0 = t j , it holds that (D, t, v, j) |= ph.
+By the definition of collapsed temporal structure, we have k0 = t0 .
+Hence ph satisfies (C1).
+This case is analogous to the previous one.
+Suppose ph satisfies the invariant (|= [?])
+and that (C, k, v, 0) |=  ph for some arbitrary valuation v. Then, for every (D, t) [?]
+col-1 (C, k), there is some j [?]
+N with k0 = t j such that (D, t, v, j) |= ph.
+It follows that (D, t, v, 0) |=  ph.
+Hence  ph satisfies (C1).
+This case is analogous to the previous one.
+Complexity of the Labeling Procedure.
+We now prove the other part of Theorem 9, which states that a formula ph can be labeled in time linear in its length, that is, in O(|ph|).
+We start with some definitions and then present a simple labeling algorithm and analyze its complexity.
+For a formula ph, we define its immediate subformulas isub(ph) to be: (i) {ps} if ph = !ps, ph = [?]x.
+ps, ph = I ps, or ph = #I ps; (ii) {ps, kh} if ph = ps [?]
+kh, ph = ps SI kh, or ph = ps UI kh; and (iii) [?]
+otherwise.
+For a rule r, we denote `(r) the label of the conclusion of the rule.
+We assume that the data structure used to represent formulas is a tree corresponding to the formula's syntax tree and that each node in the tree also stores 4 bits representing the 4 different labels.
+Initially these bits are set to 0, meaning that no label is associated with the corresponding subformula.
+1 2 3 4 5 6  add labels(ph) foreach ps [?]
+isub(ph) add labels(ps) foreach rule r if matches(ph, r) then add label(ph, `(r)) The function matches(ph, r) checks if the formula ph pattern matches a rule r. The order of rules is arbitrary, with the exception that the weakening rules are checked last.
+So, for instance if ph received label (|= [?
+]), then ph will match the appropriate weakening rule and it will also be labeled with (|= [?]).
+As rules have constant size, and only at most the first two levels of the tree representing the formula ph need to be inspected, we conclude that the function executes in constant time.
+The function add label(ph, `) simply adds the label ` to ph.
+Clearly, this operation can be performed in constant time.
+Note that the execution of the lines 2 and 4-6 takes constant time: |isub(ph)| <= 2 for any ph, there is a fixed, constant number of rules, and the functions matches and add label execute in constant time.
+Furthermore, the function add labels is executed exactly |ph| times, once for each subformula of ph.
+Hence the whole labeling procedure of ph can be done in linear time in the size of ph.
+D. Additional Proof Details: Theorem 11 We first show that phw is weaker than ph, or more precisely, that the formula ph - phw is valid.
+We proceed by structural induction on ph.
+0 0 0 0 * ph = t [?]
+t , ph = t [?]
+t , ph = !
+(t [?]
+t ), ph = !
+(t [?]
+t ), or 0 !r(t1 , .
+.
+.
+, ti(r) ), where t, t , and ti with 1 <= i <= i(r) are variables or constants.
+Then phw = ph, and the statement clearly holds.
+w * ph = r(t1 , .
+.
+.
+, ti(r) ).
+Then ph =  J  J 0 r(t1 , .
+.
+.
+, ti(r) ), for 0 some intervals J and J with 0 [?]
+J [?]
+J 0 .
+Let (D, t) be a temporal structure, v a valuation, and i a time point.
+Suppose that (D, t, v, i) |= ph.
+As 0 [?]
+I [?]
+J, we clearly have (D, t, v, i) |=  J  J 0 ph, that is, (D, t, v, i) |= ph0 .
+* ph = ps [?]
+kh, ph = [?]x.
+ps, ph = I ps, ph = #I ps, ph = ps SI kh, or ph = ps UI kh.
+These cases follow directly from the induction hypotheses.
+We only present the case ph =  ./  ./  ps SI kh.
+We have phw = psw SI khw .
+Let (D, t) be a temporal structure, v a valuation, and i a time point.
+Suppose that (D, t, v, i) |= ph.
+Then there is a j <= i with ti - t j [?]
+I such that (D, t, v, j) |= kh and (D, t, v, k) |= ps for any k [?]
+[i + 1, j + 1).
+Using the induction hypotheses for ps and kh, we obtain that (D, t, v, j) |= khw and (D, t, v, k) |= psw for any k [?]
+[i + 1, j + 1).
+Hence (D, t, v, i) |= phw .
+The proof of the dual case, that is, that the formula ph s - ph is valid, is similar.
+It is based on the remark that the formula  !
+ J  J 0 r(t1 , .
+.
+.
+, ti(r) ) - !r(t1 , .
+.
+.
+, ti(r) ) is valid.
+Finally, we prove statement (1).
+Statement (2) is similar.
+Let (C, k) be the collapse of two temporal structures (D1 , t1 ) and (D2 , t2 ).
+Suppose that ph s is collapse-sufficient and that (C, k, v, 0) |= ph s , for some arbitrary valuation v. It follows that (D, t, v, 0) |= ph s for any (D, t) [?]
+(D1 , t1 ) (D2 , t2 ).
+As ph s - ph is valid, we have that (D, t, v, 0) |= ph, for any (D, t) [?]
+(D1 , t1 ) (D2 , t2 ).
+E. Additional Details on Practical Experience In this section, we describe in detail all our policies in Nokia's Data-collection Campaign, their MFOTL formalization, and the resources needed for monitoring.
+Policies in Nokia's Data-collection Campaign.
+We first describe the domain and relations used for formalizing the policies.
+Then we describe the policies in natural language and give their formalization.
+The domain, that is, the values that can occur as a parameter of a system actions are the databases db1, db2, db3, all database accounts, all data identifiers, the constant unknown, all possible names for the synchronization scripts, all possible subversion URLs, all possible subversion revision numbers, and the subversion status values latest, old, mod, and nosvn.
+We represent actions in the system as elements in relations.
+We explain now the relations used.
+The elements of the relations for the predicates select, insert, delete, and update correspond to database operations with equallynamed SQL commands.
+The parameters are the user executing the operation, the name of the database, and an identifier of the involved data.
+The elements in the relations for the predicates start and stop indicate the starting and finishing of a synchronization script and contain the name of the script as their only parameter.
+After the script script1 starts, it logs details about its SVN status in the relations for the predicate svn.
+The parameters are the name of the script, its SVN status determined by the command svn status -u -v, the SVN URL, and the SVN revision number.
+Possible values for SVN status are latest for the latest version, old for an older version, mod for a locally modified version, and nosvn if the script has not been checked out from the subversion repository.
+The relations for the predicate commit represent committing a new script version into the subversion repository.
+The parameters are the SVN URL and revision number.
+Table IV.
+policy delete insert select update script1 runtime svn svn2 ins-1-2 ins-2-3 ins-3-2  del-1-2  del-2-3 del-3-2  Policy Formalizations in MFOTL  MFOTL formalization  [?]user.
+[?]data.
+delete(user, db2, data) - user [?]
+script2  [?]user.
+[?]data.
+insert(user, db2, data) - user [?]
+script1  [?]user.
+[?]data.
+select(user, db2, data) - user [?]
+script1 [?]
+user [?]
+script2 [?]
+user [?]
+triggers  [?]user.
+[?]data.
+!update(user, db2, data)  [?]db.
+[?]data.
+select(script1, db, data) [?]
+insert(script1, db, data) [?]
+delete(script1, db, data) [?]
+update(script1, db, data) - (!
+[0,1s) [0,1s) end(script1)) S ([0,1s) [0,1s) start(script1)) [?]
+[0,1s) [0,1s) end(script1)  [?]script.
+start(script) - (!
+[0,1s) [0,1s) end(script)) [?]
+[1s,6h) end(script)  [?]script.
+start(script) - [0,1s) [0,10s) [?]url.
+[?]rev.
+svn(script, latest, url, rev)  [?]script.
+[?]status.
+[?]url.
+[?]rev.
+svn(script, status,  url, rev) - fi[1s,[?])
+commit(url, rev0 ) - rev0  rev  [?]user.
+[?]data.
+insert(user, db1, data) [?]
+data 0 unknown - [0,1s) [0,30h] [?
+]user0 .
+insert(user0 , db2, data) [?]
+delete(user0 , db1, data)  [?]user.
+[?]data.
+insert(user, db2, data) [?]
+data 0 unknown - [0,1s) [0,60s) [?
+]user0 .
+insert(user0 , db3, data)  [?]user.
+[?]data.
+insert(user, db3, data) [?]
+data 0 unknown - [0,60s) [0,1s) [?
+]user0 .
+insert(user0 , db2, data)  [?]user.
+[?]data.
+delete(user, db1, data) [?]
+data 0 unknown -  [0,1s) [0,30h) [?
+]user0 .
+delete(user0 , db2, data) [?]
+([0,1s) [0,30h) [?
+]user0 .
+insert(user0 , db1, data))[?]
+ (fi[0,30h) [0,30h) ![?
+]user0 .
+insert(user0 , db2, data))  [?]user.
+[?]data.
+delete(user, db2, data) [?]
+data 0 unknown - [0,1s) [0,60s) [?
+]user0 .
+delete(user0 , db3, data)  [?]user.
+[?]data.
+delete(user, db3, data) [?]
+data 0 unknown - [0,60s) [0,1s) [?
+]user0 .
+delete(user0 , db2, data)  In the following, we informally state the policies in natural language and for the more involved policies, we provide additional explanations.
+The MFOTL formalization of the policies is shown in Table IV.
+The policies are: * delete: Only user script2, representing the synchronization script script2, may delete data in db2 by executing the SQL delete command.
+* insert: Only user script1, representing the synchronization script script1, may insert data in db2 by executing the SQL insert command.
+* select: Only a limited set of users (script1, script2, triggers) may read data from db2 by executing the SQL select command.
+* update: No SQL update commands are allowed in db2, only insertion and deletions.
+* script1: Database operations may be executed under the user account script1 only while the script script1 is running.
+The motivation for this policy is that the account script1 should only be used by the script, so if the account is used while the script is not running, the account may have been compromised.
+The database operation can happen while the script is running, including the boundaries.
+That is, the time points when an operation happens and when the script starts or ends may have equal time stamps.
+The semantics of the S operator includes the script start, but excludes the script end.
+Therefore, the script end is allowed with the additional disjunct at the end of the formula.
+* runtime: The synchronization scripts must run for at least 1 second and for no longer than 6 hours.
+* svn, svn2: The synchronization scripts are maintained in an SVN repository.
+We require that when started, the synchronization scripts are the latest version available  Table V. policy delete insert select update script1 runtime svn svn2 ins-1-2 ins-2-3 ins-3-2 del-1-2 del-2-3 del-3-2  *  *  log 1 10 s / 4 MB 13 s / 4 MB 10 s / 4 MB 10 s / 4 MB 14 s / 4 MB 12 s / 9 MB 10 s / 4 MB 12 s / 16 MB 231 m / 161 MB 9 m / 8 MB 7 m / 5 MB 24 s / 176 MB 10 s / 4 MB 10 s / 4 MB  log 2 7 s / 4 MB 8 s / 4 MB 7 s / 4 MB 6 s / 4 MB 9 s / 4 MB 8 s / 9 MB 7 s / 4 MB 9 s / 16 MB 44 m / 103 MB 3 m / 7 MB 3 m / 5 MB 16 s / 139 MB 6 s / 4 MB 6 s / 4 MB  Monitor Performance -- Running Times / Memory Usage  log 3 7 s / 4 MB 10 s / 4 MB 7 s / 4 MB 8 s / 4 MB 10 s / 4 MB 8 s / 6 MB 7 s / 4 MB 9 s / 16 MB 67 m / 107 MB 5 m / 8 MB 5 m / 5 MB 13 s / 87 MB 7 s / 4 MB 7 s / 4 MB  log 4 6 s / 4 MB 8 s / 4 MB 6 s / 4 MB 6 s / 4 MB 9 s / 4 MB 8 s / 9 MB 6 s / 4 MB 9 s / 16 MB 24 m / 102 MB 4 m / 8 MB 4 m / 6 MB 11 s / 79 MB 6 s / 4 MB 6 s / 4 MB  in the repository (largest SVN revision number).
+We use two different formalizations, svn and svn2.
+The policy svn uses the status parameter of the relation svn.
+The policy svn2 compares the revision number parameter of the relation svn with the committed revision numbers obtained from the subversion log via the commit relation.
+Computing the latest revision number is done by the logging mechanism for the policy svn, but by the monitor for the policy svn2.
+Monitoring both policies allows us to compare how efficiently the monitor copes with these different formalizations and to observe the impact of offloading the monitor by doing pre-computations in the logging mechanisms.
+ins-*: Data uploaded by the phone into db1 must be propagated to all databases.
+In particular, ins-1-2 requires that data uploaded into db1 must be inserted into db2 within 30 hours after the upload, unless it has been deleted from db1 in between.
+Furthermore, ins-2-3 and ins-3-2 require that data may be inserted into db2 iff it is inserted into db3 within 1 minute.
+The time limit from db1 to db2 is 30 hours because the synchronization scripts run once every 24 hours and can run for up to 6 hours.
+The time limit from db2 to db3 is only 60 seconds as this synchronization is implemented by database triggers that start immediately upon a change in db2.
+Note that these policies require propagation of new data between db2 and db3 in both directions.
+However, between db1 and db2 only one direction is required.
+The reason is the incomplete logging for db1.
+del-*: Data deleted from db1 must be consistently deleted from all databases.
+The policies del-2-3 and del-3-2 are analogous to the policies ins-2-3 and ins-3-2, respectively.
+The formalization of the policy del-1-2 is more involved: If data is deleted from db1, then this data must also be deleted from db2 within 30 hours.
+However, if the data has just been uploaded to db1 and not yet propagated to db2, then it simply should not be propagated to db2 in the future either.
+Since the propagation would happen in at most 30 hours, we can simply consider the past and the future  log 5 5 s / 4 MB 6 s / 4 MB 5 s / 4 MB 4 s / 4 MB 6 s / 4 MB 5 s / 7 MB 5 s / 4 MB 7 s / 16 MB 9 m / 71 MB 2 m / 8 MB 2 m / 5 MB 8 s / 58 MB 5 s / 4 MB 4 s / 4 MB  log 6 4 s / 4 MB 5 s / 4 MB 4 s / 4 MB 4 s / 4 MB 6 s / 4 MB 5 s / 7 MB 4 s / 4 MB 6 s / 16 MB 5 m / 65 MB 2 m / 7 MB 2 m / 5 MB 7 s / 53 MB 4 s / 4 MB 4 s / 4 MB  4 s 5 s 4 s 4 s 5 s 4 s 4 s 6 s 3 m 1 m 1 m 12 s 4 s 4 s  log 7 / 4 MB / 4 MB / 4 MB / 4 MB / 4 MB / 7 MB / 4 MB / 16 MB / 57 MB / 7 MB / 5 MB / 111 MB / 4 MB / 4 MB  log 8 6 s / 4 MB 8 s / 4 MB 7 s / 4 MB 6 s / 4 MB 9 s / 4 MB 7 s / 20 MB 7 s / 4 MB 8 s / 16 MB 73 m / 115 MB 2 m / 8 MB 2 m / 5 MB 21 s / 184 MB 6 s / 4 MB 6 s / 4 MB  log 9 6 s / 4 MB 8 s / 4 MB 6 s / 4 MB 7 s / 4 MB 8 s / 4 MB 7 s / 21 MB 7 s / 4 MB 8 s / 16 MB 48 m / 111 MB 1 m / 6 MB 1 m / 5 MB 11 s / 102 MB 6 s / 4 MB 6 s / 4 MB  30 hours to determine whether data has been and will be propagated to db2 or not.
+Monitor Performance.
+Table V shows the monitor's running times and memory usage for all policies in Table IV and all log files in Table II.
+Our reason for splitting the available stream of logged actions into smaller chunks (i.e., log files) is to evaluate our monitor on different data sets with different characteristics.
+Each of our chunks corresponds to a time span of approximately 24 hours.
+We point out that monitoring such chunks separately may reveal different violations than monitoring the whole stream of actions.
+This is because, policy conformance at a time point may depend on actions that have been logged in another (timewise subsequent or prior) chunk, as the time window of a temporal operator may overpass the time span of a chunk.
+Except for the policy del-1-2, all policy violations on the whole stream are also detected on a chunk.
+However, due to splitting, additional violations may be reported.
+We were not concerned about these issues, as our main focus was on evaluating the performance of the monitor.
+Moreover, we have manually checked that all violations reported in Section IV are indeed violations on the whole stream.
